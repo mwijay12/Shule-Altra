@@ -202,10 +202,10 @@ export default function CommandDeckPage() {
         data-reveal
         className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/[0.09] via-card/70 to-accent/[0.09] p-5 sm:p-7"
       >
-        <div className="pointer-events-none absolute -right-10 -top-24 h-[300px] w-[300px] opacity-90 sm:h-[360px] sm:w-[360px]">
+        <div className="pointer-events-none absolute -right-16 -top-20 h-[240px] w-[240px] opacity-40 sm:-right-10 sm:-top-24 sm:h-[360px] sm:w-[360px] sm:opacity-90">
           <ThreeOrb hue={214} className="h-full w-full" />
         </div>
-        <div className="relative z-10 max-w-[62%] sm:max-w-[58%]">
+        <div className="relative z-10 max-w-full sm:max-w-[58%]">
           <div className="flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
