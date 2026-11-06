@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { 
   Search, 
   Smartphone, 
@@ -34,7 +34,11 @@ export default function AttendancePage() {
   const { toast } = useToast()
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeDate] = useState(new Date().toLocaleDateString('en-GB'))
+  const [activeDate, setActiveDate] = useState('')
+  useEffect(() => {
+    // Computed on the client to avoid a hydration mismatch between server locale and browser locale
+    setActiveDate(new Date().toLocaleDateString('en-GB'))
+  }, [])
 
   // Pull real students from Firestore
   const studentsQuery = useMemoFirebase(() => query(collection(db, "schools", "school-001", "students"), orderBy("name", "asc")), [db])
