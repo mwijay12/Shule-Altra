@@ -134,6 +134,7 @@ export function useAuth() {
         attendance: ['ADMIN', 'TEACHER'],
         assets: ['ADMIN', 'ACCOUNTANT', 'BURSAR'],
         reports: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
+        analytics: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
         transport: ['ADMIN', 'BURSAR'],
         hostel: ['ADMIN', 'BURSAR'],
         timetable: ['ADMIN', 'TEACHER'],

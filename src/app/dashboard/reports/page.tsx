@@ -16,11 +16,19 @@ import {
   TrendingUp,
   AlertTriangle,
   History,
-  Zap
+  Zap,
+  IdCard,
+  ClipboardList,
+  Receipt,
+  FileDown,
+  ShieldCheck
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, orderBy, query } from "firebase/firestore";
+import { collection, orderBy, query, limit } from "firebase/firestore";
+import { downloadClassRanking, downloadAttendanceRegister } from "@/lib/pdf/class-report";
+import { downloadIdCards } from "@/lib/pdf/id-card";
+import { downloadFeeStatement } from "@/lib/pdf/fee-statement";
 
 // 1. Define Report Item structure
 interface ReportItem {
@@ -64,11 +72,151 @@ export default function ReportsPage() {
   );
   const { data: students } = useCollection<any>(studentsQuery);
 
+  const gradesQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "grades"), limit(1200)),
+    [db]
+  );
+  const { data: grades } = useCollection<any>(gradesQuery);
+
+  const attendanceQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "attendance"), limit(900)),
+    [db]
+  );
+  const { data: attendance } = useCollection<any>(attendanceQuery);
+
+  const transactionsQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "transactions"), orderBy("createdAt", "desc"), limit(240)),
+    [db]
+  );
+  const { data: transactions } = useCollection<any>(transactionsQuery);
+
+  const [printableJob, setPrintableJob] = useState<string | null>(null);
+
   const totalCollected = (students || []).reduce((sum: number, student: any) => sum + (student.totalPaid || 0), 0);
   const totalOutstanding = (students || []).reduce((sum: number, student: any) => sum + (student.balance || 0), 0);
   const collectionRate = totalCollected + totalOutstanding > 0
     ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100)
     : 0;
+
+  const learners = (students || []) as any[];
+  const ledger = (transactions || []) as any[];
+
+  const printables = [
+    {
+      id: "ranking",
+      title: "Class merit ranking",
+      detail: "Cohort averages, divisions and fee status in merit order.",
+      icon: GraduationCap,
+      run: async () => {
+        const totals = new Map<string, { total: number; count: number }>();
+        ((grades || []) as any[]).forEach((row) => {
+          const key = row.studentId;
+          if (!key) return;
+          const current = totals.get(key) ?? { total: 0, count: 0 };
+          current.total += Number(row.score ?? 0);
+          current.count += 1;
+          totals.set(key, current);
+        });
+        const rows = learners
+          .map((learner) => {
+            const stat = totals.get(learner.id);
+            const average = stat && stat.count > 0 ? stat.total / stat.count : 0;
+            return {
+              rank: 0,
+              name: learner.name ?? "Unnamed",
+              admissionNumber: learner.admissionNumber ?? learner.id,
+              className: learner.className ?? learner.class ?? "Unassigned",
+              average,
+              division: average >= 75 ? "I" : average >= 65 ? "II" : average >= 55 ? "III" : average >= 45 ? "IV" : "V",
+              balance: Number(learner.balance ?? 0),
+            };
+          })
+          .filter((row) => row.average > 0)
+          .sort((a, b) => b.average - a.average)
+          .map((row, index) => ({ ...row, rank: index + 1 }));
+        await downloadClassRanking(rows, { term: "Term 2", academicYear: "2026", className: "All streams" });
+        toast({ title: "Ranking PDF ready", description: `${rows.length} learners ranked · vector PDF` });
+      },
+    },
+    {
+      id: "register",
+      title: "Attendance register",
+      detail: "Per-learner presence, lateness and absence over the term.",
+      icon: ClipboardList,
+      run: async () => {
+        const rows = learners.map((learner) => {
+          const entries = ((attendance || []) as any[]).filter((row) => row.studentId === learner.id);
+          const present = entries.filter((row) => row.status === "Present").length;
+          const late = entries.filter((row) => row.status === "Late").length;
+          const absent = entries.filter((row) => row.status === "Absent").length;
+          const total = entries.length;
+          return {
+            admissionNumber: learner.admissionNumber ?? learner.id,
+            name: learner.name ?? "Unnamed",
+            className: learner.className ?? "Unassigned",
+            present,
+            late,
+            absent,
+            rate: total > 0 ? (present / total) * 100 : 0,
+          };
+        });
+        await downloadAttendanceRegister(rows, {
+          className: "All streams",
+          from: new Date(Date.now() - 90 * 86_400_000).toLocaleDateString("en-GB"),
+          to: new Date().toLocaleDateString("en-GB"),
+        });
+        toast({ title: "Register PDF ready", description: "Vector PDF · registry copy" });
+      },
+    },
+    {
+      id: "statements",
+      title: "Fee statements (top 8)",
+      detail: "Bursar-ready statements for the largest outstanding balances.",
+      icon: Receipt,
+      run: async () => {
+        const debtors = [...learners]
+          .filter((learner) => Number(learner.balance ?? 0) > 0)
+          .sort((a, b) => Number(b.balance ?? 0) - Number(a.balance ?? 0))
+          .slice(0, 8);
+        if (debtors.length === 0) {
+          toast({ title: "Nothing to issue", description: "Every learner is cleared." });
+          return;
+        }
+        for (const learner of debtors) {
+          await downloadFeeStatement(learner, ledger.filter((row) => row.studentId === learner.id), {
+            term: "Term 2",
+            academicYear: "2026",
+          });
+        }
+        toast({ title: "Statements generated", description: `${debtors.length} vector PDFs downloaded.` });
+      },
+    },
+    {
+      id: "ids",
+      title: "Learner ID cards",
+      detail: "A4 2-up print sheet with crop marks and QR verification.",
+      icon: IdCard,
+      run: async () => {
+        await downloadIdCards(learners.slice(0, 12), { term: "Term 2 2026" });
+        toast({ title: "ID cards generated", description: "12 cards · vector PDF" });
+      },
+    },
+  ] as const;
+
+  const runPrintable = async (job: (typeof printables)[number]) => {
+    setPrintableJob(job.id);
+    try {
+      await job.run();
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: `${job.title} failed`,
+        description: error instanceof Error ? error.message : "Unexpected export error",
+      });
+    } finally {
+      setPrintableJob(null);
+    }
+  };
 
   const handleGenerate = (report: ReportItem) => {
     setLoadingId(report.id);
@@ -190,6 +338,61 @@ export default function ReportsPage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* VECTOR PRINTABLES */}
+      <div className="px-1 space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">Vector printables</p>
+            <h2 className="text-sm font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Real documents, not screenshots
+            </h2>
+          </div>
+          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 font-black text-[8px] uppercase tracking-widest rounded-full">
+            pdf-lib · selectable text
+          </Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {printables.map((job) => (
+            <div key={job.id} className="glass-panel rounded-2xl p-4 flex flex-col gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                <job.icon className="h-4 w-4" />
+              </span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-foreground">{job.title}</p>
+              <p className="text-[9px] font-medium leading-relaxed text-muted-foreground flex-1">{job.detail}</p>
+              <Button
+                size="sm"
+                onClick={() => runPrintable(job)}
+                disabled={printableJob !== null}
+                className="rounded-full h-8 font-black text-[8px] uppercase tracking-widest colorful-gradient text-white"
+              >
+                {printableJob === job.id ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <FileDown className="h-3 w-3 mr-1.5" />}
+                {printableJob === job.id ? "Building..." : "Download PDF"}
+              </Button>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">Sample output:</span>
+          {[
+            { file: "fee-statement.pdf", label: "Fee statement" },
+            { file: "report-card.pdf", label: "Report card" },
+            { file: "class-ranking.pdf", label: "Ranking" },
+            { file: "attendance-register.pdf", label: "Register" },
+            { file: "learner-id-cards.pdf", label: "ID sheet" },
+          ].map((sample) => (
+            <a
+              key={sample.file}
+              href={`/printables/${sample.file}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-full border border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+            >
+              {sample.label}
+            </a>
+          ))}
+        </div>
       </div>
 
       {/* CATEGORIZED REPORTS */}

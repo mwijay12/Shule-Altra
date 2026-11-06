@@ -21,6 +21,9 @@ jobs:
         run: npm run typecheck
       - name: Data-layer smoke
         run: npm run demo:smoke:data
+
+      - name: Vector printable suite
+        run: npm run demo:pdf
       - name: Page-render smoke
         run: npm run demo:smoke
       - name: Production build

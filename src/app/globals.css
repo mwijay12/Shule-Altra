@@ -105,3 +105,156 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+/* ==========================================================================
+   AURORA ADMIN — premium shell tokens & utilities
+   ========================================================================== */
+
+@layer base {
+  .dark {
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 40% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 44% 9%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 214 85% 62%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 222 32% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 28% 16%;
+    --muted-foreground: 215 20% 66%;
+    --accent: 264 82% 70%;
+    --accent-foreground: 222 47% 8%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 222 26% 20%;
+    --input: 222 26% 20%;
+    --ring: 214 85% 62%;
+
+    --sidebar-background: 222 44% 9%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 214 85% 62%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 222 32% 16%;
+    --sidebar-accent-foreground: 214 85% 62%;
+    --sidebar-border: 222 26% 20%;
+    --sidebar-ring: 214 85% 62%;
+  }
+}
+
+/* Legacy screens hardcode light surfaces; keep them coherent in midnight mode. */
+.dark .bg-white,
+.dark .bg-white\/50,
+.dark .bg-white\/60,
+.dark .bg-white\/70,
+.dark .bg-white\/80,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: hsl(var(--card)) !important;
+}
+.dark .bg-muted\/10,
+.dark .bg-muted\/20,
+.dark .bg-muted\/30,
+.dark .bg-muted\/40,
+.dark .bg-muted\/50 {
+  background-color: hsl(var(--muted) / 0.45) !important;
+}
+.dark .border-white {
+  border-color: hsl(var(--border)) !important;
+}
+.dark .shadow-inner {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+}
+.dark .colorful-gradient {
+  background: linear-gradient(135deg, #2f6fbd 0%, #8b5cf6 100%);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #33415c;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Surfaces */
+.aurora-shell {
+  position: relative;
+  isolation: isolate;
+}
+.aurora-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(60% 45% at 12% 0%, hsl(var(--primary) / 0.16), transparent 65%),
+    radial-gradient(50% 40% at 88% 8%, hsl(var(--accent) / 0.14), transparent 60%),
+    radial-gradient(45% 45% at 50% 100%, hsl(var(--primary) / 0.08), transparent 70%),
+    hsl(var(--background));
+}
+
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(to right, hsl(var(--border) / 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(var(--border) / 0.35) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 75%);
+  pointer-events: none;
+}
+
+.glass-panel {
+  background: linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.72));
+  backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid hsl(var(--border) / 0.65);
+}
+
+.glass-panel-strong {
+  background: linear-gradient(150deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.85));
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid hsl(var(--border) / 0.7);
+}
+
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(115deg, transparent 35%, hsl(0 0% 100% / 0.22) 48%, transparent 62%);
+  transform: translateX(-70%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.sheen:hover::after {
+  transform: translateX(70%);
+}
+
+.hover-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.35s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px -24px hsl(var(--primary) / 0.45);
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.ticker-mask {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheen::after,
+  .hover-lift,
+  .animate-float,
+  .animate-pulse-soft {
+    animation: none !important;
+    transition: none !important;
+  }
+}

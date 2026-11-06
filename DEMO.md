@@ -115,7 +115,49 @@ NEXT_PUBLIC_DEMO_MODE=false npm run dev
 
 ---
 
-## 6. Verification & CI
+## 6. The command deck (GSAP + Three.js admin)
+
+The dashboard is a full re-skin of the admin shell, not a static mock-up:
+
+| Surface | What it does |
+|---|---|
+| **Aurora shell** | Grouped sidebar with an animated active pill (Framer Motion `layoutId`), GSAP stagger on first paint, collapsible desktop rail (state persisted) and a spring mobile drawer. |
+| **Topbar** | ⌘K command palette (searches modules **and** learner records), reporting-window selector (7D / 30D / 90D / term), live notification stream derived from the ledger, light/midnight theme switch. |
+| **Route transitions** | `AnimatePresence` crossfade per pathname + GSAP `[data-reveal]` stagger for each section. |
+| **Command deck** | Three.js wireframe orb (pointer parallax, particle halo, WebGL-guarded fallback), animated KPI tiles with count-up + SVG progress rings + sparklines, collections chart with range filters, draggable follow-up queue. |
+| **Analytics studio** | `/dashboard/analytics` — cohort averages by stream, payment-method mix, presence trend, and two vector-PDF exports. |
+
+The reporting window selected in the topbar is shared through `RangeProvider`, so
+the KPI tiles, the chart and the analytics filters stay in sync.
+
+**Reduced motion** and **no-WebGL** environments are handled: `prefers-reduced-motion`
+disables the GSAP sweeps, and the Three.js scene falls back to a CSS aurora when
+`WebGLRenderingContext` is missing (which is also what keeps the JSDOM suites quiet).
+
+## 7. Vector printables (no screenshots)
+
+Every printable is a genuine PDF built with `pdf-lib` — real text runs, selectable
+and searchable, vector rules and shapes at any DPI. Nothing is rendered from a DOM
+screenshot (no `html2canvas`, no print-to-image).
+
+| Document | Builder | Where it is used |
+|---|---|---|
+| Fee statement | `src/lib/pdf/fee-statement.ts` | Command deck follow-up queue, Reports |
+| Termly report card | `src/lib/pdf/report-card.ts` | Student sheet → *Report card · vector PDF* |
+| Class merit ranking | `src/lib/pdf/class-report.ts` | Analytics, Reports |
+| Attendance register | `src/lib/pdf/class-report.ts` | Analytics, Reports |
+| Learner ID cards (A4 2-up) | `src/lib/pdf/id-card.ts` | Student sheet, Reports |
+
+```bash
+npm run demo:pdf   # builds public/printables/*.pdf and verifies each one
+```
+
+Sample output is committed to `public/printables/` and linked from
+**Reports → Vector printables** so the documents can be opened in the browser.
+The ID sheet embeds a QR matrix (raster image XObject) for verification; everything
+else — including tables, rules, crest and crop marks — is drawn as vector content.
+
+## 8. Verification & CI
 
 The demo layer is covered by two JSDOM smoke suites that run without a browser
 or a cloud project:
@@ -123,23 +165,24 @@ or a cloud project:
 ```bash
 npm run demo:smoke        # renders every screen, fails on runtime errors
 npm run demo:smoke:data   # auth roles, queries, snapshots, writes, transactions
+npm run demo:pdf          # builds + verifies the vector printable suite
 npm run typecheck         # TypeScript across the whole repo
 npm run build             # production build
 ```
 
 `demo:smoke` boots the real page components against the demo Firestore shim and
-asserts that each of the 15 dashboard screens plus `/login` renders without
-console errors. `demo:smoke:data` checks the 150-student registry, fee
+asserts that each of the 16 dashboard screens (including the new
+`/dashboard/analytics` studio) plus `/login` renders without console errors. `demo:smoke:data` checks the 150-student registry, fee
 reconciliation totals, petty cash, integrations, student balance history, the
 role access matrix (teacher cannot open finance/settings), live snapshot updates
 after writes, and sign-out.
 
 ---
 
-## 7. What is still honest-to-goodness “TODO”
+## 9. What is still honest-to-goodness “TODO”
 
 * Timetable period allocation is still a static grid (presentation-ready, not editable).
-* PDF/report-card export uses the `docx` path — verify on your target printer.
+* DOCX export still exists next to the new vector PDF path; the PDF is the print-authoritative copy.
 * ClickPesa and n8n calls are simulated; the webhook route exists but is not exercised
   by the demo dataset.
 * Swahili/English UI toggle is not implemented yet (copy is already bilingual-flavoured).

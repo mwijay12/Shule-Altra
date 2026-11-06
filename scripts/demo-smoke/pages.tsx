@@ -22,6 +22,7 @@ import StaffPage from '@/app/dashboard/staff/page';
 import TimetablePage from '@/app/dashboard/timetable/page';
 import TransportPage from '@/app/dashboard/transport/page';
 import HelpPage from '@/app/dashboard/help/page';
+import AnalyticsPage from '@/app/dashboard/analytics/page';
 import LoginPage from '@/app/login/page';
 
 const services = initializeFirebase();
@@ -55,6 +56,7 @@ const PAGES: Array<[string, React.ComponentType]> = [
   ['timetable', TimetablePage],
   ['transport', TransportPage],
   ['help', HelpPage],
+  ['analytics', AnalyticsPage],
 ];
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -104,7 +106,11 @@ async function main() {
         );
       });
       await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 900));
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      });
+      // Second settle window so GSAP/RAF-driven reveals and KPI count-ups land.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1400));
       });
       const text = container.textContent || '';
       const significant = errors.filter(

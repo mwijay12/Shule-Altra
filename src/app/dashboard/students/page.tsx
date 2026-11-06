@@ -48,12 +48,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, doc, query, orderBy, setDoc, serverTimestamp } from "firebase/firestore"
+import { collection, doc, query, orderBy, setDoc, serverTimestamp, where, getDocs } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { generateStudentProgressSummary } from "@/ai/flows/generate-student-progress-summary-flow"
 import { scanStudentRegistration } from "@/ai/flows/scan-student-registration-flow"
 import { exportReportCardToWord, exportToExcel } from "@/lib/export-utils"
 import { buildReportCardData } from "@/lib/report-card-builder"
+import { downloadReportCard } from "@/lib/pdf/report-card"
+import { downloadIdCards } from "@/lib/pdf/id-card"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
@@ -237,6 +239,79 @@ export default function StudentsPage() {
       toast({ variant: "destructive", title: "Synthesis Failed", description: "Internal AI node error." })
     } finally {
       setIsGeneratingAi(false)
+    }
+  }
+
+  const handleDownloadReportCardPdf = async () => {
+    if (!selectedStudent) return
+    setIsExportingReport(true)
+    try {
+      const gradesSnap = await getDocs(
+        query(
+          collection(db, "schools", "school-001", "grades"),
+          where("studentId", "==", selectedStudent.id)
+        )
+      )
+      const grades = gradesSnap.docs.map((snap) => {
+        const row = snap.data() as any
+        return { subject: row.subject ?? "Subject", score: Number(row.score ?? 0), examType: row.examType }
+      })
+      if (grades.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "No assessment rows",
+          description: "Record subject scores before issuing a report card.",
+        })
+        return
+      }
+      await downloadReportCard({
+        student: {
+          id: selectedStudent.id,
+          name: selectedStudent.name,
+          className: selectedStudent.class,
+          admissionNumber: (selectedStudent as any).admissionNumber ?? selectedStudent.id,
+          gender: selectedStudent.gender,
+        },
+        grades,
+        term: "Term 2",
+        academicYear: "2026",
+        teacherRemark: `Conduct grade: ${selectedStudent.conductPoints ?? 100} points. ${aiSummary ? aiSummary.replace(/<[^>]*>/g, " ").slice(0, 300) : ""}`.trim(),
+      })
+      toast({
+        title: "Report card PDF ready",
+        description: `${selectedStudent.name} · vector PDF · NECTA grading`,
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "PDF export failed",
+        description: err?.message ?? "Could not assemble the report card.",
+      })
+    } finally {
+      setIsExportingReport(false)
+    }
+  }
+
+  const handleDownloadIdCard = async () => {
+    if (!selectedStudent) return
+    try {
+      await downloadIdCards(
+        [
+          {
+            id: selectedStudent.id,
+            name: selectedStudent.name,
+            className: selectedStudent.class,
+            admissionNumber: (selectedStudent as any).admissionNumber ?? selectedStudent.id,
+            gender: selectedStudent.gender,
+            parentPhone: selectedStudent.guardianPhone,
+            balance: selectedStudent.balance,
+          },
+        ],
+        { term: "Term 2 2026" }
+      )
+      toast({ title: "ID card generated", description: "A4 2-up sheet with crop marks · fully vector." })
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "ID export failed", description: err?.message ?? "Unknown error" })
     }
   }
 
@@ -575,7 +650,15 @@ export default function StudentsPage() {
                                   disabled={isExportingReport}
                                 >
                                   {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <FileText className="mr-2 h-5 w-5" />}
-                                  Official Performance Transcript
+                                  Official Performance Transcript (DOCX)
+                                </Button>
+                                <Button
+                                  className="w-full h-14 rounded-2xl colorful-gradient text-white font-black uppercase text-xs shadow-lg shadow-primary/20"
+                                  onClick={handleDownloadReportCardPdf}
+                                  disabled={isExportingReport}
+                                >
+                                  {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Download className="mr-2 h-5 w-5" />}
+                                  Report card · vector PDF
                                 </Button>
                               </TabsContent>
 
@@ -617,9 +700,12 @@ export default function StudentsPage() {
                                    </div>
                                    
                                    <div className="space-y-4 w-full max-w-xs">
-                                      <Button className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-xl">
-                                         <IdCard className="mr-2 h-4 w-4" /> Export Altraware ID
+                                      <Button className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-xl" onClick={handleDownloadIdCard}>
+                                         <IdCard className="mr-2 h-4 w-4" /> Export learner ID · PDF
                                       </Button>
+                                      <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                        Print-ready A4 sheet · crop marks · QR verification
+                                      </p>
                                    </div>
                                 </div>
                               </TabsContent>

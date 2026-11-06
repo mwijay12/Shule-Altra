@@ -30,7 +30,12 @@ behind a Firestore-compatible shim, so real-time updates, batches and transactio
 all behave normally.
 
 * **Full walkthrough:** [`DEMO.md`](./DEMO.md)
-* **Regression suites:** `npm run demo:smoke` and `npm run demo:smoke:data`
+* **Admin shell:** GSAP + Three.js command deck, ⌘K palette, animated sidebar,
+  range-filtered collections chart, draggable follow-up queue and midnight theme
+* **Vector printables:** `npm run demo:pdf` generates fee statements, report cards,
+  merit rankings, attendance registers and A4 ID cards with `pdf-lib` (real text,
+  no screenshots) → samples in `public/printables/`
+* **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`, `npm run demo:pdf`
 * **Back to real Firebase:** set `NEXT_PUBLIC_DEMO_MODE=false` and fill `.env.example`
 
 ---
