@@ -30,6 +30,7 @@ behind a Firestore-compatible shim, so real-time updates, batches and transactio
 all behave normally.
 
 * **Full walkthrough:** [`DEMO.md`](./DEMO.md)
+* **Regression suites:** `npm run demo:smoke` and `npm run demo:smoke:data`
 * **Back to real Firebase:** set `NEXT_PUBLIC_DEMO_MODE=false` and fill `.env.example`
 
 ---

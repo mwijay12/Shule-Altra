@@ -64,6 +64,12 @@ export default function ReportsPage() {
   );
   const { data: students } = useCollection<any>(studentsQuery);
 
+  const totalCollected = (students || []).reduce((sum: number, student: any) => sum + (student.totalPaid || 0), 0);
+  const totalOutstanding = (students || []).reduce((sum: number, student: any) => sum + (student.balance || 0), 0);
+  const collectionRate = totalCollected + totalOutstanding > 0
+    ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100)
+    : 0;
+
   const handleGenerate = (report: ReportItem) => {
     setLoadingId(report.id);
     
@@ -152,9 +158,9 @@ export default function ReportsPage() {
               <DollarSign className="h-20 w-20" />
             </div>
             <p className="text-[10px] uppercase font-black opacity-70 tracking-widest">Total Fee Collection</p>
-            <h2 className="text-2xl font-black mt-2">TZS 45,500,000</h2>
+            <h2 className="text-2xl font-black mt-2">TZS {totalCollected.toLocaleString()}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full">82% TARGET</Badge>
+              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full">{collectionRate}% OF BILLED</Badge>
             </div>
           </CardContent>
         </Card>

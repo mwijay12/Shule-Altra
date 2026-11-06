@@ -178,7 +178,7 @@ export class DemoDocumentSnapshot {
   get id(): string {
     return this.ref.id;
   }
-  get exists(): boolean {
+  exists(): boolean {
     return this.value !== undefined;
   }
   data(): Record<string, any> | undefined {

@@ -1,0 +1,27 @@
+name: Demo CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_DEMO_MODE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Data-layer smoke
+        run: npm run demo:smoke:data
+      - name: Page-render smoke
+        run: npm run demo:smoke
+      - name: Production build
+        run: npm run build

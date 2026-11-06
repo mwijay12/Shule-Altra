@@ -115,7 +115,28 @@ NEXT_PUBLIC_DEMO_MODE=false npm run dev
 
 ---
 
-## 6. What is still honest-to-goodness “TODO”
+## 6. Verification & CI
+
+The demo layer is covered by two JSDOM smoke suites that run without a browser
+or a cloud project:
+
+```bash
+npm run demo:smoke        # renders every screen, fails on runtime errors
+npm run demo:smoke:data   # auth roles, queries, snapshots, writes, transactions
+npm run typecheck         # TypeScript across the whole repo
+npm run build             # production build
+```
+
+`demo:smoke` boots the real page components against the demo Firestore shim and
+asserts that each of the 15 dashboard screens plus `/login` renders without
+console errors. `demo:smoke:data` checks the 150-student registry, fee
+reconciliation totals, petty cash, integrations, student balance history, the
+role access matrix (teacher cannot open finance/settings), live snapshot updates
+after writes, and sign-out.
+
+---
+
+## 7. What is still honest-to-goodness “TODO”
 
 * Timetable period allocation is still a static grid (presentation-ready, not editable).
 * PDF/report-card export uses the `docx` path — verify on your target printer.

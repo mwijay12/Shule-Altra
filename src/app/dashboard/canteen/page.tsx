@@ -78,6 +78,7 @@ export default function CanteenPage() {
   }
 
   const totalRevenue = sales.reduce((acc, curr) => acc + (curr.amount || 0), 0)
+  const averageSale = sales.length > 0 ? Math.round(totalRevenue / sales.length) : 0
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-24 overflow-x-hidden">
@@ -135,9 +136,9 @@ export default function CanteenPage() {
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
           { label: "Daily Revenue", value: `TZS ${totalRevenue.toLocaleString()}`, sub: "Cashless Hub", icon: TrendingUp, color: "text-green-600" },
-          { label: "Avg Wallet", value: "TZS 12,400", sub: "Per Student", icon: Wallet, color: "text-primary" },
+          { label: "Avg Basket", value: `TZS ${averageSale.toLocaleString()}`, sub: "Per Sale", icon: Wallet, color: "text-primary" },
           { label: "Food Inventory", value: "94%", sub: "Healthy Stock", icon: Utensils, color: "text-accent" },
-          { label: "Active Nodes", value: "1,240", sub: "Student Cards", icon: Users, color: "text-orange-600" },
+          { label: "Active Nodes", value: `${students?.length || 0}`, sub: "Student Cards", icon: Users, color: "text-orange-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
              <CardContent className="p-6 relative">

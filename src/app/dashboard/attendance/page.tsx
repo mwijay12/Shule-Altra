@@ -56,6 +56,10 @@ export default function AttendancePage() {
     )
   }, [searchTerm, students])
 
+  const presenceRate = students && students.length > 0
+    ? (students.filter((student) => student.attendanceStatus !== "Absent").length / students.length) * 100
+    : 0
+
   const handleStatusChange = (studentId: string, newStatus: string) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     updateDocumentNonBlocking(doc(db, "schools", "school-001", "students", studentId), {
@@ -113,9 +117,9 @@ export default function AttendancePage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Presence", value: "96.2%", sub: "High Perf", color: "text-green-600", icon: Zap },
+          { label: "Presence", value: `${presenceRate.toFixed(1)}%`, sub: "High Perf", color: "text-green-600", icon: Zap },
           { label: "Absent", value: students?.filter(s => s.attendanceStatus === "Absent").length || "0", sub: "Action Req", color: "text-destructive", icon: AlertCircle },
-          { label: "SMS Node", value: "4,280", sub: "Beem Hub", color: "text-blue-600", icon: Smartphone },
+          { label: "SMS Node", value: `${students?.length || 0} Parents`, sub: "Beem Hub", color: "text-blue-600", icon: Smartphone },
           { label: "Gateway", value: "Online", sub: "TZ Node", color: "text-primary", icon: Globe },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">

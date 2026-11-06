@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "firebase/app": [
+        "./src/lib/demo/firebase-app.ts"
+      ],
+      "firebase/auth": [
+        "./src/lib/demo/firebase-auth.ts"
+      ],
+      "firebase/firestore": [
+        "./src/lib/demo/firebase-firestore.ts"
+      ],
+      "firebase/storage": [
+        "./src/lib/demo/firebase-storage.ts"
+      ]
+    },
+    "jsx": "react-jsx"
+  }
+}

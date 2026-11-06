@@ -59,7 +59,13 @@ export async function exportReportCardToWord(data: ReportCardData) {
   if (data.school.logoUrl) {
     const b64 = await fetchLogoAsBase64(data.school.logoUrl);
     if (b64) {
-      const buffer = Buffer.from(b64.split(',')[1], 'base64');
+      // Browser-safe base64 → bytes (Buffer is not available in the client bundle)
+      const base64Payload = b64.split(',')[1] || '';
+      const binaryString = atob(base64Payload);
+      const buffer = new Uint8Array(binaryString.length);
+      for (let index = 0; index < binaryString.length; index += 1) {
+        buffer[index] = binaryString.charCodeAt(index);
+      }
       headerChildren.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
