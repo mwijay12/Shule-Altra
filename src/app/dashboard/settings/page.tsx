@@ -144,7 +144,7 @@ export default function SettingsPage() {
   const handleClearSeed = async () => {
     try {
       await clearDemoData()
-      toast({ title: "Demo Data Purged", description: "Sovereign node under demo-school-001 has been reset." })
+      toast({ title: "Demo Data Purged", description: "Operational records under school-001 have been cleared." })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Purge Failed", description: err.message })
     }
@@ -225,8 +225,8 @@ export default function SettingsPage() {
                    <p className="text-xs font-bold text-orange-800 uppercase tracking-tight">Sandbox Environment Notice</p>
                  </div>
                  <p className="text-[10px] leading-relaxed text-orange-700 font-medium uppercase tracking-tighter">
-                   These tools populate <b>demo-school-001</b> with 60 students, tiered grades, and financial history. 
-                   Use only for stakeholder presentations or local integration testing.
+                   These tools populate <b>school-001</b> with 150 Tanzanian students, NECTA-aligned grades, a full fee ledger, boarding and fleet records. 
+                   Use for stakeholder presentations or local integration testing.
                  </p>
                </div>
 
@@ -252,7 +252,7 @@ export default function SettingsPage() {
                      <AlertDialogHeader>
                        <AlertDialogTitle className="text-xl font-black uppercase tracking-tight">Initialize Seed Node?</AlertDialogTitle>
                        <AlertDialogDescription className="text-xs font-medium uppercase tracking-tighter leading-relaxed">
-                         This will inject 60 Tanzanian students, 8 faculty nodes, and 600+ academic results into <b>demo-school-001</b>.
+                         This will inject 150 Tanzanian students, 16 faculty nodes, 2,700+ NECTA assessment records and the full financial ledger into <b>school-001</b>.
                        </AlertDialogDescription>
                      </AlertDialogHeader>
                      <AlertDialogFooter className="gap-2 mt-4">

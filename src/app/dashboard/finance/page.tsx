@@ -44,7 +44,7 @@ import { processPaymentTransaction, generateInstitutionalControlNumber, ControlN
 import { useInstitutionalReconciliation } from "@/hooks/use-finance"
 import { usePettyCash } from "@/hooks/use-petty-cash"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, query, orderBy, doc } from "firebase/firestore"
+import { collection, query, orderBy, doc, Timestamp } from "firebase/firestore"
 import { Progress } from "@/components/ui/progress"
 import type { Transaction } from "@/types/finance"
 import type { Student } from "@/types/student"

@@ -13,6 +13,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth as useFirebaseId } from "@/firebase"
 import { signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "firebase/auth"
+import { DEMO_MODE } from "@/lib/demo/config"
+
+const DEMO_ROLES = [
+  { email: "admin@shule.pro", label: "Administrator", scope: "Full institutional control" },
+  { email: "teacher@shule.pro", label: "Teacher", scope: "Students • Attendance • Academics" },
+  { email: "bursar@shule.pro", label: "Bursar", scope: "Finance • Canteen • Boarding" },
+] as const
 
 export default function LoginPage() {
   const auth = useFirebaseId()
@@ -23,6 +30,7 @@ export default function LoginPage() {
   const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [demoRole, setDemoRole] = useState("ADMIN")
+  const [activeDemoEmail, setActiveDemoEmail] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -57,6 +65,30 @@ export default function LoginPage() {
       setDemoLoading(false)
     }
   }
+
+  const handleRoleLogin = async (roleEmail: string) => {
+    setDemoLoading(true)
+    setActiveDemoEmail(roleEmail)
+    setError(null)
+    try {
+      await signInWithEmailAndPassword(auth, roleEmail, "demo2026")
+      router.replace("/dashboard")
+    } catch (err) {
+      setError("Demo role access failed to initialize.")
+      setDemoLoading(false)
+      setActiveDemoEmail(null)
+    }
+  }
+
+  // Arriving from the landing page "Live Demo" call to action
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const wantsDemo = new URLSearchParams(window.location.search).get("demo")
+    if (wantsDemo) {
+      void handleRoleLogin("admin@shule.pro")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="min-h-screen bg-muted/20 flex items-center justify-center p-6 font-body selection:bg-primary/20 relative overflow-hidden">
@@ -145,22 +177,55 @@ export default function LoginPage() {
                   )}
                 </Button>
 
-                <div className="pt-6 border-t border-dashed">
+                <div className="pt-6 border-t border-dashed space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Demo Roles</p>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">No setup</span>
+                  </div>
+
+                  <div className="grid gap-2">
+                    {DEMO_ROLES.map((role) => (
+                      <button
+                        key={role.email}
+                        type="button"
+                        onClick={() => handleRoleLogin(role.email)}
+                        disabled={loading || demoLoading}
+                        className="group flex items-center justify-between gap-3 w-full rounded-2xl border border-primary/10 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-black uppercase tracking-widest text-primary">{role.label}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-tight text-muted-foreground truncate">{role.scope}</p>
+                        </div>
+                        {demoLoading && activeDemoEmail === role.email ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                        ) : (
+                          <ArrowRight className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-1" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
                   <Button 
                     type="button"
                     variant="outline"
                     onClick={handleDemoLogin}
                     disabled={loading || demoLoading}
-                    className="w-full h-14 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-lg text-sm group hover:bg-primary/5 transition-all uppercase tracking-[0.2em]"
+                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[10px] group hover:bg-primary/5 transition-all uppercase tracking-[0.2em]"
                   >
                     {demoLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <UserCircle className="mr-3 h-5 w-5" /> Quick Demo Access
+                        <UserCircle className="mr-3 h-4 w-4" /> Continue as Guest Admin
                       </>
                     )}
                   </Button>
+
+                  {DEMO_MODE && (
+                    <p className="text-[9px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
+                      Demo node runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
+                    </p>
+                  )}
                 </div>
               </div>
             </form>

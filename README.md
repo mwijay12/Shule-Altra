@@ -4,6 +4,36 @@
 
 ---
 
+## 🎬 SECTION 0: RUN THE DEMO (NO SETUP)
+
+This build ships an **offline demo mode** so the entire hub can be demonstrated in
+under a minute — no Firebase project, no Gemini key, no network.
+
+```bash
+npm install
+npm run dev          # http://localhost:9002
+```
+
+Open the landing page → **Launch Live Demo**, or visit `/login?demo=1` for an
+instant administrator session. One-click demo roles:
+
+| Role | Email | Scope |
+|------|-------|-------|
+| Administrator | `admin@shule.pro` | Everything + developer tools |
+| Teacher | `teacher@shule.pro` | Students, attendance, academics |
+| Bursar | `bursar@shule.pro` | Finance, canteen, boarding |
+
+The demo school (**Mwalimu Nyerere Secondary School**, Kinondoni) is seeded with
+150 students, 2,788 NECTA assessment records, 140 fee transactions, 900 attendance
+records, 5 hostel wings, 5 bus routes and more. All of it lives in `localStorage`
+behind a Firestore-compatible shim, so real-time updates, batches and transactions
+all behave normally.
+
+* **Full walkthrough:** [`DEMO.md`](./DEMO.md)
+* **Back to real Firebase:** set `NEXT_PUBLIC_DEMO_MODE=false` and fill `.env.example`
+
+---
+
 ## 📑 SECTION 1: PROJECT IDENTITY
 
 ### The "Elevator Pitch" (10-Year-Old Version)

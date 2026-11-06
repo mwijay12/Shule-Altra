@@ -153,7 +153,7 @@ export default function AcademicsPage() {
   const handleExportReport = async (student: Student) => {
     setIsExporting(student.id)
     try {
-      const data = await buildReportCardData("school-001", student.id, activeTerm, activeExam)
+      const data = await buildReportCardData(db, "school-001", student.id, activeTerm, activeExam)
       await exportReportCardToWord(data)
       toast({ title: "Report Compiled", description: `Transcript ready for ${student.name}.` })
     } catch (err: any) {

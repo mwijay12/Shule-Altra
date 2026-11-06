@@ -59,6 +59,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
 import { uploadStudentPhoto } from "@/lib/storage"
 import type { Student } from "@/types/student"
+import { DEMO_MODE } from "@/lib/demo/config"
+import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
 
 const ALTRAWARE_DEMO_STUDENTS: Partial<Student>[] = [
   { id: "ALT-2026-001", name: "JUMA KHAMISI OMARI", class: "Standard 7", type: "Boarder", hostel: "Kilimanjaro Wing", guardianPhone: "+255 700 000 001", conductPoints: 100 },
@@ -163,7 +165,11 @@ export default function StudentsPage() {
     reader.onloadend = async () => {
       const base64 = reader.result as string
       try {
-        const result = await scanStudentRegistration({ photoDataUri: base64 })
+        const result = DEMO_MODE
+          ? await new Promise<ReturnType<typeof buildDemoScanResult>>((resolve) =>
+              setTimeout(() => resolve(buildDemoScanResult()), 1200)
+            )
+          : await scanStudentRegistration({ photoDataUri: base64 })
         const newStudent = {
           id: result.id,
           name: result.name.toUpperCase(),
@@ -176,7 +182,7 @@ export default function StudentsPage() {
           balance: 0,
           photoUrl: "" // Smart enroll legacy still uses no photo for now or we could upload
         }
-        addDocumentNonBlocking("schools/school-001/students", newStudent)
+        addDocumentNonBlocking(collection(db, "schools", "school-001", "students"), newStudent)
         toast({ title: "AI Enrollment Success", description: `Synchronized ${result.name} to Altraware node.` })
       } catch (err) {
         toast({ variant: "destructive", title: "Scan Node Failed", description: "Internal AI error during form parsing." })
@@ -191,6 +197,20 @@ export default function StudentsPage() {
     if (!selectedStudent) return
     setIsGeneratingAi(true)
     try {
+      if (DEMO_MODE) {
+        await new Promise((resolve) => setTimeout(resolve, 1400))
+        setAiSummary(
+          buildDemoNarrative({
+            studentName: selectedStudent.name,
+            classLevel: selectedStudent.class,
+            conductPoints: selectedStudent.conductPoints || 100,
+            attendanceRate: 96.4,
+          })
+        )
+        toast({ title: "AI Synthesis Complete", description: "Narrative report generated (demo node)." })
+        return
+      }
+
       const result = await generateStudentProgressSummary({
         studentName: selectedStudent.name,
         academicPerformance: [

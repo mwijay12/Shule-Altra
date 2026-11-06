@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 import { useRouter, usePathname } from "next/navigation"
 import { InstitutionalLoader } from "@/components/ui/institutional-loader"
 import { useAuth } from "@/hooks/use-auth"
+import { DEMO_MODE } from "@/lib/demo/config"
 
 export default function DashboardLayout({
   children,
@@ -97,6 +98,11 @@ export default function DashboardLayout({
                 <Badge variant="outline" className="hidden sm:flex border-green-200 bg-green-50 text-green-700 h-4 text-[7px] font-black px-2 rounded-full whitespace-nowrap">
                   VERIFIED SESSION
                 </Badge>
+                {DEMO_MODE && (
+                  <Badge variant="outline" className="hidden lg:flex border-accent/30 bg-accent/10 text-accent h-4 text-[7px] font-black px-2 rounded-full whitespace-nowrap">
+                    DEMO NODE · LOCAL DATA
+                  </Badge>
+                )}
               </div>
             </div>
           </div>

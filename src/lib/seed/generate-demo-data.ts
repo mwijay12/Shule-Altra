@@ -186,7 +186,7 @@ export function generateTransactions(students: any[], staff: any[]) {
 }
 
 export function generateAttendance(students: any[]) {
-  const attendance = [];
+  const attendance: any[] = [];
   const dates = [];
   let curr = new Date();
   

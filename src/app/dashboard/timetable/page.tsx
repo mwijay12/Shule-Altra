@@ -37,6 +37,19 @@ const PERIODS = [
   { time: "12:20 - 13:20", name: "Lunch Break", isBreak: true },
 ]
 
+const SUBJECT_TEACHERS = [
+  { subject: "Mathematics", teacher: "Mwl. E. Komba" },
+  { subject: "English", teacher: "Mwl. L. Kivuyo" },
+  { subject: "Kiswahili", teacher: "Mwl. A. Kimaro" },
+  { subject: "Physics", teacher: "Mwl. D. Mushi" },
+  { subject: "Chemistry", teacher: "Mwl. Z. Ally" },
+  { subject: "Biology", teacher: "Mwl. G. Urio" },
+  { subject: "Geography", teacher: "Mwl. P. Lyimo" },
+  { subject: "History", teacher: "Mwl. U. Materu" },
+  { subject: "Civics", teacher: "Mwl. A. Mwangosi" },
+  { subject: "Commerce", teacher: "Mwl. F. Shayo" },
+]
+
 export default function TimetablePage() {
   const { toast } = useToast()
   const [selectedClass, setSelectedClass] = useState("Standard 7")
@@ -60,7 +73,10 @@ export default function TimetablePage() {
           <Button variant="outline" onClick={handlePrint} className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-black text-[9px] uppercase">
             <Printer className="mr-2 h-4 w-4" /> Print Schedule
           </Button>
-          <Button className="flex-1 sm:flex-none rounded-full colorful-gradient h-11 shadow-xl font-black text-[9px] uppercase tracking-widest px-8 group">
+          <Button
+            onClick={() => toast({ title: "Allocation Node Ready", description: "Select a free slot on the master grid to assign a teacher node." })}
+            className="flex-1 sm:flex-none rounded-full colorful-gradient h-11 shadow-xl font-black text-[9px] uppercase tracking-widest px-8 group"
+          >
             <Plus className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Assign Period
           </Button>
         </div>
@@ -136,20 +152,23 @@ export default function TimetablePage() {
                         <span className="text-[9px] font-mono font-bold text-muted-foreground">{period.time}</span>
                       </div>
                     </TableCell>
-                    {DAYS.map(day => (
-                      <TableCell key={day} className="text-center p-2">
-                        {period.isBreak ? (
-                          <span className="text-[8px] font-black text-primary/40 uppercase tracking-[0.3em]">{period.name}</span>
-                        ) : (
-                          <div className="p-3 rounded-xl bg-white border border-muted shadow-sm group-hover:border-primary/20 transition-all cursor-pointer">
-                            <p className="text-[10px] font-black text-foreground/80 uppercase">Mathematics</p>
-                            <p className="text-[8px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1 mt-1">
-                              <User className="h-2 w-2" /> Mwijage D.
-                            </p>
-                          </div>
-                        )}
-                      </TableCell>
-                    ))}
+                    {DAYS.map((day, dayIndex) => {
+                      const slot = SUBJECT_TEACHERS[(dayIndex * 3 + i) % SUBJECT_TEACHERS.length]
+                      return (
+                        <TableCell key={day} className="text-center p-2">
+                          {period.isBreak ? (
+                            <span className="text-[8px] font-black text-primary/40 uppercase tracking-[0.3em]">{period.name}</span>
+                          ) : (
+                            <div className="p-3 rounded-xl bg-white border border-muted shadow-sm hover:border-primary/30 hover:shadow-md transition-all cursor-pointer">
+                              <p className="text-[10px] font-black text-foreground/80 uppercase">{slot.subject}</p>
+                              <p className="text-[8px] font-bold text-muted-foreground uppercase flex items-center justify-center gap-1 mt-1">
+                                <User className="h-2 w-2" /> {slot.teacher}
+                              </p>
+                            </div>
+                          )}
+                        </TableCell>
+                      )
+                    })}
                   </TableRow>
                 ))}
               </TableBody>

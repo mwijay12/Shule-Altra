@@ -91,6 +91,13 @@ export default function DashboardPage() {
 
   const isDemo = identity?.demoMode === true
 
+  const registry = (students || []) as Array<{ totalPaid?: number; balance?: number; attendanceStatus?: string }>
+  const totalPaid = registry.reduce((sum, student) => sum + (student.totalPaid || 0), 0)
+  const totalOutstanding = registry.reduce((sum, student) => sum + (student.balance || 0), 0)
+  const presentCount = registry.filter((student) => student.attendanceStatus !== 'Absent').length
+  const attendanceRate = registry.length > 0 ? (presentCount / registry.length) * 100 : 0
+  const revenueMillions = (totalPaid / 1_000_000).toFixed(1)
+
   useEffect(() => {
     setIsLoaded(true)
   }, [])
@@ -103,8 +110,8 @@ export default function DashboardPage() {
   const stats = [
     {
       title: "Population Node",
-      value: isDemo ? "2,480" : (students?.length || "0"),
-      description: isDemo ? "+120 New Enrolled" : "Live Registry Count",
+      value: registry.length > 0 ? registry.length.toLocaleString() : "0",
+      description: registry.length > 0 ? "Live Registry Count" : "Awaiting Enrollment",
       icon: Users,
       color: "text-primary",
       bg: "bg-primary/5",
@@ -119,16 +126,16 @@ export default function DashboardPage() {
     },
     {
       title: "Institutional Revenue",
-      value: isDemo ? "142.5M" : "0.0M",
-      description: isDemo ? "ClickPesa Synced" : "Audit Threshold",
+      value: `${revenueMillions}M`,
+      description: totalOutstanding > 0 ? `TZS ${Math.round(totalOutstanding / 1_000_000)}M Outstanding` : "Fully Reconciled",
       icon: Banknote,
       color: "text-green-600",
       bg: "bg-green-100/50",
     },
     {
       title: "Attendance Rate",
-      value: isDemo ? "96.2%" : "0.0%",
-      description: isDemo ? "Peak Performance" : "Daily Check-in Node",
+      value: `${attendanceRate.toFixed(1)}%`,
+      description: presentCount > 0 ? "Daily Check-in Node" : "Register Not Started",
       icon: TrendingUp,
       color: "text-orange-600",
       bg: "bg-orange-100/50",

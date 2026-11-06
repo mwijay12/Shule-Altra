@@ -99,9 +99,14 @@ export default function LandingPage() {
                   </ScrollReveal>
                   <AnimatedContent distance={30} delay={0.4}>
                     <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4 pt-2">
-                      <Link href="/login" className="w-full sm:w-auto">
+                      <Link href="/login?demo=1" className="w-full sm:w-auto">
                         <Button size="lg" className="w-full rounded-full h-14 sm:h-16 px-10 sm:px-12 font-black colorful-gradient group shadow-xl hover:scale-[1.03] transition-all text-xs sm:text-sm uppercase tracking-widest">
-                          Staff Entry <ArrowRight className="ml-3 h-4 w-4 group-hover:translate-x-2 transition-transform" />
+                          Launch Live Demo <ArrowRight className="ml-3 h-4 w-4 group-hover:translate-x-2 transition-transform" />
+                        </Button>
+                      </Link>
+                      <Link href="/login" className="w-full sm:w-auto">
+                        <Button size="lg" variant="outline" className="w-full rounded-full h-14 sm:h-16 px-10 sm:px-12 font-black border-primary/20 text-primary bg-white/70 shadow-lg hover:bg-primary/5 transition-all text-xs sm:text-sm uppercase tracking-widest">
+                          Staff Entry
                         </Button>
                       </Link>
                     </div>

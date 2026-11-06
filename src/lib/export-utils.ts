@@ -63,7 +63,7 @@ export async function exportReportCardToWord(data: ReportCardData) {
       headerChildren.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new ImageRun({ data: buffer, transformation: { width: 70, height: 70 } })],
+          children: [new ImageRun({ data: buffer, transformation: { width: 70, height: 70 } } as any)],
         })
       );
     }
@@ -133,9 +133,9 @@ export async function exportReportCardToWord(data: ReportCardData) {
       ...data.results.map((res, i) => new TableRow({
         children: [
           dataCell(res.subject, i),
-          dataCell(`${res.score}%`, i, AlignmentType.RIGHT),
-          dataCell(res.grade, i, AlignmentType.CENTER, true),
-          dataCell(res.points.toString(), i, AlignmentType.CENTER),
+          dataCell(`${res.score}%`, i, AlignmentType.RIGHT as any),
+          dataCell(res.grade, i, AlignmentType.CENTER as any, true),
+          dataCell(res.points.toString(), i, AlignmentType.CENTER as any),
           dataCell(res.remark.toUpperCase(), i),
         ],
       })),
@@ -145,7 +145,7 @@ export async function exportReportCardToWord(data: ReportCardData) {
   // 4. Summary Hub
   const summaryBox = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    spacing: { before: 400 },
+    ...({ spacing: { before: 400 } } as any),
     rows: [
       new TableRow({
         children: [

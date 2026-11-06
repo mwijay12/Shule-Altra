@@ -19,6 +19,8 @@ import {
   Zap
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, orderBy, query } from "firebase/firestore";
 
 // 1. Define Report Item structure
 interface ReportItem {
@@ -54,6 +56,13 @@ const adminReports: ReportItem[] = [
 export default function ReportsPage() {
   const { toast } = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const db = useFirestore();
+
+  const studentsQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "students"), orderBy("name", "asc")),
+    [db]
+  );
+  const { data: students } = useCollection<any>(studentsQuery);
 
   const handleGenerate = (report: ReportItem) => {
     setLoadingId(report.id);
@@ -66,9 +75,15 @@ export default function ReportsPage() {
         description: `${report.title} has been successfully compiled.`,
       });
 
-      // Specific Demo Logic for CSV export example
+      // Live CSV export for the fee defaulters report
       if (report.id === "defaulters") {
-         const csvContent = "data:text/csv;charset=utf-8,Student Name,Class,Balance (TZS),Status\nJUMA KHAMISI,Standard 7,450000,Critical\nNEEMA PAUL,Standard 7,25000,Partial\nBARAKA SAIDI,Form 2,900000,Critical";
+         const defaulters = (students || []).filter((student: any) => (student.balance || 0) > 0);
+         const rows = defaulters.map((student: any) => {
+           const balance = student.balance || 0;
+           const status = balance >= 300000 ? "Critical" : balance >= 100000 ? "Partial" : "Watch";
+           return `${student.name},${student.class},${balance},${status}`;
+         });
+         const csvContent = `data:text/csv;charset=utf-8,Student Name,Class,Balance (TZS),Status\n${rows.join("\n")}`;
          const encodedUri = encodeURI(csvContent);
          const link = document.createElement("a");
          link.setAttribute("href", encodedUri);
