@@ -74,6 +74,8 @@ export default function StudentsPage() {
   const { toast } = useToast()
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
+  const [tierFilter, setTierFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
@@ -101,11 +103,20 @@ export default function StudentsPage() {
   }, [firestoreStudents, isDemo])
 
   const filteredStudents = useMemo(() => {
-    return students.filter(s => 
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [searchTerm, students])
+    return students.filter(s => {
+      const matchesSearch =
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesTier = tierFilter === "all" || s.class === tierFilter
+      const matchesType = typeFilter === "all" || s.type === typeFilter
+      return matchesSearch && matchesTier && matchesType
+    })
+  }, [searchTerm, students, tierFilter, typeFilter])
+
+  const availableTiers = useMemo(() => {
+    const tiers = new Set(students.map(student => student.class))
+    return Array.from(tiers).sort()
+  }, [students])
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -406,9 +417,35 @@ export default function StudentsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="sm" className="h-12 rounded-full border-none bg-white shadow-sm font-black text-[9px] uppercase px-6">
-            <Filter className="h-4 w-4 mr-2" /> Tier Filters
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="hidden sm:flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground px-2">
+              <Filter className="h-3.5 w-3.5" />
+            </span>
+            <Select value={tierFilter} onValueChange={setTierFilter}>
+              <SelectTrigger className="h-12 w-[160px] rounded-full border-none bg-white shadow-sm font-black text-[10px] uppercase">
+                <SelectValue placeholder="Academic Tier" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Tiers</SelectItem>
+                {availableTiers.map((tier) => (
+                  <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-12 w-[160px] rounded-full border-none bg-white shadow-sm font-black text-[10px] uppercase">
+                <SelectValue placeholder="Logistic Hub" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Students</SelectItem>
+                <SelectItem value="Boarder">Boarders</SelectItem>
+                <SelectItem value="Day">Day Students</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge variant="outline" className="h-12 px-4 rounded-full border-primary/10 bg-white text-primary font-black text-[9px] uppercase">
+              {filteredStudents.length} / {students.length}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
