@@ -157,9 +157,13 @@ The public page and the app now share a single system, held in
 | Role | Colour | Where |
 |---|---|---|
 | System / action | `#1F5BA6` blue | app `--primary`, links, buttons, charts, PDF headers |
-| Accent | `#7C5AE0` violet | app `--accent`, `.colorful-gradient`, PDF stamps, landing rules |
-| Structure | `#1A1E45` navy | landing dark sections, aurora wash |
-| Highlight | `#F0C33C` marigold | landing marquee, spotlight, crest |
+| Accent | `#7C5AE0` violet | app `--accent`, the brand gradient, PDF stamps, landing highlight |
+| Structure | `#1A1E45` navy | landing dark sections, boot screens, aurora wash |
+| Paper | `#F6F8FC` / `#FFFFFF` | landing `--paper` / `--card`, same cool white as the app workspace |
+
+There is no fourth hue. The landing page used to run a cream + rust + marigold
+palette of its own; it now draws only from the tokens above, including the
+loading curtain (navy → violet) and the marquee band (the brand gradient).
 
 Blue and violet are one gradient, joined at both ends: `.colorful-gradient`,
 `.text-gradient`, the `BrandMark` plate and the aurora haze all run `#1F5BA6`

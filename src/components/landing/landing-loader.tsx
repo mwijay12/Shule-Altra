@@ -12,6 +12,7 @@
 
 import * as React from "react"
 import { motionEnabled } from "@/components/landing/reveal"
+import { BrandMark } from "@/components/brand/logo"
 
 export function LandingLoader({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = React.useState(0)
@@ -70,6 +71,9 @@ export function LandingLoader({ onDone }: { onDone: () => void }) {
         <div className="land-loader-top">
           <span>SHULE ALTRA</span>
           <span>INSTITUTIONAL OS</span>
+        </div>
+        <div className="land-loader-mark">
+          <BrandMark size={44} radius={13} />
         </div>
         <div className="land-loader-count">
           <span>{String(progress).padStart(3, "0")}</span>
