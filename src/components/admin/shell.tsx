@@ -34,30 +34,8 @@ function prettifyModule(segment?: string) {
 export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellProps) {
   const pathname = usePathname();
   const db = useFirestore();
-  const [collapsed, setCollapsed] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    try {
-      const stored = window.localStorage.getItem('altra-sidebar-collapsed');
-      if (stored === '1') setCollapsed(true);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const toggleCollapse = React.useCallback(() => {
-    setCollapsed((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem('altra-sidebar-collapsed', next ? '1' : '0');
-      } catch {
-        /* ignore */
-      }
-      return next;
-    });
-  }, []);
 
   React.useEffect(() => {
     setMobileOpen(false);
@@ -159,8 +137,6 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
         <div className={cn('aurora-shell flex min-h-screen w-full bg-background')}>
           <div className="pointer-events-none fixed inset-0 -z-10 grid-overlay" aria-hidden />
           <AuroraSidebar
-            collapsed={collapsed}
-            onToggleCollapse={toggleCollapse}
             mobileOpen={mobileOpen}
             onCloseMobile={() => setMobileOpen(false)}
             role={role}

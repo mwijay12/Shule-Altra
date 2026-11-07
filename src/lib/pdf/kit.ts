@@ -10,6 +10,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
 
 export const A4: [number, number] = [595.28, 841.89];
+export const A4_LANDSCAPE: [number, number] = [841.89, 595.28];
 export const CARD: [number, number] = [242.65, 153.07]; // 85.6mm x 54mm ID-1
 
 export const COLORS = {
@@ -24,6 +25,11 @@ export const COLORS = {
   success: rgb(0.09, 0.6, 0.4),
   warning: rgb(0.85, 0.55, 0.1),
   danger: rgb(0.8, 0.22, 0.24),
+};
+
+export const CREST = {
+  gold: rgb(0.83, 0.69, 0.31),
+  goldSoft: rgb(0.93, 0.85, 0.62),
 };
 
 export const SCHOOL = {
@@ -101,7 +107,100 @@ export function wrap(font: PDFFont, text: string, size: number, maxWidth: number
   return lines;
 }
 
-export async function createDocument(meta: DocMeta): Promise<BuildContext> {
+
+/**
+ * The school crest, drawn entirely with vector paths (shield, open book, torch).
+ * `tone: 'dark'` is for placement on the navy letterhead band, `'light'` for paper.
+ */
+export function drawCrest(
+  page: PDFPage,
+  options: {
+    x: number;
+    y: number;
+    size: number;
+    tone?: 'dark' | 'light';
+    opacity?: number;
+    font?: PDFFont;
+    monogram?: string;
+  }
+) {
+  const { x, y, size, tone = 'dark', opacity = 1, font, monogram = 'SA' } = options;
+  const scale = size / 100;
+  const shieldFill = tone === 'dark' ? COLORS.white : COLORS.navy;
+  const bookFill = tone === 'dark' ? COLORS.navy : COLORS.white;
+  const outline = tone === 'dark' ? COLORS.white : COLORS.navy;
+
+  const shield = 'M50 2 L95 16 L95 58 C95 88 72 106 50 115 C28 106 5 88 5 58 L5 16 Z';
+
+  // Shield body + inner rule
+  page.drawSvgPath(shield, {
+    x,
+    y,
+    scale,
+    color: shieldFill,
+    opacity,
+    borderColor: CREST.gold,
+    borderWidth: Math.max(1, 2.4 * scale),
+  });
+
+  // Open book
+  page.drawSvgPath('M22 56 L50 49 L78 56 L78 77 L50 70 L22 77 Z', {
+    x,
+    y,
+    scale,
+    color: bookFill,
+    opacity,
+  });
+  page.drawSvgPath('M50 49 L50 70', {
+    x,
+    y,
+    scale,
+    color: CREST.gold,
+    borderColor: CREST.gold,
+    borderWidth: Math.max(0.6, 1.2 * scale),
+    opacity,
+  });
+
+  // Torch flame above the book
+  page.drawSvgPath('M50 22 C58 32 60 39 56 46 C52 39 46 42 48 48 C42 43 43 30 50 22 Z', {
+    x,
+    y,
+    scale,
+    color: CREST.gold,
+    opacity,
+  });
+
+  if (font && monogram) {
+    const label = monogram.slice(0, 3).toUpperCase();
+    const fontSize = Math.max(4.5, 13 * scale);
+    const labelWidth = font.widthOfTextAtSize(label, fontSize);
+    page.drawText(label, {
+      x: x + (size - labelWidth) / 2,
+      y: y - 92 * scale,
+      size: fontSize,
+      font,
+      color: CREST.gold,
+      opacity,
+    });
+  }
+
+  // Motto band under the shield
+  page.drawSvgPath('M20 100 L80 100 L74 108 L26 108 Z', {
+    x,
+    y,
+    scale,
+    color: tone === 'dark' ? COLORS.white : COLORS.navy,
+    opacity: 0.22,
+  });
+
+  return { width: size, height: size * 1.15, outline };
+}
+
+export async function createDocument(
+  meta: DocMeta,
+  options: { size?: [number, number]; margin?: number } = {}
+): Promise<BuildContext> {
+  const size = options.size ?? A4;
   const doc = await PDFDocument.create();
   doc.setTitle(sanitize(meta.title));
   doc.setSubject(sanitize(meta.subject));
@@ -117,14 +216,14 @@ export async function createDocument(meta: DocMeta): Promise<BuildContext> {
 
   return {
     doc,
-    page: doc.addPage(A4),
+    page: doc.addPage(size),
     font,
     bold,
     italic,
-    width: A4[0],
-    height: A4[1],
-    cursorY: A4[1],
-    margin: 44,
+    width: size[0],
+    height: size[1],
+    cursorY: size[1],
+    margin: options.margin ?? 44,
     meta,
     pageNumber: 1,
   };
@@ -214,28 +313,18 @@ export function letterhead(ctx: BuildContext, title: string, subtitle?: string) 
   page.drawRectangle({ x: 0, y: height - 118, width: width * 0.62, height: 6, color: COLORS.primary });
   page.drawRectangle({ x: width * 0.62, y: height - 118, width: width * 0.38, height: 6, color: COLORS.accent });
 
-  // Crest: vector shield
-  const cx = margin + 20;
-  const cy = height - 54;
-  page.drawCircle({ x: cx, y: cy, size: 20, color: COLORS.white, opacity: 0.12 });
-  page.drawCircle({ x: cx, y: cy, size: 20, borderColor: COLORS.white, borderWidth: 1.1, borderOpacity: 0.8 });
-  page.drawText('SA', {
-    x: cx - 10.5,
-    y: cy - 5,
-    size: 14,
-    font: ctx.bold,
-    color: COLORS.white,
-  });
+  // Crest: vector shield drawn on the navy band
+  drawCrest(page, { x: margin, y: height - 12, size: 42, tone: 'dark', font: ctx.bold });
 
   page.drawText(SCHOOL.name, {
-    x: margin + 50,
+    x: margin + 58,
     y: height - 44,
     size: 13,
     font: ctx.bold,
     color: COLORS.white,
   });
   page.drawText(sanitize(SCHOOL.address), {
-    x: margin + 50,
+    x: margin + 58,
     y: height - 59,
     size: 7.5,
     font: ctx.font,
@@ -243,7 +332,7 @@ export function letterhead(ctx: BuildContext, title: string, subtitle?: string) 
     opacity: 0.82,
   });
   page.drawText(sanitize(SCHOOL.contacts), {
-    x: margin + 50,
+    x: margin + 58,
     y: height - 70,
     size: 7.5,
     font: ctx.font,
@@ -251,7 +340,7 @@ export function letterhead(ctx: BuildContext, title: string, subtitle?: string) 
     opacity: 0.82,
   });
   page.drawText(sanitize(SCHOOL.registration), {
-    x: margin + 50,
+    x: margin + 58,
     y: height - 81,
     size: 6.8,
     font: ctx.font,

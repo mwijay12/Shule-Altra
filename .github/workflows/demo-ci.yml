@@ -24,6 +24,8 @@ jobs:
 
       - name: Vector printable suite
         run: npm run demo:pdf
+      - name: Reports-centre documents
+        run: npm run demo:reports
       - name: Page-render smoke
         run: npm run demo:smoke
       - name: Production build

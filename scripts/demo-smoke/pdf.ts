@@ -14,6 +14,8 @@ import { buildFeeStatement } from '@/lib/pdf/fee-statement';
 import { buildReportCard } from '@/lib/pdf/report-card';
 import { buildClassRanking, buildAttendanceRegister } from '@/lib/pdf/class-report';
 import { buildIdCards } from '@/lib/pdf/id-card';
+import { buildTimetablePdf } from '@/lib/pdf/timetable';
+import { buildTimetable } from '@/lib/timetable';
 
 const OUT_DIR = join(process.cwd(), 'public', 'printables');
 
@@ -124,6 +126,7 @@ const CASES: Case[] = [
   },
   { file: 'attendance-register.pdf', label: 'Attendance register', build: () => buildAttendanceRegister(register, { className: 'Form 2', from: '01 Sep 2026', to: '06 Nov 2026' }) },
   { file: 'learner-id-cards.pdf', label: 'Learner ID cards', build: () => buildIdCards(cards, { term: 'Term 2 2026' }) },
+  { file: 'timetable.pdf', label: 'Master timetable', build: () => buildTimetablePdf(buildTimetable('Form 2', 'A', { term: 'Term 2 · 2026' })) },
 ];
 
 async function main() {

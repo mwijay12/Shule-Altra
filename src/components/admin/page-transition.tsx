@@ -31,9 +31,9 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         gsap.from(targets, {
           y: 18,
           opacity: 0,
-          duration: 0.55,
+          duration: 0.45,
           ease: 'power3.out',
-          stagger: 0.06,
+          stagger: 0.045,
           clearProps: 'transform,opacity',
         });
       }, containerRef);
@@ -50,10 +50,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       <motion.div
         key={pathname}
         ref={containerRef}
-        initial={{ opacity: 0, y: 8 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+        exit={{ opacity: 0, y: -4 }}
+        transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
         className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
       >
         {children}

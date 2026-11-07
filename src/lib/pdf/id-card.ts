@@ -5,7 +5,7 @@
  */
 
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import { A4, COLORS, SCHOOL, downloadPdf, money, sanitize } from '@/lib/pdf/kit';
+import { A4, COLORS, SCHOOL, downloadPdf, drawCrest, money, sanitize } from '@/lib/pdf/kit';
 
 export interface IdCardLearner {
   id: string;
@@ -87,13 +87,17 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
       page.drawRectangle({ x, y: y + CARD_H - 50, width: CARD_W * 0.6, height: 4, color: COLORS.primary });
       page.drawRectangle({ x: x + CARD_W * 0.6, y: y + CARD_H - 50, width: CARD_W * 0.4, height: 4, color: COLORS.accent });
 
-      page.drawCircle({ x: x + 22, y: y + CARD_H - 23, size: 12, color: COLORS.white, opacity: 0.14 });
-      page.drawCircle({ x: x + 22, y: y + CARD_H - 23, size: 12, borderColor: COLORS.white, borderWidth: 0.8, borderOpacity: 0.7 });
-      page.drawText('SA', { x: x + 14.5, y: y + CARD_H - 27, size: 8, font: bold, color: COLORS.white });
+      drawCrest(page, {
+        x: x + 10,
+        y: y + CARD_H - 6,
+        size: 24,
+        tone: 'dark',
+        font: bold,
+      });
 
-      page.drawText('SHULE ALTRA', { x: x + 40, y: y + CARD_H - 17, size: 9, font: bold, color: COLORS.white });
+      page.drawText('SHULE ALTRA', { x: x + 42, y: y + CARD_H - 17, size: 9, font: bold, color: COLORS.white });
       page.drawText(sanitize('SECONDARY SCHOOL · DAR ES SALAAM'), {
-        x: x + 40,
+        x: x + 42,
         y: y + CARD_H - 27,
         size: 4.8,
         font,
@@ -101,7 +105,7 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         opacity: 0.8,
       });
       page.drawText(sanitize('LEARNER IDENTITY CARD'), {
-        x: x + 40,
+        x: x + 42,
         y: y + CARD_H - 36,
         size: 5.4,
         font: bold,

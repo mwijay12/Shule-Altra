@@ -121,7 +121,7 @@ The dashboard is a full re-skin of the admin shell, not a static mock-up:
 
 | Surface | What it does |
 |---|---|
-| **Aurora shell** | Grouped sidebar with an animated active pill (Framer Motion `layoutId`), GSAP stagger on first paint, collapsible desktop rail (state persisted) and a spring mobile drawer. |
+| **Aurora shell** | Static, always-visible sidebar with a sliding active pill (Framer Motion `layoutId`), a quiet GSAP opacity stagger on first paint and a spring mobile drawer. The rail never resizes, so the content grid is stable. |
 | **Topbar** | ⌘K command palette (searches modules **and** learner records), reporting-window selector (7D / 30D / 90D / term), live notification stream derived from the ledger, light/midnight theme switch. |
 | **Route transitions** | `AnimatePresence` crossfade per pathname + GSAP `[data-reveal]` stagger for each section. |
 | **Command deck** | Three.js wireframe orb (pointer parallax, particle halo, WebGL-guarded fallback), animated KPI tiles with count-up + SVG progress rings + sparklines, collections chart with range filters, draggable follow-up queue. |
@@ -147,10 +147,20 @@ screenshot (no `html2canvas`, no print-to-image).
 | Class merit ranking | `src/lib/pdf/class-report.ts` | Analytics, Reports |
 | Attendance register | `src/lib/pdf/class-report.ts` | Analytics, Reports |
 | Learner ID cards (A4 2-up) | `src/lib/pdf/id-card.ts` | Student sheet, Reports |
+| Master timetable (A4 landscape) | `src/lib/pdf/timetable.ts` | Timetable → *Download PDF* |
+| 10 Reports-centre documents | `src/lib/pdf/tabular-report.ts` + `src/lib/reports/builders.ts` | Reports centre |
 
 ```bash
-npm run demo:pdf   # builds public/printables/*.pdf and verifies each one
+npm run demo:pdf       # builds public/printables/*.pdf and verifies each one
+npm run demo:reports   # builds all 10 Reports-centre PDFs from the demo dataset
 ```
+
+Every document carries the school crest (shield, open book, torch) drawn with
+vector paths — no bitmap logo, no HTML rendering. The timetable replaced the old
+`window.print()` call, so the printed grid is a real landscape PDF with break
+rows, rooms and the subject-allocation legend. The Reports centre no longer
+simulates generation: each card maps live Firestore rows through a pure builder
+in `src/lib/reports/builders.ts` and downloads a genuine PDF.
 
 Sample output is committed to `public/printables/` and linked from
 **Reports → Vector printables** so the documents can be opened in the browser.

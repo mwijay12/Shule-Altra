@@ -54,8 +54,6 @@ import { generateStudentProgressSummary } from "@/ai/flows/generate-student-prog
 import { scanStudentRegistration } from "@/ai/flows/scan-student-registration-flow"
 import { exportReportCardToWord, exportToExcel } from "@/lib/export-utils"
 import { buildReportCardData } from "@/lib/report-card-builder"
-import { downloadReportCard } from "@/lib/pdf/report-card"
-import { downloadIdCards } from "@/lib/pdf/id-card"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
@@ -264,6 +262,7 @@ export default function StudentsPage() {
         })
         return
       }
+      const { downloadReportCard } = await import("@/lib/pdf/report-card")
       await downloadReportCard({
         student: {
           id: selectedStudent.id,
@@ -295,6 +294,7 @@ export default function StudentsPage() {
   const handleDownloadIdCard = async () => {
     if (!selectedStudent) return
     try {
+      const { downloadIdCards } = await import("@/lib/pdf/id-card")
       await downloadIdCards(
         [
           {

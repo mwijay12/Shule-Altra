@@ -213,7 +213,9 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               stroke="hsl(214 85% 58%)"
               strokeWidth={2.4}
               fill="url(#collectedFill)"
-              animationDuration={750}
+              animationDuration={700}
+              animationEasing="ease-out"
+              animationBegin={40}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }}
             />
@@ -224,7 +226,9 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               strokeWidth={2}
               strokeDasharray="5 4"
               dot={false}
-              animationDuration={700}
+              animationDuration={650}
+              animationEasing="ease-out"
+              animationBegin={80}
             />
             <Line
               type="monotone"
@@ -233,7 +237,9 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               strokeWidth={1.4}
               strokeDasharray="2 5"
               dot={false}
-              animationDuration={700}
+              animationDuration={650}
+              animationEasing="ease-out"
+              animationBegin={120}
             />
           </ComposedChart>
         </ResponsiveContainer>
