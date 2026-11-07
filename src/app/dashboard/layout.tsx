@@ -28,6 +28,19 @@ export default function DashboardLayout({
     return () => window.clearTimeout(failsafe)
   }, [])
 
+  // Tell the server which role this session acts as, so document requests can be
+  // answered without trusting the UI. Cleared again on sign-out.
+  useEffect(() => {
+    if (!role || loading) return
+    fetch("/api/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ role }),
+    }).catch(() => {
+      /* the gate simply stays closed — no document is exposed by failing open */
+    })
+  }, [role, loading])
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace("/login")
@@ -42,6 +55,11 @@ export default function DashboardLayout({
       }
     }
   }, [loading, user, role, pathname, canAccess, router])
+
+  const handleSignOut = async () => {
+    await fetch("/api/session", { method: "DELETE" }).catch(() => undefined)
+    await signOut()
+  }
 
   if (loading || isInitialLoading) {
     return <InstitutionalLoader onComplete={() => setIsInitialLoading(false)} />
@@ -63,7 +81,7 @@ export default function DashboardLayout({
 
   return (
     <>
-      <AuroraShell role={role} canAccess={canAccess} signOut={signOut}>
+      <AuroraShell role={role} canAccess={canAccess} signOut={handleSignOut}>
         {children}
       </AuroraShell>
       <Toaster />

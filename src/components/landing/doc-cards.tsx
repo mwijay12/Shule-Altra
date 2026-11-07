@@ -9,7 +9,7 @@
  */
 
 import * as React from "react"
-import { FileText } from "lucide-react"
+import { FileText, Lock } from "lucide-react"
 import { mediaMatches, useLandingMotion } from "./motion"
 
 type Doc = {
@@ -18,6 +18,8 @@ type Doc = {
   stat: string
   file: string
   note: string
+  /** `signed-in` documents are not public files — the role gate decides */
+  access: "public" | "signed-in"
 }
 
 const DOCUMENTS: Doc[] = [
@@ -25,15 +27,17 @@ const DOCUMENTS: Doc[] = [
     name: "Fee statement",
     meta: "Financial · per learner",
     stat: "4 pages",
-    file: "/printables/reports/fee-ledger.pdf",
+    file: "/login?demo=1",
     note: "140 movements, running balance, verification status.",
+    access: "signed-in",
   },
   {
     name: "Report card",
     meta: "Academic · NECTA",
     stat: "Division I–IV",
-    file: "/printables/report-card.pdf",
+    file: "/login?demo=1",
     note: "Grade points, class position, teacher and head remarks.",
+    access: "signed-in",
   },
   {
     name: "Timetable",
@@ -41,13 +45,15 @@ const DOCUMENTS: Doc[] = [
     stat: "40 periods",
     file: "/printables/timetable.pdf",
     note: "Real subject weighting across five days, signed off.",
+    access: "public",
   },
   {
     name: "Master sheet",
     meta: "Academic · whole cohort",
     stat: "7 pages",
-    file: "/printables/reports/master-sheet.pdf",
+    file: "/login?demo=1",
     note: "150 learners by subject code, totals and averages.",
+    access: "signed-in",
   },
 ]
 
@@ -88,8 +94,8 @@ function DocCard({ doc, index, motionOn }: { doc: Doc; index: number; motionOn: 
       ref={ref}
       className="sd-doc"
       href={doc.file}
-      target="_blank"
-      rel="noreferrer"
+      target={doc.access === "public" ? "_blank" : undefined}
+      rel={doc.access === "public" ? "noreferrer" : undefined}
       style={{ transitionDelay: `${index * 30}ms` }}
     >
       <span className="sd-doc-glow" aria-hidden />
@@ -101,8 +107,14 @@ function DocCard({ doc, index, motionOn }: { doc: Doc; index: number; motionOn: 
       <span className="sd-doc-note">{doc.note}</span>
       <span className="sd-doc-foot">
         <span className="sd-doc-stat">{doc.stat}</span>
-        <span className="sd-doc-open" aria-hidden>
-          Open ↗
+        <span className="sd-doc-open">
+          {doc.access === "public" ? (
+            <>Open ↗</>
+          ) : (
+            <>
+              <Lock className="h-3 w-3" strokeWidth={2} aria-hidden /> Role-scoped
+            </>
+          )}
         </span>
       </span>
       <span className="sd-doc-stamp" aria-hidden>

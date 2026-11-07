@@ -17,7 +17,19 @@ import { buildReportPayload, buildPerLearnerScores, buildAttendanceRows } from '
 import { buildTabularReport } from '@/lib/pdf/tabular-report';
 import { buildClassRanking, buildAttendanceRegister } from '@/lib/pdf/class-report';
 
-const OUT_DIR = join(process.cwd(), 'public', 'printables', 'reports');
+const OUT_DIR = join(process.cwd(), 'private', 'printables', 'reports');
+
+/** One line per document: the page geometry, flagged if it is not uniform. */
+async function describeSize(bytes: Uint8Array) {
+  const doc = await PDFDocument.load(bytes);
+  const sizes = new Set(
+    doc.getPages().map((page) => {
+      const { width, height } = page.getSize();
+      return `${Math.round(width)}x${Math.round(height)}`;
+    })
+  );
+  return sizes.size === 1 ? `${doc.getPageCount()}p ${[...sizes][0]}` : `${doc.getPageCount()}p MIXED ${[...sizes].join('+')}`;
+}
 
 const REPORT_IDS = [
   'fee-ledger',
@@ -94,10 +106,19 @@ async function main() {
     writeFileSync(join(OUT_DIR, `${id}.pdf`), bytes);
     const reloaded = await PDFDocument.load(readFileSync(join(OUT_DIR, `${id}.pdf`)));
     const pages = reloaded.getPageCount();
-    const ok = rowCount > 0 && bytes.byteLength > 2_000 && pages >= 1;
+    // A report that starts landscape and turns portrait halfway is a bug you only
+    // see on page two — assert one page size for the whole document.
+    const sizes = new Set(
+      reloaded.getPages().map((page) => {
+        const { width, height } = page.getSize();
+        return `${Math.round(width)}x${Math.round(height)}`;
+      })
+    );
+    const uniform = sizes.size === 1;
+    const ok = rowCount > 0 && bytes.byteLength > 2_000 && pages >= 1 && uniform;
 
     console.log(
-      `${ok ? 'OK  ' : 'FAIL'} ${id.padEnd(18)} ${String(rowCount).padStart(4)} rows · ${String(bytes.byteLength).padStart(6)} bytes · ${pages} page(s) · ${payload.title}`
+      `${ok ? 'OK  ' : 'FAIL'} ${id.padEnd(18)} ${String(rowCount).padStart(4)} rows · ${String(bytes.byteLength).padStart(6)} bytes · ${pages} page(s) · ${[...sizes].join('+')}${uniform ? '' : ' ← MIXED ORIENTATION'} · ${payload.title}`
     );
     if (!ok) failures += 1;
   }
@@ -110,7 +131,7 @@ async function main() {
     className: 'All streams',
   });
   writeFileSync(join(OUT_DIR, 'class-rank.pdf'), ranking);
-  console.log(`OK   ${'class-rank'.padEnd(18)} ${String(rankingRows.length).padStart(4)} rows · ${String(ranking.byteLength).padStart(6)} bytes · merit ranking`);
+  console.log(`OK   ${'class-rank'.padEnd(18)} ${String(rankingRows.length).padStart(4)} rows · ${String(ranking.byteLength).padStart(6)} bytes · ${await describeSize(ranking)} · merit ranking`);
 
   const register = await buildAttendanceRegister(buildAttendanceRows(learners, attendanceRows), {
     className: 'All streams',
@@ -125,7 +146,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('\nALL 10 REPORTS GENERATE REAL VECTOR PDFS → public/printables/reports');
+  console.log('\nALL 10 REPORTS GENERATE REAL VECTOR PDFS → private/printables/reports');
 }
 
 main().catch((error) => {

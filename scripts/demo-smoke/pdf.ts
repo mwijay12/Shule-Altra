@@ -17,7 +17,7 @@ import { buildIdCards } from '@/lib/pdf/id-card';
 import { buildTimetablePdf } from '@/lib/pdf/timetable';
 import { buildTimetable } from '@/lib/timetable';
 
-const OUT_DIR = join(process.cwd(), 'public', 'printables');
+const OUT_DIR = join(process.cwd(), 'private', 'printables');
 
 const student = {
   id: 'ALT-2026-001',
@@ -164,7 +164,7 @@ async function main() {
     process.exitCode = 1;
     return;
   }
-  console.log('\nALL PRINTABLES BUILD AS REAL VECTOR PDFS → public/printables');
+  console.log('\nALL PRINTABLES BUILD AS REAL VECTOR PDFS → private/printables');
 }
 
 main().catch((error) => {

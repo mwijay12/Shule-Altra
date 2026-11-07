@@ -433,8 +433,10 @@ export function table(
 
   rows.forEach((row, rowIndex) => {
     if (ctx.cursorY < 120) {
-      // Continue on a fresh page with a repeated header.
-      ctx.page = ctx.doc.addPage(A4);
+      // Continue on a fresh page of the SAME size, with a repeated header.
+      // This used to hard-code A4, so a landscape report turned portrait from
+      // page two onward (the master sheet was the visible casualty).
+      ctx.page = ctx.doc.addPage([ctx.width, ctx.height]);
       ctx.pageNumber += 1;
       ctx.cursorY = ctx.height - 70;
       rect(ctx, margin, ctx.cursorY - 4, ctx.width - margin * 2, rowHeight, { color: COLORS.navy });

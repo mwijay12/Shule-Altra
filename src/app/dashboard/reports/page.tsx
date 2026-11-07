@@ -10,6 +10,14 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import {
+  GENERATED_DOCUMENTS,
+  ROLE_LABEL,
+  canGenerateDocument,
+  canOpenDocument,
+  type DocRole,
+} from "@/lib/documents/registry";
 import {
   DollarSign,
   GraduationCap,
@@ -197,6 +205,9 @@ export default function ReportsPage() {
     }
   };
 
+  const { role: authRole } = useAuth();
+  const role = (authRole ?? null) as DocRole | null;
+
   const printables = [
     {
       id: "ranking",
@@ -253,7 +264,20 @@ export default function ReportsPage() {
     },
   ];
 
+  const allowedPrintables = printables.filter((job) => canGenerateDocument(role, job.id));
+
   const runPrintable = async (job: (typeof printables)[number]) => {
+    if (!canGenerateDocument(role, job.id)) {
+      const policy = GENERATED_DOCUMENTS[job.id];
+      toast({
+        variant: "destructive",
+        title: "Not your document to build",
+        description: `“${job.title}” carries ${policy?.reason.toLowerCase() ?? "restricted data"}, so it stays with ${(policy?.roles ?? [])
+          .map((allowed) => ROLE_LABEL[allowed])
+          .join(", ")}.`,
+      });
+      return;
+    }
     setLoadingId(job.id);
     try {
       await job.run();
@@ -386,7 +410,7 @@ export default function ReportsPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {printables.map((job) => (
+          {allowedPrintables.map((job) => (
             <div key={job.id} className="glass-panel rounded-2xl p-4 flex flex-col gap-2">
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
                 <job.icon className="h-4 w-4" />
@@ -406,6 +430,15 @@ export default function ReportsPage() {
           ))}
         </div>
 
+        {allowedPrintables.length < printables.length && (
+          <p className="flex items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[9px] font-medium leading-relaxed text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+            {printables.length - allowedPrintables.length} of these builders are hidden for your role
+            ({role ? ROLE_LABEL[role] : "guest"}) — fee statements need finance, ID sheets need an
+            administrator.
+          </p>
+        )}
+
         <div className="flex flex-wrap items-center gap-2 pt-1">
           <span className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">Sample output:</span>
           {[
@@ -416,17 +449,29 @@ export default function ReportsPage() {
             { file: "learner-id-cards.pdf", label: "ID sheet" },
             { file: "timetable.pdf", label: "Timetable" },
             { file: "reports/fee-ledger.pdf", label: "Ledger report" },
-          ].map((sample) => (
-            <a
-              key={sample.file}
-              href={`/printables/${sample.file}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
-            >
-              {sample.label}
-            </a>
-          ))}
+          ].map((sample) => {
+            const allowed = canOpenDocument(role, sample.file);
+            return allowed ? (
+              <a
+                key={sample.file}
+                href={`/printables/${sample.file}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+              >
+                {sample.label}
+              </a>
+            ) : (
+              <span
+                key={sample.file}
+                title="Restricted to another role"
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground/50"
+              >
+                <ShieldCheck className="h-2.5 w-2.5" />
+                {sample.label}
+              </span>
+            );
+          })}
         </div>
       </div>
 

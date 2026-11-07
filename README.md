@@ -35,7 +35,7 @@ all behave normally.
 * **Vector printables:** `npm run demo:pdf` + `npm run demo:reports` generate fee
   statements, report cards, merit rankings, attendance registers, A4 ID cards, the
   master timetable and all 10 Reports-centre documents with `pdf-lib` (real text,
-  school crest, no screenshots) → samples in `public/printables/`
+  school crest, no screenshots) → samples in `private/printables/`, served through the role gate (`npm run demo:docs`)
 * **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`, `npm run demo:pdf`
 * **Back to real Firebase:** set `NEXT_PUBLIC_DEMO_MODE=false` and fill `.env.example`
 

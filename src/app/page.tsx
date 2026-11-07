@@ -388,8 +388,9 @@ function Landing() {
             </Reveal>
             <Reveal delay={130}>
               <p className="sd-note">
-                Open any card. These are the real exports from the demo school — set in vector
-                type with pdf-lib, carrying the school crest, not screenshots of a dashboard.
+                Real exports from the demo school — set in vector type with pdf-lib, crest and all,
+                not screenshots. The timetable is public; everything that names a learner, a
+                payment or a staff member sits behind that person's role, inside the demo.
               </p>
             </Reveal>
           </header>

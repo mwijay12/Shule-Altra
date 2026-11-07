@@ -133,7 +133,7 @@ scroll). One variable, fanned out everywhere — colour, labels, progress, motio
 | **07:40 Register** | Four numbers counted up on view, from the demo school's real data. |
 | **09:10 Timetable** | The index *as a timetable*: times down the left, red pen mark on the hovered row, and a photograph that follows the pointer. |
 | **11:20 The day** | Sticky photographic stage; three moments of one day cross-fade with the text steps, ticks on the right. |
-| **14:00 The paper** | Four real exports from `/public/printables`, tilting 5° under the pointer with a wax-seal "Generated" stamp. |
+| **14:00 The paper** | Four real exports, served through the role gate (see §8.1), tilting 5° under the pointer with a wax-seal "Generated" stamp. |
 | **16:20 Interlude** | Full-bleed school facade, parallax within the section, one line of copy. |
 | **16:05 The gate** | Forest closing statement with a marigold spotlight that follows the pointer; PDPA / NECTA / audit trail. |
 | **Footer** | Giant outlined wordmark marquee, columns, demo credentials. |
@@ -208,9 +208,15 @@ screenshot (no `html2canvas`, no print-to-image).
 | Master timetable (A4 landscape) | `src/lib/pdf/timetable.ts` | Timetable → *Download PDF* |
 | 10 Reports-centre documents | `src/lib/pdf/tabular-report.ts` + `src/lib/reports/builders.ts` | Reports centre |
 
+Every document keeps one page geometry for its whole run: the master sheet is
+A4 landscape on all seven pages, and `npm run demo:reports` now fails if a
+report mixes sizes (it used to — page one landscape, the rest portrait, because
+the table continuation hard-coded A4).
+
 ```bash
-npm run demo:pdf       # builds public/printables/*.pdf and verifies each one
+npm run demo:pdf       # builds private/printables/*.pdf and verifies each one
 npm run demo:reports   # builds all 10 Reports-centre PDFs from the demo dataset
+npm run demo:docs      # checks the document access policy (see §8.1)
 ```
 
 Every document carries the school crest (shield, open book, torch) drawn with
@@ -220,10 +226,50 @@ rows, rooms and the subject-allocation legend. The Reports centre no longer
 simulates generation: each card maps live Firestore rows through a pure builder
 in `src/lib/reports/builders.ts` and downloads a genuine PDF.
 
-Sample output is committed to `public/printables/` and linked from
-**Reports → Vector printables** so the documents can be opened in the browser.
+Sample output is committed to `private/printables/` — deliberately *not* under
+`public/` — and served through the role gate described below.
 The ID sheet embeds a QR matrix (raster image XObject) for verification; everything
 else — including tables, rules, crest and crop marks — is drawn as vector content.
+
+## 8.1 Who is allowed to open a document
+
+The printables used to sit in `public/`, which made the fee ledger, the
+defaulters register and the staff establishment world-readable: one guessed URL
+and the file downloaded, with no session and no role. That is the failure mode
+PDPA alignment is supposed to rule out, so the files moved to
+`private/printables/` and every request now goes through
+`/api/documents/[...slug]`.
+
+One register decides everything — `src/lib/documents/registry.ts`:
+
+| Sensitivity | Rule | Documents |
+|---|---|---|
+| `public` | anyone, signed in or not | timetable, subject performance matrix (aggregates only, nobody named) |
+| `internal` | a session whose role is on the list | report card, class ranking, attendance registers, asset register |
+| `restricted` | named roles only | fee ledger, fee statements, defaulters, expenditure, canteen log, master grade sheet, learner ID sheet, staff establishment |
+
+The role travels as an httpOnly cookie (`altra.role`), written by
+`POST /api/session` when the hub resolves who is signed in and cleared on sign
+out. `src/app/dashboard/layout.tsx` posts it; the route reads it; nothing in the
+browser can make a refused document appear.
+
+```
+guest       → timetable, subject analysis          (2 of 16)
+teacher     → academic set + timetable             (9 of 16)
+accountant  → finance set + timetable              (8 of 16)
+bursar      → finance set + timetable              (8 of 16)
+admin       → everything                           (16 of 16)
+```
+
+Old `/printables/...` links are rewritten in `next.config.ts` to the gated
+route, so nothing 404s and nothing bypasses the check. A refusal renders a
+branded page that names the role you have, the role the document needs and why —
+not a JSON error. `npm run demo:docs` asserts the whole matrix, that every
+registered file exists, that no unregistered PDF is reachable, and that no
+restricted document lists `VIEWER`.
+
+Inside the hub the same registry drives the UI: the Reports centre hides the
+builders a role may not run and greys the sample chips it may not open.
 
 ## 9. Verification & CI
 

@@ -1876,6 +1876,9 @@ html[data-scroll-locked] .app-scroll {
   color: rgba(15, 23, 42, 0.6);
 }
 .sd-doc-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.1em;

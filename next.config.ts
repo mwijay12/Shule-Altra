@@ -34,6 +34,20 @@ const webpackAliases = Object.fromEntries(
 const nextConfig: NextConfig = {
   // Allows the hosted preview proxy (and localhost) to load the dev server
   allowedDevOrigins: ['*.e2b.app', '*.arena.ai', 'localhost', '127.0.0.1'],
+  // Documents live outside `public/` on purpose (see src/lib/documents/registry.ts),
+  // so the serverless bundle has to carry them or the route 503s in production.
+  outputFileTracingIncludes: {
+    '/api/documents/**': ['./private/printables/**'],
+  },
+  async rewrites() {
+    return {
+      // Every old printable URL now goes through the role gate instead of the
+      // static file handler. `beforeFiles` so it wins over the filesystem.
+      beforeFiles: [{ source: '/printables/:path*', destination: '/api/documents/:path*' }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
