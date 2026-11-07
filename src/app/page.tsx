@@ -1,27 +1,37 @@
 "use client"
 
 /**
- * @fileOverview Public landing page.
+ * @fileOverview Public landing page — "one school day, on the timetable".
  *
- * Direction: institutional paper, ink type, one bold field colour. The whole
- * page follows a single motion verb — *settle* — and carries exactly one
- * signature interaction (the registrar's index with its live preview), one
- * idle system (the ledger that keeps recording) and one contrasting voice
- * (an italic serif against a tight grotesk).
+ * The concept owns the page: scroll progress is the school clock (06:40 →
+ * 16:40), each section is a period, and the red pen rule at the top fills as the
+ * day is worked through. Everything else — the paper's daylight, the bell
+ * marquee, the photographs — derives from that one variable.
  */
 
 import * as React from "react"
 import Link from "next/link"
 import { DisplayLines, Reveal, useCountUp } from "@/components/landing/reveal"
 import { LandingLoader } from "@/components/landing/landing-loader"
-import { LedgerPanel } from "@/components/landing/ledger-panel"
-import { IndexList } from "@/components/landing/index-list"
-import { DayNarrative } from "@/components/landing/day-narrative"
 import { LandNav } from "@/components/landing/nav"
 import { NAV_LINKS } from "@/components/landing/links"
-import { Banknote, CalendarCheck, GraduationCap, ShieldCheck, Users } from "lucide-react"
+import { MotionProvider, MotionToggle, useLandingMotion } from "@/components/landing/motion"
+import { SchoolClock } from "@/components/landing/clock"
+import { Marquee } from "@/components/landing/marquee"
+import { Hero } from "@/components/landing/hero"
+import { Timetable } from "@/components/landing/timetable"
+import { DayStory } from "@/components/landing/day-story"
+import { DocCards } from "@/components/landing/doc-cards"
+import { Interlude } from "@/components/landing/interlude"
+import {
+  Banknote,
+  CalendarCheck,
+  GraduationCap,
+  ShieldCheck,
+  Users,
+} from "lucide-react"
 
-const TICKER = [
+const BELL = [
   "EVERY REGISTER",
   "EVERY SHILLING",
   "ON RECORD",
@@ -30,72 +40,171 @@ const TICKER = [
   "VECTOR DOCUMENTS",
 ]
 
-const DOCUMENTS = [
-  {
-    name: "Fee statement",
-    meta: "Financial · per learner",
-    stat: "4 pages",
-    file: "/printables/reports/fee-ledger.pdf",
-    note: "140 movements, running balance, verification status.",
-  },
-  {
-    name: "Report card",
-    meta: "Academic · NECTA",
-    stat: "Division I–IV",
-    file: "/printables/report-card.pdf",
-    note: "Grade points, class position, teacher and head remarks.",
-  },
-  {
-    name: "Timetable",
-    meta: "Operations · A4 landscape",
-    stat: "40 periods",
-    file: "/printables/timetable.pdf",
-    note: "Real subject weighting across five days, signed off.",
-  },
-  {
-    name: "Master sheet",
-    meta: "Academic · whole cohort",
-    stat: "7 pages",
-    file: "/printables/reports/master-sheet.pdf",
-    note: "150 learners by subject code, totals and averages.",
-  },
-]
-
-function StatCell({
+function Stat({
   target,
   suffix,
   label,
+  note,
   icon,
   format,
 }: {
   target: number
   suffix?: string
   label: string
+  note: string
   icon: React.ReactNode
   format?: (n: number) => string
 }) {
   const { ref, value } = useCountUp(target)
   const text = format ? format(value) : Math.round(value).toLocaleString("en-US")
   return (
-    <div className="land-stat">
-      <span className="land-stat-icon" aria-hidden>
+    <div className="sd-stat">
+      <span className="sd-stat-icon" aria-hidden>
         {icon}
       </span>
-      <span className="land-stat-body">
-        <span className="land-stat-value" ref={ref}>
-          {text}
-          {suffix ? <em>{suffix}</em> : null}
-        </span>
-        <span className="land-label">{label}</span>
+      <span className="sd-stat-value" ref={ref}>
+        {text}
+        {suffix ? <em>{suffix}</em> : null}
       </span>
+      <span className="sd-stat-label">{label}</span>
+      <span className="sd-stat-note">{note}</span>
     </div>
   )
 }
 
-export default function LandingPage() {
+function Closing() {
+  const ref = React.useRef<HTMLElement | null>(null)
+  const { on } = useLandingMotion()
+
+  React.useEffect(() => {
+    const node = ref.current
+    if (!node || !on) return
+    const onMove = (event: PointerEvent) => {
+      const rect = node.getBoundingClientRect()
+      node.style.setProperty("--mx", `${(((event.clientX - rect.left) / rect.width) * 100).toFixed(2)}%`)
+      node.style.setProperty("--my", `${(((event.clientY - rect.top) / rect.height) * 100).toFixed(2)}%`)
+    }
+    node.addEventListener("pointermove", onMove)
+    return () => node.removeEventListener("pointermove", onMove)
+  }, [on])
+
+  return (
+    <section className="sd-close" id="compliance" ref={ref} data-period="16:05 · The gate">
+      <span className="sd-close-spot" aria-hidden />
+      <div className="sd-close-inner">
+        <Reveal>
+          <span className="sd-label sd-label-light">16:05 — the gate</span>
+        </Reveal>
+
+        <Reveal delay={80}>
+          <h2 className="sd-close-title">
+            Sovereign by default,
+            <br />
+            <em className="sd-serif">auditable</em> by design.
+          </h2>
+        </Reveal>
+
+        <div className="sd-close-facts">
+          {[
+            ["PDPA 2022", "Data Protection Act alignment, role-scoped access, no learner record outside the school's own store."],
+            ["NECTA", "CSEE and FTNA matrices, divisions, grade points and class position — computed, not retyped."],
+            ["Audit trail", "Every export, edit and payment match is written to the log with the person who did it."],
+          ].map(([title, body], index) => (
+            <Reveal key={title} delay={120 + index * 70} mask={false}>
+              <div className="sd-fact">
+                <span className="sd-fact-title">{title}</span>
+                <span className="sd-fact-body">{body}</span>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+
+        <Reveal delay={300}>
+          <div className="sd-close-actions">
+            <Link href="/login?demo=1" className="sd-cta sd-cta-inverse">
+              <span className="sd-cta-fill" aria-hidden />
+              <span className="sd-cta-label">
+                Open the demo school <span aria-hidden>↗</span>
+              </span>
+            </Link>
+            <span className="sd-close-note">
+              admin@shule.pro · demo2026 · no sign-up
+            </span>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  )
+}
+
+function Footer() {
+  return (
+    <footer className="sd-footer">
+      <Marquee
+        items={["SHULE ALTRA", "INSTITUTIONAL OS", "DAR ES SALAAM", "2026"]}
+        separator="·"
+        speed={52}
+        className="sd-wordmark"
+      />
+
+      <div className="sd-footer-grid">
+        <div className="sd-footer-col">
+          <span className="sd-label">The product</span>
+          <p>
+            A school management system built for Tanzanian secondary schools: one
+            register, one ledger, one set of documents that hold up in front of a
+            parent, a board or an auditor.
+          </p>
+        </div>
+        <div className="sd-footer-col">
+          <span className="sd-label">Walk through it</span>
+          <nav aria-label="Footer">
+            {NAV_LINKS.map((item) => (
+              <a key={item.href} href={item.href}>
+                {item.label}
+              </a>
+            ))}
+            <Link href="/dashboard/help">Support</Link>
+          </nav>
+        </div>
+        <div className="sd-footer-col">
+          <span className="sd-label">Demo credentials</span>
+          <p className="sd-footer-mono">
+            admin@shule.pro
+            <br />
+            teacher@shule.pro
+            <br />
+            bursar@shule.pro
+            <br />
+            <b>demo2026</b>
+          </p>
+        </div>
+        <div className="sd-footer-col">
+          <span className="sd-label">Where</span>
+          <p className="sd-footer-mono">
+            Dar es Salaam
+            <br />
+            06°48′S 39°17′E
+            <br />
+            Tanzania
+          </p>
+        </div>
+      </div>
+
+      <div className="sd-footer-base">
+        <span>© 2026 Shule Altra · V3.26</span>
+        <span>PDPA 2022 · NECTA · ClickPesa</span>
+        <span>Every document generated, none photographed</span>
+      </div>
+    </footer>
+  )
+}
+
+function Landing() {
   const [ready, setReady] = React.useState(false)
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [scrolled, setScrolled] = React.useState(false)
+  const { on } = useLandingMotion()
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -111,21 +220,21 @@ export default function LandingPage() {
     }
   }, [])
 
-  const closeMenu = () => setMenuOpen(false)
-
   return (
-    <div className="landing">
+    <div className="landing" data-motion={on ? "on" : "off"}>
       {!ready && <LandingLoader onDone={() => setReady(true)} />}
 
-      <a className="land-skip uh" href="#main">
+      <a className="sd-skip uh" href="#main">
         Skip to content
       </a>
 
-      <header className="land-header" data-scrolled={scrolled ? "true" : "false"}>
-        <div className="land-header-inner">
-          <Link href="/" className="land-brand" aria-label="Shule Altra — home">
-            <span className="land-brand-mark" aria-hidden />
-            <span className="land-brand-text">
+      <SchoolClock />
+
+      <header className="sd-header" data-scrolled={scrolled ? "true" : "false"}>
+        <div className="sd-header-inner">
+          <Link href="/" className="sd-brand" aria-label="Shule Altra — home">
+            <span className="sd-brand-mark" aria-hidden />
+            <span className="sd-brand-text">
               Shule Altra
               <em>Institutional OS · 2026</em>
             </span>
@@ -133,24 +242,19 @@ export default function LandingPage() {
 
           <LandNav />
 
-          <div className="land-header-actions">
-            <Link href="/login" className="land-link-quiet">
-              Staff entry
-            </Link>
-            <Link href="/login" className="land-icon-btn" aria-label="Staff portal">
-              <ShieldCheck className="h-4 w-4" strokeWidth={1.8} />
-            </Link>
-            <Link href="/login?demo=1" className="land-cta land-cta-small">
-              <span className="land-cta-fill" aria-hidden />
-              <span className="land-cta-label">
+          <div className="sd-header-actions">
+            <MotionToggle />
+            <Link href="/login?demo=1" className="sd-cta sd-cta-small">
+              <span className="sd-cta-fill" aria-hidden />
+              <span className="sd-cta-label">
                 Live demo <span aria-hidden>↗</span>
               </span>
             </Link>
             <button
               type="button"
-              className="land-burger"
+              className="sd-burger"
               aria-expanded={menuOpen}
-              aria-controls="land-mobile-menu"
+              aria-controls="sd-mobile-menu"
               onClick={() => setMenuOpen((open) => !open)}
             >
               <span>{menuOpen ? "Close" : "Menu"}</span>
@@ -159,252 +263,152 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <div id="land-mobile-menu" className="land-mobile" data-open={menuOpen ? "true" : "false"}>
+      <div id="sd-mobile-menu" className="sd-mobile" data-open={menuOpen ? "true" : "false"}>
         <nav aria-label="Mobile">
-          {NAV_LINKS.map((item, i) => (
-            <a key={item.href} href={item.href} onClick={closeMenu} style={{ transitionDelay: `${i * 40}ms` }}>
+          {NAV_LINKS.map((item, index) => (
+            <a
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              style={{ transitionDelay: `${index * 40}ms` }}
+            >
               <span>{item.label}</span>
-              <em>0{i + 1}</em>
+              <em>0{index + 1}</em>
             </a>
           ))}
-          <Link href="/login?demo=1" onClick={closeMenu}>
+          <Link href="/login?demo=1" onClick={() => setMenuOpen(false)}>
             <span>Open the live demo</span>
             <em>↗</em>
           </Link>
         </nav>
-        <p className="land-mobile-foot">Dar es Salaam · 06°48′S 39°17′E</p>
+        <p className="sd-mobile-foot">Dar es Salaam · 06°48′S 39°17′E</p>
       </div>
 
       <main id="main">
-        {/* ── Hero ─────────────────────────────────────────────── */}
-        <section className="land-hero">
-          <div className="land-hero-meta">
-            <span className="land-label">Tanzania · secondary schools</span>
-            <span className="land-label land-hero-meta-right">Dar es Salaam · 06°48′S 39°17′E</span>
-          </div>
+        <Hero ready={ready} />
 
-          <h1 className="land-hero-title">
-            <DisplayLines
-              active={ready}
-              stagger={110}
-              lines={[
-                <span key="1">Every register,</span>,
-                <span key="2">every shilling,</span>,
-                <span key="3" className="land-serif">
-                  on record.
-                </span>,
-              ]}
-            />
-          </h1>
-
-          <div className="land-hero-grid">
-            <div className="land-hero-copy">
-              <Reveal delay={260}>
-                <p className="land-lede">
-                  Shule Altra is the institutional operating system for Tanzanian secondary schools.
-                  Learners, fees, NECTA matrices, attendance and the documents a school actually
-                  hands over — kept in one sovereign record.
-                </p>
-              </Reveal>
-
-              <Reveal delay={340}>
-                <div className="land-hero-actions">
-                  <Link href="/login?demo=1" className="land-cta">
-                    <span className="land-cta-fill" aria-hidden />
-                    <span className="land-cta-label">
-                      Open the live demo <span aria-hidden>↗</span>
-                    </span>
-                  </Link>
-                  <a href="#documents" className="land-ghost">
-                    <span>See the documents</span>
-                    <span aria-hidden>↓</span>
-                  </a>
-                </div>
-              </Reveal>
-
-              <Reveal delay={420} mask={false}>
-                <p className="land-hero-footnote">
-                  No screenshots, no photographed print-outs. Every document is generated,
-                  set in vector type, and carries the school crest.
-                </p>
-              </Reveal>
-            </div>
-
-            <Reveal className="land-hero-ledger" delay={200} mask={false}>
-              <LedgerPanel />
-            </Reveal>
-          </div>
-        </section>
-
-        {/* ── Field band ───────────────────────────────────────── */}
-        <div className="land-ticker" aria-hidden>
-          <div className="land-ticker-track">
-            {[0, 1].map((copy) => (
-              <div className="land-ticker-run" key={copy}>
-                {TICKER.map((word) => (
-                  <span key={`${copy}-${word}`}>
-                    {word}
-                    <i>◆</i>
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
+        <div id="bell" className="sd-bell" aria-hidden>
+          <Marquee items={BELL} speed={86} className="sd-bell-a" />
+          <Marquee items={BELL} speed={62} reverse className="sd-bell-b" />
         </div>
 
-        {/* ── Numbers ──────────────────────────────────────────── */}
-        <section className="land-stats" aria-label="System at a glance">
-          <StatCell target={150} label="Learners on the register" icon={<Users className="h-4 w-4" strokeWidth={1.7} />} />
-          <StatCell target={2788} label="Scores assessed this term" icon={<GraduationCap className="h-4 w-4" strokeWidth={1.7} />} />
-          <StatCell
-            target={88.2}
-            suffix="%"
-            label="Presence across all streams"
-            icon={<CalendarCheck className="h-4 w-4" strokeWidth={1.7} />}
-            format={(n) => n.toFixed(1)}
-          />
-          <StatCell
-            target={19500000}
-            label="Fees reconciled · TZS"
-            icon={<Banknote className="h-4 w-4" strokeWidth={1.7} />}
-            format={(n) => `${(n / 1_000_000).toFixed(1)}M`}
-          />
-        </section>
-
-        {/* ── Index ────────────────────────────────────────────── */}
-        <section className="land-section" id="index">
-          <div className="land-section-head">
+        <section className="sd-register" data-period="07:40 · Registration">
+          <header className="sd-head">
             <Reveal>
-              <span className="land-label">01 — The index</span>
+              <span className="sd-label">07:40 — registration</span>
             </Reveal>
-            <Reveal delay={80}>
-              <h2 className="land-h2">
-                Six modules, one <em className="land-serif">record</em>.
+            <Reveal delay={70}>
+              <h2 className="sd-h2">
+                The register is <em className="sd-serif">the school</em>.
               </h2>
             </Reveal>
-            <Reveal delay={140}>
-              <p className="land-section-note">
-                Point at a row to see what it holds today. Everything below is live demo data,
-                not a mock-up.
+            <Reveal delay={130}>
+              <p className="sd-note">
+                Four numbers, true this minute in the demo school — not a marketing estimate.
+                Every one of them comes from the same record the documents are printed from.
               </p>
             </Reveal>
+          </header>
+
+          <div className="sd-stats">
+            <Stat
+              target={150}
+              label="Learners on the register"
+              note="Form 1–4 · day and boarding"
+              icon={<Users className="h-4 w-4" strokeWidth={1.7} />}
+            />
+            <Stat
+              target={2788}
+              label="Scores assessed this term"
+              note="CSEE and FTNA matrices"
+              icon={<GraduationCap className="h-4 w-4" strokeWidth={1.7} />}
+            />
+            <Stat
+              target={88.2}
+              suffix="%"
+              label="Presence across all streams"
+              note="900 register entries"
+              icon={<CalendarCheck className="h-4 w-4" strokeWidth={1.7} />}
+              format={(n) => n.toFixed(1)}
+            />
+            <Stat
+              target={19500000}
+              label="Fees reconciled · TZS"
+              note="ClickPesa · Beem · bank · cash"
+              icon={<Banknote className="h-4 w-4" strokeWidth={1.7} />}
+              format={(n) => `${(n / 1_000_000).toFixed(1)}M`}
+            />
           </div>
-          <IndexList />
         </section>
 
-        {/* ── Method ───────────────────────────────────────────── */}
-        <section className="land-section land-section-dark" id="method">
-          <div className="land-section-head">
+        <section className="sd-section" id="timetable" data-period="09:10 · Period two">
+          <header className="sd-head">
             <Reveal>
-              <span className="land-label">02 — Method</span>
+              <span className="sd-label">09:10 — period two</span>
             </Reveal>
-            <Reveal delay={80}>
-              <h2 className="land-h2">
-                One day becomes <em className="land-serif">one record</em>.
+            <Reveal delay={70}>
+              <h2 className="sd-h2">
+                Six periods, <em className="sd-serif">one timetable</em>.
               </h2>
             </Reveal>
-          </div>
-          <DayNarrative />
+            <Reveal delay={130}>
+              <p className="sd-note">
+                The product, read the way a school reads it. Point at a period — it opens onto the
+                photograph that belongs to it.
+              </p>
+            </Reveal>
+          </header>
+          <Timetable />
         </section>
 
-        {/* ── Documents ────────────────────────────────────────── */}
-        <section className="land-section" id="documents">
-          <div className="land-section-head">
+        <section className="sd-section sd-section-day" id="day" data-period="11:20 · Period four">
+          <header className="sd-head">
             <Reveal>
-              <span className="land-label">03 — Documents</span>
+              <span className="sd-label">11:20 — period four</span>
             </Reveal>
-            <Reveal delay={80}>
-              <h2 className="land-h2">
-                Paperwork that <em className="land-serif">holds up</em>.
+            <Reveal delay={70}>
+              <h2 className="sd-h2">
+                One day becomes <em className="sd-serif">one record</em>.
               </h2>
             </Reveal>
-            <Reveal delay={140}>
-              <p className="land-section-note">
-                Open any of these — they are the real exports from the demo school, generated
-                with pdf-lib from live records.
-              </p>
-            </Reveal>
-          </div>
-
-          <div className="land-docs">
-            {DOCUMENTS.map((doc, i) => (
-              <Reveal key={doc.name} delay={i * 70} mask={false}>
-                <a className="land-doc-card" href={doc.file} target="_blank" rel="noreferrer">
-                  <span className="land-doc-card-top">
-                    <span className="land-label">{doc.meta}</span>
-                    <span aria-hidden>↗</span>
-                  </span>
-                  <span className="land-doc-card-name">{doc.name}</span>
-                  <span className="land-doc-card-note">{doc.note}</span>
-                  <span className="land-doc-card-stat">{doc.stat}</span>
-                  <span className="land-doc-stamp" aria-hidden>
-                    Generated
-                  </span>
-                </a>
-              </Reveal>
-            ))}
-          </div>
+          </header>
+          <DayStory />
         </section>
 
-        {/* ── Compliance ───────────────────────────────────────── */}
-        <section className="land-statement" id="compliance">
-          <div className="land-statement-inner">
+        <section className="sd-section" id="documents" data-period="14:00 · Period six">
+          <header className="sd-head">
             <Reveal>
-              <span className="land-label land-label-light">04 — Compliance</span>
+              <span className="sd-label">14:00 — period six</span>
             </Reveal>
-            <Reveal delay={80}>
-              <p className="land-statement-line">
-                Sovereign by default, <em className="land-serif">auditable</em> by design.
+            <Reveal delay={70}>
+              <h2 className="sd-h2">
+                The paper a school <em className="sd-serif">actually signs</em>.
+              </h2>
+            </Reveal>
+            <Reveal delay={130}>
+              <p className="sd-note">
+                Open any card. These are the real exports from the demo school — set in vector
+                type with pdf-lib, carrying the school crest, not screenshots of a dashboard.
               </p>
             </Reveal>
-            <div className="land-statement-facts">
-              {[
-                ["PDPA 2022", "Data Protection Act alignment, role-scoped access."],
-                ["NECTA", "CSEE and FTNA matrices, divisions and points."],
-                ["Audit trail", "Every export and edit written to the log."],
-              ].map(([title, body], i) => (
-                <Reveal key={title} delay={120 + i * 80} mask={false}>
-                  <div className="land-fact">
-                    <span className="land-fact-title">{title}</span>
-                    <span className="land-fact-body">{body}</span>
-                  </div>
-                </Reveal>
-              ))}
-            </div>
-            <Reveal delay={320}>
-              <Link href="/login?demo=1" className="land-cta land-cta-inverse">
-                <span className="land-cta-fill" aria-hidden />
-                <span className="land-cta-label">
-                  Enter the demo school <span aria-hidden>↗</span>
-                </span>
-              </Link>
-            </Reveal>
-          </div>
+          </header>
+          <DocCards />
         </section>
+
+        <Interlude />
+
+        <Closing />
       </main>
 
-      {/* ── Footer ─────────────────────────────────────────────── */}
-      <footer className="land-footer">
-        <div className="land-footer-grid">
-          <div>
-            <span className="land-label">Shule Altra</span>
-            <p className="land-footer-line">
-              Built by Altra Node for Tanzanian secondary schools. Dar es Salaam.
-            </p>
-          </div>
-          <div className="land-footer-links">
-            <a href="#index">Index</a>
-            <a href="#method">Method</a>
-            <a href="#documents">Documents</a>
-            <Link href="/dashboard/help">Support</Link>
-          </div>
-        </div>
-        <div className="land-footer-base">
-          <span>© 2026 Shule Altra · V2.26.ALTRA</span>
-          <span>admin@shule.pro · demo2026</span>
-          <span>PDPA 2022 · NECTA · ClickPesa</span>
-        </div>
-      </footer>
+      <Footer />
     </div>
+  )
+}
+
+export default function LandingPage() {
+  return (
+    <MotionProvider>
+      <Landing />
+    </MotionProvider>
   )
 }

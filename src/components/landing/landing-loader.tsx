@@ -7,7 +7,7 @@
  */
 
 import * as React from "react"
-import { prefersReducedMotion } from "@/components/landing/reveal"
+import { motionEnabled } from "@/components/landing/reveal"
 
 export function LandingLoader({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = React.useState(0)
@@ -23,7 +23,7 @@ export function LandingLoader({ onDone }: { onDone: () => void }) {
   }, [onDone])
 
   React.useEffect(() => {
-    if (prefersReducedMotion()) {
+    if (!motionEnabled()) {
       onDone()
       return
     }

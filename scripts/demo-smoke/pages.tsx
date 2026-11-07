@@ -175,7 +175,7 @@ async function main() {
       await new Promise((resolve) => setTimeout(resolve, 1700));
     });
     const text = String(container.textContent || '');
-    const missing = ['Every register', 'on record', 'The index', 'Documents'].filter(
+    const missing = ['One school day', 'every shilling', 'Six periods', 'Documents', 'PDPA'].filter(
       (needle) => !text.toLowerCase().includes(needle.toLowerCase())
     );
     if (missing.length > 0) throw new Error(`landing missing copy: ${missing.join(', ')}`);

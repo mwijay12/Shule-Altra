@@ -117,30 +117,37 @@ NEXT_PUBLIC_DEMO_MODE=false npm run dev
 
 ## 6. The public landing page
 
-The front door follows the same design language as the reference dashboard we
-benchmarked against: warm paper (`#F3EDE2`) with two soft field washes, soft
-white cards at a 28px radius, a black sliding pill for navigation, and three
-field colours — rust `#C2421B`, forest `#1D5A48`, marigold `#F2C230`. Space
-Grotesk carries the display, Instrument Serif italic is the one contrasting
-voice, JetBrains Mono handles labels and figures.
+The front door has **a concept, not a theme**: *one school day, on the
+timetable*. Scroll progress is the school clock (06:40 → 16:40); every section
+is a period; the red pen rule under the header fills as the day is worked
+through; and the paper itself warms as the hours pass (`--day`, driven by
+scroll). One variable, fanned out everywhere — colour, labels, progress, motion.
 
 | Piece | What it does |
 |---|---|
-| **Loader** | A real progress counter (0–100, tabular) that hands off with a two-panel curtain. Skipped for `prefers-reduced-motion`, hard-capped at 2s. |
-| **Header** | Segmented nav whose black pill *slides* between items as you scroll (scroll-spy + one Framer `layoutId`), plus a round staff-portal button and the demo CTA. |
-| **Hero** | Three clipped display lines that settle into the grid, a live ledger card that keeps recording while the pointer is still, and a footnote stating the no-screenshots rule. |
-| **Field band** | Marigold ticker; pauses on hover. |
-| **Numbers** | Four soft chips with icon rounds — learners, scores, presence, reconciled fees — counted up on view. |
-| **The index** | The signature interaction: six rows that lift into a black card, roll their label to marigold and swap a forest-green preview (stat, bars, six-step progress, three facts) on hover **and** focus. |
-| **Method** | A sticky forest stage that swaps three real screens — capture, reconcile, issue — as the reader passes the steps. CSS sticky, no scroll-jacking. |
-| **Documents** | Four genuine exports linked out of `/public/printables`, each with a rotated "generated" stamp that straightens on hover. |
-| **Compliance + footer** | PDPA / NECTA / audit-trail facts inside one forest card, then a pill-link footer with the demo credentials. |
+| **Loader** | A progress counter that hands off with a two-panel curtain. Short-circuits when motion is off, hard-capped at 2 s. |
+| **Header** | Segmented nav with a black pill that *slides* between periods (scroll-spy + one Framer `layoutId`), plus a **Motion on/off** switch. |
+| **Clock** | Fixed pill, bottom left: live school time plus the period you are reading. |
+| **Hero** | Editorial photograph that un-crops itself and drifts at a different scroll rate than the page; three masked display lines; the register tag ("Form 2 · Alpha · 38 learners"). |
+| **Bell** | Two marquees, opposite directions, rAF-driven with scroll-velocity boost — marigold display row, forest mono row. |
+| **07:40 Register** | Four numbers counted up on view, from the demo school's real data. |
+| **09:10 Timetable** | The index *as a timetable*: times down the left, red pen mark on the hovered row, and a photograph that follows the pointer. |
+| **11:20 The day** | Sticky photographic stage; three moments of one day cross-fade with the text steps, ticks on the right. |
+| **14:00 The paper** | Four real exports from `/public/printables`, tilting 5° under the pointer with a wax-seal "Generated" stamp. |
+| **16:20 Interlude** | Full-bleed school facade, parallax within the section, one line of copy. |
+| **16:05 The gate** | Forest closing statement with a marigold spotlight that follows the pointer; PDPA / NECTA / audit trail. |
+| **Footer** | Giant outlined wordmark marquee, columns, demo credentials. |
 
-Motion is one verb — *settle* — with a spring curve reserved for anything that
-opens (mobile sheet, pills, cards). Contrast, focus rings, touch targets and
-`prefers-reduced-motion` are handled in `src/app/globals.css` under the
-`.landing` scope, so the dashboard is untouched. The page is covered by the
-smoke suite (`landing` entry).
+**Motion preference is a visitor choice.** `prefers-reduced-motion` only sets the
+default; the header switch overrides it and persists in `localStorage`
+(`altra:motion`). When the system asks for reduced motion and nothing has been
+chosen, a toast offers "Enable motion" / "Keep it still" — the page is never
+silently frozen. With motion off, every reveal, marquee and counter still shows
+its final state.
+
+Photography lives in `public/landing/` (`hero-classroom`, `hands-ledger`,
+`school-facade`, `teacher-portrait`, `paper-stack`), served through
+`next/image` with real `sizes`, one `priority` image, everything else lazy.
 
 ## 7. The command deck (GSAP + Three.js admin)
 

@@ -1,6 +1,6 @@
 export const NAV_LINKS = [
-  { label: "Index", href: "#index" },
-  { label: "Method", href: "#method" },
+  { label: "Timetable", href: "#timetable" },
+  { label: "The day", href: "#day" },
   { label: "Documents", href: "#documents" },
   { label: "Compliance", href: "#compliance" },
 ]

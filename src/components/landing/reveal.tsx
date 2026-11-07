@@ -16,6 +16,16 @@ export function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
 }
 
+/**
+ * Motion is a visitor choice (see `motion.tsx`). The system flag only sets the
+ * default; `data-motion="off"` is the single authoritative switch, so turning
+ * motion back on revives every primitive on the page.
+ */
+export function motionEnabled() {
+  if (typeof document === "undefined") return true
+  return document.documentElement.dataset.motion !== "off"
+}
+
 /** Reveal on first intersection. `mask` wipes from a clipped line, `fade` is a plain lift. */
 export function Reveal({
   children,
@@ -38,7 +48,7 @@ export function Reveal({
   React.useEffect(() => {
     const node = ref.current
     if (!node) return
-    if (prefersReducedMotion()) {
+    if (!motionEnabled()) {
       setShown(true)
       return
     }
@@ -116,7 +126,7 @@ export function useCountUp(target: number, duration = 1100) {
   React.useEffect(() => {
     const node = ref.current
     if (!node) return
-    if (prefersReducedMotion() || typeof IntersectionObserver === "undefined") {
+    if (!motionEnabled() || typeof IntersectionObserver === "undefined") {
       setValue(target)
       return
     }
