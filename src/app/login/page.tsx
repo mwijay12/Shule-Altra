@@ -4,7 +4,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ShieldCheck, Lock, Mail, Key, ArrowRight, Sparkles, Loader2, AlertCircle, Building2, UserCircle } from "lucide-react"
+import { Lock, Mail, Key, ArrowRight, Sparkles, Loader2, AlertCircle, Building2, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useAuth as useFirebaseId } from "@/firebase"
 import { signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "firebase/auth"
 import { DEMO_MODE } from "@/lib/demo/config"
+import { BrandMark, Wordmark } from "@/components/brand/logo"
 
 const DEMO_ROLES = [
   { email: "admin@shule.pro", label: "Administrator", scope: "Full institutional control" },
@@ -102,11 +103,11 @@ export default function LoginPage() {
 
       <div className="w-full max-w-lg space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
         <div className="text-center space-y-4">
-          <div className="h-20 w-20 rounded-[2rem] colorful-gradient flex items-center justify-center text-white mx-auto shadow-2xl mb-6 animate-float border-4 border-white/20">
-            <ShieldCheck className="h-10 w-10" />
-          </div>
+          <BrandMark size={80} radius={24} className="mx-auto mb-6 animate-float drop-shadow-2xl" />
           <div className="space-y-2 px-4">
-            <h1 className="text-2xl sm:text-4xl font-headline font-black text-primary tracking-tighter uppercase truncate">{systemName}</h1>
+            <h1 className="flex justify-center">
+              <Wordmark size={34} pro />
+            </h1>
             <p className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.4em]">Sovereign Verification Gateway 2026</p>
           </div>
         </div>

@@ -15,6 +15,7 @@ import { DisplayLines, Reveal, useCountUp } from "@/components/landing/reveal"
 import { LandingLoader } from "@/components/landing/landing-loader"
 import { LandNav } from "@/components/landing/nav"
 import { NAV_LINKS } from "@/components/landing/links"
+import { BrandMark } from "@/components/brand/logo"
 import { MotionProvider, MotionToggle, useLandingMotion } from "@/components/landing/motion"
 import { SchoolClock } from "@/components/landing/clock"
 import { Marquee } from "@/components/landing/marquee"
@@ -233,7 +234,7 @@ function Landing() {
       <header className="sd-header" data-scrolled={scrolled ? "true" : "false"}>
         <div className="sd-header-inner">
           <Link href="/" className="sd-brand" aria-label="Shule Altra — home">
-            <span className="sd-brand-mark" aria-hidden />
+            <BrandMark size={34} radius={10} />
             <span className="sd-brand-text">
               Shule Altra
               <em>Institutional OS · 2026</em>

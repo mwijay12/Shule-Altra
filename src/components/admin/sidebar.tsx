@@ -10,6 +10,7 @@
  */
 
 import * as React from 'react';
+import { BrandMark } from '@/components/brand/logo';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -138,8 +139,8 @@ function SidebarBody({
     <div ref={scope} className="flex h-full min-h-0 flex-col">
       <div className="flex items-start justify-between gap-2 px-4 pb-5 pt-5">
         <Link href="/dashboard" className="group flex items-center gap-3 overflow-hidden">
-          <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary to-accent text-white shadow-xl shadow-primary/30">
-            <ShieldCheck className="h-6 w-6" />
+          <span className="relative shrink-0 shadow-xl shadow-primary/25">
+            <BrandMark size={44} radius={14} />
             <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-400" />
           </span>
           <span className="flex min-w-0 flex-col leading-none">
