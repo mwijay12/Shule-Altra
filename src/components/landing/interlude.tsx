@@ -10,14 +10,13 @@
 
 import * as React from "react"
 import Image from "next/image"
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion"
+import { motion, useScroll, useTransform } from "framer-motion"
 import { useLandingMotion } from "./motion"
 
 export function Interlude() {
   const ref = React.useRef<HTMLDivElement | null>(null)
   const { on } = useLandingMotion()
-  const systemReduced = useReducedMotion()
-  const still = !on || systemReduced
+  const still = !on
 
   const { scrollYProgress } = useScroll({
     target: ref,

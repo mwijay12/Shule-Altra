@@ -12,20 +12,19 @@
 import * as React from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion"
+import { motion, useScroll, useTransform } from "framer-motion"
 import { DisplayLines } from "@/components/landing/reveal"
 import { useLandingMotion } from "./motion"
 
 export function Hero({ ready }: { ready: boolean }) {
   const { on } = useLandingMotion()
-  const systemReduced = useReducedMotion()
   const sectionRef = React.useRef<HTMLElement | null>(null)
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start start", "end start"],
   })
 
-  const still = !on || systemReduced
+  const still = !on
   const mediaY = useTransform(scrollYProgress, [0, 1], ["0%", still ? "0%" : "14%"])
   const copyY = useTransform(scrollYProgress, [0, 1], ["0%", still ? "0%" : "-6%"])
   const frameScale = useTransform(scrollYProgress, [0, 1], [1, still ? 1 : 1.06])
