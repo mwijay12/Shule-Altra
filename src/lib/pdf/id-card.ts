@@ -17,6 +17,59 @@ export interface IdCardLearner {
   balance?: number;
   house?: string;
   dateOfBirth?: string;
+  /**
+   * A photograph, when the school has one: a `data:` URL (the demo and any
+   * offline capture), or an https URL on the storage bucket. SVG avatars are
+   * skipped — pdf-lib embeds raster only, and a printed ID card wants a photo.
+   */
+  photoUrl?: string;
+}
+
+const PHOTO_W = 42;
+const PHOTO_H = 46;
+
+function bytesFromBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+/**
+ * Embeds the learner's photograph, or returns null and lets the card print
+ * without one. Every failure mode (SVG, dead URL, offline, corrupt bytes) has
+ * to degrade to a text card — a print run cannot stop because one file is bad.
+ */
+async function embedPhoto(
+  doc: PDFDocument,
+  url: string | undefined,
+  cache: Map<string, any>
+): Promise<any | null> {
+  if (!url) return null
+  if (cache.has(url)) return cache.get(url)
+  try {
+    if (/^data:image\/svg/i.test(url)) return null
+    if (url.startsWith('data:')) {
+      const match = /^data:image\/(png|jpe?g);base64,(.*)$/i.exec(url)
+      if (!match) return null
+      const bytes = bytesFromBase64(match[2])
+      const image = /png/i.test(match[1]) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes)
+      cache.set(url, image)
+      return image
+    }
+    if (/^https?:\/\//i.test(url)) {
+      const response = await fetch(url)
+      if (!response.ok) return null
+      const bytes = new Uint8Array(await response.arrayBuffer())
+      const type = response.headers.get('content-type') ?? ''
+      const image = /png/i.test(type) ? await doc.embedPng(bytes) : await doc.embedJpg(bytes)
+      cache.set(url, image)
+      return image
+    }
+  } catch {
+    return null
+  }
+  return null
 }
 
 const CARD_W = 242.65; // 85.6 mm
@@ -54,6 +107,13 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
   doc.setProducer('Shule Altra · pdf-lib vector engine');
 
   const slots = learners.slice(0, 24);
+  const photoCache = new Map<string, any>();
+  const photos = new Map<number, any>();
+  // Resolve before drawing: the card layout shifts when a face exists.
+  for (let index = 0; index < slots.length; index += 1) {
+    const image = await embedPhoto(doc, slots[index].photoUrl, photoCache);
+    if (image) photos.set(index, image);
+  }
 
   for (let index = 0; index < slots.length; index += PER_PAGE) {
     const page = doc.addPage(A4);
@@ -113,13 +173,40 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         opacity: 0.85,
       });
 
+      const photo = photos.get(index + slot);
+      const textWidth = photo ? CARD_W - 112 : CARD_W - 90;
+
+      if (photo) {
+        // Fit inside the frame without stretching a face.
+        const scale = Math.min(PHOTO_W / photo.width, PHOTO_H / photo.height);
+        const drawW = photo.width * scale;
+        const drawH = photo.height * scale;
+        const frameX = x + CARD_W - PHOTO_W - 12;
+        const frameY = y + CARD_H - PHOTO_H - 54;
+        page.drawRectangle({
+          x: frameX - 1.5,
+          y: frameY - 1.5,
+          width: PHOTO_W + 3,
+          height: PHOTO_H + 3,
+          color: rgb(1, 1, 1),
+          borderColor: COLORS.line,
+          borderWidth: 0.5,
+        });
+        page.drawImage(photo, {
+          x: frameX + (PHOTO_W - drawW) / 2,
+          y: frameY + (PHOTO_H - drawH) / 2,
+          width: drawW,
+          height: drawH,
+        });
+      }
+
       page.drawText(sanitize(learner.name.toUpperCase()), {
         x: x + 12,
         y: y + 78,
         size: 11,
         font: bold,
         color: COLORS.navy,
-        maxWidth: CARD_W - 90,
+        maxWidth: textWidth,
       });
       page.drawText(sanitize(learner.admissionNumber ?? learner.id), {
         x: x + 12,
@@ -127,7 +214,7 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         size: 7.4,
         font: bold,
         color: COLORS.primary,
-        maxWidth: CARD_W - 90,
+        maxWidth: textWidth,
       });
       page.drawText(sanitize(`${learner.className ?? 'Unassigned'}${learner.house ? ` · ${learner.house} House` : ''}`), {
         x: x + 12,
@@ -135,7 +222,7 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         size: 6.4,
         font,
         color: COLORS.muted,
-        maxWidth: CARD_W - 90,
+        maxWidth: textWidth,
       });
       page.drawText(sanitize(`Guardian: ${learner.parentPhone ?? 'On file'}`), {
         x: x + 12,

@@ -77,6 +77,8 @@ export default function StudentsPage() {
   const [tierFilter, setTierFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const photoInputRef = React.useRef<HTMLInputElement | null>(null)
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [isManualEnrolling, setIsManualEnrolling] = useState(false)
@@ -291,6 +293,40 @@ export default function StudentsPage() {
     }
   }
 
+  /**
+   * Attach or replace a learner's photograph from the register itself.
+   *
+   * The file goes through the same `uploadStudentPhoto` boundary the enrollment
+   * form uses (Firebase Storage in production, a local data URL in the demo),
+   * so swapping in Cloudinary later touches one file, not this screen.
+   */
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file || !selectedStudent) return
+    setPhotoBusy(true)
+    try {
+      const photoUrl = await uploadStudentPhoto("school-001", selectedStudent.id, file)
+      await setDoc(
+        doc(db, "schools", "school-001", "students", selectedStudent.id),
+        { photoUrl, photoUpdatedAt: serverTimestamp() },
+        { merge: true }
+      )
+      toast({
+        title: "Photograph attached",
+        description: `${selectedStudent.name} · visible on the register, the profile and the printed ID card.`,
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not store the photograph",
+        description: err?.message ?? "Unknown storage error",
+      })
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
   const handleDownloadIdCard = async () => {
     if (!selectedStudent) return
     try {
@@ -305,6 +341,7 @@ export default function StudentsPage() {
             gender: selectedStudent.gender,
             parentPhone: selectedStudent.guardianPhone,
             balance: selectedStudent.balance,
+            photoUrl: selectedStudent.photoUrl,
           },
         ],
         { term: "Term 2 2026" }
@@ -583,10 +620,28 @@ export default function StudentsPage() {
                               <Zap className="h-48 w-48" />
                             </div>
                             <SheetHeader className="text-left flex-row items-center gap-8 relative z-10">
-                              <Avatar className="h-28 w-24 rounded-[2rem] shadow-2xl border-4 border-white overflow-hidden">
-                                <AvatarImage src={selectedStudent?.photoUrl || (selectedStudent as any)?.photo} className="object-cover" />
-                                <AvatarFallback className="text-3xl font-black text-primary bg-white uppercase">{selectedStudent?.name?.charAt(0)}</AvatarFallback>
-                              </Avatar>
+                              <div className="relative shrink-0">
+                                <Avatar className="h-28 w-24 rounded-[2rem] shadow-2xl border-4 border-white overflow-hidden">
+                                  <AvatarImage src={selectedStudent?.photoUrl || (selectedStudent as any)?.photo} className="object-cover" />
+                                  <AvatarFallback className="text-3xl font-black text-primary bg-white uppercase">{selectedStudent?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <button
+                                  type="button"
+                                  onClick={() => photoInputRef.current?.click()}
+                                  disabled={photoBusy}
+                                  title={selectedStudent?.photoUrl ? "Replace photograph" : "Attach a photograph"}
+                                  className="absolute -bottom-2 -right-2 grid h-9 w-9 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-lg transition-transform hover:scale-105 disabled:opacity-60"
+                                >
+                                  {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                                </button>
+                                <input
+                                  ref={photoInputRef}
+                                  type="file"
+                                  accept="image/*"
+                                  className="hidden"
+                                  onChange={handlePhotoUpload}
+                                />
+                              </div>
                               <div className="space-y-3">
                                 <h3 className="text-2xl font-headline font-black text-primary uppercase tracking-tighter">{selectedStudent?.name}</h3>
                                 <div className="flex flex-wrap gap-2">
