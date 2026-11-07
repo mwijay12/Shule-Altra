@@ -159,6 +159,41 @@ async function main() {
   console.log(`   ID sheet pages: ${idDoc.getPageCount()} · statement pages: ${statementDoc.getPageCount()}`);
   console.log(`   Statement creator: ${statementDoc.getProducer() ?? 'pdf-lib'}`);
 
+  /* --- learner photographs ------------------------------------------------
+   * A printed ID card without a face is a piece of paper. The card embeds a
+   * raster photo when the register has one, and must degrade to the same text
+   * card when the photo is an SVG avatar, a dead URL, or absent entirely.
+   */
+  const { default: QRCode } = await import('qrcode');
+  const photoPng = await QRCode.toDataURL('ALT-2026-001', { margin: 1, width: 240 });
+  const svgAvatar =
+    'data:image/svg+xml;utf8,' +
+    encodeURIComponent(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#1F5BA6"/></svg>'
+    );
+
+  const plainCards = await buildIdCards([cards[0]], { term: 'Term 2 2026' });
+  const photoCards = await buildIdCards([{ ...cards[0], photoUrl: photoPng }], { term: 'Term 2 2026' });
+  const svgCards = await buildIdCards([{ ...cards[0], photoUrl: svgAvatar }], { term: 'Term 2 2026' });
+
+  const photoDoc = await PDFDocument.load(photoCards);
+  const photoPage = photoDoc.getPage(0).getSize();
+
+  const photoEmbedded = photoCards.byteLength > plainCards.byteLength + 1_000;
+  const svgSkipped = Math.abs(svgCards.byteLength - plainCards.byteLength) < 1_000;
+  const sameGeometry =
+    Math.round(photoPage.width) === Math.round((await PDFDocument.load(plainCards)).getPage(0).getSize().width) &&
+    Math.round(photoPage.height) === Math.round((await PDFDocument.load(plainCards)).getPage(0).getSize().height);
+
+  console.log(
+    `${photoEmbedded ? 'OK  ' : 'FAIL'} ID card embeds a photograph   +${photoCards.byteLength - plainCards.byteLength} bytes · no re-layout`
+  );
+  console.log(`${svgSkipped ? 'OK  ' : 'FAIL'} SVG avatar prints without a photo  ${svgCards.byteLength} bytes`);
+  console.log(`${sameGeometry ? 'OK  ' : 'FAIL'} card geometry unchanged  ${Math.round(photoPage.width)}×${Math.round(photoPage.height)} pts`);
+  if (!photoEmbedded) failures += 1;
+  if (!svgSkipped) failures += 1;
+  if (!sameGeometry) failures += 1;
+
   if (failures > 0) {
     console.log(`\n${failures} PRINTABLE(S) FAILED`);
     process.exitCode = 1;
