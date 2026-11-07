@@ -59,11 +59,17 @@ export async function exportReportCardToWord(data: ReportCardData) {
   if (data.school.logoUrl) {
     const b64 = await fetchLogoAsBase64(data.school.logoUrl);
     if (b64) {
-      const buffer = Buffer.from(b64.split(',')[1], 'base64');
+      // Browser-safe base64 → bytes (Buffer is not available in the client bundle)
+      const base64Payload = b64.split(',')[1] || '';
+      const binaryString = atob(base64Payload);
+      const buffer = new Uint8Array(binaryString.length);
+      for (let index = 0; index < binaryString.length; index += 1) {
+        buffer[index] = binaryString.charCodeAt(index);
+      }
       headerChildren.push(
         new Paragraph({
           alignment: AlignmentType.CENTER,
-          children: [new ImageRun({ data: buffer, transformation: { width: 70, height: 70 } })],
+          children: [new ImageRun({ data: buffer, transformation: { width: 70, height: 70 } } as any)],
         })
       );
     }
@@ -133,9 +139,9 @@ export async function exportReportCardToWord(data: ReportCardData) {
       ...data.results.map((res, i) => new TableRow({
         children: [
           dataCell(res.subject, i),
-          dataCell(`${res.score}%`, i, AlignmentType.RIGHT),
-          dataCell(res.grade, i, AlignmentType.CENTER, true),
-          dataCell(res.points.toString(), i, AlignmentType.CENTER),
+          dataCell(`${res.score}%`, i, AlignmentType.RIGHT as any),
+          dataCell(res.grade, i, AlignmentType.CENTER as any, true),
+          dataCell(res.points.toString(), i, AlignmentType.CENTER as any),
           dataCell(res.remark.toUpperCase(), i),
         ],
       })),
@@ -145,7 +151,7 @@ export async function exportReportCardToWord(data: ReportCardData) {
   // 4. Summary Hub
   const summaryBox = new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
-    spacing: { before: 400 },
+    ...({ spacing: { before: 400 } } as any),
     rows: [
       new TableRow({
         children: [

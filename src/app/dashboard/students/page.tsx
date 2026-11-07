@@ -48,7 +48,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, doc, query, orderBy, setDoc, serverTimestamp } from "firebase/firestore"
+import { collection, doc, query, orderBy, setDoc, serverTimestamp, where, getDocs } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { generateStudentProgressSummary } from "@/ai/flows/generate-student-progress-summary-flow"
 import { scanStudentRegistration } from "@/ai/flows/scan-student-registration-flow"
@@ -59,6 +59,8 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
 import { uploadStudentPhoto } from "@/lib/storage"
 import type { Student } from "@/types/student"
+import { DEMO_MODE } from "@/lib/demo/config"
+import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
 
 const ALTRAWARE_DEMO_STUDENTS: Partial<Student>[] = [
   { id: "ALT-2026-001", name: "JUMA KHAMISI OMARI", class: "Standard 7", type: "Boarder", hostel: "Kilimanjaro Wing", guardianPhone: "+255 700 000 001", conductPoints: 100 },
@@ -72,6 +74,8 @@ export default function StudentsPage() {
   const { toast } = useToast()
   const db = useFirestore()
   const [searchTerm, setSearchTerm] = useState("")
+  const [tierFilter, setTierFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
@@ -99,11 +103,20 @@ export default function StudentsPage() {
   }, [firestoreStudents, isDemo])
 
   const filteredStudents = useMemo(() => {
-    return students.filter(s => 
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  }, [searchTerm, students])
+    return students.filter(s => {
+      const matchesSearch =
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesTier = tierFilter === "all" || s.class === tierFilter
+      const matchesType = typeFilter === "all" || s.type === typeFilter
+      return matchesSearch && matchesTier && matchesType
+    })
+  }, [searchTerm, students, tierFilter, typeFilter])
+
+  const availableTiers = useMemo(() => {
+    const tiers = new Set(students.map(student => student.class))
+    return Array.from(tiers).sort()
+  }, [students])
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<StudentFormData>({
     resolver: zodResolver(studentSchema),
@@ -163,7 +176,11 @@ export default function StudentsPage() {
     reader.onloadend = async () => {
       const base64 = reader.result as string
       try {
-        const result = await scanStudentRegistration({ photoDataUri: base64 })
+        const result = DEMO_MODE
+          ? await new Promise<ReturnType<typeof buildDemoScanResult>>((resolve) =>
+              setTimeout(() => resolve(buildDemoScanResult()), 1200)
+            )
+          : await scanStudentRegistration({ photoDataUri: base64 })
         const newStudent = {
           id: result.id,
           name: result.name.toUpperCase(),
@@ -176,7 +193,7 @@ export default function StudentsPage() {
           balance: 0,
           photoUrl: "" // Smart enroll legacy still uses no photo for now or we could upload
         }
-        addDocumentNonBlocking("schools/school-001/students", newStudent)
+        addDocumentNonBlocking(collection(db, "schools", "school-001", "students"), newStudent)
         toast({ title: "AI Enrollment Success", description: `Synchronized ${result.name} to Altraware node.` })
       } catch (err) {
         toast({ variant: "destructive", title: "Scan Node Failed", description: "Internal AI error during form parsing." })
@@ -191,6 +208,20 @@ export default function StudentsPage() {
     if (!selectedStudent) return
     setIsGeneratingAi(true)
     try {
+      if (DEMO_MODE) {
+        await new Promise((resolve) => setTimeout(resolve, 1400))
+        setAiSummary(
+          buildDemoNarrative({
+            studentName: selectedStudent.name,
+            classLevel: selectedStudent.class,
+            conductPoints: selectedStudent.conductPoints || 100,
+            attendanceRate: 96.4,
+          })
+        )
+        toast({ title: "AI Synthesis Complete", description: "Narrative report generated (demo node)." })
+        return
+      }
+
       const result = await generateStudentProgressSummary({
         studentName: selectedStudent.name,
         academicPerformance: [
@@ -206,6 +237,81 @@ export default function StudentsPage() {
       toast({ variant: "destructive", title: "Synthesis Failed", description: "Internal AI node error." })
     } finally {
       setIsGeneratingAi(false)
+    }
+  }
+
+  const handleDownloadReportCardPdf = async () => {
+    if (!selectedStudent) return
+    setIsExportingReport(true)
+    try {
+      const gradesSnap = await getDocs(
+        query(
+          collection(db, "schools", "school-001", "grades"),
+          where("studentId", "==", selectedStudent.id)
+        )
+      )
+      const grades = gradesSnap.docs.map((snap) => {
+        const row = snap.data() as any
+        return { subject: row.subject ?? "Subject", score: Number(row.score ?? 0), examType: row.examType }
+      })
+      if (grades.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "No assessment rows",
+          description: "Record subject scores before issuing a report card.",
+        })
+        return
+      }
+      const { downloadReportCard } = await import("@/lib/pdf/report-card")
+      await downloadReportCard({
+        student: {
+          id: selectedStudent.id,
+          name: selectedStudent.name,
+          className: selectedStudent.class,
+          admissionNumber: (selectedStudent as any).admissionNumber ?? selectedStudent.id,
+          gender: selectedStudent.gender,
+        },
+        grades,
+        term: "Term 2",
+        academicYear: "2026",
+        teacherRemark: `Conduct grade: ${selectedStudent.conductPoints ?? 100} points. ${aiSummary ? aiSummary.replace(/<[^>]*>/g, " ").slice(0, 300) : ""}`.trim(),
+      })
+      toast({
+        title: "Report card PDF ready",
+        description: `${selectedStudent.name} · vector PDF · NECTA grading`,
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "PDF export failed",
+        description: err?.message ?? "Could not assemble the report card.",
+      })
+    } finally {
+      setIsExportingReport(false)
+    }
+  }
+
+  const handleDownloadIdCard = async () => {
+    if (!selectedStudent) return
+    try {
+      const { downloadIdCards } = await import("@/lib/pdf/id-card")
+      await downloadIdCards(
+        [
+          {
+            id: selectedStudent.id,
+            name: selectedStudent.name,
+            className: selectedStudent.class,
+            admissionNumber: (selectedStudent as any).admissionNumber ?? selectedStudent.id,
+            gender: selectedStudent.gender,
+            parentPhone: selectedStudent.guardianPhone,
+            balance: selectedStudent.balance,
+          },
+        ],
+        { term: "Term 2 2026" }
+      )
+      toast({ title: "ID card generated", description: "A4 2-up sheet with crop marks · fully vector." })
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "ID export failed", description: err?.message ?? "Unknown error" })
     }
   }
 
@@ -386,9 +492,35 @@ export default function StudentsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button variant="outline" size="sm" className="h-12 rounded-full border-none bg-white shadow-sm font-black text-[9px] uppercase px-6">
-            <Filter className="h-4 w-4 mr-2" /> Tier Filters
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="hidden sm:flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-muted-foreground px-2">
+              <Filter className="h-3.5 w-3.5" />
+            </span>
+            <Select value={tierFilter} onValueChange={setTierFilter}>
+              <SelectTrigger className="h-12 w-[160px] rounded-full border-none bg-white shadow-sm font-black text-[10px] uppercase">
+                <SelectValue placeholder="Academic Tier" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Tiers</SelectItem>
+                {availableTiers.map((tier) => (
+                  <SelectItem key={tier} value={tier}>{tier}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-12 w-[160px] rounded-full border-none bg-white shadow-sm font-black text-[10px] uppercase">
+                <SelectValue placeholder="Logistic Hub" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">All Students</SelectItem>
+                <SelectItem value="Boarder">Boarders</SelectItem>
+                <SelectItem value="Day">Day Students</SelectItem>
+              </SelectContent>
+            </Select>
+            <Badge variant="outline" className="h-12 px-4 rounded-full border-primary/10 bg-white text-primary font-black text-[9px] uppercase">
+              {filteredStudents.length} / {students.length}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           {isLoading ? (
@@ -518,7 +650,15 @@ export default function StudentsPage() {
                                   disabled={isExportingReport}
                                 >
                                   {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <FileText className="mr-2 h-5 w-5" />}
-                                  Official Performance Transcript
+                                  Official Performance Transcript (DOCX)
+                                </Button>
+                                <Button
+                                  className="w-full h-14 rounded-2xl colorful-gradient text-white font-black uppercase text-xs shadow-lg shadow-primary/20"
+                                  onClick={handleDownloadReportCardPdf}
+                                  disabled={isExportingReport}
+                                >
+                                  {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Download className="mr-2 h-5 w-5" />}
+                                  Report card · vector PDF
                                 </Button>
                               </TabsContent>
 
@@ -560,9 +700,12 @@ export default function StudentsPage() {
                                    </div>
                                    
                                    <div className="space-y-4 w-full max-w-xs">
-                                      <Button className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-xl">
-                                         <IdCard className="mr-2 h-4 w-4" /> Export Altraware ID
+                                      <Button className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-xl" onClick={handleDownloadIdCard}>
+                                         <IdCard className="mr-2 h-4 w-4" /> Export learner ID · PDF
                                       </Button>
+                                      <p className="text-[8px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                                        Print-ready A4 sheet · crop marks · QR verification
+                                      </p>
                                    </div>
                                 </div>
                               </TabsContent>

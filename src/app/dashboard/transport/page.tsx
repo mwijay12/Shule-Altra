@@ -63,6 +63,8 @@ export default function TransportPage() {
     { id: "R-02", name: "Kijitonyama - Sinza", driver: "John Mrema", phone: "0754-111222", vehicle: "T 119 XYZ", students: 38, status: "Standby" },
   ]
 
+  const fleetPayload = (routes as any[]).reduce((sum, route) => sum + (route.students || 0), 0)
+
   const handleBatchDispatch = (routeName: string) => {
     setIsDispatching(true)
     triggerN8nWebhook("attendance-update", { 
@@ -153,7 +155,7 @@ export default function TransportPage() {
           { label: "Fleet Ready", value: "12 Buses", sub: "Operational", icon: Bus, color: "text-primary" },
           { label: "Active Routes", value: routes.length + " Nodes", sub: "In Transit", icon: Navigation, color: "text-accent" },
           { label: "Safety Score", value: "100%", sub: "Audit Passed", icon: ShieldCheck, color: "text-green-600" },
-          { label: "Day Students", value: "1,340", sub: "Fleet Payload", icon: Users, color: "text-orange-600" },
+          { label: "Day Students", value: fleetPayload.toLocaleString(), sub: "Fleet Payload", icon: Users, color: "text-orange-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-md bg-white/60 backdrop-blur-md rounded-[1.5rem] group overflow-hidden">
              <CardContent className="p-5 relative">

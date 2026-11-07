@@ -26,11 +26,20 @@ export function initializeFirebase() {
 }
 
 export function getSdks(firebaseApp: FirebaseApp) {
+  // Storage is optional furniture: a school that never uploads a photo must not
+  // lose the dashboard because `getStorage()` threw for a missing bucket.
+  let storage: ReturnType<typeof getStorage> | null = null;
+  try {
+    storage = getStorage(firebaseApp);
+  } catch (error) {
+    console.warn('[firebase] Storage unavailable — uploads disabled for this project.', error);
+  }
+
   return {
     firebaseApp,
     auth: getAuth(firebaseApp),
     firestore: getFirestore(firebaseApp),
-    storage: getStorage(firebaseApp)
+    storage
   };
 }
 

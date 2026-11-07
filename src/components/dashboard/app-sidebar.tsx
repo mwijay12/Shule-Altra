@@ -36,6 +36,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
+import { DEMO_MODE } from "@/lib/demo/config"
 
 const allNavItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, module: "dashboard" },
@@ -134,6 +135,9 @@ export function AppSidebar() {
               <div className="flex flex-col overflow-hidden">
                 <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-primary truncate">Active Hub</span>
                 <span className="text-[7px] sm:text-[9px] text-muted-foreground font-black uppercase tracking-tighter truncate">{role} NODE</span>
+                {DEMO_MODE && (
+                  <span className="text-[7px] text-accent font-black uppercase tracking-tighter truncate">Demo dataset · offline</span>
+                )}
               </div>
             </div>
           )}

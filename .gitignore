@@ -39,7 +39,16 @@ next-env.d.ts
 
 .genkit/*
 .env*
+!.env.example
 
 # firebase
 firebase-debug.log
 firestore-debug.log
+# local QA rasters
+.preview/
+
+# drive connector downloads (local reference only)
+google_drive/
+
+# Rendered mail-room previews (npm run demo:email) — regenerate, never commit
+private/email-previews/

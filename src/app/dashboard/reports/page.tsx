@@ -1,110 +1,329 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+/**
+ * @fileOverview Reports centre — every "generate" action produces a real vector
+ * PDF (letterhead + crest, metadata, summary cards, tables, signatures).
+ */
+
+import { useMemo, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  DollarSign, 
-  GraduationCap, 
-  Package, 
-  Users, 
-  Download, 
+import { useAuth } from "@/hooks/use-auth";
+import {
+  GENERATED_DOCUMENTS,
+  ROLE_LABEL,
+  canGenerateDocument,
+  canOpenDocument,
+  type DocRole,
+} from "@/lib/documents/registry";
+import {
+  DollarSign,
+  GraduationCap,
+  Package,
+  Users,
+  Download,
   FileText,
   Loader2,
   TrendingUp,
   AlertTriangle,
   History,
-  Zap
+  Zap,
+  ShieldCheck,
+  Receipt,
+  ClipboardList,
+  IdCard,
+  Building2,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, orderBy, query, limit } from "firebase/firestore";
+import {
+  buildAttendanceRows,
+  buildPerLearnerScores,
+  buildReportPayload,
+} from "@/lib/reports/builders";
 
-// 1. Define Report Item structure
 interface ReportItem {
   id: string;
   title: string;
   description: string;
   icon: React.ElementType;
+  badge?: string;
 }
 
-// 2. Define the actual reports under each category
 const financialReports: ReportItem[] = [
-  { id: "fee-ledger", title: "Fee Collection Ledger", description: "Detailed record of all student payments and bank reconciliation references.", icon: DollarSign },
-  { id: "expenditure", title: "Expenditure Summary", description: "Tracks institutional operational costs, petty cash, and procurement.", icon: TrendingUp },
-  { id: "defaulters", title: "Fee Defaulters List", description: "Audit of students with outstanding balances for recovery actions.", icon: AlertTriangle },
+  { id: "fee-ledger", title: "Fee Collection Ledger", description: "Every captured payment with gateway reference, method and reconciliation status.", icon: DollarSign },
+  { id: "expenditure", title: "Expenditure Summary", description: "Petty cash requests by department, approval state and value.", icon: TrendingUp },
+  { id: "defaulters", title: "Fee Defaulters Register", description: "Outstanding balances in merit order, ready for the bursar's recovery list.", icon: AlertTriangle },
 ];
 
 const academicReports: ReportItem[] = [
-  { id: "class-rank", title: "Class Performance Ranking", description: "Comparative analysis of average scores across all academic tiers.", icon: GraduationCap },
-  { id: "subject-analysis", title: "Subject Analysis Matrix", description: "Pass rates and grade distribution breakdown per subject node.", icon: FileText },
-  { id: "master-sheet", title: "Master Grade Sheet", description: "Unified export of all student results for the current term.", icon: FileText },
+  { id: "class-rank", title: "Class Performance Ranking", description: "Cohort averages, division and fee status in merit order.", icon: GraduationCap },
+  { id: "subject-analysis", title: "Subject Analysis Matrix", description: "Mean score, pass rate and grade spread for every subject node.", icon: FileText },
+  { id: "master-sheet", title: "Master Grade Sheet", description: "Landscape matrix of every learner against every assessed subject.", icon: ClipboardList, badge: "A4 landscape" },
 ];
 
 const operationsReports: ReportItem[] = [
-  { id: "canteen-log", title: "Canteen Usage Log", description: "Tracking of cashless transactions and dietary consumption.", icon: Package },
-  { id: "asset-register", title: "Asset Register", description: "Verified audit ledger of all school property and equipment.", icon: Package },
+  { id: "canteen-log", title: "Canteen Usage Log", description: "Cashless wallet sales by learner, item and value.", icon: UtensilsCrossed },
+  { id: "asset-register", title: "Asset Register", description: "Verified audit ledger of school property, condition and book value.", icon: Package },
 ];
 
 const adminReports: ReportItem[] = [
-  { id: "staff-attendance", title: "Staff Attendance Summary", description: "Monthly personnel node report including clock-in data.", icon: Users },
-  { id: "student-attendance", title: "Student Attendance Trends", description: "Longitudinal audit of presence rates and absenteeism warnings.", icon: Users },
+  { id: "staff-attendance", title: "Staff Establishment Summary", description: "Personnel roster with department, contact and employment state.", icon: Users },
+  { id: "student-attendance", title: "Student Attendance Register", description: "Per-learner presence, lateness and absence over the term.", icon: Building2 },
 ];
+
 
 export default function ReportsPage() {
   const { toast } = useToast();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const db = useFirestore();
 
-  const handleGenerate = (report: ReportItem) => {
+  const studentsQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "students"), orderBy("name", "asc")),
+    [db]
+  );
+  const { data: students } = useCollection<any>(studentsQuery);
+
+  const gradesQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "grades"), limit(3000)),
+    [db]
+  );
+  const { data: grades } = useCollection<any>(gradesQuery);
+
+  const attendanceQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "attendance"), limit(1500)),
+    [db]
+  );
+  const { data: attendance } = useCollection<any>(attendanceQuery);
+
+  const transactionsQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "transactions"), orderBy("createdAt", "desc"), limit(240)),
+    [db]
+  );
+  const { data: transactions } = useCollection<any>(transactionsQuery);
+
+  const pettyQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "petty_cash"), limit(200)),
+    [db]
+  );
+  const { data: petty } = useCollection<any>(pettyQuery);
+
+  const canteenQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "canteen_sales"), limit(300)),
+    [db]
+  );
+  const { data: canteen } = useCollection<any>(canteenQuery);
+
+  const assetsQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "assets"), limit(300)),
+    [db]
+  );
+  const { data: assets } = useCollection<any>(assetsQuery);
+
+  const staffQuery = useMemoFirebase(
+    () => query(collection(db, "schools", "school-001", "staff"), limit(200)),
+    [db]
+  );
+  const { data: staff } = useCollection<any>(staffQuery);
+
+  const learners = (students || []) as any[];
+  const ledger = (transactions || []) as any[];
+  const gradeRows = (grades || []) as any[];
+  const attendanceRows = (attendance || []) as any[];
+
+  const totalCollected = learners.reduce((sum, student) => sum + Number(student.totalPaid || 0), 0);
+  const totalOutstanding = learners.reduce((sum, student) => sum + Number(student.balance || 0), 0);
+  const collectionRate =
+    totalCollected + totalOutstanding > 0
+      ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100)
+      : 0;
+
+  const perLearnerScores = useMemo(
+    () => buildPerLearnerScores(learners, gradeRows),
+    [learners, gradeRows]
+  );
+
+  const reportData = useMemo(
+    () => ({
+      learners,
+      ledger,
+      gradeRows,
+      attendanceRows,
+      petty: (petty || []) as any[],
+      canteen: (canteen || []) as any[],
+      assets: (assets || []) as any[],
+      staff: (staff || []) as any[],
+      perLearnerScores,
+      collectionRate,
+    }),
+    [learners, ledger, gradeRows, attendanceRows, petty, canteen, assets, staff, perLearnerScores, collectionRate]
+  );
+
+  const buildRankingRows = () =>
+    perLearnerScores.map((row, index) => ({ ...row, rank: index + 1 }));
+
+  const attendanceSummary = () => buildAttendanceRows(learners, attendanceRows);
+
+  const generate = async (report: ReportItem) => {
     setLoadingId(report.id);
-    
-    // Simulate generation delay
-    setTimeout(() => {
-      setLoadingId(null);
-      toast({
-        title: "Report Generated",
-        description: `${report.title} has been successfully compiled.`,
-      });
-
-      // Specific Demo Logic for CSV export example
-      if (report.id === "defaulters") {
-         const csvContent = "data:text/csv;charset=utf-8,Student Name,Class,Balance (TZS),Status\nJUMA KHAMISI,Standard 7,450000,Critical\nNEEMA PAUL,Standard 7,25000,Partial\nBARAKA SAIDI,Form 2,900000,Critical";
-         const encodedUri = encodeURI(csvContent);
-         const link = document.createElement("a");
-         link.setAttribute("href", encodedUri);
-         link.setAttribute("download", "ShuleAltra_Defaulters_Audit.csv");
-         document.body.appendChild(link);
-         link.click();
-         document.body.removeChild(link);
+    try {
+      if (report.id === "class-rank") {
+        const { downloadClassRanking } = await import("@/lib/pdf/class-report");
+        const rows = buildRankingRows();
+        if (rows.length === 0) throw new Error("No assessment records found for this term.");
+        await downloadClassRanking(rows, { term: "Term 2", academicYear: "2026", className: "All streams" });
+      } else if (report.id === "student-attendance") {
+        const { downloadAttendanceRegister } = await import("@/lib/pdf/class-report");
+        await downloadAttendanceRegister(attendanceSummary(), {
+          className: "All streams",
+          from: new Date(Date.now() - 90 * 86_400_000).toLocaleDateString("en-GB"),
+          to: new Date().toLocaleDateString("en-GB"),
+        });
+      } else {
+        const { downloadTabularReport } = await import("@/lib/pdf/tabular-report");
+        const payload = buildReportPayload(report.id, reportData);
+        if (!payload) throw new Error("This report is not configured yet.");
+        const fileName = `${report.id}-${new Date().toISOString().slice(0, 10)}.pdf`;
+        await downloadTabularReport(payload, fileName);
       }
+      toast({
+        title: `${report.title} ready`,
+        description: "Vector PDF generated · letterhead, crest and selectable text.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: `${report.title} failed`,
+        description: error instanceof Error ? error.message : "Unexpected export error",
+      });
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
-    }, 1500);
+  const { role: authRole } = useAuth();
+  const role = (authRole ?? null) as DocRole | null;
+
+  const printables = [
+    {
+      id: "ranking",
+      title: "Class merit ranking",
+      detail: "Cohort averages, divisions and fee status in merit order.",
+      icon: GraduationCap,
+      run: async () => {
+        const { downloadClassRanking } = await import("@/lib/pdf/class-report");
+        return downloadClassRanking(buildRankingRows(), { term: "Term 2", academicYear: "2026", className: "All streams" });
+      },
+    },
+    {
+      id: "register",
+      title: "Attendance register",
+      detail: "Per-learner presence, lateness and absence over the term.",
+      icon: ClipboardList,
+      run: async () => {
+        const { downloadAttendanceRegister } = await import("@/lib/pdf/class-report");
+        return downloadAttendanceRegister(attendanceSummary(), {
+          className: "All streams",
+          from: new Date(Date.now() - 90 * 86_400_000).toLocaleDateString("en-GB"),
+          to: new Date().toLocaleDateString("en-GB"),
+        });
+      },
+    },
+    {
+      id: "statements",
+      title: "Fee statements (top 8)",
+      detail: "Bursar-ready statements for the largest outstanding balances.",
+      icon: Receipt,
+      run: async () => {
+        const { downloadFeeStatement } = await import("@/lib/pdf/fee-statement");
+        const debtors = [...learners]
+          .filter((learner) => Number(learner.balance ?? 0) > 0)
+          .sort((a, b) => Number(b.balance ?? 0) - Number(a.balance ?? 0))
+          .slice(0, 8);
+        for (const learner of debtors) {
+          await downloadFeeStatement(learner, ledger.filter((row) => row.studentId === learner.id), {
+            term: "Term 2",
+            academicYear: "2026",
+          });
+        }
+      },
+    },
+    {
+      id: "ids",
+      title: "Learner ID cards",
+      detail: "A4 2-up print sheet with crop marks, crest and QR verification.",
+      icon: IdCard,
+      run: async () => {
+        const { downloadIdCards } = await import("@/lib/pdf/id-card");
+        return downloadIdCards(learners.slice(0, 12), { term: "Term 2 2026" });
+      },
+    },
+  ];
+
+  const allowedPrintables = printables.filter((job) => canGenerateDocument(role, job.id));
+
+  const runPrintable = async (job: (typeof printables)[number]) => {
+    if (!canGenerateDocument(role, job.id)) {
+      const policy = GENERATED_DOCUMENTS[job.id];
+      toast({
+        variant: "destructive",
+        title: "Not your document to build",
+        description: `“${job.title}” carries ${policy?.reason.toLowerCase() ?? "restricted data"}, so it stays with ${(policy?.roles ?? [])
+          .map((allowed) => ROLE_LABEL[allowed])
+          .join(", ")}.`,
+      });
+      return;
+    }
+    setLoadingId(job.id);
+    try {
+      await job.run();
+      toast({ title: `${job.title} ready`, description: "Vector PDF downloaded." });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: `${job.title} failed`,
+        description: error instanceof Error ? error.message : "Unexpected export error",
+      });
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   const renderReportList = (reports: ReportItem[]) => (
     <div className="grid gap-4 md:grid-cols-2">
       {reports.map((report) => (
-        <Card key={report.id} className="glass-card hover:shadow-lg transition-all duration-300 border-primary/10">
+        <Card key={report.id} className="glass-panel border-border/60 hover-lift">
           <CardContent className="p-6 flex items-start gap-4">
-            <div className="p-3 rounded-2xl bg-primary/5 text-primary shadow-inner">
+            <div className="p-3 rounded-2xl bg-primary/8 text-primary">
               <report.icon className="h-5 w-5" />
             </div>
-            <div className="flex-1">
-              <h3 className="font-black text-[10px] sm:text-xs uppercase tracking-widest">{report.title}</h3>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-[10px] sm:text-xs uppercase tracking-widest text-foreground">{report.title}</h3>
+                {report.badge && (
+                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[7px] font-black uppercase tracking-[0.14em] text-accent">
+                    {report.badge}
+                  </span>
+                )}
+              </div>
               <p className="text-[10px] text-muted-foreground mt-1 mb-4 leading-relaxed font-medium">{report.description}</p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                onClick={() => handleGenerate(report)}
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => generate(report)}
                 disabled={loadingId === report.id}
-                className="rounded-full h-9 px-6 font-black text-[9px] uppercase border-primary/20 text-primary hover:bg-primary/5 transition-all"
+                className="rounded-full h-9 px-5 font-black text-[9px] uppercase border-primary/20 text-primary hover:bg-primary/5"
               >
                 {loadingId === report.id ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-2" />
                 ) : (
                   <Download className="h-3 w-3 mr-2" />
                 )}
-                {loadingId === report.id ? "Compiling..." : "Generate Report"}
+                {loadingId === report.id ? "Building PDF…" : "Generate PDF"}
               </Button>
             </div>
           </CardContent>
@@ -115,21 +334,21 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8 pb-24 font-body">
-      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
             <Zap className="h-2.5 w-2.5 mr-1.5" /> Institutional Hub
           </Badge>
           <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-tight">Reports Center</h1>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">Generate and export system-wide analytics and records.</p>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">
+            Every report is a real vector PDF — letterhead, crest and selectable text.
+          </p>
         </div>
-        <Button variant="outline" className="rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-black text-[9px] uppercase px-8">
+        <Button variant="outline" className="rounded-full h-11 border-border/70 text-primary bg-card shadow-sm font-black text-[9px] uppercase px-8">
           <History className="mr-2 h-4 w-4" /> Audit History
         </Button>
       </div>
 
-      {/* SUMMARY CARDS */}
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 px-1">
         <Card className="colorful-gradient text-white border-none shadow-xl rounded-[2rem] overflow-hidden group">
           <CardContent className="p-6 relative overflow-hidden">
@@ -137,59 +356,143 @@ export default function ReportsPage() {
               <DollarSign className="h-20 w-20" />
             </div>
             <p className="text-[10px] uppercase font-black opacity-70 tracking-widest">Total Fee Collection</p>
-            <h2 className="text-2xl font-black mt-2">TZS 45,500,000</h2>
+            <h2 className="text-2xl font-black mt-2">TZS {totalCollected.toLocaleString()}</h2>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full">82% TARGET</Badge>
+              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full">{collectionRate}% OF BILLED</Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-primary/10 shadow-lg rounded-[2rem] overflow-hidden group">
+        <Card className="glass-panel border-border/60 shadow-lg rounded-[2rem] overflow-hidden group">
           <CardContent className="p-6 relative overflow-hidden">
             <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
               <TrendingUp className="h-20 w-20" />
             </div>
             <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Overall Pass Rate</p>
-            <h2 className="text-2xl font-black text-primary mt-2">78.4%</h2>
+            <h2 className="text-2xl font-black text-primary mt-2">
+              {gradeRows.length > 0
+                ? `${((gradeRows.filter((row) => Number(row.score) >= 45).length / gradeRows.length) * 100).toFixed(1)}%`
+                : "—"}
+            </h2>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-green-100 text-green-700 border-none font-black text-[8px] rounded-full">↑ 2.1% TREND</Badge>
+              <Badge className="bg-emerald-500/12 text-emerald-600 border-none font-black text-[8px] rounded-full">NECTA CSEE SCALE</Badge>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="glass-card border-primary/10 shadow-lg rounded-[2rem] overflow-hidden group">
+        <Card className="glass-panel border-border/60 shadow-lg rounded-[2rem] overflow-hidden group">
           <CardContent className="p-6 relative overflow-hidden">
             <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
               <Package className="h-20 w-20" />
             </div>
-            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Inventory Status</p>
-            <h2 className="text-2xl font-black text-green-600 mt-2">Optimal</h2>
+            <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Printables queued</p>
+            <h2 className="text-2xl font-black text-emerald-600 mt-2">
+              {(assets || []).length} assets · {(staff || []).length} staff
+            </h2>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-orange-100 text-orange-600 border-none font-black text-[8px] rounded-full">3 ITEMS LOW</Badge>
+              <Badge className="bg-primary/10 text-primary border-none font-black text-[8px] rounded-full">VECTOR ENGINE ONLINE</Badge>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* CATEGORIZED REPORTS */}
-      <Tabs defaultValue="financial" className="px-1 space-y-8">
-        <TabsList className="bg-muted/40 p-1 rounded-2xl w-full flex h-auto border border-muted/50 shadow-inner overflow-x-auto">
+      <div className="px-1 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">Vector printables</p>
+            <h2 className="text-sm font-black uppercase tracking-tight text-foreground flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-500" /> Real documents, not screenshots
+            </h2>
+          </div>
+          <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-600 font-black text-[8px] uppercase tracking-widest rounded-full">
+            pdf-lib · selectable text
+          </Badge>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {allowedPrintables.map((job) => (
+            <div key={job.id} className="glass-panel rounded-2xl p-4 flex flex-col gap-2">
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary">
+                <job.icon className="h-4 w-4" />
+              </span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-foreground">{job.title}</p>
+              <p className="text-[9px] font-medium leading-relaxed text-muted-foreground flex-1">{job.detail}</p>
+              <Button
+                size="sm"
+                onClick={() => runPrintable(job)}
+                disabled={loadingId !== null}
+                className="rounded-full h-8 font-black text-[8px] uppercase tracking-widest colorful-gradient text-white"
+              >
+                {loadingId === job.id ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : <Download className="h-3 w-3 mr-1.5" />}
+                {loadingId === job.id ? "Building..." : "Download PDF"}
+              </Button>
+            </div>
+          ))}
+        </div>
+
+        {allowedPrintables.length < printables.length && (
+          <p className="flex items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[9px] font-medium leading-relaxed text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
+            {printables.length - allowedPrintables.length} of these builders are hidden for your role
+            ({role ? ROLE_LABEL[role] : "guest"}) — fee statements need finance, ID sheets need an
+            administrator.
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <span className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">Sample output:</span>
+          {[
+            { file: "fee-statement.pdf", label: "Fee statement" },
+            { file: "report-card.pdf", label: "Report card" },
+            { file: "class-ranking.pdf", label: "Ranking" },
+            { file: "attendance-register.pdf", label: "Register" },
+            { file: "learner-id-cards.pdf", label: "ID sheet" },
+            { file: "timetable.pdf", label: "Timetable" },
+            { file: "reports/fee-ledger.pdf", label: "Ledger report" },
+          ].map((sample) => {
+            const allowed = canOpenDocument(role, sample.file);
+            return allowed ? (
+              <a
+                key={sample.file}
+                href={`/printables/${sample.file}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary"
+              >
+                {sample.label}
+              </a>
+            ) : (
+              <span
+                key={sample.file}
+                title="Restricted to another role"
+                className="inline-flex items-center gap-1 rounded-full border border-dashed border-border/70 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.14em] text-muted-foreground/50"
+              >
+                <ShieldCheck className="h-2.5 w-2.5" />
+                {sample.label}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      <Tabs defaultValue="financial" className="px-1 space-y-6">
+        <TabsList className="bg-muted/40 p-1.5 rounded-2xl w-full flex h-auto border border-border/60 overflow-x-auto gap-1">
           <TabsTrigger value="financial" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Financial</TabsTrigger>
           <TabsTrigger value="academic" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Academic</TabsTrigger>
           <TabsTrigger value="operations" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Operations</TabsTrigger>
           <TabsTrigger value="admin" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Admin</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="financial" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+
+        <TabsContent value="financial" className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {renderReportList(financialReports)}
         </TabsContent>
-        <TabsContent value="academic" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <TabsContent value="academic" className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {renderReportList(academicReports)}
         </TabsContent>
-        <TabsContent value="operations" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <TabsContent value="operations" className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {renderReportList(operationsReports)}
         </TabsContent>
-        <TabsContent value="admin" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+        <TabsContent value="admin" className="mt-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
           {renderReportList(adminReports)}
         </TabsContent>
       </Tabs>

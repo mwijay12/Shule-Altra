@@ -1,0 +1,46 @@
+rules_version = '2';
+
+/**
+ * Shule Altra — Cloud Storage rules.
+ *
+ * Only one kind of object exists right now: a learner photograph at
+ * `schools/{schoolId}/students/{studentId}/photo.jpg`. Guardian letters and
+ * report card archives belong under the same school prefix when they land, and
+ * they inherit the rule below: members read, the office writes, nobody deletes
+ * except an administrator.
+ */
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    match /schools/{schoolId} {
+      function staffPath() {
+        return /databases/(default)/documents/schools/$(schoolId)/staff/$(request.auth.uid);
+      }
+      function isStaff() {
+        return request.auth != null && firestore.exists(staffPath());
+      }
+      function role() {
+        return isStaff() ? firestore.get(staffPath()).data.role : '';
+      }
+      function inRole(roles) {
+        return isStaff() && role() in roles;
+      }
+
+      match /students/{studentId}/{fileName} {
+        allow read: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT']);
+        allow write: if inRole(['ADMIN', 'TEACHER'])
+          && request.resource.size < 2 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
+        allow delete: if inRole(['ADMIN']);
+      }
+
+      match /{allPaths=**} {
+        allow read, write: if inRole(['ADMIN']);
+      }
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -23,7 +23,6 @@ export async function fixBrokenBalances(db: Firestore, schoolId: string = 'schoo
   for (const studentDoc of snapshot.docs) {
     const data = studentDoc.data();
     const paymentsRef = collection(db, 'schools', schoolId, 'students', studentDoc.id, 'payments');
-    const paymentsSnapshot = await getDocs(paymentsQuery(paymentsRef)); // Internal helper needed or simple query
     
     let totalPaid = 0;
     // We assume payments are already in Firestore or we treat them as zero for fresh start

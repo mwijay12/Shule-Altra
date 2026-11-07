@@ -6,7 +6,7 @@
 
 import { NextResponse } from 'next/server';
 import { initializeFirebase } from '@/firebase';
-import { doc, collection, query, where, getDocs, runTransaction, FieldValue } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, runTransaction, serverTimestamp } from 'firebase/firestore';
 import crypto from 'crypto';
 
 export async function POST(request: Request) {
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
         bankReference: transaction_id,
         paymentMethod: payment_method,
         reconciled: true,
-        reconciledAt: FieldValue.serverTimestamp()
+        reconciledAt: serverTimestamp()
       });
 
       // Update Student Balance
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       transaction.update(studentRef, {
         totalPaid: newPaid,
         balance: newBalance,
-        lastPaymentDate: FieldValue.serverTimestamp(),
+        lastPaymentDate: serverTimestamp(),
         paymentStatus: newBalance <= 0 ? 'CLEARED' : 'PARTIAL'
       });
     });

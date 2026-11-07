@@ -37,10 +37,8 @@ import {
 } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
-import { collection, query, orderBy, doc, where, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, query, orderBy, doc, where, addDoc, serverTimestamp, getDocs } from "firebase/firestore"
 import { getCSEEGrade, calculateCSEEDivision, calculateClassRankings, analyzeSubjectPerformance, type SubjectGrade } from "@/lib/necta-logic"
-import { buildReportCardData } from "@/lib/report-card-builder"
-import { exportReportCardToWord } from "@/lib/export-utils"
 import { cn } from "@/lib/utils"
 import type { Student } from "@/types/student"
 import type { GradeRecord } from "@/types/grade"
@@ -153,9 +151,67 @@ export default function AcademicsPage() {
   const handleExportReport = async (student: Student) => {
     setIsExporting(student.id)
     try {
-      const data = await buildReportCardData("school-001", student.id, activeTerm, activeExam)
+      // Pull every recorded assessment for the learner so the PDF is never empty,
+      // even when the selected exam window has no rows yet.
+      const snap = await getDocs(
+        query(
+          collection(db, "schools", "school-001", "grades"),
+          where("studentId", "==", student.id)
+        )
+      )
+      const bySubject = new Map<string, number>()
+      snap.docs.forEach((docSnap) => {
+        const row = docSnap.data() as any
+        const subject = row.subject ?? "Subject"
+        const score = Number(row.score ?? 0)
+        const current = bySubject.get(subject)
+        if (current === undefined || score > current) bySubject.set(subject, score)
+      })
+
+      if (bySubject.size === 0) {
+        toast({
+          variant: "destructive",
+          title: "No assessments yet",
+          description: `Record subject scores for ${student.name} before issuing a report card.`,
+        })
+        return
+      }
+
+      const { downloadReportCard } = await import("@/lib/pdf/report-card")
+      await downloadReportCard({
+        student: {
+          id: student.id,
+          name: student.name,
+          className: student.class,
+          admissionNumber: (student as any).admissionNumber ?? student.id,
+          gender: student.gender,
+        },
+        grades: Array.from(bySubject.entries()).map(([subject, score]) => ({ subject, score })),
+        term: activeTerm,
+        academicYear: "2026",
+        teacherRemark: `Conduct grade: ${student.conductPoints ?? 100} points.`,
+      })
+      toast({
+        title: "Report card PDF ready",
+        description: `${student.name} · letterhead, crest and NECTA grading.`,
+      })
+    } catch (err: any) {
+      toast({ variant: "destructive", title: "Export Failed", description: err.message || "No assessment data found." })
+    } finally {
+      setIsExporting(null)
+    }
+  }
+
+  const handleExportWord = async (student: Student) => {
+    setIsExporting(student.id)
+    try {
+      const [{ buildReportCardData }, { exportReportCardToWord }] = await Promise.all([
+        import("@/lib/report-card-builder"),
+        import("@/lib/export-utils"),
+      ])
+      const data = await buildReportCardData(db, "school-001", student.id, activeTerm, activeExam)
       await exportReportCardToWord(data)
-      toast({ title: "Report Compiled", description: `Transcript ready for ${student.name}.` })
+      toast({ title: "Word transcript ready", description: `Editable copy exported for ${student.name}.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Export Failed", description: err.message || "No assessment data found." })
     } finally {
@@ -252,15 +308,24 @@ export default function AcademicsPage() {
                               <Button variant="ghost" size="sm" className="font-black text-primary text-[10px] uppercase rounded-full" onClick={() => setGradingStudent(student)}>
                                 Add Assessment <ChevronRight className="ml-1 h-3 w-3" />
                               </Button>
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="font-black text-[10px] uppercase rounded-full h-8 px-4 border-primary/10"
+                              <Button
+                                size="sm"
+                                className="font-black text-[10px] uppercase rounded-full h-8 px-4 colorful-gradient text-white shadow-md shadow-primary/20"
                                 onClick={() => handleExportReport(student)}
                                 disabled={isExporting === student.id}
                               >
                                 {isExporting === student.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
-                                Report Card
+                                Report Card PDF
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="font-black text-[9px] uppercase rounded-full h-8 px-3 text-muted-foreground"
+                                onClick={() => handleExportWord(student)}
+                                disabled={isExporting === student.id}
+                                title="Editable Word copy"
+                              >
+                                DOCX
                               </Button>
                             </div>
                           </TableCell>

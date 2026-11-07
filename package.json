@@ -1,22 +1,29 @@
-
 {
-  "name": "nextn",
+  "name": "shule-altra",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
+    "demo": "NEXT_PUBLIC_DEMO_MODE=true next dev --turbopack -p 9002",
+    "demo:build": "NEXT_PUBLIC_DEMO_MODE=true NODE_ENV=production next build",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "demo:smoke": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/pages.tsx",
+    "demo:smoke:data": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/data-flow.tsx",
+    "demo:pdf": "tsx --tsconfig tsconfig.json scripts/demo-smoke/pdf.ts",
+    "demo:reports": "tsx --tsconfig tsconfig.json scripts/demo-smoke/reports.ts",
+    "demo:docs": "tsx --tsconfig tsconfig.json scripts/demo-smoke/documents.ts",
+    "demo:email": "tsx --tsconfig tsconfig.json scripts/demo-smoke/email.ts"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",
+    "@hookform/resolvers": "^4.1.3",
     "@hugeicons/core-free-icons": "^1.0.0",
     "@hugeicons/react": "^1.0.0",
-    "@hookform/resolvers": "^4.1.3",
     "@motionone/utils": "^10.18.0",
     "@radix-ui/react-accordion": "^1.2.3",
     "@radix-ui/react-alert-dialog": "^1.1.6",
@@ -54,6 +61,8 @@
     "motion": "^12.0.0",
     "next": "15.5.9",
     "patch-package": "^8.0.0",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.3",
@@ -63,17 +72,23 @@
     "sharp": "^0.33.5",
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
+    "three": "^0.187.0",
     "xlsx": "^0.18.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/file-saver": "^2.0.7",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
+    "@types/three": "^0.187.0",
     "genkit-cli": "^1.28.0",
+    "jsdom": "^31.0.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }

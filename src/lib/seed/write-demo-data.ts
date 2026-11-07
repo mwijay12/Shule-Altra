@@ -1,92 +1,43 @@
-import { doc, writeBatch, collection, setDoc, getFirestore } from 'firebase/firestore';
+import { doc, writeBatch } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
-import { 
-  generateSchool, 
-  generateStaff, 
-  generateStudents, 
-  generateGrades, 
-  generateTransactions, 
-  generateAttendance 
-} from './generate-demo-data';
+import { buildDemoDataset, DEMO_SCHOOL_ID } from '@/lib/demo/seed-data';
 
 const { firestore: db } = initializeFirebase();
-const SCHOOL_ID = 'demo-school-001';
 
+/**
+ * Institutional demo seed.
+ *
+ * Writes the deterministic Tanzanian demo dataset (students, NECTA grades,
+ * fee ledger, attendance, boarding, fleet, canteen and inventory) into the
+ * active institutional node. In demo mode this lands in the local offline
+ * datastore; with Firebase configured it writes to Firestore in batches.
+ */
 export async function seedDemoData(onProgress?: (step: string, percent: number) => void) {
-  try {
-    // 1. Generate all data
-    if (onProgress) onProgress('Generating data structures...', 10);
-    const school = generateSchool();
-    const staff = generateStaff();
-    const students = generateStudents();
-    const grades = generateGrades(students);
-    const transactions = generateTransactions(students, staff);
-    const attendance = generateAttendance(students);
+  const dataset = buildDemoDataset();
+  const entries = Object.entries(dataset);
 
-    // 2. Write School Profile
-    if (onProgress) onProgress('Writing school profile...', 20);
-    await setDoc(doc(db, 'schools', SCHOOL_ID), school);
+  onProgress?.('Preparing institutional dataset...', 5);
 
-    // 3. Write Staff (Batched)
-    if (onProgress) onProgress('Writing faculty nodes...', 30);
-    const staffBatch = writeBatch(db);
-    staff.forEach((s, i) => {
-      const ref = doc(db, 'schools', SCHOOL_ID, 'staff', `staff-id-${i}`);
-      staffBatch.set(ref, s);
+  const CHUNK_SIZE = 400; // stays well under Firestore's 500-write batch limit
+
+  for (let index = 0; index < entries.length; index += CHUNK_SIZE) {
+    const chunk = entries.slice(index, index + CHUNK_SIZE);
+    const percent = Math.min(98, Math.round(((index + chunk.length) / entries.length) * 100));
+    onProgress?.(`Writing registry nodes (${index + chunk.length}/${entries.length})...`, percent);
+
+    const batch = writeBatch(db);
+    chunk.forEach(([path, data]) => {
+      batch.set(doc(db, path), data);
     });
-    await staffBatch.commit();
-
-    // 4. Write Students (Batched)
-    if (onProgress) onProgress('Synchronizing student directory...', 50);
-    const studentBatch = writeBatch(db);
-    students.forEach(s => {
-      const ref = doc(db, 'schools', SCHOOL_ID, 'students', s.id);
-      studentBatch.set(ref, s);
-    });
-    await studentBatch.commit();
-
-    // 5. Write Grades (Multi-Batched)
-    if (onProgress) onProgress('Compiling academic matrices...', 70);
-    for (let i = 0; i < grades.length; i += 400) {
-      const batch = writeBatch(db);
-      const chunk = grades.slice(i, i + 400);
-      chunk.forEach((g, j) => {
-        const ref = doc(collection(db, 'schools', SCHOOL_ID, 'grades'));
-        batch.set(ref, g);
-      });
-      await batch.commit();
-    }
-
-    // 6. Write Transactions
-    if (onProgress) onProgress('Injecting financial ledger...', 85);
-    const txBatch = writeBatch(db);
-    transactions.forEach(tx => {
-      const ref = doc(collection(db, 'schools', SCHOOL_ID, 'transactions'));
-      txBatch.set(ref, tx);
-    });
-    await txBatch.commit();
-
-    // 7. Write Attendance (Multi-Batched)
-    if (onProgress) onProgress('Logging historical presence...', 95);
-    for (let i = 0; i < attendance.length; i += 400) {
-      const batch = writeBatch(db);
-      const chunk = attendance.slice(i, i + 400);
-      chunk.forEach(a => {
-        const ref = doc(collection(db, 'schools', SCHOOL_ID, 'attendance'));
-        batch.set(ref, a);
-      });
-      await batch.commit();
-    }
-
-    if (onProgress) onProgress('Seed complete!', 100);
-    
-    return { 
-      success: true, 
-      summary: `Seeded: 1 school, 8 staff, 60 students, ${grades.length} grades, ${transactions.length} transactions, ${attendance.length} attendance records.` 
-    };
-
-  } catch (error: any) {
-    console.error('[SEED] Failed:', error);
-    throw new Error(`Data seeding aborted: ${error.message}`);
+    await batch.commit();
   }
+
+  onProgress?.('Seed complete!', 100);
+
+  const studentCount = entries.filter(([path]) => path.includes('/students/')).length;
+
+  return {
+    success: true,
+    summary: `Seeded ${studentCount} students, ${entries.length} documents into ${DEMO_SCHOOL_ID}.`,
+  };
 }

@@ -134,9 +134,11 @@ export function useAuth() {
         attendance: ['ADMIN', 'TEACHER'],
         assets: ['ADMIN', 'ACCOUNTANT', 'BURSAR'],
         reports: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
+        analytics: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
         transport: ['ADMIN', 'BURSAR'],
         hostel: ['ADMIN', 'BURSAR'],
         timetable: ['ADMIN', 'TEACHER'],
+        communications: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
       };
 
       const allowedRoles = ACCESS_MATRIX[module];

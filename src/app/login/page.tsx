@@ -4,7 +4,7 @@
 import * as React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ShieldCheck, Lock, Mail, Key, ArrowRight, Sparkles, Loader2, AlertCircle, Building2, UserCircle } from "lucide-react"
+import { Lock, Mail, Key, ArrowRight, Sparkles, Loader2, AlertCircle, Building2, UserCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth as useFirebaseId } from "@/firebase"
 import { signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "firebase/auth"
+import { DEMO_MODE } from "@/lib/demo/config"
+import { BrandMark, Wordmark } from "@/components/brand/logo"
+
+const DEMO_ROLES = [
+  { email: "admin@shule.pro", label: "Administrator", scope: "Full institutional control" },
+  { email: "teacher@shule.pro", label: "Teacher", scope: "Students • Attendance • Academics" },
+  { email: "bursar@shule.pro", label: "Bursar", scope: "Finance • Canteen • Boarding" },
+] as const
 
 export default function LoginPage() {
   const auth = useFirebaseId()
@@ -23,6 +31,7 @@ export default function LoginPage() {
   const [demoLoading, setDemoLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [demoRole, setDemoRole] = useState("ADMIN")
+  const [activeDemoEmail, setActiveDemoEmail] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -58,6 +67,30 @@ export default function LoginPage() {
     }
   }
 
+  const handleRoleLogin = async (roleEmail: string) => {
+    setDemoLoading(true)
+    setActiveDemoEmail(roleEmail)
+    setError(null)
+    try {
+      await signInWithEmailAndPassword(auth, roleEmail, "demo2026")
+      router.replace("/dashboard")
+    } catch (err) {
+      setError("Demo role access failed to initialize.")
+      setDemoLoading(false)
+      setActiveDemoEmail(null)
+    }
+  }
+
+  // Arriving from the landing page "Live Demo" call to action
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const wantsDemo = new URLSearchParams(window.location.search).get("demo")
+    if (wantsDemo) {
+      void handleRoleLogin("admin@shule.pro")
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className="min-h-screen bg-muted/20 flex items-center justify-center p-6 font-body selection:bg-primary/20 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-full -z-10 opacity-5 pointer-events-none">
@@ -70,11 +103,11 @@ export default function LoginPage() {
 
       <div className="w-full max-w-lg space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-1000">
         <div className="text-center space-y-4">
-          <div className="h-20 w-20 rounded-[2rem] colorful-gradient flex items-center justify-center text-white mx-auto shadow-2xl mb-6 animate-float border-4 border-white/20">
-            <ShieldCheck className="h-10 w-10" />
-          </div>
+          <BrandMark size={80} radius={24} className="mx-auto mb-6 animate-float drop-shadow-2xl" />
           <div className="space-y-2 px-4">
-            <h1 className="text-2xl sm:text-4xl font-headline font-black text-primary tracking-tighter uppercase truncate">{systemName}</h1>
+            <h1 className="flex justify-center">
+              <Wordmark size={34} pro />
+            </h1>
             <p className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.4em]">Sovereign Verification Gateway 2026</p>
           </div>
         </div>
@@ -145,22 +178,55 @@ export default function LoginPage() {
                   )}
                 </Button>
 
-                <div className="pt-6 border-t border-dashed">
+                <div className="pt-6 border-t border-dashed space-y-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Demo Roles</p>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">No setup</span>
+                  </div>
+
+                  <div className="grid gap-2">
+                    {DEMO_ROLES.map((role) => (
+                      <button
+                        key={role.email}
+                        type="button"
+                        onClick={() => handleRoleLogin(role.email)}
+                        disabled={loading || demoLoading}
+                        className="group flex items-center justify-between gap-3 w-full rounded-2xl border border-primary/10 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-black uppercase tracking-widest text-primary">{role.label}</p>
+                          <p className="text-[9px] font-bold uppercase tracking-tight text-muted-foreground truncate">{role.scope}</p>
+                        </div>
+                        {demoLoading && activeDemoEmail === role.email ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
+                        ) : (
+                          <ArrowRight className="h-4 w-4 text-primary shrink-0 transition-transform group-hover:translate-x-1" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
                   <Button 
                     type="button"
                     variant="outline"
                     onClick={handleDemoLogin}
                     disabled={loading || demoLoading}
-                    className="w-full h-14 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-lg text-sm group hover:bg-primary/5 transition-all uppercase tracking-[0.2em]"
+                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[10px] group hover:bg-primary/5 transition-all uppercase tracking-[0.2em]"
                   >
                     {demoLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <>
-                        <UserCircle className="mr-3 h-5 w-5" /> Quick Demo Access
+                        <UserCircle className="mr-3 h-4 w-4" /> Continue as Guest Admin
                       </>
                     )}
                   </Button>
+
+                  {DEMO_MODE && (
+                    <p className="text-[9px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
+                      Demo node runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
+                    </p>
+                  )}
                 </div>
               </div>
             </form>
