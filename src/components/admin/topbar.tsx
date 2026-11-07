@@ -229,7 +229,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
         </button>
 
         <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-card/70 py-1 pl-1 pr-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-[11px] font-black text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-[11px] font-black text-white">
             {(role ?? 'A').slice(0, 1)}
           </span>
           <span className="hidden flex-col leading-none sm:flex">

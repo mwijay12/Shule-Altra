@@ -172,7 +172,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               {range === option.key && (
                 <motion.span
                   layoutId="chart-range-pill"
-                  className="absolute inset-0 rounded-xl bg-primary shadow-md shadow-primary/30"
+                  className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-md shadow-primary/30"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}

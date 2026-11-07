@@ -4,39 +4,37 @@
 
 @layer base {
   :root {
-    /* One palette across the product. Blue stays the system colour (every
-       action, link and chart in the app already points at it); the violet
-       #945CE6 accent is replaced by the landing page's rust #C1441C, and the
-       workspace paper is warmed to the landing's cream family so the public
-       page and the app read as one institution. */
-    --background: 40 33% 97%; /* #FAF7F0 warm paper */
-    --foreground: 30 10% 11%;
+    /* The product's own identity: a crisp neutral workspace with a blue→indigo
+       system. The indigo is deep (#4B3D94), not the neon #945CE6 it replaced —
+       rich enough to carry the brand, quiet enough to sit under data all day. */
+    --background: 210 40% 98%;
+    --foreground: 215 25% 10%;
     --card: 0 0% 100%;
-    --card-foreground: 30 10% 11%;
+    --card-foreground: 215 25% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 10% 11%;
-    --primary: 214 69% 39%; /* #1F5BA6 — kept */
+    --popover-foreground: 215 25% 10%;
+    --primary: 214 69% 39%; /* #1F5BA6 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 28% 94%;
+    --secondary: 210 40% 96%;
     --secondary-foreground: 214 69% 34%;
-    --muted: 40 22% 94%;
-    --muted-foreground: 30 8% 42%;
-    --accent: 15 75% 43%; /* #C1441C rust, from the landing */
+    --muted: 210 40% 94%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 251 43% 41%; /* #4B3D94 deep indigo */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 74% 44%;
+    --destructive: 0 74% 46%;
     --destructive-foreground: 0 0% 98%;
-    --border: 35 20% 88%;
-    --input: 35 20% 88%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
     --ring: 214 69% 39%;
     --radius: 1.25rem;
 
-    --sidebar-background: 40 20% 99%;
-    --sidebar-foreground: 30 10% 11%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 215 25% 10%;
     --sidebar-primary: 214 69% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 40 30% 95%;
+    --sidebar-accent: 210 40% 96%;
     --sidebar-accent-foreground: 214 69% 34%;
-    --sidebar-border: 35 20% 90%;
+    --sidebar-border: 214 32% 91%;
     --sidebar-ring: 214 69% 39%;
   }
 }
@@ -94,14 +92,12 @@
 }
 
 .colorful-gradient {
-  /* tonal blue, not a rainbow: the old primary→violet sweep was the single
-     most "generated" looking surface in the product. */
-  background: linear-gradient(135deg, #1f5ba6 0%, #17457e 100%);
+  /* blue → deep indigo: one tonal ramp, no neon end-stop. */
+  background: linear-gradient(135deg, #1f5ba6 0%, #4b3d94 100%);
 }
 
 .text-gradient {
-  /* solid ink instead of clipped gradient text */
-  color: hsl(var(--primary));
+  @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
 }
 
 ::-webkit-scrollbar {
@@ -110,12 +106,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d8d1c3;
+  background: #cbd5e1;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #c2b8a5;
+  background: #94a3b8;
 }
 /* ==========================================================================
    AURORA ADMIN — premium shell tokens & utilities
@@ -123,34 +119,34 @@
 
 @layer base {
   .dark {
-    --background: 30 12% 7%;
-    --foreground: 40 22% 94%;
-    --card: 30 10% 11%;
-    --card-foreground: 40 22% 94%;
-    --popover: 30 11% 9%;
-    --popover-foreground: 40 22% 94%;
-    --primary: 213 78% 60%;
-    --primary-foreground: 30 12% 8%;
-    --secondary: 30 8% 16%;
-    --secondary-foreground: 40 22% 94%;
-    --muted: 30 8% 16%;
-    --muted-foreground: 38 10% 66%;
-    --accent: 15 76% 58%;
-    --accent-foreground: 30 12% 8%;
-    --destructive: 8 72% 55%;
+    --background: 222 47% 7%;
+    --foreground: 210 40% 96%;
+    --card: 222 40% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 222 44% 9%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 214 85% 62%;
+    --primary-foreground: 222 47% 8%;
+    --secondary: 222 32% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 222 28% 16%;
+    --muted-foreground: 215 20% 66%;
+    --accent: 251 60% 72%;
+    --accent-foreground: 222 47% 8%;
+    --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 8% 20%;
-    --input: 30 8% 20%;
-    --ring: 213 78% 60%;
+    --border: 222 26% 20%;
+    --input: 222 26% 20%;
+    --ring: 214 85% 62%;
 
-    --sidebar-background: 30 11% 9%;
-    --sidebar-foreground: 40 22% 94%;
-    --sidebar-primary: 213 78% 60%;
-    --sidebar-primary-foreground: 30 12% 8%;
-    --sidebar-accent: 30 8% 16%;
-    --sidebar-accent-foreground: 213 78% 66%;
-    --sidebar-border: 30 8% 20%;
-    --sidebar-ring: 213 78% 60%;
+    --sidebar-background: 222 44% 9%;
+    --sidebar-foreground: 210 40% 96%;
+    --sidebar-primary: 214 85% 62%;
+    --sidebar-primary-foreground: 222 47% 8%;
+    --sidebar-accent: 222 32% 16%;
+    --sidebar-accent-foreground: 214 85% 62%;
+    --sidebar-border: 222 26% 20%;
+    --sidebar-ring: 214 85% 62%;
   }
 }
 
@@ -198,8 +194,8 @@
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(60% 45% at 12% 0%, hsl(163 45% 21% / 0.1), transparent 65%),
-    radial-gradient(50% 40% at 88% 8%, hsl(45 85% 55% / 0.18), transparent 60%),
+    radial-gradient(60% 45% at 12% 0%, hsl(var(--primary) / 0.13), transparent 65%),
+    radial-gradient(50% 40% at 88% 8%, hsl(var(--accent) / 0.11), transparent 60%),
     radial-gradient(45% 45% at 50% 100%, hsl(var(--primary) / 0.07), transparent 70%),
     hsl(var(--background));
 }

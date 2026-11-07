@@ -60,7 +60,7 @@ function DraggableRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-[10px] font-black text-primary">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-[10px] font-black text-primary">
         {String(index + 1).padStart(2, '0')}
       </span>
 
@@ -144,7 +144,7 @@ export function PriorityBoard({ items, onExport }: PriorityBoardProps) {
             {order.length} balances to chase
           </h3>
         </div>
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary">
+        <span className="rounded-full bg-gradient-to-br from-primary/15 to-accent/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary">
           Draggable
         </span>
       </div>

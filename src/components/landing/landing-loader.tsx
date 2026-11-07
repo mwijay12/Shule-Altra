@@ -2,8 +2,12 @@
 
 /**
  * @fileOverview First-visit build: a mono counter that reports progress, then a
- * two-panel curtain that hands off to the hero. Skipped entirely for
- * `prefers-reduced-motion`, and never blocks for longer than 2s.
+ * two-panel curtain that hands off to the hero.
+ *
+ * The counter is driven by one rAF loop that must never restart, so `onDone`
+ * is held in a ref instead of the effect's dependency list — an unstable
+ * callback used to re-run the effect every frame and leave the counter at 000%.
+ * Skipped entirely when motion is off, and hard-capped at 1.8s.
  */
 
 import * as React from "react"
@@ -13,37 +17,50 @@ export function LandingLoader({ onDone }: { onDone: () => void }) {
   const [progress, setProgress] = React.useState(0)
   const [exiting, setExiting] = React.useState(false)
   const done = React.useRef(false)
+  const onDoneRef = React.useRef(onDone)
+  const finishRef = React.useRef<() => void>(() => {})
+
+  React.useEffect(() => {
+    onDoneRef.current = onDone
+  }, [onDone])
 
   const finish = React.useCallback(() => {
     if (done.current) return
     done.current = true
     setProgress(100)
     setExiting(true)
-    window.setTimeout(() => onDone(), 420)
-  }, [onDone])
+    window.setTimeout(() => onDoneRef.current(), 420)
+  }, [])
+
+  React.useEffect(() => {
+    finishRef.current = finish
+  }, [finish])
 
   React.useEffect(() => {
     if (!motionEnabled()) {
-      onDone()
+      onDoneRef.current()
       return
     }
-    const start = performance.now()
-    const duration = 1250
+
     let raf = 0
+    const start = performance.now()
+    const duration = 950
+
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / duration)
       const eased = 1 - Math.pow(1 - p, 2.2)
       setProgress(Math.round(eased * 100))
       if (p < 1) raf = requestAnimationFrame(tick)
-      else finish()
+      else finishRef.current()
     }
+
     raf = requestAnimationFrame(tick)
-    const guard = window.setTimeout(finish, 2000)
+    const guard = window.setTimeout(() => finishRef.current(), 1800)
     return () => {
       cancelAnimationFrame(raf)
       window.clearTimeout(guard)
     }
-  }, [finish, onDone])
+  }, [])
 
   return (
     <div className="land-loader" data-exiting={exiting ? "true" : "false"} aria-hidden>

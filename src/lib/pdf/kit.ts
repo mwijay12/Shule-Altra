@@ -14,19 +14,18 @@ export const A4_LANDSCAPE: [number, number] = [841.89, 595.28];
 export const CARD: [number, number] = [242.65, 153.07]; // 85.6mm x 54mm ID-1
 
 export const COLORS = {
-  // same palette as the app shell and the landing page: blue is the system
-  // colour, rust the accent, warm paper the stock the document is printed on.
-  navy: rgb(0.063, 0.208, 0.298),
+  // the app's identity: blue → deep indigo with a neutral, printable stock.
+  navy: rgb(0.118, 0.243, 0.4),
   primary: rgb(0.122, 0.357, 0.651),
-  accent: rgb(0.757, 0.267, 0.11),
-  ink: rgb(0.078, 0.075, 0.055),
-  muted: rgb(0.42, 0.4, 0.36),
-  line: rgb(0.882, 0.863, 0.804),
-  soft: rgb(0.973, 0.961, 0.925),
+  accent: rgb(0.294, 0.239, 0.58),
+  ink: rgb(0.09, 0.13, 0.19),
+  muted: rgb(0.42, 0.47, 0.55),
+  line: rgb(0.85, 0.88, 0.92),
+  soft: rgb(0.957, 0.969, 0.984),
   white: rgb(1, 1, 1),
-  success: rgb(0.11, 0.31, 0.25),
+  success: rgb(0.09, 0.6, 0.4),
   warning: rgb(0.85, 0.55, 0.1),
-  danger: rgb(0.76, 0.24, 0.15),
+  danger: rgb(0.8, 0.22, 0.24),
 };
 
 export const CREST = {
