@@ -73,23 +73,33 @@ const PAGES: Array<[string, React.ComponentType]> = [
  * administrator, straight from the libraries, so the screen renders its real
  * cards rather than an error toast.
  */
+const mailStatus = providerStatus();
 const mailRoom = {
-  provider: providerStatus().provider,
-  from: providerStatus().from,
-  note: providerStatus().note,
+  provider: mailStatus.provider,
+  from: mailStatus.from,
+  host: mailStatus.host ?? null,
+  note: mailStatus.note,
+  limits: mailStatus.limits,
+  copyTo: null,
+  replyTo: null,
+  mailbox: null,
   role: 'ADMIN',
   roleLabel: ROLE_LABEL.ADMIN,
   school: SCHOOL.name,
-  templates: (Object.keys(EMAIL_POLICY) as Array<keyof typeof EMAIL_POLICY>).map((id) => ({
-    id,
-    title: TEMPLATE_TITLES[id],
-    audience: EMAIL_POLICY[id].audience,
-    audienceSize: buildAudience(EMAIL_POLICY[id].audience).length,
-    sample: null,
-    allowed: canSendTemplate('ADMIN', id),
-    reason: EMAIL_POLICY[id].reason,
-    roles: EMAIL_POLICY[id].roles.map((role) => ROLE_LABEL[role]),
-  })),
+  templates: (Object.keys(EMAIL_POLICY) as Array<keyof typeof EMAIL_POLICY>).map((id) => {
+    const audience = buildAudience(EMAIL_POLICY[id].audience).length;
+    return {
+      id,
+      title: TEMPLATE_TITLES[id],
+      audience: EMAIL_POLICY[id].audience,
+      audienceSize: audience,
+      sendable: Math.min(audience, mailStatus.limits.maxPerSend),
+      sample: null,
+      allowed: canSendTemplate('ADMIN', id),
+      reason: EMAIL_POLICY[id].reason,
+      roles: EMAIL_POLICY[id].roles.map((role) => ROLE_LABEL[role]),
+    };
+  }),
 };
 
 const realFetch = globalThis.fetch;

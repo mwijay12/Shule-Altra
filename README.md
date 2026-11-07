@@ -39,7 +39,8 @@ all behave normally.
 * **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`, `npm run demo:pdf`
 * **Mail room:** `/dashboard/communications` sends branded, role-scoped email to
   guardians and staff (fee reminder, absence alert, report card, receipts, staff
-  briefing, timetable change) — preview first, dry run until `RESEND_API_KEY` is set
+  briefing, timetable change) — preview first, then Nodemailer over SMTP
+  (`SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`), Resend (`RESEND_API_KEY`), or a dry run
 * **Back to real Firebase:** `NEXT_PUBLIC_DEMO_MODE=false`, `NEXT_PUBLIC_FIREBASE_CONFIG`,
   then `firebase deploy --only firestore:rules,firestore:indexes,storage` (see `.env.example`)
 

@@ -327,13 +327,34 @@ crest, PDPA footer, plain-text twin) so they survive Gmail, Outlook and phones.
   a sentence naming the roles that can.
 * **Preview then send**: preview renders the exact HTML for the first recipient
   in a sandboxed iframe; send returns an audit id, the counts and the provider.
-* **Dry run by default**: with no `RESEND_API_KEY` every message is rendered and
-  counted but not delivered. Add the key (plus `EMAIL_FROM`, optional
-  `EMAIL_REPLY_TO`) and the same button delivers through Resend's batch API —
-  no SDK, no build change.
+* **Three providers, chosen by environment**: Nodemailer over SMTP (Gmail,
+  Zoho, cPanel, SES SMTP) → Resend → dry run. Nothing else changes: same
+  button, same templates, same audit line.
+
+```
+SMTP_HOST + SMTP_USER + SMTP_PASS   Nodemailer · any relay
+RESEND_API_KEY                      Resend batch API · better for volume
+neither                             dry run · rendered and counted, not sent
+```
+
+* **Gmail-friendly by construction**: `SMTP_PASS` may be pasted with the spaces
+  Google shows (`abcd efgh ijkl mnop`); port chooses TLS (465 implicit, 587
+  STARTTLS); the transport is pooled at concurrency 5 with a pause between
+  waves; `SMTP_MAX_PER_SEND` (200) caps one click and `SMTP_DAILY_LIMIT` (400,
+  reset at Dar midnight) caps the day. Exceeding either is **refused with the
+  reason and the numbers**, never silently truncated.
+* **Login is proven before addressing anyone**: a wrong app password costs one
+  round trip (`EAUTH`), not ninety-seven failed messages. `?probe=1` runs the
+  same check from the mail room's "Test mailbox" button without sending.
+* **The office gets a copy**: `ADMIN_NOTIFICATION_EMAIL` is BCC'd on every
+  outgoing message, so no parent can claim a reminder never arrived. Parents
+  never see the address.
 * `npm run demo:email` renders all six to `private/email-previews/*.html`,
-  asserts no leaked `undefined`, checks the brand colours, the plain-text twin
-  and the role matrix.
+  asserts no leaked `undefined`, checks the brand colours, the plain-text twin,
+  the role matrix and the provider precedence.
+* `npm run demo:smtp` aims Nodemailer at a closed port on loopback and proves
+  the failure path: no delivery, every recipient accounted for, a sentence that
+  names the host and the fix, and a dry run once credentials are removed.
 
 The demo school is deterministic: `buildDemoDataset()` rewinds its seeded
 generator and clears the name register on every call, so the 97 defaulters the
