@@ -299,16 +299,16 @@ html[data-scroll-locked] .app-scroll {
    ========================================================================== */
 
 .landing {
-  --ink: #14130f;
+  --ink: #171919;
   --ink-soft: #2a2823;
-  --cream: #f3ede2;
+  --cream: #f1efe7;
   --cream-2: #eae2d4;
-  --card: #fcfaf6;
-  --rust: #c2421b;
-  --forest: #1d5a48;
-  --marigold: #f2c230;
-  --rule: rgba(20, 19, 15, 0.12);
-  --rule-light: rgba(252, 250, 246, 0.24);
+  --card: #fbfaf5;
+  --rust: #c6431d;
+  --forest: #2b5c4e;
+  --marigold: #efc84b;
+  --rule: rgba(23, 25, 25, 0.12);
+  --rule-light: rgba(251, 250, 245, 0.24);
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -828,9 +828,9 @@ html[data-scroll-locked] .app-scroll {
   animation: land-pulse 2.6s var(--ease) infinite;
 }
 @keyframes land-pulse {
-  0% { box-shadow: 0 0 0 0 rgba(29, 90, 72, 0.45); }
-  70% { box-shadow: 0 0 0 8px rgba(29, 90, 72, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(29, 90, 72, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(43, 92, 78, 0.45); }
+  70% { box-shadow: 0 0 0 8px rgba(43, 92, 78, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(43, 92, 78, 0); }
 }
 .land-ledger-rows {
   display: flex;
@@ -877,7 +877,7 @@ html[data-scroll-locked] .app-scroll {
   padding: 3px 9px;
   border-radius: 999px;
 }
-.land-ledger-state.is-verified { background: rgba(29, 90, 72, 0.12); color: var(--forest); }
+.land-ledger-state.is-verified { background: rgba(43, 92, 78, 0.12); color: var(--forest); }
 .land-ledger-state.is-matched { background: rgba(20, 19, 15, 0.07); color: rgba(20, 19, 15, 0.7); }
 .land-ledger-state.is-pending { background: rgba(242, 194, 48, 0.28); color: #7a5c00; }
 .land-ledger-ghost {
