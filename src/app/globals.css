@@ -41,7 +41,11 @@
     @apply border-border;
   }
   html, body {
-    @apply overflow-x-hidden w-full max-w-[100vw] scroll-smooth;
+    @apply w-full max-w-full scroll-smooth;
+    /* `clip` prevents sideways bleed WITHOUT turning the element into a scroll
+       container. `overflow-x: hidden` here silently killed `position: sticky`
+       for every descendant (the sidebar used to scroll away with the page). */
+    overflow-x: clip;
   }
   body {
     @apply bg-background text-foreground font-body antialiased;

@@ -36,9 +36,13 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
   const db = useFirestore();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
+  const scrollRef = React.useRef<HTMLElement | null>(null);
 
   React.useEffect(() => {
     setMobileOpen(false);
+    // The content column owns the scroll (the rail is fixed furniture), so route
+    // changes must reset it explicitly — the window no longer scrolls.
+    scrollRef.current?.scrollTo({ top: 0 });
   }, [pathname]);
 
   React.useEffect(() => {
@@ -134,7 +138,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
   return (
     <ThemeProvider>
       <RangeProvider>
-        <div className={cn('aurora-shell flex min-h-screen w-full bg-background')}>
+        <div className={cn('aurora-shell flex h-[100dvh] w-full overflow-hidden bg-background')}>
           <div className="pointer-events-none fixed inset-0 -z-10 grid-overlay" aria-hidden />
           <AuroraSidebar
             mobileOpen={mobileOpen}
@@ -143,7 +147,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
             canAccess={canAccess}
             signOut={signOut}
           />
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
             <Topbar
               title={title}
               eyebrow={eyebrow}
@@ -152,7 +156,11 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
               notifications={notifications}
               role={role}
             />
-            <main className="min-h-0 flex-1">
+            <main
+              ref={scrollRef as React.RefObject<HTMLElement>}
+              data-app-scroll
+              className="app-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth"
+            >
               <PageTransition>{children}</PageTransition>
             </main>
           </div>

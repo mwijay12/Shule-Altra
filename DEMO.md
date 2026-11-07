@@ -121,7 +121,7 @@ The dashboard is a full re-skin of the admin shell, not a static mock-up:
 
 | Surface | What it does |
 |---|---|
-| **Aurora shell** | Static, always-visible sidebar with a sliding active pill (Framer Motion `layoutId`), a quiet GSAP opacity stagger on first paint and a spring mobile drawer. The rail never resizes, so the content grid is stable. |
+| **Aurora shell** | App-shell layout: the rail is fixed furniture at `100dvh` and only the content column scrolls (it owns the scroll and resets it per route). Static, always-visible sidebar with a sliding active pill (Framer Motion `layoutId`), a quiet GSAP opacity stagger on first paint and a spring mobile drawer. The rail never resizes and never moves — scrolling can no longer push it off-screen. |
 | **Topbar** | ⌘K command palette (searches modules **and** learner records), reporting-window selector (7D / 30D / 90D / term), live notification stream derived from the ledger, light/midnight theme switch. |
 | **Route transitions** | `AnimatePresence` crossfade per pathname + GSAP `[data-reveal]` stagger for each section. |
 | **Command deck** | Three.js wireframe orb (pointer parallax, particle halo, WebGL-guarded fallback), animated KPI tiles with count-up + SVG progress rings + sparklines, collections chart with range filters, draggable follow-up queue. |

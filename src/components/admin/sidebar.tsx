@@ -205,7 +205,9 @@ function SidebarBody({
 export function AuroraSidebar(props: AuroraSidebarProps) {
   return (
     <>
-      <aside className="sticky top-0 hidden h-screen w-[272px] shrink-0 border-r border-border/60 bg-card/70 backdrop-blur-xl md:block">
+      {/* Rail is furniture, not content: it lives outside the scroll area so it can never
+          be pushed off-screen (sticky dies inside overflow-hidden ancestors). */}
+      <aside className="hidden h-full w-[272px] shrink-0 border-r border-border/60 bg-card/70 backdrop-blur-xl md:block">
         <SidebarBody {...props} isMobile={false} />
       </aside>
 
