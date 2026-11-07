@@ -157,13 +157,15 @@ The public page and the app now share a single system, held in
 | Role | Colour | Where |
 |---|---|---|
 | System / action | `#1F5BA6` blue | app `--primary`, links, buttons, charts, PDF headers |
-| Accent | `#C1441C` rust | app `--accent`, highlights, PDF stamps, landing rules |
-| Structure | `#1C4F40` forest | landing dark sections, aurora wash |
-| Highlight | `#EFC84B` marigold | landing marquee, spotlight, crest |
+| Accent | `#7C5AE0` violet | app `--accent`, `.colorful-gradient`, PDF stamps, landing rules |
+| Structure | `#1A1E45` navy | landing dark sections, aurora wash |
+| Highlight | `#F0C33C` marigold | landing marquee, spotlight, crest |
 
-The blue→violet gradient system (`#945CE6`) is gone: every gradient that mixed
-primary into accent is now a flat primary surface, and the app workspace is
-warmed from cool `#F8FAFC` to paper `#FAF7F0`. The ten report PDFs and the six
+Blue and violet are one gradient, joined at both ends: `.colorful-gradient`,
+`.text-gradient`, the `BrandMark` plate and the aurora haze all run `#1F5BA6`
+into `#7C5AE0`, so the login card, the sidebar rail and the printed report
+header read as the same brand. The landing page borrows the same mark as
+`--mark: #6b4be0` over cream paper, and the ten report PDFs plus the six
 printables were regenerated from the updated `COLORS` map, so printed documents
 match the screen.
 
