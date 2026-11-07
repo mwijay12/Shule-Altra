@@ -200,7 +200,7 @@ export default function CommandDeckPage() {
       {/* Hero */}
       <section
         data-reveal
-        className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/[0.09] via-card/70 to-accent/[0.09] p-5 sm:p-7"
+        className="relative overflow-hidden rounded-[28px] border border-border/60 bg-[linear-gradient(135deg,hsl(var(--primary)/0.07),transparent_55%,hsl(45_85%_55%/0.16))] p-5 sm:p-7"
       >
         <div className="pointer-events-none absolute -right-16 -top-20 h-[240px] w-[240px] opacity-40 sm:-right-10 sm:-top-24 sm:h-[360px] sm:w-[360px] sm:opacity-90">
           <ThreeOrb hue={214} className="h-full w-full" />
@@ -229,7 +229,7 @@ export default function CommandDeckPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Link
               href="/dashboard/finance"
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-3.5 py-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-primary/25 transition-transform duration-300 hover:-translate-y-0.5"
+              className="group flex items-center gap-2 rounded-xl bg-primary px-3.5 py-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-primary/25 transition-transform duration-300 hover:-translate-y-0.5"
             >
               <Banknote className="h-3.5 w-3.5" />
               Record payment

@@ -149,6 +149,24 @@ Photography lives in `public/landing/` (`hero-classroom`, `hands-ledger`,
 `school-facade`, `teacher-portrait`, `paper-stack`), served through
 `next/image` with real `sizes`, one `priority` image, everything else lazy.
 
+### One palette, both sides of the door
+
+The public page and the app now share a single system, held in
+`src/app/globals.css` and `src/lib/pdf/kit.ts`:
+
+| Role | Colour | Where |
+|---|---|---|
+| System / action | `#1F5BA6` blue | app `--primary`, links, buttons, charts, PDF headers |
+| Accent | `#C1441C` rust | app `--accent`, highlights, PDF stamps, landing rules |
+| Structure | `#1C4F40` forest | landing dark sections, aurora wash |
+| Highlight | `#EFC84B` marigold | landing marquee, spotlight, crest |
+
+The blue→violet gradient system (`#945CE6`) is gone: every gradient that mixed
+primary into accent is now a flat primary surface, and the app workspace is
+warmed from cool `#F8FAFC` to paper `#FAF7F0`. The ten report PDFs and the six
+printables were regenerated from the updated `COLORS` map, so printed documents
+match the screen.
+
 ## 7. The command deck (GSAP + Three.js admin)
 
 The dashboard is a full re-skin of the admin shell, not a static mock-up:

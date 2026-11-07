@@ -96,7 +96,7 @@ function NavList({
                   {active && (
                     <motion.span
                       layoutId="aurora-nav-pill"
-                      className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary via-primary to-accent shadow-lg shadow-primary/25"
+                      className="absolute inset-0 rounded-2xl bg-primary shadow-lg shadow-primary/25"
                       transition={{ type: 'spring', stiffness: 420, damping: 38, mass: 0.6 }}
                     />
                   )}
@@ -110,7 +110,7 @@ function NavList({
                   />
                   <span className="relative z-10 flex-1 truncate">{item.title}</span>
                   {item.hint && (
-                    <span className="relative z-10 hidden text-[8px] font-bold uppercase tracking-widest opacity-0 transition-opacity duration-200 group-hover:opacity-60 lg:block">
+                    <span className="pointer-events-none absolute right-4 z-10 hidden text-[8px] font-bold uppercase tracking-widest opacity-0 transition-opacity duration-200 group-hover:opacity-60 lg:block">
                       {item.hint}
                     </span>
                   )}
@@ -138,7 +138,7 @@ function SidebarBody({
     <div ref={scope} className="flex h-full min-h-0 flex-col">
       <div className="flex items-start justify-between gap-2 px-4 pb-5 pt-5">
         <Link href="/dashboard" className="group flex items-center gap-3 overflow-hidden">
-          <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-primary via-primary to-accent text-white shadow-xl shadow-primary/30">
+          <span className="relative grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-primary text-white shadow-xl shadow-primary/30">
             <ShieldCheck className="h-6 w-6" />
             <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-400" />
           </span>
@@ -163,7 +163,7 @@ function SidebarBody({
         )}
       </div>
 
-      <div className="mx-4 mb-4 rounded-2xl border border-border/60 bg-gradient-to-br from-primary/[0.07] to-accent/[0.07] p-3">
+      <div className="mx-4 mb-4 rounded-2xl border border-border/60 bg-primary/[0.05] p-3">
         <p className="text-[8px] font-black uppercase tracking-[0.22em] text-muted-foreground">Session</p>
         <p className="mt-1 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wide text-foreground">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -184,7 +184,7 @@ function SidebarBody({
         <Link
           href="/dashboard/finance"
           onClick={isMobile ? onCloseMobile : undefined}
-          className="group flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-primary to-accent px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-primary/25 transition-transform duration-200 ease-out hover:-translate-y-0.5"
+          className="group flex items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-2.5 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-primary/25 transition-transform duration-200 ease-out hover:-translate-y-0.5"
         >
           <Plus className="h-4 w-4" />
           Record payment

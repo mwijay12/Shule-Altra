@@ -60,7 +60,7 @@ function DraggableRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-[10px] font-black text-primary">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-primary/10 text-[10px] font-black text-primary">
         {String(index + 1).padStart(2, '0')}
       </span>
 

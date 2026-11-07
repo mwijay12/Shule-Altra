@@ -36,8 +36,8 @@ const articles = [
   { 
     cat: "Academics", 
     icon: GraduationCap, 
-    color: "text-purple-600", 
-    bg: "bg-purple-100", 
+    color: "text-accent", 
+    bg: "bg-accent/10", 
     items: [
       "How to use NECTA-aligned grading", 
       "Uploading results via Excel", 

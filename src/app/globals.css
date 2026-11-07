@@ -4,34 +4,39 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 215 25% 10%;
+    /* One palette across the product. Blue stays the system colour (every
+       action, link and chart in the app already points at it); the violet
+       #945CE6 accent is replaced by the landing page's rust #C1441C, and the
+       workspace paper is warmed to the landing's cream family so the public
+       page and the app read as one institution. */
+    --background: 40 33% 97%; /* #FAF7F0 warm paper */
+    --foreground: 30 10% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 10%;
+    --card-foreground: 30 10% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 10%;
-    --primary: 214 69% 39%; /* #1F5BA6 */
+    --popover-foreground: 30 10% 11%;
+    --primary: 214 69% 39%; /* #1F5BA6 — kept */
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 214 69% 39%;
-    --muted: 210 40% 94%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 264 74% 63%; /* #945CE6 */
+    --secondary: 40 28% 94%;
+    --secondary-foreground: 214 69% 34%;
+    --muted: 40 22% 94%;
+    --muted-foreground: 30 8% 42%;
+    --accent: 15 75% 43%; /* #C1441C rust, from the landing */
     --accent-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
+    --destructive: 0 74% 44%;
     --destructive-foreground: 0 0% 98%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 35 20% 88%;
+    --input: 35 20% 88%;
     --ring: 214 69% 39%;
     --radius: 1.25rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 215 25% 10%;
+    --sidebar-background: 40 20% 99%;
+    --sidebar-foreground: 30 10% 11%;
     --sidebar-primary: 214 69% 39%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 96%;
-    --sidebar-accent-foreground: 214 69% 39%;
-    --sidebar-border: 214 32% 91%;
+    --sidebar-accent: 40 30% 95%;
+    --sidebar-accent-foreground: 214 69% 34%;
+    --sidebar-border: 35 20% 90%;
     --sidebar-ring: 214 69% 39%;
   }
 }
@@ -190,9 +195,9 @@
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(60% 45% at 12% 0%, hsl(var(--primary) / 0.16), transparent 65%),
-    radial-gradient(50% 40% at 88% 8%, hsl(var(--accent) / 0.14), transparent 60%),
-    radial-gradient(45% 45% at 50% 100%, hsl(var(--primary) / 0.08), transparent 70%),
+    radial-gradient(60% 45% at 12% 0%, hsl(163 45% 21% / 0.1), transparent 65%),
+    radial-gradient(50% 40% at 88% 8%, hsl(45 85% 55% / 0.18), transparent 60%),
+    radial-gradient(45% 45% at 50% 100%, hsl(var(--primary) / 0.07), transparent 70%),
     hsl(var(--background));
 }
 
@@ -307,6 +312,8 @@ html[data-scroll-locked] .app-scroll {
   --forest-deep: #123a2f;
   --marigold: #f0c33c;
   --sand: #e4d8be;
+  /* the app's system colour — used only where the landing points into the product */
+  --system: #1f5ba6;
   --rule: rgba(20, 19, 14, 0.14);
   --rule-soft: rgba(20, 19, 14, 0.08);
   --rule-light: rgba(251, 247, 236, 0.22);
@@ -1202,8 +1209,8 @@ html[data-scroll-locked] .app-scroll {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: var(--forest);
-  color: var(--marigold);
+  background: var(--system);
+  color: #fff;
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
@@ -1584,7 +1591,7 @@ html[data-scroll-locked] .app-scroll {
   transform: none;
 }
 .sd-row[data-active="true"] .sd-row-index {
-  color: var(--rust);
+  color: var(--system);
 }
 
 .sd-table-preview {
@@ -1619,8 +1626,8 @@ html[data-scroll-locked] .app-scroll {
   bottom: 10px;
   padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(20, 19, 14, 0.82);
-  color: var(--cream);
+  background: rgba(31, 91, 166, 0.94);
+  color: #fff;
   font-family: var(--mono);
   font-size: 8.5px;
   letter-spacing: 0.12em;

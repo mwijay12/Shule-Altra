@@ -284,7 +284,7 @@ export default function StaffPage() {
                     <TableCell>
                       <Badge className={cn(
                         "text-[8px] font-black uppercase tracking-widest px-3 py-0.5 rounded-full border-none shadow-sm",
-                        person.role === 'ADMIN' ? "bg-purple-100 text-purple-700" :
+                        person.role === 'ADMIN' ? "bg-primary/10 text-primary" :
                         person.role === 'TEACHER' ? "bg-blue-100 text-blue-700" : "bg-green-100 text-green-700"
                       )}>
                         {person.role}

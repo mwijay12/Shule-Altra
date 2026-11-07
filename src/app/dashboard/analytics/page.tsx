@@ -250,7 +250,7 @@ export default function AnalyticsPage() {
               className={cn(
                 'rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-colors',
                 range === option.key
-                  ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/30'
+                  ? 'bg-primary text-white shadow-md shadow-primary/30'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
