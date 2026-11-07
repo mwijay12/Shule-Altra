@@ -18,7 +18,14 @@
  */
 
 import { SCHOOL, renderEmail } from '@/lib/email/templates'
-import { deliver, providerStatus, readSmtpConfig } from '@/lib/email/provider'
+import {
+  deliver,
+  demoAddresses,
+  demoDeliveryBlocked,
+  isDemoAddress,
+  providerStatus,
+  readSmtpConfig,
+} from '@/lib/email/provider'
 import type { RenderedEmail } from '@/lib/email/types'
 
 let failures = 0
@@ -27,8 +34,10 @@ const check = (ok: boolean, label: string, detail = '') => {
   console.log(`${ok ? 'OK  ' : 'FAIL'} ${label}${detail ? ` · ${detail}` : ''}`)
 }
 
+// A deliverable-looking address: the demo guard must not interfere with the
+// transport failure this suite is actually testing.
 const recipient = {
-  email: 'guardian@example.co.tz',
+  email: 'parent@gmail.com',
   name: 'Sample Guardian',
   learner: 'Sample Learner',
   className: 'Form 2',
@@ -47,6 +56,8 @@ const message = renderEmail(
     dueDate: '30 November 2026',
   } as Record<string, any>
 ) as RenderedEmail
+
+const demoMessage = { ...message, to: { ...message.to, email: 'e.mushi@parents.mnyerere.sc.tz' } }
 
 const saved = { ...process.env }
 
@@ -76,7 +87,26 @@ async function main() {
   check(elapsed < 30_000, 'it gives up quickly instead of hanging', `${elapsed} ms`)
   check(result.failed === 5, 'every recipient is accounted for', `failed=${result.failed}`)
 
-  /* --- 2. with SMTP unset the same call is a dry run --------------------- */
+  /* --- 2. the demo register cannot be mailed for real -------------------- */
+  check(isDemoAddress('e.mushi@parents.mnyerere.sc.tz'), 'demo parent addresses are recognised')
+  check(!isDemoAddress('parent@gmail.com'), 'a real address is not mistaken for a demo one')
+  check(demoAddresses([demoMessage]) === 1, 'the counter finds them in a batch')
+  check(demoDeliveryBlocked({}) === true, 'demo mode blocks live delivery by default')
+  check(demoDeliveryBlocked({ NEXT_PUBLIC_DEMO_MODE: 'false' }) === false, 'a real school is not blocked')
+  check(
+    demoDeliveryBlocked({ EMAIL_ALLOW_DEMO_DELIVERY: 'true' }) === false,
+    'the opt-in override is honoured'
+  )
+
+  const guarded = await deliver([demoMessage, demoMessage])
+  check(guarded.delivered === 0, 'nothing is delivered to invented mailboxes', `delivered=${guarded.delivered}`)
+  check(
+    Boolean(guarded.error && /demo school/i.test(guarded.error)),
+    'the refusal explains itself',
+    guarded.error?.slice(0, 80) ?? ''
+  )
+
+  /* --- 3. with SMTP unset the same call is a dry run --------------------- */
   for (const key of Object.keys(process.env)) {
     if (key.startsWith('SMTP_') || key === 'RESEND_API_KEY') delete process.env[key]
   }

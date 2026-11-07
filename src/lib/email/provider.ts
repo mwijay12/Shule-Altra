@@ -207,6 +207,36 @@ export function providerStatus(env: Env = process.env): ProviderStatus {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  The demo guard                                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The demo register is invented: `e.mushi@parents.mnyerere.sc.tz` is a name,
+ * not a mailbox. Pointing a live Gmail account at 97 of those would earn a
+ * bounce for every message and a reputation that takes weeks to repair.
+ *
+ * So live delivery refuses demo addresses unless the operator says, in as many
+ * words, that they mean it. The dry run and the previews are untouched.
+ */
+const DEMO_DOMAINS = ['parents.mnyerere.sc.tz', 'shule.pro', 'example.co.tz', 'example.com']
+
+export function demoDeliveryBlocked(env: Env = process.env): boolean {
+  const optedIn = clean(env.EMAIL_ALLOW_DEMO_DELIVERY).toLowerCase() === 'true'
+  const demoMode = clean(env.NEXT_PUBLIC_DEMO_MODE) !== 'false'
+  return demoMode && !optedIn
+}
+
+/** True when every address is one of the invented demo mailboxes. */
+export function isDemoAddress(email: string): boolean {
+  const domain = email.split('@')[1]?.toLowerCase() ?? ''
+  return DEMO_DOMAINS.includes(domain)
+}
+
+export function demoAddresses(messages: RenderedEmail[]): number {
+  return messages.filter((message) => isDemoAddress(message.to.email)).length
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Delivery                                                                  */
 /* -------------------------------------------------------------------------- */
 
@@ -416,6 +446,18 @@ export async function deliver(
 
   if (messages.length === 0) {
     return { provider: status.provider, delivered: 0, failed: 0, ids: [] }
+  }
+
+  // Live provider + invented addresses = a bounce storm. Refuse, and say why.
+  const invented = demoAddresses(messages)
+  if (status.provider !== 'dry-run' && demoDeliveryBlocked() && invented > 0) {
+    return {
+      provider: status.provider,
+      delivered: 0,
+      failed: 0,
+      ids: [],
+      error: `${invented} of ${messages.length} addresses belong to the demo school and do not exist, so nothing was sent. Point the app at your real Firebase school (NEXT_PUBLIC_DEMO_MODE=false), or set EMAIL_ALLOW_DEMO_DELIVERY=true if you really do want to send to them.`,
+    }
   }
 
   if (status.provider === 'smtp') {

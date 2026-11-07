@@ -349,6 +349,11 @@ neither                             dry run · rendered and counted, not sent
 * **The office gets a copy**: `ADMIN_NOTIFICATION_EMAIL` is BCC'd on every
   outgoing message, so no parent can claim a reminder never arrived. Parents
   never see the address.
+* **The demo cannot bounce**: every parent address in the seeded register is
+  invented, so live delivery refuses them (`EMAIL_ALLOW_DEMO_DELIVERY=true`
+  overrides) and returns the reason instead of sending. Preview and dry run are
+  unaffected. This is what lets a real Gmail mailbox stay connected to the demo
+  without burning its reputation.
 * `npm run demo:email` renders all six to `private/email-previews/*.html`,
   asserts no leaked `undefined`, checks the brand colours, the plain-text twin,
   the role matrix and the provider precedence.
