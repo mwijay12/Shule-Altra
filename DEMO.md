@@ -115,7 +115,29 @@ NEXT_PUBLIC_DEMO_MODE=false npm run dev
 
 ---
 
-## 6. The command deck (GSAP + Three.js admin)
+## 6. The public landing page
+
+The front door is a designed page, not a template: paper (`#F2EFE8`) and ink
+(`#0B0E13`) with one bold field colour (`#1B4F9C`), an oversized Space Grotesk
+display cut against an Instrument Serif italic, and JetBrains Mono for every
+label, figure and caption.
+
+| Piece | What it does |
+|---|---|
+| **Loader** | A real progress counter (0–100, mono, tabular) that hands off with a two-panel curtain. Skipped for `prefers-reduced-motion`, and hard-capped at 2s so it can never become a 6-second progress bar. |
+| **Hero** | Three clipped display lines that *settle* into the grid (one motion verb for the whole page), a live ledger panel that keeps recording while the pointer is still, and a footnote that states the no-screenshots rule. |
+| **Field band** | One bold blue ticker carrying the product's claims; pauses on hover. |
+| **Numbers** | Learners, scores, presence and reconciled fees, counted up when the band enters view. |
+| **The index** | The signature interaction: six module rows that fill from the left, roll their label and swap a live preview panel (stat, mini bars, three facts) on hover **and** focus. |
+| **Method** | A sticky stage that swaps three real screens — capture, reconcile, issue — as the reader passes the steps. No scroll-jacking; the stage is CSS-sticky. |
+| **Documents** | Four genuine exports (fee statement, report card, timetable, master sheet) linked straight out of `/public/printables`. |
+| **Compliance + footer** | PDPA 2022 / NECTA / audit-trail facts on the field colour, then a four-corner footer with demo credentials. |
+
+Typography, contrast, focus rings, touch targets and `prefers-reduced-motion` are
+handled in `src/app/globals.css` under the `.landing` scope, so the dashboard is
+untouched. The page is covered by the smoke suite (`landing` entry).
+
+## 7. The command deck (GSAP + Three.js admin)
 
 The dashboard is a full re-skin of the admin shell, not a static mock-up:
 
@@ -134,7 +156,7 @@ the KPI tiles, the chart and the analytics filters stay in sync.
 disables the GSAP sweeps, and the Three.js scene falls back to a CSS aurora when
 `WebGLRenderingContext` is missing (which is also what keeps the JSDOM suites quiet).
 
-## 7. Vector printables (no screenshots)
+## 8. Vector printables (no screenshots)
 
 Every printable is a genuine PDF built with `pdf-lib` — real text runs, selectable
 and searchable, vector rules and shapes at any DPI. Nothing is rendered from a DOM
@@ -167,7 +189,7 @@ Sample output is committed to `public/printables/` and linked from
 The ID sheet embeds a QR matrix (raster image XObject) for verification; everything
 else — including tables, rules, crest and crop marks — is drawn as vector content.
 
-## 8. Verification & CI
+## 9. Verification & CI
 
 The demo layer is covered by two JSDOM smoke suites that run without a browser
 or a cloud project:
@@ -189,7 +211,7 @@ after writes, and sign-out.
 
 ---
 
-## 9. What is still honest-to-goodness “TODO”
+## 10. What is still honest-to-goodness “TODO”
 
 * Timetable period allocation is still a static grid (presentation-ready, not editable).
 * DOCX export still exists next to the new vector PDF path; the PDF is the print-authoritative copy.

@@ -24,6 +24,7 @@ import TransportPage from '@/app/dashboard/transport/page';
 import HelpPage from '@/app/dashboard/help/page';
 import AnalyticsPage from '@/app/dashboard/analytics/page';
 import LoginPage from '@/app/login/page';
+import LandingPage from '@/app/page';
 
 const services = initializeFirebase();
 
@@ -160,6 +161,34 @@ async function main() {
   await act(async () => {
     root.unmount();
   });
+  // public landing page (public route, no session, fresh root)
+  const landingRoot = createRoot(container);
+  try {
+    await act(async () => {
+      landingRoot.render(
+        <Wrapper>
+          <LandingPage />
+        </Wrapper>
+      );
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1700));
+    });
+    const text = String(container.textContent || '');
+    const missing = ['Every register', 'on record', 'The index', 'Documents'].filter(
+      (needle) => !text.toLowerCase().includes(needle.toLowerCase())
+    );
+    if (missing.length > 0) throw new Error(`landing missing copy: ${missing.join(', ')}`);
+    console.log(`OK   landing     html:${String(text.length).padStart(6)} chars`);
+  } catch (error: any) {
+    failures += 1;
+    console.log(`FAIL landing THREW: ${error?.message}`);
+  } finally {
+    await act(async () => {
+      landingRoot.unmount();
+    });
+  }
+
   console.log(failures === 0 ? '\nALL PAGES RENDERED CLEANLY' : `\n${failures} PAGE(S) HAD ISSUES`);
   process.exit(failures === 0 ? 0 : 1);
 }
