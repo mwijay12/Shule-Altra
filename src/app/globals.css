@@ -94,11 +94,14 @@
 }
 
 .colorful-gradient {
-  background: linear-gradient(135deg, #1F5BA6 0%, #945CE6 100%);
+  /* tonal blue, not a rainbow: the old primary→violet sweep was the single
+     most "generated" looking surface in the product. */
+  background: linear-gradient(135deg, #1f5ba6 0%, #17457e 100%);
 }
 
 .text-gradient {
-  @apply bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent;
+  /* solid ink instead of clipped gradient text */
+  color: hsl(var(--primary));
 }
 
 ::-webkit-scrollbar {
@@ -107,12 +110,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d8d1c3;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #c2b8a5;
 }
 /* ==========================================================================
    AURORA ADMIN — premium shell tokens & utilities
@@ -120,34 +123,34 @@
 
 @layer base {
   .dark {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 96%;
-    --card: 222 40% 11%;
-    --card-foreground: 210 40% 96%;
-    --popover: 222 44% 9%;
-    --popover-foreground: 210 40% 96%;
-    --primary: 214 85% 62%;
-    --primary-foreground: 222 47% 8%;
-    --secondary: 222 32% 16%;
-    --secondary-foreground: 210 40% 96%;
-    --muted: 222 28% 16%;
-    --muted-foreground: 215 20% 66%;
-    --accent: 264 82% 70%;
-    --accent-foreground: 222 47% 8%;
-    --destructive: 0 72% 55%;
+    --background: 30 12% 7%;
+    --foreground: 40 22% 94%;
+    --card: 30 10% 11%;
+    --card-foreground: 40 22% 94%;
+    --popover: 30 11% 9%;
+    --popover-foreground: 40 22% 94%;
+    --primary: 213 78% 60%;
+    --primary-foreground: 30 12% 8%;
+    --secondary: 30 8% 16%;
+    --secondary-foreground: 40 22% 94%;
+    --muted: 30 8% 16%;
+    --muted-foreground: 38 10% 66%;
+    --accent: 15 76% 58%;
+    --accent-foreground: 30 12% 8%;
+    --destructive: 8 72% 55%;
     --destructive-foreground: 0 0% 98%;
-    --border: 222 26% 20%;
-    --input: 222 26% 20%;
-    --ring: 214 85% 62%;
+    --border: 30 8% 20%;
+    --input: 30 8% 20%;
+    --ring: 213 78% 60%;
 
-    --sidebar-background: 222 44% 9%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 214 85% 62%;
-    --sidebar-primary-foreground: 222 47% 8%;
-    --sidebar-accent: 222 32% 16%;
-    --sidebar-accent-foreground: 214 85% 62%;
-    --sidebar-border: 222 26% 20%;
-    --sidebar-ring: 214 85% 62%;
+    --sidebar-background: 30 11% 9%;
+    --sidebar-foreground: 40 22% 94%;
+    --sidebar-primary: 213 78% 60%;
+    --sidebar-primary-foreground: 30 12% 8%;
+    --sidebar-accent: 30 8% 16%;
+    --sidebar-accent-foreground: 213 78% 66%;
+    --sidebar-border: 30 8% 20%;
+    --sidebar-ring: 213 78% 60%;
   }
 }
 
