@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
+import { ClientGuard } from '@/components/system/client-guard';
 
 export const metadata: Metadata = {
   title: 'Shule Altra - Advanced Institutional Hub',
@@ -23,6 +24,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-background text-foreground">
+        <ClientGuard />
         <FirebaseClientProvider>
           {children}
         </FirebaseClientProvider>

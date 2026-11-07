@@ -71,10 +71,13 @@ export function Wordmark({
   className,
   size = 16,
   pro = false,
+  onDark = false,
 }: {
   className?: string
   size?: number
   pro?: boolean
+  /** light gradient + light chip, for the navy boot screen and dark surfaces */
+  onDark?: boolean
 }) {
   return (
     <span
@@ -82,11 +85,21 @@ export function Wordmark({
       style={{ fontSize: size }}
     >
       <span>Shule</span>
-      <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+      <span
+        className={cn(
+          "bg-gradient-to-r bg-clip-text text-transparent",
+          onDark ? "from-[#a8cdff] to-[#d2c6ff]" : "from-primary to-accent"
+        )}
+      >
         Altra
       </span>
       {pro ? (
-        <span className="rounded-full bg-foreground/8 px-1.5 py-[0.1em] text-[0.62em] font-black uppercase tracking-[0.14em] text-foreground/70">
+        <span
+          className={cn(
+            "rounded-full px-1.5 py-[0.1em] text-[0.62em] font-black uppercase tracking-[0.14em]",
+            onDark ? "bg-white/12 text-white/75" : "bg-foreground/8 text-foreground/70"
+          )}
+        >
           Pro
         </span>
       ) : null}
