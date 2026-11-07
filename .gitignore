@@ -46,3 +46,6 @@ firebase-debug.log
 firestore-debug.log
 # local QA rasters
 .preview/
+
+# drive connector downloads (local reference only)
+google_drive/

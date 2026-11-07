@@ -117,25 +117,30 @@ NEXT_PUBLIC_DEMO_MODE=false npm run dev
 
 ## 6. The public landing page
 
-The front door is a designed page, not a template: paper (`#F2EFE8`) and ink
-(`#0B0E13`) with one bold field colour (`#1B4F9C`), an oversized Space Grotesk
-display cut against an Instrument Serif italic, and JetBrains Mono for every
-label, figure and caption.
+The front door follows the same design language as the reference dashboard we
+benchmarked against: warm paper (`#F3EDE2`) with two soft field washes, soft
+white cards at a 28px radius, a black sliding pill for navigation, and three
+field colours — rust `#C2421B`, forest `#1D5A48`, marigold `#F2C230`. Space
+Grotesk carries the display, Instrument Serif italic is the one contrasting
+voice, JetBrains Mono handles labels and figures.
 
 | Piece | What it does |
 |---|---|
-| **Loader** | A real progress counter (0–100, mono, tabular) that hands off with a two-panel curtain. Skipped for `prefers-reduced-motion`, and hard-capped at 2s so it can never become a 6-second progress bar. |
-| **Hero** | Three clipped display lines that *settle* into the grid (one motion verb for the whole page), a live ledger panel that keeps recording while the pointer is still, and a footnote that states the no-screenshots rule. |
-| **Field band** | One bold blue ticker carrying the product's claims; pauses on hover. |
-| **Numbers** | Learners, scores, presence and reconciled fees, counted up when the band enters view. |
-| **The index** | The signature interaction: six module rows that fill from the left, roll their label and swap a live preview panel (stat, mini bars, three facts) on hover **and** focus. |
-| **Method** | A sticky stage that swaps three real screens — capture, reconcile, issue — as the reader passes the steps. No scroll-jacking; the stage is CSS-sticky. |
-| **Documents** | Four genuine exports (fee statement, report card, timetable, master sheet) linked straight out of `/public/printables`. |
-| **Compliance + footer** | PDPA 2022 / NECTA / audit-trail facts on the field colour, then a four-corner footer with demo credentials. |
+| **Loader** | A real progress counter (0–100, tabular) that hands off with a two-panel curtain. Skipped for `prefers-reduced-motion`, hard-capped at 2s. |
+| **Header** | Segmented nav whose black pill *slides* between items as you scroll (scroll-spy + one Framer `layoutId`), plus a round staff-portal button and the demo CTA. |
+| **Hero** | Three clipped display lines that settle into the grid, a live ledger card that keeps recording while the pointer is still, and a footnote stating the no-screenshots rule. |
+| **Field band** | Marigold ticker; pauses on hover. |
+| **Numbers** | Four soft chips with icon rounds — learners, scores, presence, reconciled fees — counted up on view. |
+| **The index** | The signature interaction: six rows that lift into a black card, roll their label to marigold and swap a forest-green preview (stat, bars, six-step progress, three facts) on hover **and** focus. |
+| **Method** | A sticky forest stage that swaps three real screens — capture, reconcile, issue — as the reader passes the steps. CSS sticky, no scroll-jacking. |
+| **Documents** | Four genuine exports linked out of `/public/printables`, each with a rotated "generated" stamp that straightens on hover. |
+| **Compliance + footer** | PDPA / NECTA / audit-trail facts inside one forest card, then a pill-link footer with the demo credentials. |
 
-Typography, contrast, focus rings, touch targets and `prefers-reduced-motion` are
-handled in `src/app/globals.css` under the `.landing` scope, so the dashboard is
-untouched. The page is covered by the smoke suite (`landing` entry).
+Motion is one verb — *settle* — with a spring curve reserved for anything that
+opens (mobile sheet, pills, cards). Contrast, focus rings, touch targets and
+`prefers-reduced-motion` are handled in `src/app/globals.css` under the
+`.landing` scope, so the dashboard is untouched. The page is covered by the
+smoke suite (`landing` entry).
 
 ## 7. The command deck (GSAP + Three.js admin)
 

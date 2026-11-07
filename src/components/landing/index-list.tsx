@@ -131,6 +131,11 @@ export function IndexList() {
             <i key={i} style={{ height: `${Math.round((bar / max) * 100)}%` }} />
           ))}
         </div>
+        <div className="land-index-preview-steps" aria-hidden>
+          {ROWS.map((_, i) => (
+            <i key={i} className={i <= active ? "is-on" : undefined} />
+          ))}
+        </div>
         <ul className="land-index-preview-list">
           {row.lines.map((line) => (
             <li key={line}>{line}</li>

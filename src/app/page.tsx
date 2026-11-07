@@ -17,13 +17,9 @@ import { LandingLoader } from "@/components/landing/landing-loader"
 import { LedgerPanel } from "@/components/landing/ledger-panel"
 import { IndexList } from "@/components/landing/index-list"
 import { DayNarrative } from "@/components/landing/day-narrative"
-
-const NAV = [
-  { label: "Index", href: "#index" },
-  { label: "Method", href: "#method" },
-  { label: "Documents", href: "#documents" },
-  { label: "Compliance", href: "#compliance" },
-]
+import { LandNav } from "@/components/landing/nav"
+import { NAV_LINKS } from "@/components/landing/links"
+import { Banknote, CalendarCheck, GraduationCap, ShieldCheck, Users } from "lucide-react"
 
 const TICKER = [
   "EVERY REGISTER",
@@ -65,16 +61,33 @@ const DOCUMENTS = [
   },
 ]
 
-function StatCell({ target, suffix, label, format }: { target: number; suffix?: string; label: string; format?: (n: number) => string }) {
+function StatCell({
+  target,
+  suffix,
+  label,
+  icon,
+  format,
+}: {
+  target: number
+  suffix?: string
+  label: string
+  icon: React.ReactNode
+  format?: (n: number) => string
+}) {
   const { ref, value } = useCountUp(target)
   const text = format ? format(value) : Math.round(value).toLocaleString("en-US")
   return (
     <div className="land-stat">
-      <span className="land-stat-value" ref={ref}>
-        {text}
-        {suffix ? <em>{suffix}</em> : null}
+      <span className="land-stat-icon" aria-hidden>
+        {icon}
       </span>
-      <span className="land-label">{label}</span>
+      <span className="land-stat-body">
+        <span className="land-stat-value" ref={ref}>
+          {text}
+          {suffix ? <em>{suffix}</em> : null}
+        </span>
+        <span className="land-label">{label}</span>
+      </span>
     </div>
   )
 }
@@ -118,17 +131,14 @@ export default function LandingPage() {
             </span>
           </Link>
 
-          <nav className="land-nav" aria-label="Primary">
-            {NAV.map((item) => (
-              <a key={item.href} href={item.href} className="land-nav-link">
-                <span>{item.label}</span>
-              </a>
-            ))}
-          </nav>
+          <LandNav />
 
           <div className="land-header-actions">
             <Link href="/login" className="land-link-quiet">
               Staff entry
+            </Link>
+            <Link href="/login" className="land-icon-btn" aria-label="Staff portal">
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.8} />
             </Link>
             <Link href="/login?demo=1" className="land-cta land-cta-small">
               <span className="land-cta-fill" aria-hidden />
@@ -151,7 +161,7 @@ export default function LandingPage() {
 
       <div id="land-mobile-menu" className="land-mobile" data-open={menuOpen ? "true" : "false"}>
         <nav aria-label="Mobile">
-          {NAV.map((item, i) => (
+          {NAV_LINKS.map((item, i) => (
             <a key={item.href} href={item.href} onClick={closeMenu} style={{ transitionDelay: `${i * 40}ms` }}>
               <span>{item.label}</span>
               <em>0{i + 1}</em>
@@ -244,10 +254,21 @@ export default function LandingPage() {
 
         {/* ── Numbers ──────────────────────────────────────────── */}
         <section className="land-stats" aria-label="System at a glance">
-          <StatCell target={150} label="Learners on the register" />
-          <StatCell target={2788} label="Scores assessed this term" />
-          <StatCell target={88.2} suffix="%" label="Presence across all streams" format={(n) => n.toFixed(1)} />
-          <StatCell target={19500000} label="Fees reconciled · TZS" format={(n) => `${(n / 1_000_000).toFixed(1)}M`} />
+          <StatCell target={150} label="Learners on the register" icon={<Users className="h-4 w-4" strokeWidth={1.7} />} />
+          <StatCell target={2788} label="Scores assessed this term" icon={<GraduationCap className="h-4 w-4" strokeWidth={1.7} />} />
+          <StatCell
+            target={88.2}
+            suffix="%"
+            label="Presence across all streams"
+            icon={<CalendarCheck className="h-4 w-4" strokeWidth={1.7} />}
+            format={(n) => n.toFixed(1)}
+          />
+          <StatCell
+            target={19500000}
+            label="Fees reconciled · TZS"
+            icon={<Banknote className="h-4 w-4" strokeWidth={1.7} />}
+            format={(n) => `${(n / 1_000_000).toFixed(1)}M`}
+          />
         </section>
 
         {/* ── Index ────────────────────────────────────────────── */}
@@ -316,6 +337,9 @@ export default function LandingPage() {
                   <span className="land-doc-card-name">{doc.name}</span>
                   <span className="land-doc-card-note">{doc.note}</span>
                   <span className="land-doc-card-stat">{doc.stat}</span>
+                  <span className="land-doc-stamp" aria-hidden>
+                    Generated
+                  </span>
                 </a>
               </Reveal>
             ))}
