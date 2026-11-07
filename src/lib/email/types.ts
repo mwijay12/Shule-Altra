@@ -36,14 +36,24 @@ export type RenderedEmail = {
   text: string
 }
 
-export type SendResult = {
-  provider: 'resend' | 'dry-run'
-  attempted: number
+/** Who physically carries the mail. Chosen by environment, never by a flag. */
+export type ProviderId = 'smtp' | 'resend' | 'dry-run'
+
+/** What `deliver()` reports back before the route dresses it up. */
+export type SendOutcome = {
+  provider: ProviderId
   delivered: number
   failed: number
-  /** ids returned by the provider, or the local preview ids in dry run */
+  /** ids returned by the provider, or local preview ids in a dry run */
   ids: string[]
-  /** first error, if the provider refused the batch */
+  /** first error worth showing a human, if the provider refused anything */
   error?: string
+}
+
+export type SendResult = SendOutcome & {
+  attempted: number
+  /** the office copy, when ADMIN_NOTIFICATION_EMAIL is configured */
+  copyTo?: string
   auditId: string
+  checkedAt: string
 }

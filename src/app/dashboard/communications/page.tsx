@@ -31,6 +31,8 @@ type Template = {
   title: string;
   audience: string;
   audienceSize: number;
+  /** how many would really go today, once the mailbox ceiling applies */
+  sendable: number;
   sample: string | null;
   allowed: boolean;
   reason: string;
@@ -38,9 +40,14 @@ type Template = {
 };
 
 type Capabilities = {
-  provider: "resend" | "dry-run";
+  provider: "smtp" | "resend" | "dry-run";
   from: string;
+  host: string | null;
   note: string;
+  limits: { maxPerSend: number; dailyLimit?: number; dailyRemaining?: number };
+  copyTo: string | null;
+  replyTo: string | null;
+  mailbox: { ok: boolean; message: string } | null;
   role: string | null;
   roleLabel: string | null;
   school: string;
@@ -60,11 +67,13 @@ type Sent = {
   title: string;
   audience: string;
   attempted: number;
+  audienceSize?: number;
   delivered: number;
   failed: number;
   provider: string;
   auditId: string;
   subject?: string;
+  copyTo?: string | null;
   error?: string;
 };
 
@@ -83,6 +92,7 @@ export default function CommunicationsPage() {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [preview, setPreview] = React.useState<Preview | null>(null);
   const [sent, setSent] = React.useState<Sent[]>([]);
+  const [probing, setProbing] = React.useState(false);
 
   const load = React.useCallback(async () => {
     try {
@@ -99,6 +109,26 @@ export default function CommunicationsPage() {
   React.useEffect(() => {
     void load();
   }, [load]);
+
+  // "Does the mailbox actually work?" — logs in, sends nothing.
+  const probe = React.useCallback(async () => {
+    setProbing(true);
+    try {
+      const response = await fetch("/api/notifications/email?probe=1", { cache: "no-store" });
+      const body = (await response.json()) as Capabilities;
+      setCaps(body);
+      const mailbox = body.mailbox;
+      toast({
+        variant: mailbox?.ok ? "default" : "destructive",
+        title: mailbox?.ok ? "Mailbox answered" : "Mailbox refused the login",
+        description: mailbox?.message ?? "The provider cannot be probed without SMTP credentials.",
+      });
+    } catch {
+      toast({ variant: "destructive", title: "Could not reach the mail server" });
+    } finally {
+      setProbing(false);
+    }
+  }, [toast]);
 
   const run = async (template: Template, mode: "preview" | "send") => {
     setBusy(`${template.id}:${mode}`);
@@ -126,15 +156,20 @@ export default function CommunicationsPage() {
 
       const record = body as Sent;
       setSent((previous) => [record, ...previous].slice(0, 6));
+      const where = record.provider === "smtp" ? "SMTP" : record.provider === "resend" ? "Resend" : "dry run";
       toast({
+        variant: record.failed > 0 ? "destructive" : "default",
         title:
           record.provider === "dry-run"
             ? `Rendered ${record.attempted} emails (dry run)`
-            : `Sent ${record.delivered} of ${record.attempted}`,
+            : record.failed > 0
+              ? `Sent ${record.delivered} of ${record.attempted} · ${record.failed} failed`
+              : `Sent ${record.delivered} of ${record.attempted}`,
         description:
           record.provider === "dry-run"
-            ? "Add RESEND_API_KEY to deliver them for real."
-            : `Audit ${record.auditId.slice(0, 8)} · ${record.provider}`,
+            ? "Add SMTP_HOST/SMTP_USER/SMTP_PASS (or RESEND_API_KEY) to deliver them for real."
+            : record.error ??
+              `${where} · audit ${record.auditId.slice(0, 8)}${record.copyTo ? ` · office copy to ${record.copyTo}` : ""}`,
       });
     } catch {
       toast({ variant: "destructive", title: "Network error", description: "Nothing was sent." });
@@ -162,12 +197,16 @@ export default function CommunicationsPage() {
         <Badge
           variant="outline"
           className={
-            caps?.provider === "resend"
+            caps && caps.provider !== "dry-run"
               ? "h-7 rounded-full border-emerald-500/30 bg-emerald-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-emerald-600"
               : "h-7 rounded-full border-amber-500/30 bg-amber-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-amber-600"
           }
         >
-          {caps?.provider === "resend" ? "Resend connected" : "Dry run"}
+          {caps?.provider === "smtp"
+            ? `SMTP live${caps.host ? ` · ${caps.host}` : ""}`
+            : caps?.provider === "resend"
+              ? "Resend connected"
+              : "Dry run"}
         </Badge>
       </header>
 
@@ -175,7 +214,7 @@ export default function CommunicationsPage() {
         <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              {caps?.provider === "resend" ? (
+              {caps && caps.provider !== "dry-run" ? (
                 <CheckCircle2 className="h-4 w-4" />
               ) : (
                 <AlertTriangle className="h-4 w-4" />
@@ -188,11 +227,37 @@ export default function CommunicationsPage() {
               <p className="mt-1 max-w-xl text-[10px] font-medium leading-relaxed text-muted-foreground">
                 {caps?.note ?? "Checking the provider…"}
               </p>
+              {caps ? (
+                <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[8px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                  <span>Max {caps.limits.maxPerSend} per click</span>
+                  {caps.limits.dailyRemaining !== undefined ? (
+                    <span>
+                      {caps.limits.dailyRemaining} of {caps.limits.dailyLimit} left today
+                    </span>
+                  ) : null}
+                  {caps.copyTo ? <span>Office copy · {caps.copyTo}</span> : null}
+                  {caps.replyTo ? <span>Reply-to · {caps.replyTo}</span> : null}
+                </p>
+              ) : null}
             </div>
           </div>
-          <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
-            Signed in as {caps?.roleLabel ?? "guest"}
-          </p>
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            {caps?.provider === "smtp" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.18em]"
+                onClick={() => void probe()}
+                disabled={probing}
+              >
+                {probing ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <ShieldCheck className="mr-1.5 h-3 w-3" />}
+                Test mailbox
+              </Button>
+            ) : null}
+            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+              Signed in as {caps?.roleLabel ?? "guest"}
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -216,6 +281,9 @@ export default function CommunicationsPage() {
                     <p className="mt-1 text-[10px] font-medium leading-relaxed text-muted-foreground">
                       {AUDIENCE_LABEL[template.audience] ?? template.audience} ·{" "}
                       <span className="text-foreground">{template.audienceSize}</span> recipients
+                      {template.sendable < template.audienceSize ? (
+                        <span className="text-amber-600"> · {template.sendable} per click</span>
+                      ) : null}
                     </p>
                     <p className="mt-1 font-mono text-[9px] text-muted-foreground/80">
                       {template.sample ?? "no addresses on file"}
@@ -262,7 +330,7 @@ export default function CommunicationsPage() {
                     ) : (
                       <Send className="mr-1.5 h-3 w-3" />
                     )}
-                    Send to {template.audienceSize}
+                    Send to {Math.min(template.sendable, template.audienceSize)}
                   </Button>
                 </div>
               </CardContent>
@@ -288,6 +356,7 @@ export default function CommunicationsPage() {
                   </p>
                   <p className="mt-0.5 text-[9px] font-medium text-muted-foreground">
                     {AUDIENCE_LABEL[record.audience] ?? record.audience} · {record.attempted} recipients
+                    {record.failed > 0 ? ` · ${record.failed} failed` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

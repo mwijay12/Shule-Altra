@@ -39,6 +39,9 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/documents/**': ['./private/printables/**'],
   },
+  // Nodemailer opens raw TCP sockets, so it must stay a real node module
+  // instead of being bundled into the serverless chunk.
+  serverExternalPackages: ['nodemailer'],
   async rewrites() {
     return {
       // Every old printable URL now goes through the role gate instead of the

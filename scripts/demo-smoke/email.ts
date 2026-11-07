@@ -23,7 +23,14 @@ import {
   templateDataFor,
 } from '@/lib/email/audience'
 import { SCHOOL, TEMPLATE_TITLES, renderEmail } from '@/lib/email/templates'
-import { providerStatus } from '@/lib/email/provider'
+import {
+  dailyUsage,
+  emailFrom,
+  maxPerSend,
+  normaliseSecret,
+  providerStatus,
+  readSmtpConfig,
+} from '@/lib/email/provider'
 import type { DocRole } from '@/lib/documents/registry'
 import type { AudienceId, EmailTemplateId } from '@/lib/email/types'
 
@@ -42,6 +49,41 @@ const status = providerStatus()
 console.log(`Provider: ${status.provider} · from ${status.from}`)
 console.log(`App url:  ${process.env.NEXT_PUBLIC_APP_URL ?? 'https://shule-altra-demo.vercel.app'}`)
 console.log('─'.repeat(78))
+
+/* -------------------------------------------------------------------------- */
+/*  Provider selection: SMTP → Resend → dry run                               */
+/* -------------------------------------------------------------------------- */
+
+const smtpEnv = {
+  SMTP_HOST: 'smtp.gmail.com',
+  SMTP_PORT: '465',
+  SMTP_SECURE: 'true',
+  SMTP_USER: 'office@school.sc.tz',
+  SMTP_PASS: 'abcd efgh ijkl mnop',
+  SMTP_FROM: '"Altraware Technology" <office@school.sc.tz>',
+  ADMIN_NOTIFICATION_EMAIL: 'admin@school.sc.tz',
+}
+const resendEnv = { RESEND_API_KEY: 're_test' }
+
+const smtp = readSmtpConfig(smtpEnv)
+check(Boolean(smtp), 'SMTP config parses when host/user/pass exist')
+check(smtp?.pass === 'abcdefghijklmnop', 'app password loses its spaces', smtp?.pass)
+check(smtp?.port === 465 && smtp?.secure === true, 'port 465 implies TLS')
+check(readSmtpConfig({ ...smtpEnv, SMTP_PORT: '587' })?.secure === false, 'port 587 leaves TLS to STARTTLS')
+check(readSmtpConfig({ SMTP_HOST: 'smtp.gmail.com' }) === null, 'no user/pass → no SMTP config')
+check(normaliseSecret('  a b c  ') === 'abc', 'secret normaliser trims and collapses')
+check(emailFrom(smtpEnv).includes('office@school.sc.tz'), 'SMTP_FROM wins for the From header')
+check(providerStatus(smtpEnv).provider === 'smtp', 'SMTP beats Resend when both are set')
+check(providerStatus(resendEnv).provider === 'resend', 'Resend is the fallback')
+check(providerStatus({}).provider === 'dry-run', 'nothing set → dry run')
+check(providerStatus({}).note.includes('SMTP_HOST'), 'dry-run note names what to add')
+check(maxPerSend({ SMTP_MAX_PER_SEND: '40' }) === 40, 'SMTP_MAX_PER_SEND is honoured')
+check(maxPerSend({}) === 200, 'per-send ceiling defaults to 200')
+check(dailyUsage().limit >= 1, 'daily budget is readable', `${dailyUsage().remaining}/${dailyUsage().limit} left`)
+
+const smtpStatus = providerStatus(smtpEnv)
+check(smtpStatus.host === 'smtp.gmail.com:465', 'status names the relay host', smtpStatus.host)
+check(Boolean(smtpStatus.limits.dailyRemaining), 'status publishes what is left today')
 
 const audiences = new Map<AudienceId, number>()
 for (const template of TEMPLATES) {
