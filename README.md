@@ -37,7 +37,11 @@ all behave normally.
   master timetable and all 10 Reports-centre documents with `pdf-lib` (real text,
   school crest, no screenshots) → samples in `private/printables/`, served through the role gate (`npm run demo:docs`)
 * **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`, `npm run demo:pdf`
-* **Back to real Firebase:** set `NEXT_PUBLIC_DEMO_MODE=false` and fill `.env.example`
+* **Mail room:** `/dashboard/communications` sends branded, role-scoped email to
+  guardians and staff (fee reminder, absence alert, report card, receipts, staff
+  briefing, timetable change) — preview first, dry run until `RESEND_API_KEY` is set
+* **Back to real Firebase:** `NEXT_PUBLIC_DEMO_MODE=false`, `NEXT_PUBLIC_FIREBASE_CONFIG`,
+  then `firebase deploy --only firestore:rules,firestore:indexes,storage` (see `.env.example`)
 
 ---
 

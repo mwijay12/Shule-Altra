@@ -19,6 +19,7 @@ import {
   FileBarChart2,
   Settings2,
   LifeBuoy,
+  Mails,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -42,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: 'Command deck', url: '/dashboard', icon: LayoutDashboard, module: 'dashboard', hint: 'Live overview' },
       { title: 'Analytics', url: '/dashboard/analytics', icon: ChartNoAxesCombined, module: 'analytics', hint: 'Trends & forecasts' },
+      { title: 'Communications', url: '/dashboard/communications', icon: Mails, module: 'communications', hint: 'Guardian & staff email' },
     ],
   },
   {

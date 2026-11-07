@@ -1,126 +1,120 @@
-
 rules_version = '2';
+
+/**
+ * Shule Altra — Firestore security rules.
+ *
+ * The shape of the data is `schools/{schoolId}/{collection}/{docId}`, and the
+ * only source of authority is the staff record at `schools/{schoolId}/staff/{uid}`
+ * whose `role` field is one of ADMIN | TEACHER | ACCOUNTANT | BURSAR | VIEWER.
+ * Nothing is trusted from the client: no role in localStorage, no role in a
+ * request body, no role from a custom claim that was never set.
+ *
+ * The same three bands the document registry uses:
+ *   money   → ADMIN, BURSAR, ACCOUNTANT
+ *   learning→ ADMIN, TEACHER
+ *   estate  → ADMIN, BURSAR, ACCOUNTANT (assets, hostel, transport)
+ *   identity→ ADMIN only (staff records, settings)
+ */
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ══════════════════════════════════════════
-    // HELPER FUNCTIONS
-    // ══════════════════════════════════════════
-
-    function isAuthed() {
+    function signedIn() {
       return request.auth != null;
     }
 
-    function staffDoc(schoolId) {
-      return get(/databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid));
-    }
-
-    function getRole(schoolId) {
-      return staffDoc(schoolId).data.role;
-    }
-
-    function isStaff(schoolId) {
-      return isAuthed() && (
-        exists(/databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid)) ||
-        request.auth.token.email == 'admin@shule.pro' ||
-        (schoolId == 'school-001' && request.auth.token.firebase.sign_in_provider == 'anonymous')
-      );
-    }
-
-    function isActive(schoolId) {
-      // Basic check for staff existence or admin status
-      return isStaff(schoolId);
-    }
-
-    function isAdmin(schoolId) {
-      return isActive(schoolId) && (
-        getRole(schoolId) == 'ADMIN' ||
-        request.auth.token.email == 'admin@shule.pro' ||
-        (schoolId == 'school-001' && request.auth.token.firebase.sign_in_provider == 'anonymous')
-      );
-    }
-
-    function isTeacher(schoolId) {
-      return isActive(schoolId) && (getRole(schoolId) in ['ADMIN', 'TEACHER'] || isAdmin(schoolId));
-    }
-
-    function isAccountant(schoolId) {
-      return isActive(schoolId) && (getRole(schoolId) in ['ADMIN', 'ACCOUNTANT', 'BURSAR'] || isAdmin(schoolId));
-    }
-
-    // ══════════════════════════════════════════
-    // STAFF MAPPING (Global lookup)
-    // ══════════════════════════════════════════
-
-    match /staffMappings/{uid} {
-      allow read: if isAuthed() && request.auth.uid == uid;
-      allow write: if false;
-    }
-
-    // ══════════════════════════════════════════
-    // SCHOOL DOCUMENT HIERARCHY
-    // ══════════════════════════════════════════
-
     match /schools/{schoolId} {
-      allow read: if isActive(schoolId);
-      allow write: if isAdmin(schoolId);
-
-      match /staff/{staffId} {
-        allow read: if isActive(schoolId);
-        allow write: if isAdmin(schoolId);
+      function staffPath() {
+        return /databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid);
+      }
+      function isStaff() {
+        return signedIn() && exists(staffPath());
+      }
+      function role() {
+        return isStaff() ? get(staffPath()).data.role : '';
+      }
+      function inRole(roles) {
+        return isStaff() && role() in roles;
+      }
+      function money() {
+        return inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
+      }
+      function learning() {
+        return inRole(['ADMIN', 'TEACHER']);
       }
 
+      // ── identity ─────────────────────────────────────────────────────────
+      // A staff member may always read their own record (that is how the hub
+      // resolves a role); only an administrator may touch anybody's.
+      match /staff/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || inRole(['ADMIN']));
+        allow list: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT']);
+        allow create, update, delete: if inRole(['ADMIN']);
+      }
+
+      // ── learner records ──────────────────────────────────────────────────
       match /students/{studentId} {
-        allow read: if isActive(schoolId);
-        allow create, update: if isTeacher(schoolId) || isAdmin(schoolId);
-        allow delete: if isAdmin(schoolId);
+        allow read: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT', 'VIEWER']);
+        allow create, update: if learning();
+        allow delete: if inRole(['ADMIN']);
       }
 
-      match /transactions/{txId} {
-        allow read: if isAccountant(schoolId) || isAdmin(schoolId);
-        allow create, update: if isAccountant(schoolId) || isAdmin(schoolId);
-        allow delete: if false; // Forensic Ledger - No Deletion
-      }
-
-      match /attendance/{recordId} {
-        allow read: if isActive(schoolId);
-        allow create, update: if isTeacher(schoolId) || isAdmin(schoolId);
-        allow delete: if false;
-      }
-
+      // ── learning ─────────────────────────────────────────────────────────
       match /grades/{gradeId} {
-        allow read: if isActive(schoolId);
-        allow create, update: if isTeacher(schoolId) || isAdmin(schoolId);
-        allow delete: if isAdmin(schoolId);
+        allow read, write: if learning();
       }
-      
-      match /syllabus_tracking/{docId} {
-        allow read: if isActive(schoolId);
-        allow write: if isTeacher(schoolId) || isAdmin(schoolId);
+      match /attendance/{entryId} {
+        allow read, write: if learning();
+      }
+      match /timetable/{slotId} {
+        allow read: if isStaff();
+        allow write: if learning();
+      }
+      match /academics/{docId} {
+        allow read: if isStaff();
+        allow write: if learning();
       }
 
-      match /config/{configDoc} {
-        allow read: if isActive(schoolId);
-        allow write: if isAdmin(schoolId);
+      // ── money ────────────────────────────────────────────────────────────
+      match /transactions/{transactionId} {
+        allow read, write: if money();
+      }
+      match /petty_cash/{entryId} {
+        allow read, write: if money();
+      }
+      match /canteen_sales/{saleId} {
+        allow read, write: if money();
+      }
+      match /fees/{feeId} {
+        allow read: if inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT', 'TEACHER']);
+        allow write: if money();
       }
 
+      // ── estate ───────────────────────────────────────────────────────────
       match /assets/{assetId} {
-        allow read: if isActive(schoolId);
-        allow write: if isAdmin(schoolId) || isAccountant(schoolId);
+        allow read, write: if inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
+      }
+      match /hostels/{hostelId} {
+        allow read, write: if inRole(['ADMIN', 'BURSAR']);
+      }
+      match /routes/{routeId} {
+        allow read, write: if inRole(['ADMIN', 'BURSAR']);
       }
 
-      match /hostels/{id} { allow read, write: if isActive(schoolId) || isAdmin(schoolId); }
-      match /routes/{id} { allow read, write: if isActive(schoolId) || isAdmin(schoolId); }
-      match /canteen_sales/{id} { allow read, write: if isActive(schoolId) || isAdmin(schoolId); }
-      match /timetable/{id} { allow read, write: if isTeacher(schoolId) || isAdmin(schoolId); }
+      // ── communication audit ──────────────────────────────────────────────
+      // Written by the server (Admin SDK bypasses these rules); staff may read
+      // the log so a school can show what was sent and to how many people.
+      match /mail_log/{entryId} {
+        allow read: if inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
+        allow write: if false;
+      }
 
-      // Explicit deny for any unknown subcollection
-      match /{otherCollection}/{docId} {
-        allow read: if isActive(schoolId);
-        allow write: if isAdmin(schoolId);
+      // ── anything else in a school is administrator-only ──────────────────
+      match /{collection}/{docId} {
+        allow read, write: if inRole(['ADMIN']);
       }
     }
 
+    // Nothing outside a school is readable by a browser.
     match /{document=**} {
       allow read, write: if false;
     }

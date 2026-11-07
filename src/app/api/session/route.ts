@@ -16,11 +16,9 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { isDocRole } from '@/lib/documents/registry'
+import { SESSION_COOKIE, SESSION_MAX_AGE } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
-
-export const SESSION_COOKIE = 'altra.role'
-const MAX_AGE = 60 * 60 * 12
 
 export async function POST(request: Request) {
   let payload: unknown
@@ -41,7 +39,7 @@ export async function POST(request: Request) {
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
     path: '/',
-    maxAge: MAX_AGE,
+    maxAge: SESSION_MAX_AGE,
   })
 
   return NextResponse.json({ ok: true, role })

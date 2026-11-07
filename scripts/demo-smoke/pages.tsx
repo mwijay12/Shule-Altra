@@ -23,6 +23,12 @@ import TimetablePage from '@/app/dashboard/timetable/page';
 import TransportPage from '@/app/dashboard/transport/page';
 import HelpPage from '@/app/dashboard/help/page';
 import AnalyticsPage from '@/app/dashboard/analytics/page';
+import CommunicationsPage from '@/app/dashboard/communications/page';
+
+import { EMAIL_POLICY, buildAudience, canSendTemplate } from '@/lib/email/audience';
+import { providerStatus } from '@/lib/email/provider';
+import { SCHOOL, TEMPLATE_TITLES } from '@/lib/email/templates';
+import { ROLE_LABEL } from '@/lib/documents/registry';
 import LoginPage from '@/app/login/page';
 import LandingPage from '@/app/page';
 
@@ -58,7 +64,46 @@ const PAGES: Array<[string, React.ComponentType]> = [
   ['transport', TransportPage],
   ['help', HelpPage],
   ['analytics', AnalyticsPage],
+  ['mail room', CommunicationsPage],
 ];
+
+/**
+ * JSDOM has no origin, so the mail room's `fetch('/api/notifications/email')`
+ * cannot resolve. Answer it with the same payload the route builds for an
+ * administrator, straight from the libraries, so the screen renders its real
+ * cards rather than an error toast.
+ */
+const mailRoom = {
+  provider: providerStatus().provider,
+  from: providerStatus().from,
+  note: providerStatus().note,
+  role: 'ADMIN',
+  roleLabel: ROLE_LABEL.ADMIN,
+  school: SCHOOL.name,
+  templates: (Object.keys(EMAIL_POLICY) as Array<keyof typeof EMAIL_POLICY>).map((id) => ({
+    id,
+    title: TEMPLATE_TITLES[id],
+    audience: EMAIL_POLICY[id].audience,
+    audienceSize: buildAudience(EMAIL_POLICY[id].audience).length,
+    sample: null,
+    allowed: canSendTemplate('ADMIN', id),
+    reason: EMAIL_POLICY[id].reason,
+    roles: EMAIL_POLICY[id].roles.map((role) => ROLE_LABEL[role]),
+  })),
+};
+
+const realFetch = globalThis.fetch;
+
+globalThis.fetch = (async (input: any, init?: any) => {
+  const url = typeof input === 'string' ? input : input?.url ?? '';
+  if (url.includes('/api/notifications/email')) {
+    return new Response(JSON.stringify(mailRoom), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  return realFetch ? realFetch(input, init) : Promise.reject(new Error('fetch unavailable'));
+}) as typeof fetch;
 
 function Wrapper({ children }: { children: React.ReactNode }) {
   return (

@@ -40,7 +40,17 @@ function mulberry32(seed: number) {
   };
 }
 
-const rand = mulberry32(20260406);
+/**
+ * One seeded generator for the whole school.
+ *
+ * It used to live at module scope and simply keep advancing, so two calls in
+ * the same process produced two different schools — a preview in the mail room
+ * could promise 97 recipients and the send then hit 91. `buildDemoDataset()`
+ * now rewinds the seed, which makes the demo deterministic: same names, same
+ * balances, same counts, every build.
+ */
+const SEED = 20260406;
+let rand = mulberry32(SEED);
 
 const pick = <T>(items: readonly T[]): T => items[Math.floor(rand() * items.length)];
 const between = (min: number, max: number) => Math.floor(rand() * (max - min + 1)) + min;
@@ -540,6 +550,11 @@ function buildPettyCash(): Array<{ path: string; data: Record<string, any> }> {
 /* -------------------------------------------------------------------------- */
 
 export function buildDemoDataset(): DemoDataset {
+  rand = mulberry32(SEED);
+  // The name register is module state too; rewinding the seed without clearing
+  // it made the second build of a process skip every name the first had taken
+  // and drift into different learners. Reset both, or neither.
+  usedNames.clear();
   const dataset: DemoDataset = {};
   const put = (rows: Array<{ path: string; data: Record<string, any> }>) => {
     rows.forEach((row) => {

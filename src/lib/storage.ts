@@ -3,6 +3,12 @@ import { initializeFirebase } from '@/firebase';
 
 const { storage } = initializeFirebase();
 
+/** Uploads are optional — the dashboard must still work without a bucket. */
+function requireStorage() {
+  if (!storage) throw new Error('Photo storage is not configured for this Firebase project.');
+  return storage;
+}
+
 export async function uploadStudentPhoto(
   schoolId: string,
   studentId: string,
@@ -19,7 +25,7 @@ export async function uploadStudentPhoto(
   const compressed = await compressImage(file, 400, 400);
 
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
-  const storageRef = ref(storage, path);
+  const storageRef = ref(requireStorage(), path);
   await uploadBytes(storageRef, compressed, {
     contentType: 'image/jpeg',
   });
@@ -32,7 +38,7 @@ export async function deleteStudentPhoto(
   studentId: string
 ): Promise<void> {
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
-  const storageRef = ref(storage, path);
+  const storageRef = ref(requireStorage(), path);
   try {
     await deleteObject(storageRef);
   } catch (e) {

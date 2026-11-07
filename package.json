@@ -16,7 +16,8 @@
     "demo:smoke:data": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/data-flow.tsx",
     "demo:pdf": "tsx --tsconfig tsconfig.json scripts/demo-smoke/pdf.ts",
     "demo:reports": "tsx --tsconfig tsconfig.json scripts/demo-smoke/reports.ts",
-    "demo:docs": "tsx --tsconfig tsconfig.json scripts/demo-smoke/documents.ts"
+    "demo:docs": "tsx --tsconfig tsconfig.json scripts/demo-smoke/documents.ts",
+    "demo:email": "tsx --tsconfig tsconfig.json scripts/demo-smoke/email.ts"
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.28.0",

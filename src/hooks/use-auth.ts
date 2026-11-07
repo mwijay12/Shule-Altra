@@ -138,6 +138,7 @@ export function useAuth() {
         transport: ['ADMIN', 'BURSAR'],
         hostel: ['ADMIN', 'BURSAR'],
         timetable: ['ADMIN', 'TEACHER'],
+        communications: ['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR'],
       };
 
       const allowedRoles = ACCESS_MATRIX[module];

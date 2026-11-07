@@ -49,3 +49,6 @@ firestore-debug.log
 
 # drive connector downloads (local reference only)
 google_drive/
+
+# Rendered mail-room previews (npm run demo:email) — regenerate, never commit
+private/email-previews/

@@ -293,6 +293,52 @@ after writes, and sign-out.
 
 ---
 
+## 9.1 Backend: Firebase rules and the mail room
+
+The demo runs entirely offline, but the repo now carries the production
+backend, not just the shim:
+
+| File | What it decides |
+|---|---|
+| `firestore.rules` | Role-scoped reads and writes inside `schools/{schoolId}` — money (ADMIN/BURSAR/ACCOUNTANT), learning (ADMIN/TEACHER), identity (ADMIN). Everything outside a school is denied. |
+| `storage.rules` | Learner photographs under 2 MB, image types only, readable by staff, writable by the office, deletable by an administrator. |
+| `firestore.indexes.json` | The composite indexes the dashboards query (ledger by status + control number, attendance by date + class, grades by class + subject, …). |
+| `firebase.json` / `.firebaserc` | `firebase deploy --only firestore:rules,firestore:indexes,storage`, plus emulator ports for local work. |
+| `src/firebase/config.ts` | `NEXT_PUBLIC_FIREBASE_CONFIG` (one line of JSON) with the demo project as a safe fallback and `storageBucket` derived when it is missing. |
+
+```bash
+cp .env.example .env.local      # fill NEXT_PUBLIC_FIREBASE_CONFIG
+firebase deploy --only firestore:rules,firestore:indexes,storage
+```
+
+### Email to guardians and staff
+
+`/dashboard/communications` is the mail room, and `/api/notifications/email` is
+the only thing that can send. Six branded templates — fee reminder, payment
+receipt, absence alert, report-card ready, staff briefing, timetable change —
+share one table-based layout in `src/lib/email/templates.ts` (blue → violet rule,
+crest, PDPA footer, plain-text twin) so they survive Gmail, Outlook and phones.
+
+* **Recipients are resolved on the server** from the school's own register: the
+  browser asks for "the fee reminder to the defaulters", never for an address
+  list. `src/lib/email/audience.ts` owns the five audiences.
+* **The policy mirrors the document registry** — teachers cannot mail the
+  defaulters, finance cannot mail the staff briefing — and refusals come back as
+  a sentence naming the roles that can.
+* **Preview then send**: preview renders the exact HTML for the first recipient
+  in a sandboxed iframe; send returns an audit id, the counts and the provider.
+* **Dry run by default**: with no `RESEND_API_KEY` every message is rendered and
+  counted but not delivered. Add the key (plus `EMAIL_FROM`, optional
+  `EMAIL_REPLY_TO`) and the same button delivers through Resend's batch API —
+  no SDK, no build change.
+* `npm run demo:email` renders all six to `private/email-previews/*.html`,
+  asserts no leaked `undefined`, checks the brand colours, the plain-text twin
+  and the role matrix.
+
+The demo school is deterministic: `buildDemoDataset()` rewinds its seeded
+generator and clears the name register on every call, so the 97 defaulters the
+mail room promises are the 97 it mails.
+
 ## 10. What is still honest-to-goodness “TODO”
 
 * Timetable period allocation is still a static grid (presentation-ready, not editable).

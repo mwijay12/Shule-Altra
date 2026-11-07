@@ -25,7 +25,7 @@ import {
   canOpenDocument,
   isDocRole,
 } from '@/lib/documents/registry'
-import { SESSION_COOKIE } from '@/app/api/session/route'
+import { SESSION_COOKIE } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
