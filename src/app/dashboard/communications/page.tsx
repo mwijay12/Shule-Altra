@@ -158,7 +158,7 @@ export default function CommunicationsPage() {
       setSent((previous) => [record, ...previous].slice(0, 6));
       const where = record.provider === "smtp" ? "SMTP" : record.provider === "resend" ? "Resend" : "dry run";
       toast({
-        variant: record.failed > 0 ? "destructive" : "default",
+        variant: record.failed > 0 || record.error ? "destructive" : "default",
         title:
           record.provider === "dry-run"
             ? `Rendered ${record.attempted} emails (dry run)`

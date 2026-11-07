@@ -213,6 +213,24 @@ export async function POST(request: Request) {
   const auditId = randomUUID()
   const checkedAt = new Date().toISOString()
   const result = await deliver(messages)
+
+  // Nothing left the building and the provider said why: that is a refusal,
+  // not a partial success, so the buttons stay honest.
+  if (result.delivered === 0 && result.error) {
+    console.warn('[email:refused]', JSON.stringify({ auditId, role, template, provider: result.provider, error: result.error }))
+    return NextResponse.json(
+      {
+        error: result.error,
+        auditId,
+        provider: result.provider,
+        attempted: messages.length,
+        delivered: 0,
+        failed: result.failed,
+        limits: providerStatus().limits,
+      },
+      { status: 502 }
+    )
+  }
   const copyTo = process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || undefined
   const after = providerStatus()
 
