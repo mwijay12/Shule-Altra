@@ -301,6 +301,16 @@ async function main() {
     ]);
   }
 
+  // The register must offer the folder import, and it must be the same screen
+  // that already knows the photo policy (the button is disabled, not hidden,
+  // when PHOTO_POLICY=none).
+  const studentsText = rendered.students || '';
+  compactChecks.push([
+    'register offers the bulk photo import',
+    /Import photos/.test(studentsText),
+    /Import photos/.test(studentsText) ? 'button present' : 'missing',
+  ]);
+
   for (const [label, ok, note] of compactChecks) {
     if (!ok) failures += 1;
     console.log(`${ok ? 'OK  ' : 'FAIL'} ${label.padEnd(42)} ${note}`);

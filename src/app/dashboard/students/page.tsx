@@ -18,7 +18,8 @@ import {
   ScanLine,
   Camera,
   IdCard,
-  QrCode
+  QrCode,
+  Images
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,7 +48,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
-import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
+import { useFirestore, useCollection, useMemoFirebase, useDoc, useUser } from "@/firebase"
 import { collection, doc, query, orderBy, setDoc, serverTimestamp, where, getDocs } from "firebase/firestore"
 import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { generateStudentProgressSummary } from "@/ai/flows/generate-student-progress-summary-flow"
@@ -59,6 +60,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
 import { uploadStudentPhoto, deleteStudentPhoto } from "@/lib/storage"
 import { PHOTO_POLICY_LABEL, PHOTO_POLICY_NOTE, photoCaptureAllowed, photoPolicy } from "@/lib/media/policy"
+import {
+  BULK_PHOTO_HINT,
+  describeBulkPhotoPlan,
+  planBulkPhotos,
+  type BulkPhotoPlan,
+  type BulkPhotoStatus,
+} from "@/lib/media/bulk-photos"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import type { Student } from "@/types/student"
 import { DEMO_MODE } from "@/lib/demo/config"
 import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
@@ -70,6 +80,16 @@ const ALTRAWARE_DEMO_STUDENTS: Partial<Student>[] = [
   { id: "ALT-2026-004", name: "ANNA JOSEPH KILIMA", class: "Form 2A", type: "Boarder", hostel: "Lake Victoria Wing", guardianPhone: "+255 700 000 004", conductPoints: 98 },
   { id: "ALT-2026-005", name: "IDRISSA HASSAN KHALFAN", class: "Form 2B", type: "Boarder", hostel: "Serengeti Wing", guardianPhone: "+255 700 000 005", conductPoints: 99 },
 ]
+
+/** Colour codes for the bulk-import plan, one per outcome. */
+const PHOTO_STATUS_STYLE: Record<BulkPhotoStatus, string> = {
+  ready: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  replace: "border-orange-200 bg-orange-50 text-orange-700",
+  unmatched: "border-red-200 bg-red-50 text-destructive",
+  duplicate: "border-red-200 bg-red-50 text-destructive",
+  unsupported: "border-red-200 bg-red-50 text-destructive",
+  oversize: "border-red-200 bg-red-50 text-destructive",
+}
 
 export default function StudentsPage() {
   const { toast } = useToast()
@@ -90,6 +110,17 @@ export default function StudentsPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Bulk photo import — a folder named by admission number, planned in full
+  // before a single child's face moves (see src/lib/media/bulk-photos.ts).
+  const [isPhotoImportOpen, setIsPhotoImportOpen] = useState(false)
+  const [photoImportFiles, setPhotoImportFiles] = useState<File[]>([])
+  const [photoImportPlan, setPhotoImportPlan] = useState<BulkPhotoPlan | null>(null)
+  const [photoConsentAttested, setPhotoConsentAttested] = useState(false)
+  const [photoImportBusy, setPhotoImportBusy] = useState(false)
+  const [photoImportProgress, setPhotoImportProgress] = useState({ done: 0, total: 0 })
+  const [photoImportFailures, setPhotoImportFailures] = useState<string[]>([])
+  const { user } = useUser()
 
   const identityRef = useMemoFirebase(() => doc(db, "schools", "school-001", "config", "identity"), [db])
   const { data: identity } = useDoc(identityRef)
@@ -367,6 +398,118 @@ export default function StudentsPage() {
     }
   }
 
+  /**
+   * Read the folder the school picked and turn it into a plan — no writes, no
+   * uploads. Every file is classified (ready / replace / unmatched / duplicate /
+   * unsupported / too large) and the counts are what the dialog shows.
+   */
+  const handlePhotoFolder = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = Array.from(event.target.files ?? [])
+    event.target.value = ""
+    setPhotoImportFailures([])
+    setPhotoImportProgress({ done: 0, total: 0 })
+    setPhotoImportFiles(picked)
+    setPhotoImportPlan(
+      planBulkPhotos(
+        picked.map((file) => ({ name: file.name, type: file.type, size: file.size })),
+        students.map((student) => ({
+          id: student.id,
+          name: student.name,
+          className: student.class,
+          hasPhoto: Boolean(student.photoUrl),
+        })),
+        photoPolicyValue
+      )
+    )
+  }
+
+  /**
+   * Store the photographs the plan approved.
+   *
+   * Each one goes through the same `uploadStudentPhoto` boundary as a single
+   * capture (400 px, EXIF stripped, 2 MB cap) and each one records consent with
+   * who attested it, which file it came from, and when. A failure on row 40 does
+   * not roll back rows 1–39: the school is told exactly what landed and what did
+   * not, and the register is refreshed by the live query.
+   */
+  const handleCommitPhotoImport = async () => {
+    if (!photoImportPlan || photoImportPlan.importable.length === 0) return
+    if (!canCapturePhoto) {
+      toast({
+        variant: "destructive",
+        title: "Photographs are disabled",
+        description: "This school keeps no learner photographs (PHOTO_POLICY=none).",
+      })
+      return
+    }
+    if (!photoConsentAttested) {
+      toast({
+        variant: "destructive",
+        title: "Consent not confirmed",
+        description: "Confirm that each guardian agreed before photographs are stored.",
+      })
+      return
+    }
+
+    setPhotoImportBusy(true)
+    setPhotoImportFailures([])
+    const total = photoImportPlan.importable.length
+    setPhotoImportProgress({ done: 0, total })
+
+    const failures: string[] = []
+    let done = 0
+
+    for (const row of photoImportPlan.importable) {
+      const file = photoImportFiles[photoImportPlan.rows.indexOf(row)]
+      try {
+        if (!row.studentId) throw new Error("no learner on this row")
+        if (!file) throw new Error("the file is no longer available — choose the folder again")
+        const photoUrl = await uploadStudentPhoto("school-001", row.studentId, file)
+        await setDoc(
+          doc(db, "schools", "school-001", "students", row.studentId),
+          {
+            photoUrl,
+            photoUpdatedAt: serverTimestamp(),
+            photoConsent: {
+              granted: true,
+              by: user?.email ?? "school administrator",
+              method: "bulk-import",
+              fileName: row.fileName,
+              at: serverTimestamp(),
+            },
+          },
+          { merge: true }
+        )
+      } catch (err: any) {
+        failures.push(`${row.fileName} — ${err?.message ?? "upload failed"}`)
+      } finally {
+        done += 1
+        setPhotoImportProgress({ done, total })
+      }
+    }
+
+    const stored = total - failures.length
+    setPhotoImportFailures(failures)
+    setPhotoImportBusy(false)
+
+    toast({
+      variant: stored === 0 ? "destructive" : "default",
+      title: stored === 0 ? "No photographs stored" : `${stored} photograph${stored === 1 ? "" : "s"} stored`,
+      description:
+        failures.length === 0
+          ? "Consent recorded with each one. ID cards will use them immediately."
+          : `${failures.length} failed — the list is in the dialog, nothing else was lost.`,
+    })
+
+    if (failures.length === 0) {
+      setIsPhotoImportOpen(false)
+      setPhotoImportFiles([])
+      setPhotoImportPlan(null)
+      setPhotoConsentAttested(false)
+      setPhotoImportProgress({ done: 0, total: 0 })
+    }
+  }
+
   const handleDownloadIdCard = async () => {
     if (!selectedStudent) return
     try {
@@ -420,6 +563,209 @@ export default function StudentsPage() {
           <Button variant="outline" onClick={() => exportToExcel(students, "Altraware_Student_Ledger")} className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-black text-[9px] uppercase">
             <Download className="mr-2 h-4 w-4" /> Export Ledger
           </Button>
+
+          <Dialog
+            open={isPhotoImportOpen}
+            onOpenChange={(open) => {
+              setIsPhotoImportOpen(open)
+              if (!open) {
+                setPhotoImportFiles([])
+                setPhotoImportPlan(null)
+                setPhotoConsentAttested(false)
+                setPhotoImportFailures([])
+                setPhotoImportProgress({ done: 0, total: 0 })
+              }
+            }}
+          >
+            <DialogTrigger asChild>
+              <Button
+                variant="outline"
+                disabled={!canCapturePhoto}
+                title={canCapturePhoto ? "Match a folder of photographs by admission number" : PHOTO_POLICY_NOTE.none}
+                className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-black text-[9px] uppercase disabled:opacity-50"
+              >
+                <Images className="mr-2 h-4 w-4" /> Import photos
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="rounded-[2rem] p-0 max-w-2xl border-none shadow-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader className="sticky top-0 z-10 border-b bg-white/90 p-6 backdrop-blur-md sm:p-8">
+                <DialogTitle className="text-lg font-black uppercase tracking-tight text-primary sm:text-xl">
+                  Import photographs
+                </DialogTitle>
+                <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  {PHOTO_POLICY_LABEL[photoPolicyValue]} — nothing is stored until you press import.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6 p-6 sm:p-8">
+                <p className="rounded-2xl border border-dashed border-border/70 bg-muted/10 px-4 py-3 text-[9px] font-bold uppercase leading-relaxed tracking-widest text-muted-foreground">
+                  {BULK_PHOTO_HINT}
+                </p>
+
+                <label className="flex items-start gap-3 rounded-2xl border border-border/60 bg-white p-4">
+                  <Checkbox
+                    checked={photoConsentAttested}
+                    onCheckedChange={(value) => setPhotoConsentAttested(value === true)}
+                    disabled={!canCapturePhoto || photoImportBusy}
+                    className="mt-0.5"
+                  />
+                  <span className="space-y-1">
+                    <span className="block text-[10px] font-black uppercase tracking-widest text-foreground">
+                      Each guardian has agreed to this photograph
+                    </span>
+                    <span className="block text-[9px] font-medium leading-relaxed text-muted-foreground">
+                      Consent is recorded with every learner, with your account, the file name and the time.
+                      A guardian can withdraw it later from the learner&apos;s profile, and the file is deleted.
+                      Photographs of leavers are removed after 90 days.
+                    </span>
+                  </span>
+                </label>
+
+                <label
+                  className={cn(
+                    "flex h-14 items-center justify-center rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg",
+                    canCapturePhoto && photoConsentAttested && !photoImportBusy
+                      ? "colorful-gradient cursor-pointer text-white"
+                      : "cursor-not-allowed bg-muted text-muted-foreground"
+                  )}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {photoImportPlan ? "Choose a different folder" : "Choose a folder of photographs"}
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    disabled={!canCapturePhoto || !photoConsentAttested || photoImportBusy}
+                    onChange={handlePhotoFolder}
+                  />
+                </label>
+
+                {photoImportPlan ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {[
+                        { label: "Ready", value: photoImportPlan.counts.ready, tone: "text-emerald-600" },
+                        { label: "Replacing", value: photoImportPlan.counts.replace, tone: "text-orange-600" },
+                        {
+                          label: "Unmatched",
+                          value: photoImportPlan.counts.unmatched,
+                          tone: "text-destructive",
+                        },
+                        {
+                          label: "Refused",
+                          value:
+                            photoImportPlan.counts.duplicate +
+                            photoImportPlan.counts.unsupported +
+                            photoImportPlan.counts.oversize,
+                          tone: "text-destructive",
+                        },
+                      ].map((cell) => (
+                        <div key={cell.label} className="rounded-2xl border border-border/60 bg-muted/20 p-3">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+                            {cell.label}
+                          </p>
+                          <p className={cn("mt-1 text-xl font-black tabular-nums", cell.tone)}>{cell.value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                      {describeBulkPhotoPlan(photoImportPlan)}
+                    </p>
+
+                    {photoImportPlan.rows.length > 0 ? (
+                      <div className="max-h-56 space-y-1 overflow-y-auto rounded-2xl border border-border/60 bg-white p-2">
+                        {[...photoImportPlan.importable, ...photoImportPlan.blocked].map((row) => (
+                          <div
+                            key={row.fileName}
+                            className="flex flex-col gap-1 rounded-xl px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-[10px] font-black uppercase text-foreground/80">
+                                {row.fileName}
+                              </p>
+                              <p className="text-[9px] font-medium leading-relaxed text-muted-foreground">{row.note}</p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 self-start rounded-full px-2.5 py-0.5 text-[8px] font-black uppercase sm:self-auto",
+                                PHOTO_STATUS_STYLE[row.status]
+                              )}
+                            >
+                              {row.status}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {photoImportBusy || photoImportProgress.total > 0 ? (
+                      <div className="space-y-2">
+                        <Progress
+                          value={
+                            photoImportProgress.total === 0
+                              ? 0
+                              : Math.round((photoImportProgress.done / photoImportProgress.total) * 100)
+                          }
+                          className="h-2 rounded-full bg-muted/50"
+                        />
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                          {photoImportProgress.done} / {photoImportProgress.total} stored
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {photoImportFailures.length > 0 ? (
+                      <div className="space-y-1 rounded-2xl border border-red-200 bg-red-50 p-3">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-destructive">
+                          {photoImportFailures.length} could not be stored
+                        </p>
+                        {photoImportFailures.slice(0, 8).map((failure) => (
+                          <p key={failure} className="text-[9px] font-medium leading-relaxed text-muted-foreground">
+                            {failure}
+                          </p>
+                        ))}
+                        {photoImportFailures.length > 8 ? (
+                          <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                            +{photoImportFailures.length - 8} more
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    <Button
+                      disabled={
+                        photoImportBusy || photoImportPlan.importable.length === 0 || !photoConsentAttested
+                      }
+                      onClick={() => void handleCommitPhotoImport()}
+                      className="h-12 w-full rounded-xl colorful-gradient text-[11px] font-black uppercase tracking-widest text-white shadow-xl"
+                    >
+                      {photoImportBusy ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Camera className="mr-2 h-4 w-4" />
+                      )}
+                      {photoImportBusy
+                        ? "Storing photographs…"
+                        : `Import ${photoImportPlan.importable.length} photograph${photoImportPlan.importable.length === 1 ? "" : "s"}`}
+                    </Button>
+
+                    {photoImportPlan.blocked.length > 0 ? (
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                        Unmatched and refused files are skipped. Everything else still imports.
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="rounded-2xl border border-dashed border-border/70 bg-muted/10 px-4 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    Tick the consent box, then pick the folder. You will see the plan before anything is stored.
+                  </p>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <Dialog>
             <DialogTrigger asChild>
