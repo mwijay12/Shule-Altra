@@ -284,6 +284,7 @@ npm run demo:reports      # all 10 Reports-centre PDFs, one geometry each
 npm run demo:email        # six branded emails + provider precedence
 npm run demo:smtp         # Nodemailer failure path against a closed port
 npm run demo:marks        # Excel marks import against a deliberately messy sheet
+npm run demo:photos       # bulk photo import: a filthy folder, matched by admission number
 npm run typecheck         # TypeScript across the whole repo
 npm run build             # production build
 ```
@@ -294,7 +295,11 @@ asserts that each of the 16 dashboard screens (including the new
 closes with a **KPI FIT** block: the finance and dashboard tiles must show compact
 money (`TZS 57.8M`), the exact figure must still be reachable (`TZS 57,847,000`),
 no money token may be ellipsised, and `formatTZSCompact` is checked against seven
-amounts including a negative and a billion. `demo:smoke:data` checks the 150-student registry, fee
+amounts including a negative and a billion. `demo:photos` drives the bulk photo planner against a deliberately filthy folder
+(duplicates, HEIC, a 6 MB file, camera filenames, an unknown admission number)
+and asserts that every file is classified before anything uploads.
+
+`demo:smoke:data` checks the 150-student registry, fee
 reconciliation totals, petty cash, integrations, student balance history, the
 role access matrix (teacher cannot open finance/settings), live snapshot updates
 after writes, and sign-out.

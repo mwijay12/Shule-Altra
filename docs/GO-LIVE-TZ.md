@@ -66,6 +66,19 @@ Two notes that matter for a school conversation:
 
 ---
 
+### A folder of 150 photographs, matched by admission number
+
+No school photographs learners one at a time. They photograph a class on a Friday and hand over a folder. **Import photos** in the Student Directory turns that folder into a plan you approve:
+
+- **Matching is by admission number only** — `ADM-2026-014.jpg`. Names collide and folder order means nothing; a photograph on the wrong child's card is worse than no photograph at all.
+- Tolerated in the filename: lowercase, spaces or underscores, `(1)` duplicate markers, `copy` suffixes, and Windows or macOS paths.
+- **Refused with a reason, never guessed at:** camera filenames (`IMG_2093.jpg`), admission numbers nobody in the register has, HEIC (export JPEG first), anything over 2 MB, and a second file for the same learner — the first wins and the runner-up is named in the row.
+- An existing photograph is labelled **replace**, counted separately, so nobody destroys a picture the school already has consent for with a single click.
+- **Consent is attested before the folder can even be picked**, and recorded per learner with the account, the file name and the time (`photoConsent.method = 'bulk-import'`). With `PHOTO_POLICY=none` the button is disabled — there is no path through this screen that stores a face.
+- Uploads run one file at a time with a progress bar. A failure on photograph 40 does not undo 1–39; the failures are listed by file name and the rest of the register is untouched.
+
+`npm run demo:photos` drives that planner against a deliberately filthy folder — duplicates, a HEIC file, a 6 MB photo, camera names, an unknown admission number and an empty register — and exits non-zero if any of it stops being honest.
+
 ## 3. Cloudinary for photos — yes, with a plan
 
 **What the product already does** (so you can answer the question a head teacher will actually ask): a photo is re-encoded to 400×400 JPEG in the browser, stripped of EXIF and GPS on the way in, capped at 2 MB, stored at `schools/{schoolId}/students/{id}/photo.jpg`, and guarded by storage rules. It is used by the roster, the profile sheet and the ID card. ID cards are rendered **in the browser** by pdf-lib, so no server ever caches a child's face. The record carries `photoConsent` (granted by whom, when) and, on withdrawal, `revokedAt` — the file is deleted, not merely hidden. Leavers are archived for **90 days** then erased, with `photoDeletedAt` recorded.
