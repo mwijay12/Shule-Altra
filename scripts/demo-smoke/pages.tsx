@@ -29,6 +29,7 @@ import { EMAIL_POLICY, buildAudience, canSendTemplate } from '@/lib/email/audien
 import { providerStatus } from '@/lib/email/provider';
 import { SCHOOL, TEMPLATE_TITLES } from '@/lib/email/templates';
 import { ROLE_LABEL } from '@/lib/documents/registry';
+import { formatTZSCompact } from '@/lib/finance-engine';
 import LoginPage from '@/app/login/page';
 import LandingPage from '@/app/page';
 
@@ -140,6 +141,7 @@ async function main() {
   const root = createRoot(container);
 
   let failures = 0;
+  const rendered: Record<string, string> = {};
 
   for (const [name, Page] of PAGES) {
     const errors: string[] = [];
@@ -169,6 +171,7 @@ async function main() {
         await new Promise((resolve) => setTimeout(resolve, 1400));
       });
       const text = container.textContent || '';
+      rendered[name] = text;
       const significant = errors.filter(
         (e) =>
           !/not wrapped in act|Invalid DOM property|Each child in a list|validateDOMNesting|Received `true` for a non-boolean|Cannot update a component|findDOMNode|of chart should be greater than 0/i.test(e)
@@ -242,6 +245,65 @@ async function main() {
     await act(async () => {
       landingRoot.unmount();
     });
+  }
+
+  // ---------------------------------------------------------------------
+  // KPI FIT — a number the bursar cannot read is a number that does not
+  // exist. Compact money in the tiles, the exact figure alongside it, and
+  // never a tile whose value has to be clipped with an ellipsis.
+  // ---------------------------------------------------------------------
+  console.log('\nKPI FIT');
+  const compactChecks: Array<[string, boolean, string]> = [];
+  // No \b after the suffix: adjacent DOM nodes concatenate without a space,
+  // so "TZS 6.37M" is followed directly by the exact "TZS 6,370,000".
+  const compactToken = /TZS -?\d+(?:\.\d+)?[KMB]/;
+  const financeText = rendered.finance || '';
+  const dashboardText = rendered.dashboard || '';
+
+  compactChecks.push([
+    'finance tiles carry compact money',
+    compactToken.test(financeText),
+    (financeText.match(compactToken) || ['(none)'])[0],
+  ]);
+  compactChecks.push([
+    'dashboard tiles carry compact money',
+    compactToken.test(dashboardText),
+    (dashboardText.match(compactToken) || ['(none)'])[0],
+  ]);
+  const exactInFinance = /TZS \d{1,3}(?:,\d{3}){2,}/.test(financeText);
+  compactChecks.push([
+    'finance still exposes the exact figure',
+    exactInFinance,
+    (financeText.match(/TZS \d{1,3}(?:,\d{3}){2,}/) || ['(none)'])[0],
+  ]);
+  const ellipsis = /TZS\s?[\d.,]*\u2026|\u2026\s*$/;
+  compactChecks.push([
+    'no KPI money token is ellipsised',
+    !ellipsis.test(financeText) && !ellipsis.test(dashboardText),
+    ellipsis.test(financeText) || ellipsis.test(dashboardText) ? 'found a clipped amount' : 'clean',
+  ]);
+
+  const scaleCases: Array<[number, string]> = [
+    [6094000, 'TZS 6.09M'],
+    [19743000, 'TZS 19.7M'],
+    [984000000, 'TZS 984M'],
+    [1250000000, 'TZS 1.25B'],
+    [19500, 'TZS 19.5K'],
+    [950, 'TZS 950'],
+    [-4500, 'TZS -4.5K'],
+  ];
+  for (const [amount, expected] of scaleCases) {
+    const actual = formatTZSCompact(amount);
+    compactChecks.push([
+      `compact ${amount.toLocaleString('en-US')}`,
+      actual === expected,
+      actual,
+    ]);
+  }
+
+  for (const [label, ok, note] of compactChecks) {
+    if (!ok) failures += 1;
+    console.log(`${ok ? 'OK  ' : 'FAIL'} ${label.padEnd(42)} ${note}`);
   }
 
   console.log(failures === 0 ? '\nALL PAGES RENDERED CLEANLY' : `\n${failures} PAGE(S) HAD ISSUES`);
