@@ -29,6 +29,10 @@ jobs:
         run: npm run demo:smoke:landing
       - name: Copy guard
         run: npm run demo:smoke:copy
+      - name: Brand, theme and contrast
+        run: npm run demo:smoke:brand
+      - name: Firestore seed (dry run)
+        run: npm run firebase:seed -- --dry-run
 
       - name: Vector printable suite
         run: npm run demo:pdf

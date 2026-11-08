@@ -60,22 +60,22 @@ function DraggableRow({
         <GripVertical className="h-4 w-4" />
       </button>
 
-      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-[10px] font-black text-primary">
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-primary/15 to-accent/15 text-[13px] font-semibold text-primary">
         {String(index + 1).padStart(2, '0')}
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-black uppercase tracking-tight text-foreground">
+        <p className="truncate text-[14px] font-semibold tracking-tight text-foreground">
           {item.name}
         </p>
-        <p className="truncate text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="truncate text-[12px] font-bold text-muted-foreground">
           {item.className} · {item.admissionNumber}
         </p>
       </div>
 
       <div className="hidden text-right sm:block">
-        <p className="text-[10px] font-black tabular-nums text-destructive">{formatTzs(item.balance)}</p>
-        <p className="text-[8px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+        <p className="text-[13px] font-bold tabular-nums text-destructive">{formatTzs(item.balance)}</p>
+        <p className="text-[11px] font-bold text-muted-foreground">
           {item.paid > 0 ? `${formatTzs(item.paid)} paid` : 'nothing paid'}
         </p>
       </div>
@@ -136,7 +136,7 @@ export function PriorityBoard({ items, onExport }: PriorityBoardProps) {
     <div data-reveal className="glass-panel flex h-full flex-col rounded-3xl p-4 sm:p-5">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[12px] font-semibold text-muted-foreground">
             Follow-up queue
           </p>
           <h3 className="mt-1 flex items-center gap-2 text-[13px] text-foreground">
@@ -144,12 +144,12 @@ export function PriorityBoard({ items, onExport }: PriorityBoardProps) {
             {order.length} balances to chase
           </h3>
         </div>
-        <span className="rounded-full bg-gradient-to-br from-primary/15 to-accent/15 px-2 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-primary">
+        <span className="rounded-full bg-gradient-to-br from-primary/15 to-accent/15 px-2 py-0.5 text-[11px] font-semibold text-primary">
           Draggable
         </span>
       </div>
 
-      <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+      <p className="mt-1 text-[12px] font-bold text-muted-foreground">
         Drag to set priority · tap ↓ for a vector fee statement
       </p>
 
@@ -165,7 +165,7 @@ export function PriorityBoard({ items, onExport }: PriorityBoardProps) {
       </Reorder.Group>
 
       {order.length === 0 && (
-        <p className="py-8 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+        <p className="py-8 text-center text-[13px] font-bold text-muted-foreground">
           No outstanding balances 🎉
         </p>
       )}
@@ -178,7 +178,7 @@ export function PriorityBoard({ items, onExport }: PriorityBoardProps) {
             description: 'The queue is stored on this device and survives reloads.',
           })
         }
-        className="mt-3 rounded-xl border border-border/70 py-2 text-[9px] font-black uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+        className="mt-3 rounded-xl border border-border/70 py-2 text-[12px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
       >
         Confirm order
       </button>

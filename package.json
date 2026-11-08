@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack -p 9002",
     "demo": "NEXT_PUBLIC_DEMO_MODE=true next dev --turbopack -p 9002",
+    "brand:icons": "node scripts/brand/build-icons.mjs",
     "demo:build": "NEXT_PUBLIC_DEMO_MODE=true NODE_ENV=production next build",
     "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
     "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
@@ -24,7 +25,10 @@
     "demo:smoke:olevel": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/o-level.tsx",
     "demo:smoke:motion": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/motion.tsx",
     "demo:smoke:landing": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/landing.tsx",
-    "demo:smoke:copy": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/copy.ts"
+    "demo:smoke:copy": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/copy.ts",
+    "demo:smoke:brand": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/brand.tsx",
+    "firebase:seed": "tsx --tsconfig tsconfig.smoke.json scripts/firebase/seed-firestore.ts",
+    "firebase:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -97,6 +101,7 @@
     "@types/react": "^19.2.1",
     "@types/react-dom": "^19.2.1",
     "@types/three": "^0.187.0",
+    "firebase-admin": "^14.5.0",
     "genkit-cli": "^1.28.0",
     "jsdom": "^31.0.0",
     "postcss": "^8",

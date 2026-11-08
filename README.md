@@ -101,7 +101,7 @@ Educational institutions in East Africa suffer from "Data Fragmentation"—disco
 
 ### High-Level Flow
 ```text
-[User / Admin] 
+[User / Admin]
       ↓
 [Next.js 15 Client (Turbopack)] ←─── [Shadcn UI / Framer Motion]
       ↓                                    ↑
@@ -212,6 +212,16 @@ project-root/
 *   **Process**: The system sends raw grades and behavioral points to Gemini.
 *   **Output**: "Juma is performing exceptionally in Mathematics (Grade A) but requires remedial focus in Civics. His attendance is optimal at 98.4%."
 
+### Use Case 3: Rebranding the school (super admin)
+*   **Action**: Sign in with Google as the install owner, then open **Dashboard → Theme Studio**.
+*   **Choose**: one of four palettes (Blue Ridge, Emerald, Carbon Gold, Crimson), a type pairing, and light or dark. Light is the default.
+*   **Identity**: upload the school logo (PNG/JPEG), edit the printed name, motto, address, contacts, NECTA centre and registration number.
+*   **Prove it**: "Download a real PDF proof" runs the production document engine, so the letterhead you approve is the one a parent receives.
+*   **Publish**: the palette and type go to `config/branding`; the details go to `config/identity`. The sidebar mark, the WebGL orb, every button and the next report card, fee statement, ID card and letterhead all follow.
+*   **Print colours**: documents always use the palette's *light* variant — a colour tuned for a dark screen washes out on paper.
+
+See **[docs/FIREBASE.md](docs/FIREBASE.md)** for connecting the real Firebase project, deploying the rules and seeding the demo school into Firestore.
+
 ---
 
 ## 🗄️ SECTION 7: DATABASE SCHEMA
@@ -241,7 +251,7 @@ We use 2.5 Flash for its extreme speed and low latency, essential for real-time 
 
 ### Core Prompt: `scanStudentRegistrationPrompt`
 ```text
-You are an institutional administrative assistant for Tanzanian schools. 
+You are an institutional administrative assistant for Tanzanian schools.
 Extract student data from the provided image.
 1. Extract Full Name (Capitalize)
 2. Extract ID Number (SXXXX/XXXX format)

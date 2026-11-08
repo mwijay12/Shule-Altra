@@ -64,10 +64,10 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
         <MobileMenuButton onClick={onOpenMobile} />
 
         <div className="min-w-0 flex-1">
-          <p className="truncate text-[8px] font-black uppercase tracking-[0.28em] text-muted-foreground">
+          <p className="truncate text-[11px] font-semibold text-muted-foreground">
             {eyebrow ?? 'Shule Altra · Command OS'}
           </p>
-          <h1 className="truncate text-[15px] font-black uppercase leading-tight tracking-tight text-foreground sm:text-[17px]">
+          <h1 className="truncate text-[15px] font-semibold leading-tight tracking-tight text-foreground sm:text-[17px]">
             {title}
           </h1>
         </div>
@@ -75,11 +75,11 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
         <button
           type="button"
           onClick={onOpenSearch}
-          className="group hidden h-10 items-center gap-2 rounded-xl border border-border/70 bg-card/70 px-3 text-[10px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground sm:flex"
+          className="group hidden h-10 items-center gap-2 rounded-xl border border-border/70 bg-card/70 px-3 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground sm:flex"
         >
           <Search className="h-4 w-4" />
           <span className="hidden lg:inline">Search students, pages…</span>
-          <kbd className="ml-2 hidden items-center gap-0.5 rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground lg:flex">
+          <kbd className="ml-2 hidden items-center gap-0.5 rounded-md border border-border/70 bg-muted/60 px-1.5 py-0.5 text-[12px] font-bold text-muted-foreground lg:flex">
             <Command className="h-2.5 w-2.5" />K
           </kbd>
         </button>
@@ -98,7 +98,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
             type="button"
             onClick={() => setRangeOpen((open) => !open)}
             className={cn(
-              'flex h-10 items-center gap-2 rounded-xl border px-3 text-[10px] font-black uppercase tracking-[0.14em] transition-colors',
+              'flex h-10 items-center gap-2 rounded-xl border px-3 text-[13px] font-semibold transition-colors',
               rangeOpen
                 ? 'border-primary/50 bg-primary/10 text-primary'
                 : 'border-border/70 bg-card/70 text-muted-foreground hover:text-foreground'
@@ -116,7 +116,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
                 transition={{ duration: 0.16 }}
                 className="absolute right-0 top-12 w-56 overflow-hidden rounded-2xl border border-border/70 bg-popover p-1.5 shadow-2xl"
               >
-                <p className="px-3 py-2 text-[8px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+                <p className="px-3 py-2 text-[11px] font-semibold text-muted-foreground">
                   Reporting window
                 </p>
                 {RANGE_OPTIONS.map((option) => (
@@ -128,7 +128,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
                       setRangeOpen(false);
                     }}
                     className={cn(
-                      'flex w-full items-center justify-between rounded-xl px-3 py-2 text-[10px] font-black uppercase tracking-[0.12em] transition-colors',
+                      'flex w-full items-center justify-between rounded-xl px-3 py-2 text-[13px] font-semibold transition-colors',
                       option.key === range
                         ? 'bg-primary/10 text-primary'
                         : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -157,7 +157,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
           >
             <Bell className="h-4 w-4" />
             {notifications.length > 0 && (
-              <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[8px] font-black text-white">
+              <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[11px] font-semibold text-white">
                 {notifications.length > 9 ? '9+' : notifications.length}
               </span>
             )}
@@ -172,16 +172,16 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
                 className="absolute right-0 top-12 w-[320px] overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-2xl"
               >
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-                  <p className="text-[9px] font-black uppercase tracking-[0.22em] text-muted-foreground">
+                  <p className="text-[12px] font-semibold text-muted-foreground">
                     Live signals
                   </p>
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[8px] font-black text-primary">
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                     {notifications.length} open
                   </span>
                 </div>
                 <div className="max-h-[320px] overflow-y-auto p-1.5">
                   {notifications.length === 0 && (
-                    <p className="px-3 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <p className="px-3 py-6 text-center text-[13px] font-bold text-muted-foreground">
                       All clear
                     </p>
                   )}
@@ -193,10 +193,10 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
                     >
                       <span className={cn('mt-1 h-2 w-2 shrink-0 rounded-full', TONE_STYLES[item.tone])} />
                       <span className="min-w-0">
-                        <span className="block truncate text-[11px] font-black uppercase tracking-tight text-foreground">
+                        <span className="block truncate text-[14px] font-semibold tracking-tight text-foreground">
                           {item.title}
                         </span>
-                        <span className="mt-0.5 block text-[10px] font-medium leading-snug text-muted-foreground">
+                        <span className="mt-0.5 block text-[13px] font-medium leading-snug text-muted-foreground">
                           {item.detail}
                         </span>
                       </span>
@@ -229,14 +229,14 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
         </button>
 
         <div className="flex items-center gap-2 rounded-xl border border-border/70 bg-card/70 py-1 pl-1 pr-2">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-[11px] font-black text-white">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-primary to-accent text-[14px] font-semibold text-white">
             {(role ?? 'A').slice(0, 1)}
           </span>
           <span className="hidden flex-col leading-none sm:flex">
-            <span className="text-[9px] font-black uppercase tracking-[0.14em] text-foreground">
+            <span className="text-[12px] font-semibold text-foreground">
               {role ?? 'Guest'}
             </span>
-            <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+            <span className="text-[11px] font-bold text-muted-foreground">
               school-001
             </span>
           </span>

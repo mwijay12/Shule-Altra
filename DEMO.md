@@ -456,3 +456,35 @@ mail room promises are the 97 it mails.
 * ClickPesa and n8n calls are simulated; the webhook route exists but is not exercised
   by the demo dataset.
 * Swahili/English UI toggle is not implemented yet (copy is already bilingual-flavoured).
+
+---
+
+## Brand and theme
+
+The dashboard opens in **light** by default. Four complete palettes ship with the
+app — Blue Ridge, Emerald, Carbon Gold and Crimson — each with a light and a dark
+variant, plus three type pairings.
+
+**Dashboard → Theme Studio** (administrator or super admin) sets the school's
+palette, type, logo and printed identity. Changes preview immediately; publishing
+writes `schools/school-001/config/branding` and `config/identity`, which the
+chrome and the PDF engine both read. The studio can generate a real letterhead
+proof through the production document kit before you publish.
+
+In the offline demo, Google sign-in is **simulated**: it opens a local super-admin
+session without contacting Google, and the login screen says so. Set
+`NEXT_PUBLIC_DEMO_MODE=false` with a real Firebase config to use a genuine Google
+account. See [docs/FIREBASE.md](docs/FIREBASE.md).
+
+Regenerate the browser icons after changing the mark:
+
+```bash
+npm run brand:icons
+```
+
+Run the brand regressions (palette completeness, WCAG AA contrast, PDF
+propagation, icon container, rules, type floor):
+
+```bash
+npm run demo:smoke:brand
+```

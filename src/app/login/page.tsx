@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth as useFirebaseId } from "@/firebase"
 import { signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "firebase/auth"
+import { signInWithGoogle, googleSignInError } from "@/hooks/use-auth"
 import { DEMO_MODE } from "@/lib/demo/config"
 import { BrandMark, Wordmark } from "@/components/brand/logo"
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const [systemName] = useState("Shule Altra")
   const [loading, setLoading] = useState(false)
   const [demoLoading, setDemoLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [demoRole, setDemoRole] = useState("ADMIN")
   const [activeDemoEmail, setActiveDemoEmail] = useState<string | null>(null)
@@ -53,6 +55,18 @@ export default function LoginPage() {
     } catch (err: any) {
       setError("Vitambulisho siyo sahihi. Hakiki Email na Password.")
       setLoading(false)
+    }
+  }
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true)
+    setError(null)
+    try {
+      await signInWithGoogle()
+      router.replace("/dashboard")
+    } catch (err) {
+      setError(googleSignInError(err))
+      setGoogleLoading(false)
     }
   }
 
@@ -108,7 +122,7 @@ export default function LoginPage() {
             <h1 className="flex justify-center">
               <Wordmark size={34} pro />
             </h1>
-            <p className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.4em]">School staff sign-in</p>
+            <p className="text-muted-foreground font-black text-[12px] uppercase tracking-[0.16em]">School staff sign-in</p>
           </div>
         </div>
 
@@ -120,18 +134,18 @@ export default function LoginPage() {
             <CardTitle className="text-xl sm:text-2xl flex items-center justify-center gap-3 text-primary font-black uppercase tracking-tight">
               <Lock className="h-5 w-5" /> Secure Hub Access
             </CardTitle>
-            <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2">Authorized Personnel Required</CardDescription>
+            <CardDescription className="text-[13px] font-black uppercase tracking-widest text-muted-foreground mt-2">Authorized Personnel Required</CardDescription>
           </CardHeader>
           <CardContent className="p-8 sm:p-12 space-y-8">
             <form onSubmit={handleLogin} className="space-y-6">
               <div className="space-y-3">
-                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Official Email</Label>
+                <Label htmlFor="email" className="text-[13px] font-black uppercase tracking-[0.16em] text-muted-foreground ml-2">Official Email</Label>
                 <div className="relative group">
                   <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input 
+                  <Input
                     id="email"
-                    type="email" 
-                    placeholder="e.g. admin@shulealtra.tech" 
+                    type="email"
+                    placeholder="e.g. admin@shulealtra.tech"
                     className="pl-14 h-14 rounded-2xl border-none bg-muted/30 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:bg-white text-sm font-bold shadow-inner"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -141,13 +155,13 @@ export default function LoginPage() {
               </div>
 
               <div className="space-y-3">
-                <Label htmlFor="pass" className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground ml-2">Secure Passkey</Label>
+                <Label htmlFor="pass" className="text-[13px] font-black uppercase tracking-[0.16em] text-muted-foreground ml-2">Secure Passkey</Label>
                 <div className="relative group">
                   <Key className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
-                  <Input 
+                  <Input
                     id="pass"
-                    type="password" 
-                    placeholder="••••••••" 
+                    type="password"
+                    placeholder="••••••••"
                     className="pl-14 h-14 rounded-2xl border-none bg-muted/30 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:bg-white text-sm font-bold shadow-inner"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -159,29 +173,64 @@ export default function LoginPage() {
               {error && (
                 <Alert variant="destructive" className="rounded-2xl border-none bg-destructive/10 text-destructive animate-in zoom-in-95">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-[10px] font-black uppercase tracking-tight ml-2">{error}</AlertDescription>
+                  <AlertDescription className="text-[13px] font-black uppercase tracking-tight ml-2">{error}</AlertDescription>
                 </Alert>
               )}
 
               <div className="space-y-4 mt-6">
-                <Button 
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleGoogleLogin}
+                  disabled={loading || demoLoading || googleLoading}
+                  className="h-14 w-full rounded-2xl border-border bg-card text-[14px] font-semibold shadow-sm transition-colors hover:bg-muted/50"
+                >
+                  {googleLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <svg className="mr-3 h-5 w-5" viewBox="0 0 24 24" aria-hidden>
+                        <path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.2-2.2H12v4.1h6.6c-.1 1.1-.8 2.8-2.4 3.9l-.1.2 3.5 2.7.2.1c2.3-2.1 3.7-5.2 3.7-8.8z" />
+                        <path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.8-2.9l-3.7-2.9c-1 .7-2.3 1.2-4.1 1.2-3.1 0-5.8-2.1-6.7-5l-.2.1-3.6 2.8-.1.2C3.4 21.3 7.4 24 12 24z" />
+                        <path fill="#FBBC05" d="M5.3 14.4c-.2-.7-.4-1.5-.4-2.4s.1-1.7.4-2.4V9.4L1.5 6.5l-.1.1C.5 8.2 0 10 0 12s.5 3.8 1.4 5.4l3.9-3z" />
+                        <path fill="#EA4335" d="M12 4.7c2.2 0 3.7.9 4.5 1.7l3.3-3.2C17.9 1.2 15.2 0 12 0 7.4 0 3.4 2.7 1.4 6.6l3.9 3C6.2 6.8 8.9 4.7 12 4.7z" />
+                      </svg>
+                      Continue with Google
+                    </>
+                  )}
+                </Button>
+
+                {DEMO_MODE && (
+                  <p className="text-center text-[13px] leading-relaxed text-muted-foreground">
+                    Demo mode opens a local super-admin session without contacting Google. Connect
+                    the Firebase project to sign in with a real Google account.
+                  </p>
+                )}
+
+                <div className="flex items-center gap-3" aria-hidden>
+                  <span className="h-px flex-1 bg-border" />
+                  <span className="text-[13px] font-medium text-muted-foreground">or use a school account</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+
+                <Button
                   type="submit"
-                  disabled={loading || demoLoading} 
-                  className="w-full h-14 rounded-2xl font-black colorful-gradient shadow-2xl text-sm group hover:scale-[1.02] transition-transform uppercase tracking-[0.2em]"
+                  disabled={loading || demoLoading}
+                  className="w-full h-14 rounded-2xl font-semibold colorful-gradient shadow-lg text-[14px] group hover:scale-[1.01] transition-transform"
                 >
                   {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
                     <>
-                      Initialize Hub <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-2 transition-transform" />
+                      Sign in <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-2 transition-transform" />
                     </>
                   )}
                 </Button>
 
                 <div className="pt-6 border-t border-dashed space-y-4">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-muted-foreground">Demo Roles</p>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">No setup</span>
+                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-muted-foreground">Demo Roles</p>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">No setup</span>
                   </div>
 
                   <div className="grid gap-2">
@@ -194,8 +243,8 @@ export default function LoginPage() {
                         className="group flex items-center justify-between gap-3 w-full rounded-2xl border border-primary/10 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
                       >
                         <div className="min-w-0">
-                          <p className="text-[11px] font-black uppercase tracking-widest text-primary">{role.label}</p>
-                          <p className="text-[9px] font-bold uppercase tracking-tight text-muted-foreground truncate">{role.scope}</p>
+                          <p className="text-[14px] font-black uppercase tracking-widest text-primary">{role.label}</p>
+                          <p className="text-[12px] font-bold uppercase tracking-tight text-muted-foreground truncate">{role.scope}</p>
                         </div>
                         {demoLoading && activeDemoEmail === role.email ? (
                           <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />
@@ -206,12 +255,12 @@ export default function LoginPage() {
                     ))}
                   </div>
 
-                  <Button 
+                  <Button
                     type="button"
                     variant="outline"
                     onClick={handleDemoLogin}
                     disabled={loading || demoLoading}
-                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[10px] group hover:bg-primary/5 transition-all uppercase tracking-[0.2em]"
+                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[13px] group hover:bg-primary/5 transition-all uppercase tracking-[0.16em]"
                   >
                     {demoLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -223,7 +272,7 @@ export default function LoginPage() {
                   </Button>
 
                   {DEMO_MODE && (
-                    <p className="text-[9px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
+                    <p className="text-[12px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
                       The demo runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
                     </p>
                   )}
@@ -232,10 +281,10 @@ export default function LoginPage() {
             </form>
 
             <div className="pt-8 border-t border-dashed flex flex-col items-center gap-4 text-center">
-              <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-accent/10 text-accent text-[9px] font-black uppercase tracking-[0.3em]">
+              <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-accent/10 text-accent text-[12px] font-black uppercase tracking-[0.16em]">
                 <Sparkles className="h-4 w-4" /> SECURE SESSION READY
               </div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Shule Altra · 2026</p>
+              <p className="text-[13px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Shule Altra · 2026</p>
             </div>
           </CardContent>
         </Card>

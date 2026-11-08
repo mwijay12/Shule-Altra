@@ -7,6 +7,8 @@ import '@fontsource/instrument-serif/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { ClientGuard } from '@/components/system/client-guard';
+import { ThemeProvider } from '@/components/admin/theme-provider';
+import { ThemeScript } from '@/components/admin/theme-script';
 
 export const metadata: Metadata = {
   title: 'Shule Altra — school management for Tanzanian secondary schools',
@@ -19,12 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body className="font-body antialiased bg-background text-foreground">
         <ClientGuard />
         <FirebaseClientProvider>
-          {children}
+          <ThemeProvider>{children}</ThemeProvider>
         </FirebaseClientProvider>
       </body>
     </html>

@@ -4,7 +4,7 @@
  * @fileOverview The Shule Altra mark.
  *
  * One shape only: a shield (the institution) with a check struck through it
- * (the record verified), cut from a blue → violet gradient plate. It replaces
+ * (the record verified), cut from a plate tinted by the active palette. It replaces
  * three different hand-rolled marks that had drifted apart (CSS clip-path on
  * the landing, a lucide shield in the sidebar, a float-animated square on the
  * login screen), so the brand is identical at 28px and at 80px.
@@ -26,7 +26,7 @@ export function BrandMark({
   subtle?: boolean
 }) {
   const id = React.useId().replace(/[:]/g, "")
-  const plate = subtle ? "#141428" : `url(#altra-${id})`
+  const plate = subtle ? "hsl(var(--foreground))" : `url(#altra-${id})`
 
   return (
     <svg
@@ -40,8 +40,8 @@ export function BrandMark({
       {!subtle ? (
         <defs>
           <linearGradient id={`altra-${id}`} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#1f5ba6" />
-            <stop offset="1" stopColor="#7c5ae0" />
+            <stop offset="0" stopColor="hsl(var(--primary))" />
+            <stop offset="1" stopColor="hsl(var(--accent))" />
           </linearGradient>
         </defs>
       ) : null}
@@ -50,14 +50,14 @@ export function BrandMark({
 
       <path
         d="M20 8.2 31 11.9v9.7c0 5.3-4.6 8.6-11 10.7-6.4-2.1-11-5.4-11-10.7v-9.7z"
-        fill={subtle ? "#f8f7ff" : "#ffffff"}
+        fill={subtle ? "hsl(var(--background))" : "#ffffff"}
         opacity={subtle ? 0.96 : 0.97}
       />
 
       <path
         d="m14.9 20.4 3.5 3.6 6.9-7.6"
         fill="none"
-        stroke={subtle ? "#141428" : `url(#altra-${id})`}
+        stroke={subtle ? "hsl(var(--foreground))" : `url(#altra-${id})`}
         strokeWidth="2.7"
         strokeLinecap="round"
         strokeLinejoin="round"

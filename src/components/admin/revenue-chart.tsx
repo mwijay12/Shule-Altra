@@ -108,10 +108,10 @@ function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-2xl border border-border/70 bg-popover/95 px-3 py-2 shadow-2xl backdrop-blur">
-      <p className="text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground">{label}</p>
+      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
       {payload.map((entry: any) => (
-        <p key={entry.dataKey} className="mt-1 flex items-center justify-between gap-4 text-[10px] font-bold">
-          <span className="flex items-center gap-1.5 uppercase tracking-wide text-muted-foreground">
+        <p key={entry.dataKey} className="mt-1 flex items-center justify-between gap-4 text-[13px] font-bold">
+          <span className="flex items-center gap-1.5 tracking-wide text-muted-foreground">
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: entry.color }} />
             {entry.dataKey === 'collected' ? 'Verified' : entry.dataKey === 'pending' ? 'Pending' : 'Target'}
           </span>
@@ -141,19 +141,19 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
     <div data-reveal className="glass-panel relative overflow-hidden rounded-3xl p-4 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[12px] font-semibold text-muted-foreground">
             Fee collections
           </p>
-          <div className="mt-2 flex items-end gap-3">
-            <p className="font-headline text-[26px] font-black leading-none tracking-tight text-foreground sm:text-[32px]">
+          <div className="mt-2 flex flex-wrap items-end gap-x-3 gap-y-1">
+            <p className="whitespace-nowrap font-headline text-[24px] font-bold leading-none tracking-tight text-foreground tabular-nums sm:text-[28px]">
               <AnimatedNumber value={totals.collected} prefix="TZS " />
             </p>
-            <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[9px] font-black text-emerald-600">
+            <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[12px] font-semibold text-emerald-600">
               <ArrowUpRight className="h-2.5 w-2.5" />
               <AnimatedNumber value={totals.rate} format={(n) => n.toFixed(1)} suffix="% of target" />
             </span>
           </div>
-          <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          <p className="mt-2 text-[13px] font-bold text-muted-foreground">
             {totals.pending > 0
               ? `TZS ${totals.pending.toLocaleString('en-US')} pending verification`
               : 'No payments awaiting verification'}
@@ -168,7 +168,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               type="button"
               onClick={() => setRange(option.key as RangeKey)}
               className={cn(
-                'relative rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-colors',
+                'relative rounded-xl px-2.5 py-1.5 text-[12px] font-semibold transition-colors',
                 range === option.key ? 'text-white' : 'text-muted-foreground hover:text-foreground'
               )}
             >
@@ -259,11 +259,11 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
           { label: 'Avg / bucket', value: Math.round(average), dot: 'bg-emerald-500' },
         ].map((item) => (
           <div key={item.label}>
-            <p className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <span className={cn('h-1.5 w-1.5 rounded-full', item.dot)} />
               {item.label}
             </p>
-            <p className="mt-1 truncate text-[11px] font-black tabular-nums text-foreground"><AnimatedNumber value={item.value} prefix="TZS " /></p>
+            <p className="mt-1 truncate text-[14px] font-bold tabular-nums text-foreground"><AnimatedNumber value={item.value} prefix="TZS " /></p>
           </div>
         ))}
       </div>

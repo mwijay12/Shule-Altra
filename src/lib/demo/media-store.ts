@@ -40,6 +40,11 @@ export function landingMediaKey(schoolId: string, slot: string): string {
   return `landing/${schoolId}/${slot}`;
 }
 
+/** Key for the school's uploaded logo, kept beside the landing photography. */
+export function brandMediaKey(schoolId: string): string {
+  return `brand/${schoolId}/logo`;
+}
+
 function available(): boolean {
   return typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined';
 }

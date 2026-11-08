@@ -236,7 +236,7 @@ export default function AnalyticsPage() {
     <div className="space-y-6">
       <section data-reveal className="glass-panel flex flex-col gap-3 rounded-3xl p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div>
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[12px] font-semibold text-muted-foreground">
             Intelligence studio
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-[15px] text-foreground">
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
               type="button"
               onClick={() => setRange(option.key as RangeKey)}
               className={cn(
-                'rounded-xl px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.16em] transition-colors',
+                'rounded-xl px-2.5 py-1.5 text-[12px] font-semibold transition-colors',
                 range === option.key
                   ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/30'
                   : 'text-muted-foreground hover:text-foreground'
@@ -310,7 +310,7 @@ export default function AnalyticsPage() {
         <RevenueChart transactions={ledger} />
 
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[12px] font-semibold text-muted-foreground">
             Payment mix
           </p>
           <h3 className="mt-1 text-[13px] text-foreground">Gateway share by value</h3>
@@ -350,7 +350,7 @@ export default function AnalyticsPage() {
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="text-[12px] font-semibold text-muted-foreground">
                 Academic performance
               </p>
               <h3 className="mt-1 text-[13px] text-foreground">Average score by stream</h3>
@@ -359,7 +359,7 @@ export default function AnalyticsPage() {
               type="button"
               onClick={exportRanking}
               disabled={exporting !== null || perLearner.length === 0}
-              className="flex items-center gap-1.5 rounded-xl border border-border/70 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-border/70 px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
             >
               {exporting === 'ranking' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
               Ranking PDF
@@ -403,7 +403,7 @@ export default function AnalyticsPage() {
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="text-[12px] font-semibold text-muted-foreground">
                 Attendance
               </p>
               <h3 className="mt-1 text-[13px] text-foreground">Presence trend</h3>
@@ -412,7 +412,7 @@ export default function AnalyticsPage() {
               type="button"
               onClick={exportRegister}
               disabled={exporting !== null || learners.length === 0}
-              className="flex items-center gap-1.5 rounded-xl border border-border/70 px-2.5 py-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-xl border border-border/70 px-2.5 py-1.5 text-[12px] font-semibold text-muted-foreground transition-colors hover:border-primary/50 hover:text-primary disabled:opacity-50"
             >
               {exporting === 'register' ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
               Register PDF

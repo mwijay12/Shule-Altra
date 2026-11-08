@@ -114,17 +114,17 @@ export function KpiCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+          <p className="text-[12px] font-medium leading-snug text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 font-headline text-[22px] font-black leading-none tracking-tight text-foreground tabular-nums sm:text-[26px]">
+          <p className="mt-2 font-headline text-[22px] font-bold leading-none tracking-tight text-foreground tabular-nums sm:text-[26px]">
             {format(display)}
           </p>
           <div className="mt-2 flex items-center gap-1.5">
             {typeof delta === 'number' && (
               <span
                 className={cn(
-                  'flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-black',
+                  'flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[12px] font-semibold',
                   delta >= 0 ? 'bg-emerald-500/12 text-emerald-600' : 'bg-destructive/12 text-destructive'
                 )}
               >
@@ -133,7 +133,7 @@ export function KpiCard({
               </span>
             )}
             {caption && (
-              <span className="truncate text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-[12px] font-medium leading-snug text-muted-foreground">
                 {caption}
               </span>
             )}

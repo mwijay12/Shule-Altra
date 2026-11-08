@@ -237,7 +237,7 @@ export function FeatureCarousel() {
                         exit={{ opacity: 0, y: 10 }}
                         className="absolute inset-x-0 bottom-0 p-8 pt-32 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-col justify-end pointer-events-none"
                       >
-                        <div className="bg-white text-primary px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.3em] w-fit shadow-lg mb-4">
+                        <div className="bg-white text-primary px-4 py-1.5 rounded-full text-[12px] font-black uppercase tracking-[0.16em] w-fit shadow-lg mb-4">
                           {index + 1} • {feature.label}
                         </div>
                         <p className="text-white font-bold text-xl md:text-2xl leading-tight drop-shadow-md tracking-tight">
@@ -254,7 +254,7 @@ export function FeatureCarousel() {
                     )}
                   >
                     <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.8)] animate-pulse" />
-                    <span className="text-white/90 text-[9px] font-black uppercase tracking-[0.4em] font-mono">
+                    <span className="text-white/90 text-[12px] font-black uppercase tracking-[0.16em] font-mono">
                       Hostel
                     </span>
                   </div>

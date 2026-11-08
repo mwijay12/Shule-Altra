@@ -2,7 +2,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { initializeFirebase } from '@/firebase';
 import { photoCaptureAllowed } from '@/lib/media/policy';
 import { DEMO_MODE } from '@/lib/demo/config';
-import { demoMediaRef, landingMediaKey, putDemoMedia } from '@/lib/demo/media-store';
+import { brandMediaKey, demoMediaRef, landingMediaKey, putDemoMedia } from '@/lib/demo/media-store';
 import {
   cloudinaryConfigured,
   cloudinaryPublicId,
@@ -133,7 +133,12 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-function compressImage(file: File, maxWidth: number, maxHeight: number): Promise<Blob> {
+function compressImage(
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  mime: 'image/jpeg' | 'image/png' = 'image/jpeg'
+): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -158,8 +163,8 @@ function compressImage(file: File, maxWidth: number, maxHeight: number): Promise
           URL.revokeObjectURL(img.src);
           blob ? resolve(blob) : reject(new Error('Compression failed'));
         },
-        'image/jpeg',
-        0.8
+        mime,
+        0.92
       );
     };
     img.onerror = (event) => {
@@ -211,5 +216,49 @@ export async function uploadLandingImage(
   const path = `schools/${schoolId}/landing/${slot}.jpg`;
   const storageRef = ref(requireStorage(), path);
   await uploadBytes(storageRef, compressed, { contentType: 'image/jpeg' });
+  return await getDownloadURL(storageRef);
+}
+
+/**
+ * Upload the school's logo.
+ *
+ * PNG or JPEG only: the PDF engine embeds those two formats directly, so an SVG
+ * would render in the sidebar and then silently vanish from every letterhead.
+ * Transparency is preserved, and the image is capped at 512px — a letterhead
+ * prints it at 46pt, so anything larger is wasted bytes on every document.
+ */
+export async function uploadSchoolLogo(schoolId: string, file: File): Promise<string> {
+  const allowed = ['image/png', 'image/jpeg'];
+  if (!allowed.includes(file.type)) {
+    throw new Error('Use a PNG or JPEG logo. SVG cannot be embedded in the PDF letterhead.');
+  }
+  if (file.size > 2 * 1024 * 1024) throw new Error('Logo must be under 2MB');
+
+  const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+  const compressed = await compressImage(file, 512, 512, mime);
+
+  if (cloudinaryConfigured()) {
+    const upload = await uploadToCloudinary(compressed, {
+      folder: `schools/${schoolId}/brand`,
+      publicId: 'logo',
+    });
+    return upload.url;
+  }
+
+  if (DEMO_MODE) {
+    const key = brandMediaKey(schoolId);
+    try {
+      await putDemoMedia(key, compressed);
+      return demoMediaRef(key);
+    } catch (error) {
+      console.warn('[DEMO] IndexedDB unavailable, keeping the logo inline for this session:', error);
+      return blobToDataUrl(compressed);
+    }
+  }
+
+  const extension = mime === 'image/png' ? 'png' : 'jpg';
+  const path = `schools/${schoolId}/brand/logo.${extension}`;
+  const storageRef = ref(requireStorage(), path);
+  await uploadBytes(storageRef, compressed, { contentType: mime });
   return await getDownloadURL(storageRef);
 }

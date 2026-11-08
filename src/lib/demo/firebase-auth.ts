@@ -219,6 +219,42 @@ export async function createUserWithEmailAndPassword(
   return signInWithEmailAndPassword(auth, email, password);
 }
 
+/**
+ * Google sign-in stand-in for the offline demo.
+ *
+ * There is no Google round-trip here and the code does not pretend otherwise:
+ * it opens a local session for the install owner so the Theme Studio and the
+ * identity editor can be exercised without a cloud project. The login screen
+ * labels this as simulated. With NEXT_PUBLIC_DEMO_MODE=false the real SDK is
+ * used instead and a genuine Google popup appears.
+ */
+export class GoogleAuthProvider {
+  static readonly PROVIDER_ID = 'google.com';
+  readonly providerId = 'google.com';
+  private parameters: Record<string, string> = {};
+  private scopes: string[] = [];
+  setCustomParameters(parameters: Record<string, string>) {
+    this.parameters = { ...this.parameters, ...parameters };
+    return this;
+  }
+  addScope(scope: string) {
+    this.scopes.push(scope);
+    return this;
+  }
+}
+
+export const DEMO_GOOGLE_EMAIL = 'davidbyanmwijage@gmail.com';
+
+export async function signInWithPopup(
+  auth: DemoAuth,
+  _provider: GoogleAuthProvider
+): Promise<{ user: DemoUser }> {
+  const user = buildUser('demo-super-admin', DEMO_GOOGLE_EMAIL, 'David Mwijage (demo)', false);
+  user.providerId = 'google.com';
+  auth.setUser(user);
+  return { user };
+}
+
 export async function signOut(auth: DemoAuth): Promise<void> {
   auth.setUser(null);
 }

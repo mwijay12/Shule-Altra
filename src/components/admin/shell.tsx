@@ -13,11 +13,11 @@ import { AuroraSidebar } from '@/components/admin/sidebar';
 import { Topbar, type NotificationItem } from '@/components/admin/topbar';
 import { CommandPalette, type PaletteStudent } from '@/components/admin/command-palette';
 import { PageTransition } from '@/components/admin/page-transition';
-import { ThemeProvider } from '@/components/admin/theme-provider';
 import { RangeProvider } from '@/components/admin/range-context';
 import { ALL_NAV_ITEMS } from '@/components/admin/nav-config';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { cn } from '@/lib/utils';
+import { useSchoolBrand } from '@/hooks/use-school-brand';
 
 interface AuroraShellProps {
   children: React.ReactNode;
@@ -130,15 +130,18 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
     return list.slice(0, 5);
   }, [transactions, students]);
 
+  // Publishes the school's identity to the PDF kit for every route below.
+  const { brand } = useSchoolBrand();
+
   const segment = pathname.split('/')[2];
   const title = segment ? prettifyModule(segment) : 'Command deck';
   const eyebrow = segment
-    ? `${ALL_NAV_ITEMS.find((item) => item.url === `/dashboard/${segment}`)?.hint ?? 'Module'} · school-001`
-    : 'Live institutional overview · school-001';
+    ? `${ALL_NAV_ITEMS.find((item) => item.url === `/dashboard/${segment}`)?.hint ?? 'Module'} · ${brand.shortName}`
+    : `Live institutional overview · ${brand.shortName}`;
 
   return (
     <MotionConfig reducedMotion="user">
-    <ThemeProvider>
+    <>
       <RangeProvider>
         <div className={cn('aurora-shell flex h-[100dvh] w-full overflow-hidden bg-background')}>
           <div className="pointer-events-none fixed inset-0 -z-10 grid-overlay" aria-hidden />
@@ -174,7 +177,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
           canAccess={canAccess}
         />
       </RangeProvider>
-    </ThemeProvider>
+    </>
     </MotionConfig>
   );
 }

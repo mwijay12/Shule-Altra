@@ -59,16 +59,17 @@
   body {
     @apply bg-background text-foreground font-body antialiased;
   }
-  
-  /* ULTRA-RIGID TYPOGRAPHY - NO OVERSIZED HEADERS */
+
+  /* Page headings: sentence case, display face, readable sizes. Forced uppercase
+     + font-black at 13px made every screen shout and read as a template. */
   h1 {
-    @apply font-headline font-black tracking-tight text-[clamp(1.2rem,2.5vw,1.8rem)] leading-none uppercase;
+    @apply font-headline font-bold tracking-tight text-[clamp(1.5rem,2.6vw,2rem)] leading-tight;
   }
   h2 {
-    @apply font-headline font-black tracking-tight text-[clamp(1rem,2vw,1.4rem)] leading-tight uppercase;
+    @apply font-headline font-bold tracking-tight text-[clamp(1.25rem,2vw,1.5rem)] leading-tight;
   }
   h3 {
-    @apply font-headline font-black tracking-tight text-[clamp(0.85rem,1.8vw,1.1rem)] leading-tight uppercase;
+    @apply font-headline font-semibold tracking-tight text-[clamp(1.0625rem,1.6vw,1.25rem)] leading-snug;
   }
 }
 
@@ -126,8 +127,9 @@
 .sd-page-enter > * > *:nth-child(n + 5) { animation-delay: 220ms; }
 
 .colorful-gradient {
-  /* blue → deep indigo: one tonal ramp, no neon end-stop. */
-  background: linear-gradient(135deg, #1f5ba6 0%, #7c5ae0 100%);
+  /* One tonal ramp built from the active palette, so switching themes in the
+     studio moves every button, badge and stamp together. */
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
 }
 
 .text-gradient {

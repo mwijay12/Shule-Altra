@@ -43,7 +43,7 @@ function Field({
   const id = React.useId()
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="text-[9px] font-black uppercase text-muted-foreground ml-1">{label}</Label>
+      <Label htmlFor={id} className="text-[12px] font-semibold text-muted-foreground ml-1">{label}</Label>
       {multiline ? (
         <Textarea
           id={id}
@@ -133,23 +133,23 @@ export function LandingEditor() {
         <CardHeader className="bg-primary/5 border-b p-8">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
-              <CardTitle className="text-base font-black uppercase tracking-widest">Landing page studio</CardTitle>
-              <CardDescription className="text-[10px] font-bold uppercase leading-relaxed mt-1">
+              <CardTitle className="text-base font-semibold">Landing page studio</CardTitle>
+              <CardDescription className="text-[13px] font-bold leading-relaxed mt-1">
                 Edit the public story, replace every photograph with your own consented imagery, and choose the type pairing.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {dirty ? (
-                <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-50 text-amber-700 text-[8px] font-black uppercase">
+                <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-50 text-amber-700 text-[11px] font-semibold">
                   Unpublished changes
                 </Badge>
               ) : null}
-              <Button variant="outline" asChild className="rounded-full h-10 px-5 text-[9px] uppercase font-black">
+              <Button variant="outline" asChild className="rounded-full h-10 px-5 text-[12px] font-semibold">
                 <a href="/" target="_blank" rel="noreferrer" title="Opens the published landing page in a new tab">
                   <ExternalLink className="mr-2 h-3 w-3" /> View published
                 </a>
               </Button>
-              <Button onClick={handleSave} disabled={saving || uploading !== null} className="rounded-full colorful-gradient h-10 px-6 text-[9px] uppercase font-black text-white">
+              <Button onClick={handleSave} disabled={saving || uploading !== null} className="rounded-full colorful-gradient h-10 px-6 text-[12px] font-semibold text-white">
                 {saving ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />} Publish landing page
               </Button>
             </div>
@@ -162,7 +162,7 @@ export function LandingEditor() {
           </div>
 
           <div className="space-y-4">
-            <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary"><Type className="h-3 w-3" /> Font choice</p>
+            <p className="flex items-center gap-2 text-[13px] font-semibold text-primary"><Type className="h-3 w-3" /> Font choice</p>
             <div className="grid gap-4 md:grid-cols-3">
               {LANDING_FONTS.map((font) => (
                 <button
@@ -176,8 +176,8 @@ export function LandingEditor() {
                   )}
                 >
                   <span className="flex items-center justify-between">
-                    <span className="text-xs font-black uppercase">{font.name}</span>
-                    {form.font === font.id ? <Badge className="rounded-full text-[8px]">Active</Badge> : null}
+                    <span className="text-xs font-semibold">{font.name}</span>
+                    {form.font === font.id ? <Badge className="rounded-full text-[11px]">Active</Badge> : null}
                   </span>
                   <span
                     className="block mt-3 text-2xl leading-tight"
@@ -193,7 +193,7 @@ export function LandingEditor() {
                   >
                     {font.sample}
                   </span>
-                  <span className="block mt-2 text-[10px] text-muted-foreground leading-relaxed">{font.description}</span>
+                  <span className="block mt-2 text-[13px] text-muted-foreground leading-relaxed">{font.description}</span>
                 </button>
               ))}
             </div>
@@ -203,7 +203,7 @@ export function LandingEditor() {
 
       <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
         <CardHeader className="bg-primary/5 border-b p-8">
-          <CardTitle className="text-base font-black uppercase tracking-widest">Hero copy</CardTitle>
+          <CardTitle className="text-base font-semibold">Hero copy</CardTitle>
         </CardHeader>
         <CardContent className="p-8 grid gap-6 md:grid-cols-2">
           <Field label="Kicker" value={form.hero.kicker} onChange={(value) => patch((c) => ({ ...c, hero: { ...c.hero, kicker: value } }))} />
@@ -233,8 +233,8 @@ export function LandingEditor() {
 
       <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
         <CardHeader className="bg-primary/5 border-b p-8">
-          <CardTitle className="text-base font-black uppercase tracking-widest">Register numbers</CardTitle>
-          <CardDescription className="text-[10px] font-bold uppercase">Keep these aligned with the demo registry, or replace them with your own school figures.</CardDescription>
+          <CardTitle className="text-base font-semibold">Register numbers</CardTitle>
+          <CardDescription className="text-[13px] font-bold">Keep these aligned with the demo registry, or replace them with your own school figures.</CardDescription>
         </CardHeader>
         <CardContent className="p-8 grid gap-6 md:grid-cols-2">
           {form.stats.map((stat, index) => (
@@ -258,8 +258,8 @@ export function LandingEditor() {
 
       <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
         <CardHeader className="bg-primary/5 border-b p-8">
-          <CardTitle className="text-base font-black uppercase tracking-widest">Photography</CardTitle>
-          <CardDescription className="text-[10px] font-bold uppercase leading-relaxed">
+          <CardTitle className="text-base font-semibold">Photography</CardTitle>
+          <CardDescription className="text-[13px] font-bold leading-relaxed">
             Upload your own school photographs, paste a hosted URL, or restore the placeholder. Learner faces require guardian consent before publication.
           </CardDescription>
         </CardHeader>
@@ -275,12 +275,12 @@ export function LandingEditor() {
                 </div>
                 <div className="p-4 space-y-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[10px] font-black uppercase">{slot.label}</p>
+                    <p className="text-[13px] font-semibold">{slot.label}</p>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
-                      className="h-7 rounded-full text-[8px] uppercase font-black"
+                      className="h-7 rounded-full text-[11px] font-semibold"
                       onClick={() => {
                         // Drop the stored demo blob so resetting really frees space.
                         if (DEMO_MODE) void deleteDemoMedia(landingMediaKey(LANDING_SCHOOL_ID, slot.id))
@@ -290,22 +290,22 @@ export function LandingEditor() {
                       <RotateCcw className="mr-1 h-3 w-3" /> Reset
                     </Button>
                   </div>
-                  <p className="text-[9px] text-muted-foreground">{slot.hint}</p>
+                  <p className="text-[12px] text-muted-foreground">{slot.hint}</p>
                   <Input
                     aria-label={`${slot.label} image source`}
                     value={image.src.startsWith('data:') || isDemoMediaRef(image.src) ? '(uploaded photograph)' : image.src}
                     readOnly={image.src.startsWith('data:') || isDemoMediaRef(image.src)}
                     onChange={(event) => patch((c) => ({ ...c, images: { ...c.images, [slot.id]: { ...c.images[slot.id], src: event.target.value } } }))}
-                    className="h-9 rounded-lg bg-background/70 border-none text-[10px] font-mono"
+                    className="h-9 rounded-lg bg-background/70 border-none text-[13px] font-mono"
                   />
                   <Input
                     aria-label={`${slot.label} alt text`}
                     value={image.alt}
                     onChange={(event) => patch((c) => ({ ...c, images: { ...c.images, [slot.id]: { ...c.images[slot.id], alt: event.target.value } } }))}
-                    className="h-9 rounded-lg bg-background/70 border-none text-[10px]"
+                    className="h-9 rounded-lg bg-background/70 border-none text-[13px]"
                     placeholder="Alt text"
                   />
-                  <label className="flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 h-9 text-[9px] font-black uppercase text-primary cursor-pointer hover:bg-primary/10">
+                  <label className="flex items-center justify-center gap-2 rounded-full border border-primary/20 bg-primary/5 h-9 text-[12px] font-semibold text-primary cursor-pointer hover:bg-primary/10">
                     {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Upload className="h-3 w-3" />} Replace photograph
                     <input
                       type="file"
@@ -329,7 +329,7 @@ export function LandingEditor() {
 
       <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
         <CardHeader className="bg-primary/5 border-b p-8">
-          <CardTitle className="text-base font-black uppercase tracking-widest">Section copy</CardTitle>
+          <CardTitle className="text-base font-semibold">Section copy</CardTitle>
         </CardHeader>
         <CardContent className="p-8 space-y-8">
           {(Object.keys(form.sections) as Array<keyof LandingContent['sections']>).map((key) => {

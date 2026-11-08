@@ -3,9 +3,9 @@
 
 import * as React from "react"
 import { useState, useMemo, useEffect } from "react"
-import { 
-  Search, 
-  CheckCircle2, 
+import {
+  Search,
+  CheckCircle2,
   Clock,
   CalendarDays,
   UserCheck,
@@ -50,7 +50,7 @@ export default function AttendancePage() {
 
   const filteredStudents = useMemo(() => {
     if (!students) return []
-    return students.filter(s => 
+    return students.filter(s =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.id.toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -66,7 +66,7 @@ export default function AttendancePage() {
       attendanceStatus: newStatus,
       lastAttendanceUpdate: time
     })
-    
+
     if (newStatus === "Absent") {
       // The webhook returns false when automation is disabled or unconfigured —
       // do not claim an alert went out when nothing was sent.
@@ -103,17 +103,17 @@ export default function AttendancePage() {
     <div className="space-y-8 max-w-full mx-auto pb-24 overflow-x-hidden relative">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-2">
-          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 px-4 py-1 h-6 text-[9px] sm:text-[10px] font-black tracking-widest rounded-full shadow-sm uppercase">
+          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 px-4 py-1 h-6 text-[12px] sm:text-[13px] font-semibold rounded-full shadow-sm">
             <Database className="h-3.5 w-3.5 mr-2" /> Daily register · 2026
           </Badge>
-          <h1 className="text-3xl sm:text-4xl font-headline font-black text-primary tracking-tight">Daily Register</h1>
+          <h1 className="text-3xl sm:text-4xl font-headline font-semibold text-primary tracking-tight">Daily Register</h1>
           <p className="text-muted-foreground font-medium text-sm">Daily register · {identity?.name || "School"}</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto shrink-0">
-          <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-12 px-6 border-primary/20 text-primary bg-white shadow-md font-black text-[10px] uppercase tracking-widest group">
+          <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-12 px-6 border-primary/20 text-primary bg-white shadow-md font-semibold text-[13px] group">
             <MessageCircle className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Notify All
           </Button>
-          <Button onClick={handleMarkAllPresent} className="flex-1 sm:flex-none rounded-full h-12 px-6 colorful-gradient shadow-lg font-black text-[10px] uppercase tracking-widest group">
+          <Button onClick={handleMarkAllPresent} className="flex-1 sm:flex-none rounded-full h-12 px-6 colorful-gradient shadow-lg font-semibold text-[13px] group">
             <UserCheck className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Mark All Present
           </Button>
         </div>
@@ -131,10 +131,10 @@ export default function AttendancePage() {
                 <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
                   <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
                 </div>
-                <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-widest">{stat.label}</p>
+                <p className="text-[11px] sm:text-[13px] font-semibold text-muted-foreground">{stat.label}</p>
                 <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{typeof stat.value === "number" ? <AnimatedNumber value={stat.value} format={"format" in stat ? stat.format : undefined} suffix={"suffix" in stat ? stat.suffix : undefined} /> : stat.value}</p>
                 {stat.label === "Presence" && <Progress value={presenceRate} aria-label="Learner presence" className="mt-3 h-1.5 bg-muted/40" indicatorClassName="bg-emerald-500" />}
-                <p className="text-[8px] text-muted-foreground font-black mt-1 uppercase tracking-widest truncate">{stat.sub}</p>
+                <p className="text-[11px] text-muted-foreground font-semibold mt-1 truncate">{stat.sub}</p>
              </CardContent>
           </Card>
         ))}
@@ -148,16 +148,16 @@ export default function AttendancePage() {
                 <CalendarDays className="h-5 w-5 sm:h-6 sm:w-6" />
               </div>
               <div className="overflow-hidden">
-                <CardTitle className="text-lg sm:text-xl font-black tracking-tight">{activeDate}</CardTitle>
-                <CardDescription className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-primary/60 truncate">Form 1–4 · day and boarding</CardDescription>
+                <CardTitle className="text-lg sm:text-xl font-semibold tracking-tight">{activeDate}</CardTitle>
+                <CardDescription className="text-[12px] sm:text-[13px] font-semibold text-primary/60 truncate">Form 1–4 · day and boarding</CardDescription>
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
               <div className="relative flex-1 sm:min-w-[250px] group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />
-                <Input 
-                  placeholder="Find student..." 
-                  className="pl-12 h-12 rounded-full border-none bg-white shadow-inner font-bold text-sm" 
+                <Input
+                  placeholder="Find student..."
+                  className="pl-12 h-12 rounded-full border-none bg-white shadow-inner font-bold text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -172,7 +172,7 @@ export default function AttendancePage() {
           {isLoading ? (
             <div className="p-20 text-center flex flex-col items-center gap-4">
               <Loader2 className="animate-spin h-10 w-10 text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Loading the register…</p>
+              <p className="text-[13px] font-semibold">Loading the register…</p>
             </div>
           ) : (
             <div className="divide-y divide-muted/50 min-w-[600px]">
@@ -187,11 +187,11 @@ export default function AttendancePage() {
                       <span className="text-xl sm:text-2xl">{student.name.charAt(0)}</span>
                     </div>
                     <div className="space-y-1 min-w-0 overflow-hidden">
-                      <h3 className="font-black text-base sm:text-lg text-foreground/80 tracking-tight group-hover:text-primary transition-colors truncate uppercase">{student.name}</h3>
+                      <h3 className="font-semibold text-base sm:text-lg text-foreground/80 tracking-tight group-hover:text-primary transition-colors truncate">{student.name}</h3>
                       <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
-                        <span className="text-[8px] sm:text-[10px] text-muted-foreground font-mono font-black uppercase tracking-widest bg-muted/40 px-2 py-0.5 rounded-lg shadow-inner shrink-0 truncate">{student.id}</span>
+                        <span className="text-[11px] sm:text-[13px] text-muted-foreground font-mono font-semibold bg-muted/40 px-2 py-0.5 rounded-lg shadow-inner shrink-0 truncate">{student.id}</span>
                         <span className="h-1 w-1 rounded-full bg-muted-foreground/30 shrink-0" />
-                        <div className="flex items-center gap-1.5 text-[8px] sm:text-[10px] text-muted-foreground font-black uppercase tracking-widest truncate">
+                        <div className="flex items-center gap-1.5 text-[11px] sm:text-[13px] text-muted-foreground font-semibold truncate">
                           <Clock className="h-3 w-3 text-primary shrink-0" />
                           {student.lastAttendanceUpdate || "NO LOG"}
                         </div>
@@ -200,33 +200,33 @@ export default function AttendancePage() {
                   </div>
 
                   <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                    <Button 
+                    <Button
                       variant={student.attendanceStatus === "Present" ? "default" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
                         student.attendanceStatus === "Present" ? "bg-green-600 hover:bg-green-700 shadow-green-100" : "hover:bg-green-50 text-green-600 border-green-200"
                       )}
                       onClick={() => handleStatusChange(student.id, "Present")}
                     >
                       Present
                     </Button>
-                    <Button 
+                    <Button
                       variant={student.attendanceStatus === "Late" ? "secondary" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
                         student.attendanceStatus === "Late" ? "bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-orange-50" : "hover:bg-orange-50 text-orange-600 border-orange-100"
                       )}
                       onClick={() => handleStatusChange(student.id, "Late")}
                     >
                       Late
                     </Button>
-                    <Button 
+                    <Button
                       variant={student.attendanceStatus === "Absent" ? "destructive" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[8px] sm:text-[9px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
                         student.attendanceStatus === "Absent" ? "bg-destructive hover:bg-destructive/90 shadow-destructive/20" : "hover:bg-destructive/5 text-destructive border-destructive/20"
                       )}
                       onClick={() => handleStatusChange(student.id, "Absent")}
@@ -246,8 +246,8 @@ export default function AttendancePage() {
            <CloudOff className="h-6 w-6 sm:h-7 sm:w-7" />
          </div>
          <div className="space-y-1 overflow-hidden">
-           <p className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.2em]">How absence alerts work</p>
-           <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed max-w-sm font-medium mx-auto px-4">
+           <p className="text-xs sm:text-sm font-semibold text-primary">How absence alerts work</p>
+           <p className="text-[13px] sm:text-xs text-muted-foreground leading-relaxed max-w-sm font-medium mx-auto px-4">
              Marking a learner absent saves it to the register immediately. If the automation webhook is enabled in Settings, the event is forwarded there; when it is off, no message is sent. Guardian emails are sent from Communications.
            </p>
          </div>

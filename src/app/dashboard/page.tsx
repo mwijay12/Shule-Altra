@@ -198,6 +198,9 @@ export default function CommandDeckPage() {
     }
   }, [learners, toast]);
 
+  // Roles are stored as enum constants; people are not.
+  const roleLabel = (role ?? 'Admin').toLowerCase().replace(/(^|[_\s-])([a-z])/g, (_, sep, char) => (sep ? ' ' : '') + char.toUpperCase());
+
   return (
     <div className="space-y-6">
       {/* Hero */}
@@ -205,26 +208,26 @@ export default function CommandDeckPage() {
         data-reveal
         className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/[0.09] via-card/70 to-accent/[0.09] p-5 sm:p-7"
       >
-        <div className="pointer-events-none absolute -right-16 -top-20 h-[240px] w-[240px] opacity-40 sm:-right-10 sm:-top-24 sm:h-[360px] sm:w-[360px] sm:opacity-90">
-          <ThreeOrb hue={214} className="h-full w-full" />
+        <div className="pointer-events-none absolute -right-10 -top-12 h-[220px] w-[220px] opacity-70 sm:-right-4 sm:-top-8 sm:h-[330px] sm:w-[330px] sm:opacity-100">
+          <ThreeOrb className="h-full w-full" />
         </div>
         <div className="relative z-10 max-w-full sm:max-w-[58%]">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-emerald-600">
+            <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               Live · {rangeLabel}
             </span>
             {DEMO_MODE && (
-              <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-accent">
+              <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent">
                 Demo mode
               </span>
             )}
           </div>
 
           <h2 className="mt-4 text-[22px] leading-[1.05] tracking-tight text-foreground sm:text-[30px]">
-            {greeting}, {role ?? 'Admin'}.
+            {greeting}, {roleLabel}.
           </h2>
-          <p className="mt-2 max-w-md text-[11px] font-medium leading-relaxed text-muted-foreground sm:text-xs">
+          <p className="mt-2 max-w-md text-[14px] font-medium leading-relaxed text-muted-foreground sm:text-xs">
             <AnimatedNumber value={metrics.enrolment} /> learners on the register · <AnimatedNumber value={metrics.followUps.length} /> balances need chasing ·
             <AnimatedNumber value={metrics.pending} prefix="TZS " /> in gateway queue.
           </p>
@@ -232,7 +235,7 @@ export default function CommandDeckPage() {
           <div className="mt-5 flex flex-wrap items-center gap-2">
             <Link
               href="/dashboard/finance"
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-3.5 py-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-white shadow-lg shadow-primary/25 transition-transform duration-300 hover:-translate-y-0.5"
+              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-3.5 py-2.5 text-[12px] font-semibold text-white shadow-lg shadow-primary/25 transition-transform duration-300 hover:-translate-y-0.5"
             >
               <Banknote className="h-3.5 w-3.5" />
               Record payment
@@ -240,7 +243,7 @@ export default function CommandDeckPage() {
             </Link>
             <Link
               href="/dashboard/reports"
-              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-foreground transition-colors hover:border-primary/50 hover:text-primary"
+              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-primary/50 hover:text-primary"
             >
               <Receipt className="h-3.5 w-3.5" />
               Printables
@@ -249,14 +252,14 @@ export default function CommandDeckPage() {
               type="button"
               onClick={handleIdCards}
               disabled={exportingIds || learners.length === 0}
-              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[9px] font-black uppercase tracking-[0.16em] text-foreground transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
             >
               {exportingIds ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
               ID cards
             </button>
           </div>
 
-          <p className="mt-4 flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground/70">
+          <p className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground/70">
             <Sparkles className="h-3 w-3 text-accent" />
             Press ⌘K for instant search
           </p>
@@ -324,14 +327,14 @@ export default function CommandDeckPage() {
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+              <p className="text-[12px] font-semibold text-muted-foreground">
                 Ledger stream
               </p>
               <h3 className="mt-1 text-[13px] text-foreground">Latest verified activity</h3>
             </div>
             <Link
               href="/dashboard/finance"
-              className="flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.16em] text-primary hover:underline"
+              className="flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
             >
               Open finance <ArrowUpRight className="h-3 w-3" />
             </Link>
@@ -339,7 +342,7 @@ export default function CommandDeckPage() {
 
           <div className="mt-3 divide-y divide-border/60">
             {recentLedger.length === 0 && (
-              <p className="py-8 text-center text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+              <p className="py-8 text-center text-[13px] font-bold text-muted-foreground">
                 Waiting for ledger data…
               </p>
             )}
@@ -357,21 +360,21 @@ export default function CommandDeckPage() {
                     <Receipt className="h-3.5 w-3.5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[11px] font-black uppercase tracking-tight text-foreground">
+                    <p className="truncate text-[14px] font-semibold tracking-tight text-foreground">
                       {row.studentName ?? 'Learner'}
                     </p>
-                    <p className="truncate text-[9px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    <p className="truncate text-[12px] font-bold text-muted-foreground">
                       {row.feeType ?? 'Tuition'} · {row.paymentMethod ?? 'Control number'}
                       {created ? ` · ${created.toLocaleDateString('en-GB')}` : ''}
                     </p>
                   </div>
                   <span className="text-right">
-                    <span className="block text-[11px] font-black tabular-nums text-foreground">
+                    <span className="block text-[14px] font-bold tabular-nums text-foreground">
                       TZS {Number(row.amount ?? 0).toLocaleString('en-US')}
                     </span>
                     <span
                       className={cn(
-                        'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em]',
+                        'mt-0.5 inline-block rounded-full px-1.5 py-0.5 text-[11px] font-semibold',
                         STATUS_STYLES[row.status] ?? 'bg-muted text-muted-foreground'
                       )}
                     >
@@ -385,7 +388,7 @@ export default function CommandDeckPage() {
         </div>
 
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
-          <p className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="text-[12px] font-semibold text-muted-foreground">
             Jump back in
           </p>
           <h3 className="mt-1 text-[13px] text-foreground">Module shortcuts</h3>
@@ -405,7 +408,7 @@ export default function CommandDeckPage() {
                 )}
               >
                 <shortcut.icon className="h-4 w-4" />
-                <span className="text-[10px] font-black uppercase tracking-[0.14em] text-foreground">
+                <span className="text-[13px] font-semibold text-foreground">
                   {shortcut.label}
                 </span>
               </Link>
@@ -413,11 +416,11 @@ export default function CommandDeckPage() {
           </div>
 
           <div className="mt-3 rounded-2xl border border-border/60 bg-muted/25 p-3">
-            <p className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <ShieldCheck className="h-3 w-3 text-emerald-500" />
               Ledger integrity
             </p>
-            <p className="mt-1 text-[10px] font-medium leading-relaxed text-muted-foreground">
+            <p className="mt-1 text-[13px] font-medium leading-relaxed text-muted-foreground">
               {metrics.disputed} disputed entries are quarantined pending bank statements. Everything else is
               reconciled against the gateway.
             </p>
