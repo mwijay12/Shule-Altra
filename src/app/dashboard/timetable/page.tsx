@@ -15,6 +15,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
@@ -67,7 +68,7 @@ export default function TimetablePage() {
           </Badge>
           <h1 className="text-xl sm:text-2xl font-headline font-black text-primary uppercase tracking-tight">Academic Timetable</h1>
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">
-            {teachingSlots} teaching periods allocated · no clashes, balanced subject load
+            <AnimatedNumber value={teachingSlots} /> teaching periods allocated · no clashes, balanced subject load
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -81,7 +82,7 @@ export default function TimetablePage() {
             {isExporting ? "Building PDF" : "Download PDF"}
           </Button>
           <Button
-            onClick={() => toast({ title: "Allocation Node Ready", description: "Select a free slot on the master grid to assign a teacher node." })}
+            onClick={() => toast({ title: "Pick a slot", description: "Select a free slot on the grid to assign a teacher." })}
             className="flex-1 sm:flex-none rounded-full colorful-gradient h-11 shadow-xl font-black text-[9px] uppercase tracking-widest px-8 group"
           >
             <Plus className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Assign Period
@@ -109,7 +110,7 @@ export default function TimetablePage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Stream Hub</label>
+              <label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Stream</label>
               <Select value={stream} onValueChange={setStream}>
                 <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold">
                   <SelectValue />
@@ -147,7 +148,7 @@ export default function TimetablePage() {
                 {timetable.subjectLoad.slice(0, 6).map((entry) => (
                   <div key={entry.subject} className="flex items-center justify-between gap-2">
                     <span className="text-[9px] font-bold uppercase text-foreground/80 truncate">{entry.subject}</span>
-                    <span className="text-[9px] font-black text-primary tabular-nums">{entry.periods}</span>
+                    <span className="text-[9px] font-black text-primary tabular-nums"><AnimatedNumber value={entry.periods} /></span>
                   </div>
                 ))}
               </div>

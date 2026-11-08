@@ -17,8 +17,10 @@ import {
   SUBJECTS_SECONDARY,
 } from '@/data/fixtures/tanzanian-names';
 import { DemoTimestamp } from './timestamp';
+import { ACADEMIC_LEVEL, DEFAULT_SCHOOL_TYPE, O_LEVEL_CLASSES } from '@/lib/academics/config';
 
-export const DEMO_SCHEMA_VERSION = 4;
+// v5 retires the mixed primary/secondary demo. Old caches are reseeded automatically.
+export const DEMO_SCHEMA_VERSION = 6;
 export const DEMO_SCHOOL_ID = 'school-001';
 
 export interface DemoDataset {
@@ -99,10 +101,7 @@ const studentName = (gender: 'Male' | 'Female') => {
 /*  Reference data                                                             */
 /* -------------------------------------------------------------------------- */
 
-const CLASSES = ['Standard 7', 'Form 1', 'Form 2', 'Form 3', 'Form 4'] as const;
-
 const FEES_BY_CLASS: Record<string, number> = {
-  'Standard 7': 350_000,
   'Form 1': 450_000,
   'Form 2': 450_000,
   'Form 3': 600_000,
@@ -166,8 +165,8 @@ const ASSET_CATALOGUE = [
 ];
 
 const CANTEEN_ITEMS = [
-  { item: 'Balanced Lunch Node', amount: 2500 },
-  { item: 'Health Snack Node', amount: 1200 },
+  { item: 'Balanced lunch', amount: 2500 },
+  { item: 'Healthy snack', amount: 1200 },
   { item: 'Chapati & Beans Plate', amount: 1800 },
   { item: 'Fresh Fruit Bowl', amount: 900 },
   { item: 'Milk Tea + Mandazi', amount: 700 },
@@ -203,7 +202,9 @@ function buildIdentity(): Record<string, any> {
     address: 'Plot 45, Ali Hassan Mwinyi Road, Kinondoni',
     contactPhone: '+255 754 123 456',
     contactEmail: 'info@mnyerere.sc.tz',
-    tiers: ['Standard 7', 'Form 1', 'Form 2', 'Form 3', 'Form 4'],
+    tiers: [...O_LEVEL_CLASSES],
+    academicLevel: ACADEMIC_LEVEL,
+    type: DEFAULT_SCHOOL_TYPE,
     logo: '',
     demoMode: true,
     updatedAt: daysAgo(3),
@@ -212,18 +213,15 @@ function buildIdentity(): Record<string, any> {
 
 function buildStudents(): {
   records: Array<{ path: string; data: Record<string, any> }>;
-  summary: Array<{ id: string; name: string; className: string; balance: number; totalPaid: number; expected: number; type: string; phone: string }>;
+  summary: Array<{ id: string; name: string; className: string; balance: number; totalPaid: number; expected: number; type: string; phone: string; route?: string }>;
 } {
   const records: Array<{ path: string; data: Record<string, any> }> = [];
-  const summary: Array<{ id: string; name: string; className: string; balance: number; totalPaid: number; expected: number; type: string; phone: string }> = [];
+  const summary: Array<{ id: string; name: string; className: string; balance: number; totalPaid: number; expected: number; type: string; phone: string; route?: string }> = [];
 
-  const classWeights: Array<{ className: string; count: number }> = [
-    { className: 'Standard 7', count: 22 },
-    { className: 'Form 1', count: 30 },
-    { className: 'Form 2', count: 32 },
-    { className: 'Form 3', count: 32 },
-    { className: 'Form 4', count: 34 },
-  ];
+  const classWeights = O_LEVEL_CLASSES.map((className, index) => ({
+    className,
+    count: [36, 38, 38, 38][index],
+  }));
 
   let index = 0;
   classWeights.forEach(({ className, count }) => {
@@ -232,7 +230,8 @@ function buildStudents(): {
       const gender: 'Male' | 'Female' = chance(0.5) ? 'Male' : 'Female';
       const name = studentName(gender);
       const id = `ALT-2026-${pad(index)}`;
-      const boarder = className === 'Standard 7' ? chance(0.55) : chance(0.68);
+      const boarder = chance(0.68);
+      const form = Number(className.replace('Form ', ''));
       const hostel = boarder ? pick(HOSTELS).name : undefined;
       const route = boarder ? undefined : pick(ROUTES).name;
 
@@ -253,7 +252,7 @@ function buildStudents(): {
         class: className,
         type: boarder ? 'Boarder' : 'Day',
         gender,
-        dateOfBirth: `${2008 + between(0, 3)}-${pad(between(1, 12), 2)}-${pad(between(1, 28), 2)}`,
+        dateOfBirth: `${2013 - form + between(0, 1)}-${pad(between(1, 12), 2)}-${pad(between(1, 28), 2)}`,
         guardianName: `${pick(MALE_FIRST_NAMES)} ${pick(LAST_NAMES)}`.toUpperCase(),
         guardianPhone: phone(),
         contact: phone(),
@@ -276,7 +275,7 @@ function buildStudents(): {
       };
 
       records.push({ path: `schools/${DEMO_SCHOOL_ID}/students/${id}`, data });
-      summary.push({ id, name, className, balance, totalPaid, expected, type: data.type, phone: data.guardianPhone });
+      summary.push({ id, name, className, balance, totalPaid, expected, type: data.type, phone: data.guardianPhone, route });
     }
   });
 
@@ -290,7 +289,6 @@ function buildGrades(
   let counter = 0;
 
   const subjectSets: Record<string, string[]> = {
-    'Standard 7': ['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies', 'Civics'],
     'Form 1': ['Mathematics', 'English', 'Kiswahili', 'Civics', 'Physics', 'Chemistry', 'Biology', 'Geography'],
     'Form 2': ['Mathematics', 'English', 'Kiswahili', 'Civics', 'Physics', 'Chemistry', 'Biology', 'Geography'],
     'Form 3': ['Mathematics', 'English', 'Kiswahili', 'Civics', 'Physics', 'Chemistry', 'Biology', 'History'],
@@ -321,7 +319,7 @@ function buildGrades(
             term,
             examType,
             academicYear: '2026',
-            recordedBy: 'Academic Node',
+            recordedBy: 'Academic office',
             createdAt: daysAgo(examType === 'Annual' ? 18 : 64),
           },
         });
@@ -344,7 +342,7 @@ function buildGrades(
             term: 'Term 2',
             examType: 'Mock',
             academicYear: '2026',
-            recordedBy: 'Academic Node',
+            recordedBy: 'Academic office',
             createdAt: daysAgo(9),
           },
         });
@@ -388,7 +386,7 @@ function buildTransactions(
         reconciled: status === 'Verified',
         currency: 'TZS',
         academicYear: 2026,
-        recordedBy: chance(0.5) ? 'Accounts Node' : 'Institutional Gateway',
+        recordedBy: chance(0.5) ? 'Accounts office' : 'ClickPesa',
         deviceInfo: 'Demo Terminal',
         notes: status === 'Disputed' ? 'Awaiting bank statement verification' : '',
         createdAt,
@@ -424,7 +422,7 @@ function buildAttendance(
           class: student.className,
           date: isoDate,
           status,
-          recordedBy: 'Register Node',
+          recordedBy: 'Front desk',
           createdAt: DemoTimestamp.fromMillis(date.getTime()),
         },
       });
@@ -469,7 +467,7 @@ function buildHostels(): Array<{ path: string; data: Record<string, any> }> {
   }));
 }
 
-function buildRoutes(): Array<{ path: string; data: Record<string, any> }> {
+function buildRoutes(students: Array<{ type: string; route?: string }>): Array<{ path: string; data: Record<string, any> }> {
   return ROUTES.map((route, index) => ({
     path: `schools/${DEMO_SCHOOL_ID}/routes/route-${pad(index + 1, 2)}`,
     data: {
@@ -477,8 +475,8 @@ function buildRoutes(): Array<{ path: string; data: Record<string, any> }> {
       driver: route.driver,
       phone: route.phone,
       vehicle: route.vehicle,
-      students: between(28, 46),
-      capacity: 52,
+      students: students.filter((student) => student.type === 'Day' && student.route === route.name).length,
+      capacity: between(48, 56),
       status: index === 4 ? 'Standby' : 'Active',
       departureTime: `${pad(between(5, 6), 2)}:${pick(['15', '30', '45'])} AM`,
       createdAt: daysAgo(180),
@@ -519,7 +517,7 @@ function buildCanteenSales(
         item: entry.item,
         amount: entry.amount,
         createdAt: minutesAgo(between(5, 60 * 30)),
-        recordedBy: 'Canteen Node',
+        recordedBy: 'Canteen',
       },
     });
   }
@@ -537,7 +535,7 @@ function buildPettyCash(): Array<{ path: string; data: Record<string, any> }> {
         amount,
         status,
         date: new Date(Date.now() - index * 86_400_000).toISOString(),
-        recordedBy: 'Accounts Node',
+        recordedBy: 'Accounts office',
         approvedBy: status === 'Approved' ? 'CPA. ABDULRAZAQ MTENGA' : '',
         createdAt: daysAgo(index + 1),
       },
@@ -567,7 +565,7 @@ export function buildDemoDataset(): DemoDataset {
   put(studentRecords);
   put(buildStaff());
   put(buildHostels());
-  put(buildRoutes());
+  put(buildRoutes(studentSummary));
   put(buildAssets());
   put(
     buildGrades(
@@ -614,7 +612,8 @@ export function buildDemoDataset(): DemoDataset {
     id: DEMO_SCHOOL_ID,
     name: 'MWALIMU NYERERE SECONDARY SCHOOL',
     academicYear: '2026',
-    type: 'secondary',
+    type: DEFAULT_SCHOOL_TYPE,
+    academicLevel: ACADEMIC_LEVEL,
     region: 'Dar es Salaam',
     district: 'Kinondoni',
     motto: 'Elimu ni Ufunguo wa Maisha',

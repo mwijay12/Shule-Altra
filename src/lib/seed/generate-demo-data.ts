@@ -7,6 +7,7 @@ import {
   PAYMENT_METHODS 
 } from '@/data/fixtures/tanzanian-names';
 import { generateControlNumber } from '@/lib/finance-engine';
+import { O_LEVEL_CLASSES } from '@/lib/academics/config';
 import { Timestamp } from 'firebase/firestore';
 
 const randomFrom = <T>(arr: readonly T[] | T[]): T => arr[Math.floor(Math.random() * arr.length)];
@@ -80,7 +81,7 @@ export function generateStaff() {
 
 export function generateStudents() {
   const students = [];
-  const classes = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
+  const classes = O_LEVEL_CLASSES;
   
   let idCounter = 1;
   for (const className of classes) {

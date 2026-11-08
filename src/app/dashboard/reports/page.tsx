@@ -7,6 +7,8 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { AnimatedNumber } from "@/components/ui/animated-number";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -62,7 +64,7 @@ const financialReports: ReportItem[] = [
 
 const academicReports: ReportItem[] = [
   { id: "class-rank", title: "Class Performance Ranking", description: "Cohort averages, division and fee status in merit order.", icon: GraduationCap },
-  { id: "subject-analysis", title: "Subject Analysis Matrix", description: "Mean score, pass rate and grade spread for every subject node.", icon: FileText },
+  { id: "subject-analysis", title: "Subject analysis", description: "Mean score, pass rate and grade spread for every subject.", icon: FileText },
   { id: "master-sheet", title: "Master Grade Sheet", description: "Landscape matrix of every learner against every assessed subject.", icon: ClipboardList, badge: "A4 landscape" },
 ];
 
@@ -141,6 +143,10 @@ export default function ReportsPage() {
     totalCollected + totalOutstanding > 0
       ? Math.round((totalCollected / (totalCollected + totalOutstanding)) * 100)
       : 0;
+
+  const overallPassRate = gradeRows.length > 0
+    ? gradeRows.filter((row) => Number(row.score) >= 45).length / gradeRows.length * 100
+    : 0;
 
   const perLearnerScores = useMemo(
     () => buildPerLearnerScores(learners, gradeRows),
@@ -337,7 +343,7 @@ export default function ReportsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            <Zap className="h-2.5 w-2.5 mr-1.5" /> Institutional Hub
+            <Zap className="h-2.5 w-2.5 mr-1.5" /> Reports centre
           </Badge>
           <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-tight">Reports Center</h1>
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">
@@ -356,9 +362,9 @@ export default function ReportsPage() {
               <DollarSign className="h-20 w-20" />
             </div>
             <p className="text-[10px] uppercase font-black opacity-70 tracking-widest">Total Fee Collection</p>
-            <h2 className="text-2xl font-black mt-2">TZS {totalCollected.toLocaleString()}</h2>
+            <h2 className="text-2xl font-black mt-2"><AnimatedNumber value={totalCollected} prefix="TZS " /></h2>
             <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full">{collectionRate}% OF BILLED</Badge>
+              <Badge className="bg-white/20 text-white border-none font-black text-[8px] rounded-full"><AnimatedNumber value={collectionRate} suffix="% OF BILLED" /></Badge>
             </div>
           </CardContent>
         </Card>
@@ -370,12 +376,11 @@ export default function ReportsPage() {
             </div>
             <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Overall Pass Rate</p>
             <h2 className="text-2xl font-black text-primary mt-2">
-              {gradeRows.length > 0
-                ? `${((gradeRows.filter((row) => Number(row.score) >= 45).length / gradeRows.length) * 100).toFixed(1)}%`
-                : "—"}
+              {gradeRows.length > 0 ? <AnimatedNumber value={overallPassRate} format={(n) => n.toFixed(1)} suffix="%" /> : "—"}
             </h2>
             <div className="flex items-center gap-2 mt-2">
               <Badge className="bg-emerald-500/12 text-emerald-600 border-none font-black text-[8px] rounded-full">NECTA CSEE SCALE</Badge>
+              <Progress value={overallPassRate} aria-label="Overall CSEE pass rate" className="h-1.5 flex-1 bg-muted/40" indicatorClassName="bg-emerald-500" />
             </div>
           </CardContent>
         </Card>
@@ -387,7 +392,7 @@ export default function ReportsPage() {
             </div>
             <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Printables queued</p>
             <h2 className="text-2xl font-black text-emerald-600 mt-2">
-              {(assets || []).length} assets · {(staff || []).length} staff
+              <AnimatedNumber value={(assets || []).length} /> assets · <AnimatedNumber value={(staff || []).length} /> staff
             </h2>
             <div className="flex items-center gap-2 mt-2">
               <Badge className="bg-primary/10 text-primary border-none font-black text-[8px] rounded-full">VECTOR ENGINE ONLINE</Badge>

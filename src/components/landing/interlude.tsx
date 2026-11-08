@@ -9,13 +9,15 @@
  */
 
 import * as React from "react"
-import Image from "next/image"
+import { LandingImage as Image } from "./image"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { useLandingMotion } from "./motion"
+import { useLandingContent } from "./content-provider"
 
 export function Interlude() {
   const ref = React.useRef<HTMLDivElement | null>(null)
   const { on } = useLandingMotion()
+  const content = useLandingContent()
   const still = !on
 
   const { scrollYProgress } = useScroll({
@@ -28,20 +30,20 @@ export function Interlude() {
     <div className="sd-interlude" ref={ref} data-period="16:20 · The ground">
       <motion.div className="sd-interlude-media" style={{ y }}>
         <Image
-          src="/landing/school-facade.jpg"
-          alt="The arched veranda and bougainvillea of a coastal Tanzanian secondary school"
+          src={content.images.schoolFacade.src}
+          alt={content.images.schoolFacade.alt}
           fill
           sizes="100vw"
         />
       </motion.div>
       <span className="sd-interlude-veil" aria-hidden />
       <div className="sd-interlude-inner">
-        <span className="sd-label sd-label-light">16:20 — Mwanzo Secondary</span>
+        <span className="sd-label sd-label-light">{content.interlude.label} · {content.schoolName}</span>
         <p className="sd-interlude-line">
-          Built for the schools that keep <em className="sd-serif">Tanzania&rsquo;s records</em>.
+          {content.interlude.line} <em className="sd-serif">{content.interlude.accent}</em>.
         </p>
         <span className="sd-interlude-meta">
-          Dar es Salaam · 06°48′S 39°17′E · 1,240 institutions in the region
+          {content.interlude.meta}
         </span>
       </div>
     </div>

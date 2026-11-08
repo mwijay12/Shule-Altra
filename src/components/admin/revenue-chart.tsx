@@ -20,6 +20,8 @@ import {
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range-context';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber } from '@/components/ui/animated-number';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface RevenueChartProps {
   transactions: any[];
@@ -122,6 +124,7 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export function RevenueChart({ transactions, target, isLoading }: RevenueChartProps) {
   const { range, setRange, days } = useRange();
+  const reducedMotion = useReducedMotion();
   const data = React.useMemo(() => buildBuckets(transactions ?? [], days), [transactions, days]);
 
   const totals = React.useMemo(() => {
@@ -143,11 +146,11 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
           </p>
           <div className="mt-2 flex items-end gap-3">
             <p className="font-headline text-[26px] font-black leading-none tracking-tight text-foreground sm:text-[32px]">
-              TZS {totals.collected.toLocaleString('en-US')}
+              <AnimatedNumber value={totals.collected} prefix="TZS " />
             </p>
             <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[9px] font-black text-emerald-600">
               <ArrowUpRight className="h-2.5 w-2.5" />
-              {totals.rate.toFixed(1)}% of target
+              <AnimatedNumber value={totals.rate} format={(n) => n.toFixed(1)} suffix="% of target" />
             </span>
           </div>
           <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
@@ -213,6 +216,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               stroke="hsl(214 85% 58%)"
               strokeWidth={2.4}
               fill="url(#collectedFill)"
+              isAnimationActive={!reducedMotion}
               animationDuration={700}
               animationEasing="ease-out"
               animationBegin={40}
@@ -226,6 +230,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               strokeWidth={2}
               strokeDasharray="5 4"
               dot={false}
+              isAnimationActive={!reducedMotion}
               animationDuration={650}
               animationEasing="ease-out"
               animationBegin={80}
@@ -237,6 +242,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               strokeWidth={1.4}
               strokeDasharray="2 5"
               dot={false}
+              isAnimationActive={!reducedMotion}
               animationDuration={650}
               animationEasing="ease-out"
               animationBegin={120}
@@ -247,17 +253,17 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
 
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-4 sm:grid-cols-4">
         {[
-          { label: 'Verified', value: `TZS ${totals.collected.toLocaleString('en-US')}`, dot: 'bg-primary' },
-          { label: 'Pending', value: `TZS ${totals.pending.toLocaleString('en-US')}`, dot: 'bg-accent' },
-          { label: 'Target', value: `TZS ${totals.expected.toLocaleString('en-US')}`, dot: 'bg-amber-500' },
-          { label: 'Avg / bucket', value: `TZS ${Math.round(average).toLocaleString('en-US')}`, dot: 'bg-emerald-500' },
+          { label: 'Verified', value: totals.collected, dot: 'bg-primary' },
+          { label: 'Pending', value: totals.pending, dot: 'bg-accent' },
+          { label: 'Target', value: totals.expected, dot: 'bg-amber-500' },
+          { label: 'Avg / bucket', value: Math.round(average), dot: 'bg-emerald-500' },
         ].map((item) => (
           <div key={item.label}>
             <p className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
               <span className={cn('h-1.5 w-1.5 rounded-full', item.dot)} />
               {item.label}
             </p>
-            <p className="mt-1 truncate text-[11px] font-black tabular-nums text-foreground">{item.value}</p>
+            <p className="mt-1 truncate text-[11px] font-black tabular-nums text-foreground"><AnimatedNumber value={item.value} prefix="TZS " /></p>
           </div>
         ))}
       </div>

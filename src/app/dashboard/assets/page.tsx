@@ -27,6 +27,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { AnimatedNumber } from "@/components/ui/animated-number"
+import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -75,9 +77,9 @@ export default function AssetsPage() {
         if (asset) {
           setSelectedAsset(asset)
           setIsMaintenanceModalOpen(true)
-          toast({ title: "Asset Node Identified", description: `Found: ${asset.name}` })
+          toast({ title: "Asset found", description: `Found: ${asset.name}` })
         } else {
-          toast({ variant: "destructive", title: "Unknown Node", description: "This QR code is not registered in the system." })
+          toast({ variant: "destructive", title: "Not recognised", description: "This QR code is not registered in the system." })
         }
       }, (error) => {})
       scannerRef.current = scanner
@@ -113,23 +115,26 @@ export default function AssetsPage() {
 
   const handleDeleteAsset = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "schools", schoolId, "assets", id))
-    toast({ title: "Node Terminated", description: "Asset removed from database." })
+    toast({ title: "Asset removed", description: "The asset was deleted." })
   }
 
   const updateAssetStatus = (id: string, status: string, condition: string) => {
     updateDocumentNonBlocking(doc(db, "schools", schoolId, "assets", id), { status, condition })
     setIsMaintenanceModalOpen(false)
-    toast({ title: "Status Synchronized", description: "Database updated with new conditions." })
+    toast({ title: "Condition updated", description: "The asset record was saved." })
   }
 
-  const faultyCount = assets?.filter(a => a.status === "Faulty" || a.condition === "Broken").length || 0
+  const faultyCount = assets?.filter(a => a.status === "Faulty" || a.condition === "Broken" || a.condition === "Needs Repair").length || 0
+  const maintenanceCount = assets?.filter(a => a.status === "Under Maintenance").length || 0
+  const taggedCount = assets?.filter(a => Boolean(a.qrCodeValue)).length || 0
+  const auditRate = assets?.length ? taggedCount / assets.length * 100 : 0
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-24">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-2">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-4 py-1 h-6 text-[9px] font-black tracking-widest uppercase rounded-full shadow-sm">
-            Institutional Inventory Node 2026
+            Asset register · 2026
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-headline font-black text-primary tracking-tight">Property & Assets</h1>
           <p className="text-muted-foreground font-medium text-sm">Real-world QR auditing and maintenance lifecycle management.</p>
@@ -143,7 +148,7 @@ export default function AssetsPage() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-md rounded-[2.5rem] p-0 overflow-hidden">
               <DialogHeader className="bg-primary/5 p-8 border-b">
-                <DialogTitle className="text-xl font-black text-primary">Live QR Node Detection</DialogTitle>
+                <DialogTitle className="text-xl font-black text-primary">Scan an asset QR code</DialogTitle>
                 <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Aim camera at asset QR stamp</DialogDescription>
               </DialogHeader>
               <div className="p-8">
@@ -158,7 +163,7 @@ export default function AssetsPage() {
           <Dialog open={isAdding} onOpenChange={setIsAdding}>
             <DialogTrigger asChild>
               <Button className="flex-1 sm:flex-none rounded-full h-12 px-6 colorful-gradient shadow-lg font-black text-[10px] uppercase tracking-widest group">
-                <Plus className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Register Node
+                <Plus className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Register asset
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] p-0 overflow-hidden max-w-lg border-none shadow-2xl">
@@ -189,7 +194,7 @@ export default function AssetsPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location Node</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Location</Label>
                     <Input name="location" placeholder="e.g. Admin Block" required className="h-12 rounded-xl bg-muted/20 border-none font-bold shadow-inner" />
                   </div>
                   <div className="space-y-2">
@@ -198,7 +203,7 @@ export default function AssetsPage() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase tracking-widest shadow-2xl mt-4">
-                  Initialize Property Node
+                  Register asset
                 </Button>
               </form>
             </DialogContent>
@@ -208,10 +213,10 @@ export default function AssetsPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Total Assets", value: assets?.length || "0", sub: "Verified", icon: HardDrive, color: "text-primary" },
-          { label: "Faulty Nodes", value: faultyCount, sub: "Action Required", icon: AlertCircle, color: "text-destructive" },
-          { label: "Dormant", value: "4", sub: "Repair Req", icon: Activity, color: "text-orange-600" },
-          { label: "Audit Sync", value: "100%", sub: "2026 Hub", icon: ShieldCheck, color: "text-green-600" },
+          { label: "Total assets", value: assets?.length || 0, sub: "On the register", icon: HardDrive, color: "text-primary" },
+          { label: "Faulty", value: faultyCount, sub: "Action Required", icon: AlertCircle, color: "text-destructive" },
+          { label: "Maintenance", value: maintenanceCount, sub: "In workshop", icon: Activity, color: "text-orange-600" },
+          { label: "QR Tagged", value: auditRate, suffix: "%", sub: "Registry coverage", icon: ShieldCheck, color: "text-green-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
              <CardContent className="p-5 sm:p-6 relative overflow-hidden">
@@ -219,7 +224,8 @@ export default function AssetsPage() {
                   <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
                 </div>
                 <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-widest">{stat.label}</p>
-                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{stat.value}</p>
+                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{typeof stat.value === "number" ? <AnimatedNumber value={stat.value} suffix={"suffix" in stat ? stat.suffix : undefined} /> : stat.value}</p>
+                {stat.label === "QR Tagged" && <Progress value={auditRate} aria-label="Asset QR coverage" className="mt-3 h-1.5 bg-muted/40" indicatorClassName="bg-emerald-500" />}
                 <p className="text-[8px] text-muted-foreground font-black mt-1 uppercase tracking-widest truncate">{stat.sub}</p>
              </CardContent>
           </Card>
@@ -253,13 +259,13 @@ export default function AssetsPage() {
           {assetsLoading ? (
             <div className="p-20 flex flex-col items-center justify-center text-muted-foreground">
               <Loader2 className="h-10 w-10 animate-spin mb-4" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Synchronizing Ledger...</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Loading assets…</p>
             </div>
           ) : (
             <Table className="min-w-[800px]">
               <TableHeader className="bg-muted/10">
                 <TableRow className="border-none h-14">
-                  <TableHead className="pl-8 text-[9px] font-black uppercase tracking-widest">Property Node</TableHead>
+                  <TableHead className="pl-8 text-[9px] font-black uppercase tracking-widest">Asset</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest">Lifecycle</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest">QR Identity</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest">Health</TableHead>
@@ -297,7 +303,7 @@ export default function AssetsPage() {
                             </div>
                             <div>
                               <h3 className="font-black text-xl text-primary">{asset.name}</h3>
-                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Property Hub: {asset.qrCodeValue}</p>
+                              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Asset tag: {asset.qrCodeValue}</p>
                             </div>
                             <Button className="w-full rounded-2xl h-12 colorful-gradient font-black text-[10px] uppercase shadow-lg">
                               <Printer className="mr-2 h-4 w-4" /> Print QR Stamp
@@ -351,7 +357,7 @@ export default function AssetsPage() {
                 <Settings className="h-6 w-6" />
               </div>
               <div>
-                <DialogTitle className="text-xl font-black">Maintenance Node: {selectedAsset?.name}</DialogTitle>
+                <DialogTitle className="text-xl font-black">Maintenance: {selectedAsset?.name}</DialogTitle>
                 <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Update Condition & Fault Status</DialogDescription>
               </div>
             </div>

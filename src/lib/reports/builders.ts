@@ -419,14 +419,14 @@ export function buildReportPayload(id: string, data: ReportData): TabularReportI
               { key: "learner", header: "Learner", width: 130 },
               { key: "item", header: "Item", width: 110 },
               { key: "amount", header: "Amount", width: 70, align: "right" as const },
-              { key: "recordedBy", header: "Node", width: 70 },
+              { key: "recordedBy", header: "Recorded by", width: 70 },
             ],
             rows: sales.map((row) => ({
               date: formatDate(row.createdAt),
               learner: row.studentName ?? "—",
               item: row.item ?? "—",
               amount: `TZS ${Number(row.amount ?? 0).toLocaleString("en-US")}`,
-              recordedBy: row.recordedBy ?? "Canteen node",
+              recordedBy: row.recordedBy ?? "Canteen",
             })),
           },
         ],
@@ -490,7 +490,7 @@ export function buildReportPayload(id: string, data: ReportData): TabularReportI
       const active = people.filter((row) => row.active !== false);
       return {
         title: "Staff establishment summary",
-        subtitle: `${people.length} personnel nodes · ${active.length} active`,
+        subtitle: `${people.length} staff · ${active.length} active`,
         reference,
         meta,
         summary: [

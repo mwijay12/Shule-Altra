@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { ThreeOrb } from '@/components/admin/three-orb';
 import { KpiCard } from '@/components/admin/kpi-card';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 import { RevenueChart } from '@/components/admin/revenue-chart';
 import { PriorityBoard, type FollowUpItem } from '@/components/admin/priority-board';
 import { useRange } from '@/components/admin/range-context';
@@ -94,7 +95,8 @@ export default function CommandDeckPage() {
     // The register carries the authoritative billed/paid totals; the ledger is a sample.
     const registerPaid = learners.reduce((sum, learner) => sum + Number(learner.totalPaid ?? 0), 0);
     const billed = registerPaid + outstanding;
-    const rate = billed > 0 ? (collected / billed) * 100 : 0;
+    const authoritativeCollected = registerPaid > 0 ? registerPaid : collected;
+    const rate = billed > 0 ? Math.min(100, authoritativeCollected / billed * 100) : 0;
 
     const present = (attendance ?? []).filter((row: any) => row.status === 'Present').length;
     const totalAttendance = (attendance ?? []).length;
@@ -127,7 +129,7 @@ export default function CommandDeckPage() {
     });
 
     return {
-      collected: registerPaid > 0 ? registerPaid : collected,
+      collected: authoritativeCollected,
       pending,
       outstanding,
       billed,
@@ -214,7 +216,7 @@ export default function CommandDeckPage() {
             </span>
             {DEMO_MODE && (
               <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[8px] font-black uppercase tracking-[0.2em] text-accent">
-                Demo node
+                Demo mode
               </span>
             )}
           </div>
@@ -223,8 +225,8 @@ export default function CommandDeckPage() {
             {greeting}, {role ?? 'Admin'}.
           </h2>
           <p className="mt-2 max-w-md text-[11px] font-medium leading-relaxed text-muted-foreground sm:text-xs">
-            {metrics.enrolment} learners on the register · {metrics.followUps.length} balances need chasing ·
-            TZS {Math.round(metrics.pending).toLocaleString('en-US')} in gateway queue.
+            <AnimatedNumber value={metrics.enrolment} /> learners on the register · <AnimatedNumber value={metrics.followUps.length} /> balances need chasing ·
+            <AnimatedNumber value={metrics.pending} prefix="TZS " /> in gateway queue.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-2">

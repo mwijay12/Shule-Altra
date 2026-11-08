@@ -34,6 +34,15 @@ service firebase.storage {
         allow delete: if inRole(['ADMIN']);
       }
 
+      // Landing-page photography is public once an administrator publishes it.
+      match /landing/{fileName} {
+        allow read: if true;
+        allow write: if inRole(['ADMIN'])
+          && request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
+        allow delete: if inRole(['ADMIN']);
+      }
+
       match /{allPaths=**} {
         allow read, write: if inRole(['ADMIN']);
       }

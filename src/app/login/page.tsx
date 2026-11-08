@@ -108,7 +108,7 @@ export default function LoginPage() {
             <h1 className="flex justify-center">
               <Wordmark size={34} pro />
             </h1>
-            <p className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.4em]">Sovereign Verification Gateway 2026</p>
+            <p className="text-muted-foreground font-black text-[9px] uppercase tracking-[0.4em]">School staff sign-in</p>
           </div>
         </div>
 
@@ -224,7 +224,7 @@ export default function LoginPage() {
 
                   {DEMO_MODE && (
                     <p className="text-[9px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
-                      Demo node runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
+                      The demo runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
                     </p>
                   )}
                 </div>
@@ -235,7 +235,7 @@ export default function LoginPage() {
               <div className="flex items-center gap-3 px-6 py-2 rounded-full bg-accent/10 text-accent text-[9px] font-black uppercase tracking-[0.3em]">
                 <Sparkles className="h-4 w-4" /> SECURE SESSION READY
               </div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Design: Altra Node Technology</p>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest opacity-60">Shule Altra · 2026</p>
             </div>
           </CardContent>
         </Card>

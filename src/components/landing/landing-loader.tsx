@@ -70,7 +70,7 @@ export function LandingLoader({ onDone }: { onDone: () => void }) {
       <div className="land-loader-body">
         <div className="land-loader-top">
           <span>SHULE ALTRA</span>
-          <span>INSTITUTIONAL OS</span>
+          <span>SCHOOL MANAGEMENT</span>
         </div>
         <div className="land-loader-mark">
           <BrandMark size={44} radius={13} />

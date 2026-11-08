@@ -22,6 +22,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -62,7 +63,7 @@ const articles = [
     bg: "bg-blue-100", 
     items: [
       "Marking the daily register", 
-      "Automated SMS alerts to parents", 
+      "Absence flags for guardian follow-up",
       "Tracking long-term absenteeism"
     ] 
   },
@@ -86,7 +87,7 @@ export default function HelpPage() {
         <div className="absolute top-0 left-0 p-8 opacity-10">
           <LifeBuoy className="h-48 w-48 rotate-12" />
         </div>
-        <Badge className="bg-white/20 text-white border-none font-black text-[10px] tracking-[0.3em] uppercase px-6 py-1">Support Hub</Badge>
+        <Badge className="bg-white/20 text-white border-none font-black text-[10px] tracking-[0.3em] uppercase px-6 py-1">Help</Badge>
         <h1 className="text-4xl sm:text-5xl font-headline font-black tracking-tight">How can we help?</h1>
         <p className="text-primary-foreground/80 font-medium max-w-xl mx-auto text-sm sm:text-base">Search our documentation for professional guides on using ShuleDirect Pro.</p>
         
@@ -107,7 +108,7 @@ export default function HelpPage() {
                 <section.icon className="h-6 w-6" />
               </div>
               <CardTitle className="text-lg font-black">{section.cat}</CardTitle>
-              <CardDescription className="text-xs font-bold text-muted-foreground">{section.items.length} Modules</CardDescription>
+              <CardDescription className="text-xs font-bold text-muted-foreground"><AnimatedNumber value={section.items.length} /> Modules</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 pb-6">
               {section.items.map((item, i) => (
@@ -137,7 +138,7 @@ export default function HelpPage() {
                   Is the system truly NECTA-compliant?
                 </AccordionTrigger>
                 <AccordionContent className="p-4 text-sm text-muted-foreground leading-relaxed font-medium">
-                  Yes. ShuleDirect Pro uses the official CSEE and FTNA point aggregation matrices and division classification rules (I-IV, 0) as mandated by the National Examinations Council of Tanzania.
+                  Yes. Grading follows the official NECTA CSEE point aggregation and division rules (I-IV, 0) used for O-level. The grading library also carries PSLE, FTNA and ACSEE matrices for schools that need them.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-2" className="border-none mb-2">
@@ -145,7 +146,7 @@ export default function HelpPage() {
                   How does ClickPesa reconciliation work?
                 </AccordionTrigger>
                 <AccordionContent className="p-4 text-sm text-muted-foreground leading-relaxed font-medium">
-                  Once a Control Number is generated, the parent receives an SMS via Beem. When payment is made via M-Pesa or Bank, ClickPesa notifies our system, and the student's ledger is updated automatically in real-time.
+                  Each bill carries a control number, which the parent pays through ClickPesa, mobile money or the school bank account. When ClickPesa confirms a payment it calls our webhook and the learner's ledger updates automatically. Payments made outside ClickPesa are matched to the learner by the bursar.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3" className="border-none mb-2">

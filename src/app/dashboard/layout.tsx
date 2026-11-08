@@ -69,7 +69,7 @@ export default function DashboardLayout({
     return (
       <div className="flex h-screen items-center justify-center p-8 text-center font-body">
         <div className="space-y-4">
-          <Badge variant="destructive" className="px-4 py-1 rounded-full uppercase font-black tracking-widest">Access Node Denied</Badge>
+          <Badge variant="destructive" className="px-4 py-1 rounded-full uppercase font-black tracking-widest">Access denied</Badge>
           <p className="text-muted-foreground text-sm uppercase font-bold">{error}</p>
           <Button onClick={() => router.push("/login")} className="rounded-full colorful-gradient font-black text-[10px] uppercase px-8">Retry Entry</Button>
         </div>

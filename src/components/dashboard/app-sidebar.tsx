@@ -149,7 +149,7 @@ export function AppSidebar() {
             )}
           >
             <LogOut className="h-4 w-4 group-hover:-translate-x-1 transition-transform shrink-0" />
-            {!isCollapsed && <span className="truncate">Exit Node</span>}
+            {!isCollapsed && <span className="truncate">Sign out</span>}
           </button>
         </div>
       </SidebarFooter>

@@ -165,7 +165,7 @@ export async function buildTabularReport(input: TabularReportInput): Promise<Uin
   signatureRow(
     ctx,
     input.signatures ?? [
-      { role: 'Prepared by', name: 'Accounts node' },
+      { role: 'Prepared by', name: 'Accounts office' },
       { role: 'Head of school', name: 'Dr. A. Mushi' },
     ]
   );

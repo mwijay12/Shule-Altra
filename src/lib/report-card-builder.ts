@@ -35,19 +35,19 @@ export async function buildReportCardData(
   examType: string
 ): Promise<ReportCardData> {
   try {
-    // 1. Fetch Context Nodes
+    // 1. Fetch school and student context
     const schoolSnap = await getDoc(doc(db, 'schools', schoolId));
     const studentSnap = await getDoc(doc(db, 'schools', schoolId, 'students', studentId));
 
     if (!schoolSnap.exists() || !studentSnap.exists()) {
-      throw new Error("Institutional context or Student node not found.");
+      throw new Error("School or student record not found.");
     }
 
     const schoolData = schoolSnap.data();
     const studentData = studentSnap.data();
     const schoolType = (schoolData.type || 'secondary') as 'primary' | 'secondary';
 
-    // 2. Fetch Grades Node
+    // 2. Fetch grades
     const gradesQuery = query(
       collection(db, 'schools', schoolId, 'grades'),
       where('studentId', '==', studentId),
@@ -142,7 +142,7 @@ export async function buildReportCardData(
 
     return {
       school: {
-        name: schoolData.name || "Sovereign Institutional Hub",
+        name: schoolData.name || "School name not set",
         logoUrl: schoolData.logoUrl || null,
         academicYear: schoolData.academicYear || "2025",
         type: schoolType

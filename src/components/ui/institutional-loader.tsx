@@ -94,7 +94,7 @@ export function InstitutionalLoader({ onComplete }: { onComplete?: () => void })
 
       <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.34em] text-white/55">
         <span>Shule Altra</span>
-        <span>Institutional OS · 2026</span>
+        <span>School management · 2026</span>
       </div>
 
       <div className="relative flex flex-1 flex-col items-center justify-center gap-8">

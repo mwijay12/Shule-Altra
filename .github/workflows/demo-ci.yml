@@ -21,6 +21,14 @@ jobs:
         run: npm run typecheck
       - name: Data-layer smoke
         run: npm run demo:smoke:data
+      - name: O-level consistency
+        run: npm run demo:smoke:olevel
+      - name: Motion and reduced-motion
+        run: npm run demo:smoke:motion
+      - name: Landing content
+        run: npm run demo:smoke:landing
+      - name: Copy guard
+        run: npm run demo:smoke:copy
 
       - name: Vector printable suite
         run: npm run demo:pdf

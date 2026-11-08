@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { 
   Sheet, 
@@ -58,6 +59,8 @@ export default function HostelPage() {
   
   const [isAdding, setIsAdding] = useState(false)
   const [selectedWing, setSelectedWing] = useState<any>(null)
+  // A wing inspection is something a matron confirms, not a status we invent.
+  const [inspection, setInspection] = useState<Record<string, boolean>>({})
   const [isVerifying, setIsVerifying] = useState<string | null>(null)
   
   const hostelsQuery = useMemoFirebase(() => {
@@ -100,18 +103,18 @@ export default function HostelPage() {
     
     addDocumentNonBlocking(collection(db, "schools", schoolId, "hostels"), newWing)
     setIsAdding(false)
-    toast({ title: "Wing Initialized", description: `${newWing.name} synced to 2026 database.` })
+    toast({ title: "Wing added", description: `${newWing.name} is now on the boarding list.` })
   }
 
   const handleDeleteWing = (id: string) => {
     deleteDocumentNonBlocking(doc(db, "schools", schoolId, "hostels", id))
-    toast({ variant: "destructive", title: "Node Terminated", description: "Hostel wing removed from registry." })
+    toast({ variant: "destructive", title: "Wing removed", description: "The hostel wing was deleted." })
   }
 
   const handleUpdateUtility = (key: string, value: string) => {
     setDocumentNonBlocking(utilitiesRef, { [key]: value }, { merge: true })
     setIsVerifying(null)
-    toast({ title: "Audit Synchronized", description: `${key.toUpperCase()} node updated.` })
+    toast({ title: "Inspection saved", description: `${key.toUpperCase()} updated.` })
   }
 
   return (
@@ -119,10 +122,10 @@ export default function HostelPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            <Home className="h-2.5 w-2.5 mr-1.5" /> Institutional Housing 2026
+            <Home className="h-2.5 w-2.5 mr-1.5" /> Boarding · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase">Boarding Hub</h1>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">Manage residential wings and synchronized student occupancy.</p>
+          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase">Boarding</h1>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">Manage residential wings and bed occupancy.</p>
         </div>
         <Dialog open={isAdding} onOpenChange={setIsAdding}>
           <DialogTrigger asChild>
@@ -132,7 +135,7 @@ export default function HostelPage() {
           </DialogTrigger>
           <DialogContent className="rounded-[2.5rem] p-0 overflow-hidden max-w-md border-none shadow-2xl">
             <DialogHeader className="bg-primary/5 p-8 border-b text-center">
-              <DialogTitle className="text-xl font-black text-primary uppercase">New Housing Node</DialogTitle>
+              <DialogTitle className="text-xl font-black text-primary uppercase">New hostel wing</DialogTitle>
               <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Register a new residential block.</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddWing} className="p-8 space-y-6">
@@ -175,7 +178,7 @@ export default function HostelPage() {
                   <Input name="rooms" type="number" defaultValue="25" className="h-12 rounded-xl bg-muted/20 border-none font-bold" />
                 </div>
               </div>
-              <Button type="submit" className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-2xl">Initialize Wing Hub</Button>
+              <Button type="submit" className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-2xl">Save wing</Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -210,7 +213,7 @@ export default function HostelPage() {
                   </DialogHeader>
                   <div className="p-8 space-y-6">
                     <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New Status Node</Label>
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">New status</Label>
                       <Input id="utility-val" placeholder="e.g. Healthy / Critical / Maintenance" className="h-12 rounded-xl bg-muted/20 border-none font-bold" />
                     </div>
                     <Button 
@@ -220,7 +223,7 @@ export default function HostelPage() {
                         if(val) handleUpdateUtility(item.key, val);
                       }}
                     >
-                      Sync Audit Node
+                      Save reading
                     </Button>
                   </div>
                 </DialogContent>
@@ -233,7 +236,7 @@ export default function HostelPage() {
       {isLoading ? (
         <div className="p-20 flex flex-col items-center justify-center text-muted-foreground">
           <Loader2 className="h-10 w-10 animate-spin mb-4" />
-          <p className="text-[10px] font-black uppercase tracking-widest">Synchronizing Housing Matrix...</p>
+          <p className="text-[10px] font-black uppercase tracking-widest">Loading hostel wings…</p>
         </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 px-1">
@@ -252,15 +255,15 @@ export default function HostelPage() {
                     </Button>
                   </div>
                   <CardTitle className="text-xl font-black text-primary uppercase tracking-tight">{hostel.name}</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{hostel.type} Wing • Guardian: {hostel.warden}</CardDescription>
+                  <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{hostel.type} wing · Warden: {hostel.warden}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8 pt-0 space-y-6">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-[10px] font-black uppercase text-muted-foreground">
                       <span className="flex items-center gap-2"><Users className="h-3 w-3" /> Real-time Load</span>
-                      <span className={cn("text-xs", occupancyPercentage > 90 ? "text-destructive" : "text-primary")}>{currentOccupancy} / {hostel.capacity} Beds</span>
+                      <span className={cn("text-xs", occupancyPercentage > 90 ? "text-destructive" : "text-primary")}><AnimatedNumber value={currentOccupancy} /> / <AnimatedNumber value={hostel.capacity} /> Beds</span>
                     </div>
-                    <Progress value={occupancyPercentage} className="h-2 bg-muted/50 rounded-full" />
+                    <Progress value={occupancyPercentage} aria-label={`${hostel.name} occupancy`} className="h-2 bg-muted/50 rounded-full" indicatorClassName={occupancyPercentage > 90 ? "bg-destructive" : "bg-primary"} />
                   </div>
 
                   <Sheet>
@@ -281,7 +284,7 @@ export default function HostelPage() {
                             </div>
                             <div className="space-y-1">
                               <SheetTitle className="text-2xl sm:text-3xl font-black text-primary uppercase tracking-tighter">{selectedWing?.name}</SheetTitle>
-                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">{selectedWing?.block} Hub • Personnel: {selectedWing?.warden}</p>
+                              <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">{selectedWing?.block} · Warden: {selectedWing?.warden}</p>
                             </div>
                           </div>
                         </SheetHeader>
@@ -298,12 +301,12 @@ export default function HostelPage() {
                           <TabsContent value="occupants" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
                             <div className="p-8 rounded-[2rem] bg-white border border-muted shadow-inner">
                               <div className="flex items-center justify-between mb-6">
-                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Live Roster ({getOccupancyCount(selectedWing?.name)} Students)</h4>
+                                <h4 className="text-[10px] font-black uppercase tracking-widest text-primary">Live Roster (<AnimatedNumber value={getOccupancyCount(selectedWing?.name)} /> Students)</h4>
                                 <Button variant="ghost" size="sm" className="h-8 rounded-full text-[9px] font-black uppercase hover:bg-primary/5">Export Roster</Button>
                               </div>
                               <div className="space-y-3">
                                 {students?.filter(s => s.type === "Boarder" && s.hostel === selectedWing?.name).length === 0 ? (
-                                  <p className="text-[10px] text-center text-muted-foreground font-medium uppercase py-10">No students allocated to this wing node.</p>
+                                  <p className="text-[10px] text-center text-muted-foreground font-medium uppercase py-10">No students allocated to this wing.</p>
                                 ) : (
                                   students?.filter(s => s.type === "Boarder" && s.hostel === selectedWing?.name).map((student) => (
                                     <div key={student.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-xl group hover:bg-muted/40 transition-colors">
@@ -327,23 +330,57 @@ export default function HostelPage() {
                           <TabsContent value="audit" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
                             <div className="space-y-4">
                               {[
-                                { task: "Hygiene Compliance", icon: ShieldCheck, status: "Verified" },
-                                { task: "Electrical Node Integrity", icon: Lightbulb, status: "Stable" },
-                                { task: "Water Supply Pressure", icon: Droplets, status: "Normal" },
-                              ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm border border-muted/50 group hover:border-primary/20 transition-all">
+                                { key: "hygiene", task: "Hygiene", icon: ShieldCheck },
+                                { key: "electrical", task: "Electrical wiring", icon: Lightbulb },
+                                { key: "water", task: "Water supply", icon: Droplets },
+                              ].map((item) => (
+                                <button
+                                  key={item.key}
+                                  type="button"
+                                  aria-pressed={!!inspection[item.key]}
+                                  onClick={() => setInspection((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+                                  className="w-full flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm border border-muted/50 hover:border-primary/20 transition-all text-left"
+                                >
                                   <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                                    <div className="h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center text-primary">
                                       <item.icon className="h-5 w-5" />
                                     </div>
                                     <span className="text-xs font-black uppercase text-foreground/70 tracking-tight">{item.task}</span>
                                   </div>
-                                  <Badge className="text-[8px] font-black uppercase rounded-full px-4 h-8 bg-green-100 text-green-700 border-none shadow-sm">{item.status}</Badge>
-                                </div>
+                                  <Badge
+                                    className={
+                                      inspection[item.key]
+                                        ? "text-[8px] font-black uppercase rounded-full px-4 h-8 bg-green-100 text-green-700 border-none shadow-sm"
+                                        : "text-[8px] font-black uppercase rounded-full px-4 h-8 bg-muted text-muted-foreground border-none shadow-sm"
+                                    }
+                                  >
+                                    {inspection[item.key] ? "Checked" : "Not checked"}
+                                  </Badge>
+                                </button>
                               ))}
                             </div>
-                            <Button className="w-full h-14 rounded-2xl colorful-gradient font-black uppercase text-xs tracking-widest shadow-xl" onClick={() => toast({ title: "Audit Synchronized", description: "Wing safety record archived permanently." })}>
-                              Certify Inspection Node
+                            <p className="text-[10px] text-muted-foreground font-medium text-center">
+                              {selectedWing?.lastInspection?.at
+                                ? `Last recorded ${new Date(selectedWing.lastInspection.at).toLocaleString('en-GB')}`
+                                : "No inspection recorded for this wing yet."}
+                            </p>
+                            <Button
+                              className="w-full h-14 rounded-2xl colorful-gradient font-black uppercase text-xs tracking-widest shadow-xl"
+                              disabled={!selectedWing?.id}
+                              onClick={() => {
+                                const checked = ["hygiene", "electrical", "water"].filter((k) => inspection[k])
+                                setDocumentNonBlocking(
+                                  doc(db, "schools", schoolId, "hostels", selectedWing.id),
+                                  { lastInspection: { at: new Date().toISOString(), items: inspection } },
+                                  { merge: true }
+                                )
+                                toast({
+                                  title: "Inspection recorded",
+                                  description: `${checked.length} of 3 checks confirmed for ${selectedWing.name}.`,
+                                })
+                              }}
+                            >
+                              Record inspection
                             </Button>
                           </TabsContent>
 
@@ -353,18 +390,18 @@ export default function HostelPage() {
                                 <HeartPulse className="h-8 w-8" />
                               </div>
                               <div className="space-y-2">
-                                <p className="text-[10px] font-black text-destructive uppercase tracking-[0.3em]">Critical Monitoring Active</p>
-                                <p className="text-xs font-medium text-foreground/60 leading-relaxed max-w-[250px] mx-auto uppercase tracking-tighter">No active medical emergencies for boarders in this wing node.</p>
+                                <p className="text-[10px] font-black text-destructive uppercase tracking-[0.3em]">Medical alerts</p>
+                                <p className="text-xs font-medium text-foreground/60 leading-relaxed max-w-[250px] mx-auto uppercase tracking-tighter">No medical alerts for boarders in this wing.</p>
                               </div>
                             </div>
-                            <Button variant="outline" className="w-full rounded-2xl h-14 border-primary/10 text-primary font-black text-[10px] uppercase tracking-widest hover:bg-primary/5 transition-all">
-                              View Full Sickbay Node
-                            </Button>
+                            <p className="text-[10px] text-muted-foreground font-medium text-center">
+                              Record health notes on the learner’s profile under Students.
+                            </p>
                           </TabsContent>
                         </Tabs>
                       </div>
                       <SheetFooter className="p-8 border-t bg-muted/10">
-                        <p className="text-[8px] font-bold text-muted-foreground text-center w-full uppercase tracking-[0.5em]">Real-time Occupancy Ledger Verified 2026</p>
+                        <p className="text-[8px] font-bold text-muted-foreground text-center w-full uppercase tracking-[0.5em]">Occupancy is counted from the boarder register.</p>
                       </SheetFooter>
                     </SheetContent>
                   </Sheet>

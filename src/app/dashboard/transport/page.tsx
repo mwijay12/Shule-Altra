@@ -29,6 +29,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { AnimatedNumber } from "@/components/ui/animated-number"
+import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { 
   Sheet, 
@@ -58,28 +60,26 @@ export default function TransportPage() {
   const routesQuery = useMemoFirebase(() => query(collection(db, "schools", "school-001", "routes")), [db])
   const { data: firestoreRoutes, isLoading } = useCollection(routesQuery)
 
-  const routes = firestoreRoutes || [
-    { id: "R-01", name: "Mbezi Beach - Kawe", driver: "Bakari Said", phone: "0712-333444", vehicle: "T 442 ABC", students: 42, status: "Active" },
-    { id: "R-02", name: "Kijitonyama - Sinza", driver: "John Mrema", phone: "0754-111222", vehicle: "T 119 XYZ", students: 38, status: "Standby" },
-  ]
+  const routes = firestoreRoutes || []
 
   const fleetPayload = (routes as any[]).reduce((sum, route) => sum + (route.students || 0), 0)
 
-  const handleBatchDispatch = (routeName: string) => {
+  const handleBatchDispatch = async (routeName: string) => {
     setIsDispatching(true)
-    triggerN8nWebhook("attendance-update", { 
-      route: routeName, 
+    // This is a transport event, not an attendance one, and the webhook tells us
+    // whether it actually accepted the payload.
+    const forwarded = await triggerN8nWebhook("transport-dispatch", {
+      route: routeName,
       status: "Dispatched",
-      msg: `Institutional fleet node for ${routeName} has commenced transit.`
+      msg: `Route ${routeName} marked as dispatched.`
     })
-
-    setTimeout(() => {
-      setIsDispatching(false)
-      toast({
-        title: "Route Dispatched",
-        description: `Batch SMS alerts sent to parents on ${routeName}.`,
-      })
-    }, 1500)
+    setIsDispatching(false)
+    toast({
+      title: "Route dispatched",
+      description: forwarded
+        ? `${routeName} forwarded to the automation webhook.`
+        : `${routeName} marked dispatched. Automation is off, so no alert was sent.`,
+    })
   }
 
   const handleAddRoute = (e: React.FormEvent<HTMLFormElement>) => {
@@ -95,7 +95,7 @@ export default function TransportPage() {
     }
     addDocumentNonBlocking(collection(db, "schools", "school-001", "routes"), newRoute)
     setIsAddingRoute(false)
-    toast({ title: "Fleet Node Registered", description: `${newRoute.name} added to 2026 fleet database.` })
+    toast({ title: "Route added", description: `${newRoute.name} is now on the fleet list.` })
   }
 
   return (
@@ -103,9 +103,9 @@ export default function TransportPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            Institutional Fleet Hub 2026
+            School transport · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase">Logistics Node</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase">Transport</h1>
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">Management of Day Student transit and fleet safety.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -121,7 +121,7 @@ export default function TransportPage() {
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] p-0 overflow-hidden max-w-md border-none shadow-2xl">
               <DialogHeader className="bg-primary/5 p-8 border-b text-center">
-                <DialogTitle className="text-xl font-black text-primary uppercase">New Fleet Node</DialogTitle>
+                <DialogTitle className="text-xl font-black text-primary uppercase">New route</DialogTitle>
                 <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Register a new transit path and driver.</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleAddRoute} className="p-8 space-y-6">
@@ -143,7 +143,7 @@ export default function TransportPage() {
                   <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Vehicle Registration</Label>
                   <Input name="vehicle" placeholder="e.g. T 442 ABC" required className="h-12 rounded-xl bg-muted/20 border-none font-mono font-black px-5 uppercase" />
                 </div>
-                <Button type="submit" className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-2xl">Initialize Route Hub</Button>
+                <Button type="submit" className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-2xl">Save route</Button>
               </form>
             </DialogContent>
           </Dialog>
@@ -152,10 +152,10 @@ export default function TransportPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 px-1">
         {[
-          { label: "Fleet Ready", value: "12 Buses", sub: "Operational", icon: Bus, color: "text-primary" },
-          { label: "Active Routes", value: routes.length + " Nodes", sub: "In Transit", icon: Navigation, color: "text-accent" },
-          { label: "Safety Score", value: "100%", sub: "Audit Passed", icon: ShieldCheck, color: "text-green-600" },
-          { label: "Day Students", value: fleetPayload.toLocaleString(), sub: "Fleet Payload", icon: Users, color: "text-orange-600" },
+          { label: "Fleet Ready", value: routes.filter((r: any) => r.status === "Active" && r.vehicle).length, suffix: " Buses", sub: "Operational", icon: Bus, color: "text-primary" },
+          { label: "Active Routes", value: routes.filter((r: any) => r.status === "Active").length, sub: "In Transit", icon: Navigation, color: "text-accent" },
+          { label: "Safety Score", value: 100, suffix: "%", sub: "Audit Passed", icon: ShieldCheck, color: "text-green-600" },
+          { label: "Day Students", value: fleetPayload, sub: "Fleet Payload", icon: Users, color: "text-orange-600" },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-md bg-white/60 backdrop-blur-md rounded-[1.5rem] group overflow-hidden">
              <CardContent className="p-5 relative">
@@ -163,7 +163,7 @@ export default function TransportPage() {
                   <stat.icon className="h-16 w-16" />
                 </div>
                 <p className="text-[8px] uppercase font-black text-muted-foreground tracking-widest">{stat.label}</p>
-                <p className={cn("text-xl font-black mt-1 truncate", stat.color)}>{stat.value}</p>
+                <p className={cn("text-xl font-black mt-1 truncate", stat.color)}><AnimatedNumber value={stat.value} suffix={"suffix" in stat ? stat.suffix : undefined} /></p>
                 <p className="text-[8px] text-muted-foreground font-black uppercase mt-1 truncate">{stat.sub}</p>
              </CardContent>
           </Card>
@@ -190,14 +190,15 @@ export default function TransportPage() {
           {isLoading ? (
             <div className="p-20 text-center flex flex-col items-center gap-4">
               <Loader2 className="animate-spin h-10 w-10 text-primary" />
-              <p className="text-[10px] font-black uppercase text-muted-foreground">Syncing Fleet Nodes...</p>
+              <p className="text-[10px] font-black uppercase text-muted-foreground">Loading routes…</p>
             </div>
           ) : (
             <Table className="min-w-[800px]">
               <TableHeader className="bg-muted/10">
                 <TableRow className="border-none h-14">
-                  <TableHead className="pl-8 text-[9px] font-black uppercase">Route Hub</TableHead>
+                  <TableHead className="pl-8 text-[9px] font-black uppercase">Route</TableHead>
                   <TableHead className="text-[9px] font-black uppercase">Lead Personnel</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase">Day Learners</TableHead>
                   <TableHead className="text-[9px] font-black uppercase text-center">Status</TableHead>
                   <TableHead className="text-right pr-8 text-[9px] font-black uppercase">Action</TableHead>
                 </TableRow>
@@ -218,6 +219,12 @@ export default function TransportPage() {
                           <span className="text-xs font-black">{route.driver}</span>
                           <span className="text-[9px] text-muted-foreground font-medium">{route.phone}</span>
                         </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="min-w-28 space-y-2">
+                        <p className="text-[10px] font-black"><AnimatedNumber value={route.students || 0} /> / <AnimatedNumber value={route.capacity || 0} /> seats</p>
+                        <Progress value={route.capacity ? ((route.students || 0) / route.capacity) * 100 : 0} aria-label={`${route.name} occupancy`} className="h-1.5 bg-muted/40" indicatorClassName="bg-primary" />
                       </div>
                     </TableCell>
                     <TableCell className="text-center">

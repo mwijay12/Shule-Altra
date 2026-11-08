@@ -52,7 +52,7 @@ export async function POST(request: Request) {
       const studentRef = doc(db, 'schools', 'school-001', 'students', studentId);
       const studentDoc = await transaction.get(studentRef);
       
-      if (!studentDoc.exists()) throw new Error("Student Node Terminated");
+      if (!studentDoc.exists()) throw new Error("Student not found");
 
       // Update Transaction Hub
       transaction.update(transactionDoc.ref, {
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ status: 'reconciled' });
 
   } catch (error) {
-    console.error("Webhook Node Failure:", error);
-    return new Response('Internal Node Error', { status: 500 });
+    console.error("ClickPesa webhook failed:", error);
+    return new Response('Internal server error', { status: 500 });
   }
 }

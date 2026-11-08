@@ -46,6 +46,9 @@ import { cn } from "@/lib/utils"
 import type { Student } from "@/types/student"
 import type { GradeRecord } from "@/types/grade"
 import { SUBJECTS_SECONDARY } from "@/data/fixtures/tanzanian-names"
+import { O_LEVEL_CLASSES } from "@/lib/academics/config"
+import { AnimatedNumber } from "@/components/ui/animated-number"
+import { SegmentedProgress } from "@/components/ui/progress"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 
 export default function AcademicsPage() {
@@ -81,10 +84,12 @@ export default function AcademicsPage() {
   const filteredStudents = useMemo(() => {
     if (!students) return []
     return students.filter(s => 
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.id.toLowerCase().includes(searchTerm.toLowerCase())
+      s.class === activeClass && (
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
-  }, [searchTerm, students])
+  }, [searchTerm, students, activeClass])
 
   // Process Rankings
   const rankings = useMemo(() => {
@@ -330,14 +335,22 @@ export default function AcademicsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            <Database className="h-2.5 w-2.5 mr-1.5" /> NECTA Compliance Hub
+            <Database className="h-2.5 w-2.5 mr-1.5" /> NECTA assessment · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-tight">Academic Matrix</h1>
+          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-tight">Academics</h1>
           <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">
-            Managing {students?.length || 0} Candidates • Term: {activeTerm} • Exam: {activeExam}
+            {activeClass} · <AnimatedNumber value={filteredStudents.length} /> Candidates • Term: {activeTerm} • Exam: {activeExam}
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1">
+          <Select value={activeClass} onValueChange={setActiveClass}>
+            <SelectTrigger aria-label="Academic class" className="h-10 shrink-0 rounded-full bg-white shadow-sm font-bold text-[10px] uppercase border-primary/10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {O_LEVEL_CLASSES.map((className) => <SelectItem key={className} value={className}>{className}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Button
             variant="outline"
             onClick={() => setImportOpen(true)}
@@ -457,8 +470,8 @@ export default function AcademicsPage() {
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-3xl bg-primary text-white shadow-xl"><Trophy className="h-6 w-6" /></div>
                 <div>
-                  <CardTitle className="text-xl font-black uppercase">Class Performance Matrix</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase text-primary/60">Official NECTA Ranking Node</CardDescription>
+                  <CardTitle className="text-xl font-black uppercase">Class performance</CardTitle>
+                  <CardDescription className="text-[10px] font-bold uppercase text-primary/60">NECTA merit ranking</CardDescription>
                 </div>
               </div>
               <Select value={activeClass} onValueChange={setActiveClass}>
@@ -466,10 +479,7 @@ export default function AcademicsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Form 1">Form 1</SelectItem>
-                  <SelectItem value="Form 2">Form 2</SelectItem>
-                  <SelectItem value="Form 3">Form 3</SelectItem>
-                  <SelectItem value="Form 4">Form 4</SelectItem>
+                  {O_LEVEL_CLASSES.map((className) => <SelectItem key={className} value={className}>{className}</SelectItem>)}
                 </SelectContent>
               </Select>
             </CardHeader>
@@ -484,7 +494,7 @@ export default function AcademicsPage() {
                   <TableHeader className="bg-muted/10">
                     <TableRow className="h-14">
                       <TableHead className="pl-10 text-[9px] font-black uppercase">Rank</TableHead>
-                      <TableHead className="text-[9px] font-black uppercase">Candidate Node</TableHead>
+                      <TableHead className="text-[9px] font-black uppercase">Candidate</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-center">Division</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-center">Points</TableHead>
                       <TableHead className="text-[9px] font-black uppercase text-right pr-10">Average Score</TableHead>
@@ -535,31 +545,34 @@ export default function AcademicsPage() {
                  )} />
                  <CardHeader className="p-8 pb-4">
                    <CardTitle className="text-xl font-black text-primary uppercase tracking-tight">{p!.subject}</CardTitle>
-                   <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-primary/40">{activeClass} Hub</CardDescription>
+                   <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-primary/40">{activeClass}</CardDescription>
                  </CardHeader>
                  <CardContent className="p-8 pt-0 space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                        <div className="p-4 rounded-2xl bg-muted/20 border border-muted shadow-inner">
                           <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Average</p>
-                          <p className="text-2xl font-black text-primary">{p!.averageScore}%</p>
+                          <p className="text-2xl font-black text-primary"><AnimatedNumber value={p!.averageScore} format={(n) => n.toFixed(1)} suffix="%" /></p>
                        </div>
                        <div className="p-4 rounded-2xl bg-muted/20 border border-muted shadow-inner">
                           <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest mb-1">Pass Rate</p>
-                          <p className="text-2xl font-black text-green-600">{p!.passRate}%</p>
+                          <p className="text-2xl font-black text-green-600"><AnimatedNumber value={p!.passRate} suffix="%" /></p>
                        </div>
                     </div>
                     <div className="space-y-2">
                        <div className="flex justify-between items-center text-[9px] font-black uppercase text-muted-foreground">
-                          <span>Grade Node Spread</span>
+                          <span>Grade spread</span>
                           <span>{p!.totalStudents} Candidates</span>
                        </div>
-                       <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-muted/30">
-                          <div className="bg-green-500" style={{ width: `${(p!.gradeDistribution.A / p!.totalStudents) * 100}%` }} />
-                          <div className="bg-blue-500" style={{ width: `${(p!.gradeDistribution.B / p!.totalStudents) * 100}%` }} />
-                          <div className="bg-orange-500" style={{ width: `${(p!.gradeDistribution.C / p!.totalStudents) * 100}%` }} />
-                          <div className="bg-red-500" style={{ width: `${(p!.gradeDistribution.D / p!.totalStudents) * 100}%` }} />
-                          <div className="bg-destructive" style={{ width: `${(p!.gradeDistribution.F / p!.totalStudents) * 100}%` }} />
-                       </div>
+                       <SegmentedProgress
+                         label={`${p!.subject} grade distribution`}
+                         segments={[
+                           { value: p!.gradeDistribution.A / p!.totalStudents * 100, className: "bg-green-500", label: "A" },
+                           { value: p!.gradeDistribution.B / p!.totalStudents * 100, className: "bg-blue-500", label: "B" },
+                           { value: p!.gradeDistribution.C / p!.totalStudents * 100, className: "bg-orange-500", label: "C" },
+                           { value: p!.gradeDistribution.D / p!.totalStudents * 100, className: "bg-red-500", label: "D" },
+                           { value: p!.gradeDistribution.F / p!.totalStudents * 100, className: "bg-destructive", label: "F" },
+                         ]}
+                       />
                     </div>
                  </CardContent>
                </Card>
@@ -577,7 +590,7 @@ export default function AcademicsPage() {
           </DialogHeader>
           <form onSubmit={handleSaveGrade} className="p-8 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Subject Hub</Label>
+              <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Subject</Label>
               <Select name="subject" required>
                 <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold">
                   <SelectValue placeholder="Identify subject..." />
@@ -600,14 +613,14 @@ export default function AcademicsPage() {
               />
             </div>
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10">
-              <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-1">Assessment Node</p>
+              <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em] mb-1">Assessment</p>
               <p className="text-[10px] font-bold text-muted-foreground leading-relaxed uppercase tracking-tighter">
                 Registering for {activeTerm} • {activeExam} cycle. Grades are archived with a unique audit identifier.
               </p>
             </div>
             <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase shadow-2xl group">
               {isSaving ? <Loader2 className="animate-spin mr-2" /> : <GraduationCap className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />}
-              Authorize Grade Node
+              Save marks
             </Button>
           </form>
         </DialogContent>
@@ -661,7 +674,7 @@ export default function AcademicsPage() {
                   ].map((cell) => (
                     <div key={cell.label} className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                       <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{cell.label}</p>
-                      <p className="mt-1 text-xl font-black tabular-nums text-foreground">{cell.value}</p>
+                      <p className="mt-1 text-xl font-black tabular-nums text-foreground">{typeof cell.value === "number" ? <AnimatedNumber value={cell.value} /> : cell.value}</p>
                     </div>
                   ))}
                 </div>

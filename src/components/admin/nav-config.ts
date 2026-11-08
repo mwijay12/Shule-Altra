@@ -67,7 +67,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Campus logistics',
     items: [
       { title: 'Transport', url: '/dashboard/transport', icon: Bus, module: 'transport', hint: 'Routes & fleet' },
-      { title: 'Hostel', url: '/dashboard/hostel', icon: BedDouble, module: 'hostel', hint: 'Boarding nodes' },
+      { title: 'Hostel', url: '/dashboard/hostel', icon: BedDouble, module: 'hostel', hint: 'Wings & occupancy' },
     ],
   },
   {

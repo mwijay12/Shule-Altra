@@ -7,6 +7,7 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
+import { MotionConfig } from 'framer-motion';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { AuroraSidebar } from '@/components/admin/sidebar';
 import { Topbar, type NotificationItem } from '@/components/admin/topbar';
@@ -78,7 +79,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
       (students ?? []).map((student: any) => ({
         id: student.id,
         name: student.name ?? 'Unnamed learner',
-        className: student.className,
+        className: student.class ?? student.className,
         admissionNumber: student.admissionNumber ?? student.admissionNo,
       })),
     [students]
@@ -136,6 +137,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
     : 'Live institutional overview · school-001';
 
   return (
+    <MotionConfig reducedMotion="user">
     <ThemeProvider>
       <RangeProvider>
         <div className={cn('aurora-shell flex h-[100dvh] w-full overflow-hidden bg-background')}>
@@ -173,5 +175,6 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
         />
       </RangeProvider>
     </ThemeProvider>
+    </MotionConfig>
   );
 }

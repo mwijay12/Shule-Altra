@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { O_LEVEL_CLASSES } from '@/lib/academics/config';
 
 export const studentSchema = z.object({
   id: z.string().min(3, 'ID required'),
@@ -18,3 +19,7 @@ export const studentSchema = z.object({
 });
 
 export type StudentFormData = z.infer<typeof studentSchema>;
+/** Demo admissions are O-level only; live schools keep their configured tiers. */
+export const oLevelStudentSchema = studentSchema.extend({
+  class: z.enum(O_LEVEL_CLASSES, { errorMap: () => ({ message: 'Select Form 1, 2, 3 or 4' }) }),
+});

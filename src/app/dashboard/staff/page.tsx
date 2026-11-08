@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import {
   Table,
   TableBody,
@@ -166,10 +167,10 @@ export default function StaffPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            Faculty Ledger Node 2026
+            Staff register · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-headline font-black text-primary uppercase tracking-tight">Personnel Hub</h1>
-          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none">Management of {staff?.length || 0} verified institutional nodes.</p>
+          <h1 className="text-xl sm:text-2xl font-headline font-black text-primary uppercase tracking-tight">Staff</h1>
+          <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-widest leading-none"><AnimatedNumber value={staff?.length || 0} /> staff members on the establishment.</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {isAdmin && (
@@ -226,7 +227,7 @@ export default function StaffPage() {
                     <Input name="joinedDate" type="date" className="h-12 rounded-xl bg-muted/20 border-none font-bold px-5 shadow-inner" />
                   </div>
                   <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-black text-xs uppercase tracking-widest shadow-xl mt-2">
-                    {isSaving ? <Loader2 className="animate-spin h-5 w-5" /> : "Authorize Registry Node"}
+                    {isSaving ? <Loader2 className="animate-spin h-5 w-5" /> : "Save staff member"}
                   </Button>
                 </form>
               </DialogContent>
@@ -259,8 +260,8 @@ export default function StaffPage() {
             <Table className="min-w-[900px]">
               <TableHeader className="bg-muted/30">
                 <TableRow className="border-none h-14">
-                  <TableHead className="pl-8 text-[9px] font-black uppercase tracking-widest">Personnel Node</TableHead>
-                  <TableHead className="text-[9px] font-black uppercase tracking-widest">Role Hub</TableHead>
+                  <TableHead className="pl-8 text-[9px] font-black uppercase tracking-widest">Staff member</TableHead>
+                  <TableHead className="text-[9px] font-black uppercase tracking-widest">Role</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest">Department</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest">Phone</TableHead>
                   <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Status</TableHead>
@@ -313,7 +314,7 @@ export default function StaffPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-2xl w-48 font-body">
-                            <DropdownMenuLabel className="text-[9px] font-black uppercase text-muted-foreground px-4">Management Node</DropdownMenuLabel>
+                            <DropdownMenuLabel className="text-[9px] font-black uppercase text-muted-foreground px-4">Manage</DropdownMenuLabel>
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer group" onClick={() => setStatusTarget(person)}>
                               <Power className={cn("mr-3 h-4 w-4 group-hover:scale-110 transition-transform", person.active ? "text-destructive" : "text-green-600")} />
                               <span className="font-bold text-xs">{person.active ? "Deactivate" : "Reactivate"}</span>
@@ -337,7 +338,7 @@ export default function StaffPage() {
               {statusTarget?.active ? <AlertCircle className="h-8 w-8" /> : <ShieldCheck className="h-8 w-8" />}
             </div>
             <AlertDialogTitle className="text-xl font-headline font-black uppercase text-center">
-              {statusTarget?.active ? "Deactivate Faculty Node?" : "Reactivate Faculty Node?"}
+              {statusTarget?.active ? "Deactivate this staff member?" : "Reactivate this staff member?"}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-xs font-medium text-muted-foreground leading-relaxed">
               {statusTarget?.active 

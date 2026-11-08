@@ -39,7 +39,7 @@ export const DEMO_ACCOUNTS = [
     email: 'admin@shule.pro',
     password: 'demo2026',
     label: 'Administrator',
-    description: 'Full control of every institutional node',
+    description: 'Full access to every module',
   },
   {
     email: 'teacher@shule.pro',

@@ -25,6 +25,7 @@ import { DayStory } from "@/components/landing/day-story"
 import { DocCards } from "@/components/landing/doc-cards"
 import { SchoolLife } from "@/components/landing/school-life"
 import { Interlude } from "@/components/landing/interlude"
+import { LandingContentProvider, useLandingContent } from "@/components/landing/content-provider"
 import {
   Banknote,
   CalendarCheck,
@@ -77,6 +78,7 @@ function Stat({
 function Closing() {
   const ref = React.useRef<HTMLElement | null>(null)
   const { on } = useLandingMotion()
+  const content = useLandingContent()
 
   React.useEffect(() => {
     const node = ref.current
@@ -100,17 +102,17 @@ function Closing() {
 
         <Reveal delay={80}>
           <h2 className="sd-close-title">
-            Sovereign by default,
+            {content.sections.compliance.title}
             <br />
-            <em className="sd-serif">auditable</em> by design.
+            <em className="sd-serif">{content.sections.compliance.accent}</em> by design.
           </h2>
         </Reveal>
 
         <div className="sd-close-facts">
           {[
             ["PDPA 2022", "Data Protection Act alignment, role-scoped access, no learner record outside the school's own store."],
-            ["NECTA", "CSEE and FTNA matrices, divisions, grade points and class position — computed, not retyped."],
-            ["Audit trail", "Every export, edit and payment match is written to the log with the person who did it."],
+            ["NECTA", "CSEE matrices, divisions, grade points and class position for Form 1–4 — computed, not retyped."],
+            ["Accountability", "Every payment records who captured it and when, and each screen and document opens only for the roles allowed to see it."],
           ].map(([title, body], index) => (
             <Reveal key={title} delay={120 + index * 70} mask={false}>
               <div className="sd-fact">
@@ -140,10 +142,11 @@ function Closing() {
 }
 
 function Footer() {
+  const content = useLandingContent()
   return (
     <footer className="sd-footer">
       <Marquee
-        items={["SHULE ALTRA", "INSTITUTIONAL OS", "DAR ES SALAAM", "2026"]}
+        items={["SHULE ALTRA", "O-LEVEL · FORM 1–4", "DAR ES SALAAM", "2026"]}
         separator="·"
         speed={52}
         className="sd-wordmark"
@@ -153,9 +156,7 @@ function Footer() {
         <div className="sd-footer-col">
           <span className="sd-label">The product</span>
           <p>
-            A school management system built for Tanzanian secondary schools: one
-            register, one ledger, one set of documents that hold up in front of a
-            parent, a board or an auditor.
+            {content.footer.product}
           </p>
         </div>
         <div className="sd-footer-col">
@@ -184,11 +185,9 @@ function Footer() {
         <div className="sd-footer-col">
           <span className="sd-label">Where</span>
           <p className="sd-footer-mono">
-            Dar es Salaam
-            <br />
-            06°48′S 39°17′E
-            <br />
-            Tanzania
+            {content.footer.location.split("\n").map((line, index) => (
+              <React.Fragment key={line}>{index > 0 ? <br /> : null}{line}</React.Fragment>
+            ))}
           </p>
         </div>
       </div>
@@ -207,6 +206,7 @@ function Landing() {
   const [menuOpen, setMenuOpen] = React.useState(false)
   const [scrolled, setScrolled] = React.useState(false)
   const { on } = useLandingMotion()
+  const content = useLandingContent()
 
   React.useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24)
@@ -223,7 +223,7 @@ function Landing() {
   }, [])
 
   return (
-    <div className="landing" data-motion={on ? "on" : "off"}>
+    <div className="landing" data-motion={on ? "on" : "off"} data-font={content.font}>
       {!ready && <LandingLoader onDone={() => setReady(true)} />}
 
       <a className="sd-skip uh" href="#main">
@@ -238,7 +238,7 @@ function Landing() {
             <BrandMark size={34} radius={10} />
             <span className="sd-brand-text">
               Shule Altra
-              <em>Institutional OS · 2026</em>
+              <em>{content.brandTagline}</em>
             </span>
           </Link>
 
@@ -301,45 +301,39 @@ function Landing() {
             </Reveal>
             <Reveal delay={70}>
               <h2 className="sd-h2">
-                The register is <em className="sd-serif">the school</em>.
+                {content.sections.register.title} <em className="sd-serif">{content.sections.register.accent}</em>.
               </h2>
             </Reveal>
             <Reveal delay={130}>
               <p className="sd-note">
-                Four numbers, true this minute in the demo school — not a marketing estimate.
-                Every one of them comes from the same record the documents are printed from.
+                {content.sections.register.note}
               </p>
             </Reveal>
           </header>
 
           <div className="sd-stats">
-            <Stat
-              target={150}
-              label="Learners on the register"
-              note="Form 1–4 · day and boarding"
-              icon={<Users className="h-4 w-4" strokeWidth={1.7} />}
-            />
-            <Stat
-              target={2788}
-              label="Scores assessed this term"
-              note="CSEE and FTNA matrices"
-              icon={<GraduationCap className="h-4 w-4" strokeWidth={1.7} />}
-            />
-            <Stat
-              target={88.2}
-              suffix="%"
-              label="Presence across all streams"
-              note="900 register entries"
-              icon={<CalendarCheck className="h-4 w-4" strokeWidth={1.7} />}
-              format={(n) => n.toFixed(1)}
-            />
-            <Stat
-              target={19500000}
-              label="Fees reconciled · TZS"
-              note="ClickPesa · Beem · bank · cash"
-              icon={<Banknote className="h-4 w-4" strokeWidth={1.7} />}
-              format={(n) => `${(n / 1_000_000).toFixed(1)}M`}
-            />
+            {content.stats.map((stat, index) => (
+              <Stat
+                key={stat.label}
+                target={stat.target}
+                suffix={stat.suffix}
+                label={stat.label}
+                note={stat.note}
+                icon={[
+                  <Users key="users" className="h-4 w-4" strokeWidth={1.7} />,
+                  <GraduationCap key="grad" className="h-4 w-4" strokeWidth={1.7} />,
+                  <CalendarCheck key="cal" className="h-4 w-4" strokeWidth={1.7} />,
+                  <Banknote key="bank" className="h-4 w-4" strokeWidth={1.7} />,
+                ][index]}
+                format={
+                  stat.format === 'decimal'
+                    ? (n) => n.toFixed(1)
+                    : stat.format === 'millions'
+                      ? (n) => `${(n / 1_000_000).toFixed(1)}M`
+                      : undefined
+                }
+              />
+            ))}
           </div>
         </section>
 
@@ -350,13 +344,12 @@ function Landing() {
             </Reveal>
             <Reveal delay={70}>
               <h2 className="sd-h2">
-                Six periods, <em className="sd-serif">one timetable</em>.
+                {content.sections.timetable.title} <em className="sd-serif">{content.sections.timetable.accent}</em>.
               </h2>
             </Reveal>
             <Reveal delay={130}>
               <p className="sd-note">
-                The product, read the way a school reads it. Point at a period — it opens onto the
-                photograph that belongs to it.
+                {content.sections.timetable.note}
               </p>
             </Reveal>
           </header>
@@ -370,7 +363,7 @@ function Landing() {
             </Reveal>
             <Reveal delay={70}>
               <h2 className="sd-h2">
-                One day becomes <em className="sd-serif">one record</em>.
+                {content.sections.day.title} <em className="sd-serif">{content.sections.day.accent}</em>.
               </h2>
             </Reveal>
           </header>
@@ -384,14 +377,12 @@ function Landing() {
             </Reveal>
             <Reveal delay={70}>
               <h2 className="sd-h2">
-                The paper a school <em className="sd-serif">actually signs</em>.
+                {content.sections.documents.title} <em className="sd-serif">{content.sections.documents.accent}</em>.
               </h2>
             </Reveal>
             <Reveal delay={130}>
               <p className="sd-note">
-                Real exports from the demo school — set in vector type with pdf-lib, crest and all,
-                not screenshots. The timetable is public; everything that names a learner, a
-                payment or a staff member sits behind that person's role, inside the demo.
+                {content.sections.documents.note}
               </p>
             </Reveal>
           </header>
@@ -413,7 +404,9 @@ function Landing() {
 export default function LandingPage() {
   return (
     <MotionProvider>
-      <Landing />
+      <LandingContentProvider>
+        <Landing />
+      </LandingContentProvider>
     </MotionProvider>
   )
 }

@@ -108,6 +108,13 @@ service cloud.firestore {
         allow write: if false;
       }
 
+      // Public marketing content for the landing page. It names no learner and
+      // carries no money; only an administrator may publish it.
+      match /config/landing {
+        allow read: if true;
+        allow write: if inRole(['ADMIN']);
+      }
+
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
         allow read, write: if inRole(['ADMIN']);

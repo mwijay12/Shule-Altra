@@ -1,14 +1,16 @@
 'use client';
 
 /**
- * @fileOverview Animated KPI tile: GSAP number count-up, SVG progress ring and a
- * sparkline. Values animate whenever the reporting window changes.
+ * @fileOverview Animated KPI tile: shared number count-up, SVG progress ring and a
+ * sparkline. Values count up on arrival and animate on live updates. Reduced motion lands immediately.
  */
 
 import * as React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCountUp } from '@/hooks/use-count-up';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface KpiCardProps {
   label: string;
@@ -50,65 +52,8 @@ const TONES = {
   },
 } as const;
 
-function useCountUp(value: number, duration = 1.1) {
-  const [display, setDisplay] = React.useState(value);
-  const previous = React.useRef(value);
-
-  React.useEffect(() => {
-    const from = previous.current;
-    previous.current = value;
-    if (from === value) {
-      setDisplay(value);
-      return;
-    }
-
-    const reduceMotion =
-      typeof window === 'undefined' ||
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-    if (reduceMotion) {
-      setDisplay(value);
-      return;
-    }
-
-    let frame: number | undefined;
-    let cancelled = false;
-    const started = Date.now();
-    const total = Math.max(120, duration * 1000);
-    const fallback = window.setTimeout(() => setDisplay(value), total + 220);
-
-    const tick = () => {
-      if (cancelled) return;
-      const progress = Math.min(1, Math.max(0, (Date.now() - started) / total));
-      // easeOutCubic
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplay(from + (value - from) * eased);
-      if (progress < 1) {
-        // Timer-driven so the sweep also runs in throttled/headless environments.
-        frame = window.setTimeout(tick, 16);
-      } else {
-        setDisplay(value);
-      }
-    };
-    frame = window.setTimeout(tick, 16);
-
-    return () => {
-      cancelled = true;
-      if (frame !== undefined) window.clearTimeout(frame);
-      window.clearTimeout(fallback);
-    };
-  }, [value, duration]);
-
-  // Final authority: never leave a stale figure on screen.
-  React.useEffect(() => {
-    const timer = window.setTimeout(() => setDisplay(value), duration * 1000 + 200);
-    return () => window.clearTimeout(timer);
-  }, [value, duration]);
-
-  return display;
-}
-
 function Sparkline({ points, className }: { points: number[]; className?: string }) {
+  const reducedMotion = useReducedMotion();
   if (points.length < 2) return null;
   const max = Math.max(...points);
   const min = Math.min(...points);
@@ -130,9 +75,9 @@ function Sparkline({ points, className }: { points: number[]; className?: string
         strokeWidth={1.8}
         strokeLinecap="round"
         className="stroke-current"
-        initial={{ pathLength: 0 }}
+        initial={reducedMotion ? false : { pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: 1.1, ease: 'easeOut' }}
+        transition={{ duration: reducedMotion ? 0 : 1.1, ease: 'easeOut' }}
       />
     </svg>
   );
@@ -151,6 +96,7 @@ export function KpiCard({
   delay = 0,
 }: KpiCardProps) {
   const display = useCountUp(value);
+  const reducedMotion = useReducedMotion();
   const palette = TONES[tone];
   const ringProgress = Math.max(0, Math.min(100, progress ?? 0));
   const radius = 20;
@@ -158,10 +104,9 @@ export function KpiCard({
 
   return (
     <motion.div
-      data-reveal
-      initial={{ opacity: 0, y: 16 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.45, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
         'glass-panel hover-lift sheen group relative overflow-hidden rounded-3xl p-4 sm:p-5',
         palette.glow
@@ -208,9 +153,9 @@ export function KpiCard({
                 strokeLinecap="round"
                 stroke={palette.ring}
                 strokeDasharray={circumference}
-                initial={{ strokeDashoffset: circumference }}
+                initial={reducedMotion ? false : { strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset: circumference * (1 - ringProgress / 100) }}
-                transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: delay + 0.1 }}
+                transition={{ duration: reducedMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1], delay: reducedMotion ? 0 : delay + 0.1 }}
               />
             </svg>
           )}

@@ -148,7 +148,7 @@ function SidebarBody({
               Shule Altra
             </span>
             <span className="mt-1 text-[8px] font-black uppercase tracking-[0.28em] text-muted-foreground">
-              Command OS · 2026
+              Shule Altra · 2026
             </span>
           </span>
         </Link>
@@ -172,7 +172,7 @@ function SidebarBody({
         </p>
         {DEMO_MODE && (
           <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.18em] text-accent">
-            Demo node · local data
+            Demo mode · local data
           </p>
         )}
       </div>

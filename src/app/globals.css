@@ -28,6 +28,12 @@
     --ring: 214 69% 39%;
     --radius: 1.25rem;
 
+    /* Self-hosted type. The landing page can switch pairing without a network. */
+    --font-body: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Space Grotesk Variable", "Space Grotesk", var(--font-body);
+    --font-serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+    --font-mono: "JetBrains Mono Variable", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 215 25% 10%;
     --sidebar-primary: 214 69% 39%;
@@ -110,14 +116,14 @@
   }
 }
 
-.sd-page-enter > * {
+.sd-page-enter > * > *:not([data-reveal]) {
   animation: sd-page-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.sd-page-enter > *:nth-child(2) { animation-delay: 60ms; }
-.sd-page-enter > *:nth-child(3) { animation-delay: 120ms; }
-.sd-page-enter > *:nth-child(4) { animation-delay: 170ms; }
-.sd-page-enter > *:nth-child(n + 5) { animation-delay: 220ms; }
+.sd-page-enter > * > *:nth-child(2) { animation-delay: 60ms; }
+.sd-page-enter > * > *:nth-child(3) { animation-delay: 120ms; }
+.sd-page-enter > * > *:nth-child(4) { animation-delay: 170ms; }
+.sd-page-enter > * > *:nth-child(n + 5) { animation-delay: 220ms; }
 
 .colorful-gradient {
   /* blue → deep indigo: one tonal ramp, no neon end-stop. */
@@ -317,7 +323,7 @@ html[data-scroll-locked] .app-scroll {
   .hover-lift,
   .animate-float,
   .animate-pulse-soft,
-  .sd-page-enter > * {
+  .sd-page-enter > * > *:not([data-reveal]) {
     animation: none !important;
     transition: none !important;
   }
@@ -426,7 +432,7 @@ html[data-scroll-locked] .app-scroll {
 
 .sd-tile-name {
   margin: 0;
-  font-family: "Space Grotesk", Inter, sans-serif;
+  font-family: var(--font-display);
   font-size: 1rem;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -503,8 +509,8 @@ html[data-scroll-locked] .app-scroll {
   --rule-soft: rgba(15, 23, 42, 0.07);
   --rule-light: rgba(240, 245, 255, 0.22);
   --brand-gradient: linear-gradient(135deg, #1f5ba6 0%, #7c5ae0 100%);
-  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --mono: var(--font-mono);
+  --serif: var(--font-serif);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -517,7 +523,7 @@ html[data-scroll-locked] .app-scroll {
   width: 100%;
   min-height: 100vh;
   color: var(--ink);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   background:
     radial-gradient(85% 55% at 4% -4%, rgba(31, 91, 166, 0.13), transparent 62%),
     radial-gradient(70% 45% at 98% 2%, rgba(124, 90, 224, 0.16), transparent 60%),
@@ -528,6 +534,21 @@ html[data-scroll-locked] .app-scroll {
 }
 
 /* daylight: the page deepens from blue into violet as the day advances (--day 0 → 1) */
+.landing[data-font="gazette"] {
+  --font-display: var(--font-serif);
+}
+.landing[data-font="signal"] {
+  --font-display: var(--font-body);
+}
+.landing[data-font="gazette"] .sd-h2,
+.landing[data-font="gazette"] .sd-hero-title,
+.landing[data-font="gazette"] .sd-close-title,
+.landing[data-font="gazette"] .sd-step-title,
+.landing[data-font="gazette"] .sd-interlude-line {
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
 .landing::before {
   content: "";
   position: fixed;
@@ -626,7 +647,7 @@ html[data-scroll-locked] .app-scroll {
 }
 
 .sd-h2 {
-  font-family: "Space Grotesk", Inter, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2.1rem, 5.4vw, 4.4rem);
   line-height: 0.94;
   letter-spacing: -0.04em;
@@ -743,7 +764,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-brand-text {
   display: flex;
   flex-direction: column;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -936,7 +957,7 @@ html[data-scroll-locked] .app-scroll {
   gap: 16px;
   padding: 18px 0;
   border-bottom: 1px solid var(--rule);
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.6rem, 8vw, 2.4rem);
   letter-spacing: -0.03em;
   color: var(--ink);
@@ -1162,7 +1183,7 @@ html[data-scroll-locked] .app-scroll {
   align-items: baseline;
   gap: 4px;
   margin: 1.6rem 0 3rem;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(4rem, 13vw, 8rem);
   line-height: 0.8;
   letter-spacing: -0.05em;
@@ -1245,7 +1266,7 @@ html[data-scroll-locked] .app-scroll {
 
 .sd-hero-title {
   margin: 0;
-  font-family: "Space Grotesk", Inter, sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2.35rem, 5.4vw, 4.9rem);
   font-weight: 500;
   line-height: 0.9;
@@ -1311,7 +1332,7 @@ html[data-scroll-locked] .app-scroll {
   border-top: 1px solid var(--rule);
 }
 .sd-hero-facts b {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -1549,7 +1570,7 @@ html[data-scroll-locked] .app-scroll {
   border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
 .sd-bell-a .sd-marquee-item {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(0.95rem, 1.9vw, 1.35rem);
   font-weight: 600;
   letter-spacing: -0.005em;
@@ -1611,7 +1632,7 @@ html[data-scroll-locked] .app-scroll {
   color: var(--forest);
 }
 .sd-stat-value {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.9rem, 3.4vw, 2.9rem);
   font-weight: 500;
   line-height: 1;
@@ -1696,7 +1717,7 @@ html[data-scroll-locked] .app-scroll {
   display: flex;
   align-items: baseline;
   gap: 12px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.15rem, 2.1vw, 1.65rem);
   font-weight: 500;
   letter-spacing: -0.03em;
@@ -1718,7 +1739,7 @@ html[data-scroll-locked] .app-scroll {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: 15px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -1931,7 +1952,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-step-title {
   margin: 12px 0 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.35rem, 2.5vw, 2rem);
   font-weight: 500;
   line-height: 1.1;
@@ -2029,7 +2050,7 @@ html[data-scroll-locked] .app-scroll {
   color: rgba(15, 23, 42, 0.58);
 }
 .sd-doc-name {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.45rem, 2.6vw, 2rem);
   font-weight: 500;
   line-height: 1;
@@ -2125,7 +2146,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-close-title {
   margin: 0.7rem 0 0;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2.1rem, 5.8vw, 4.6rem);
   font-weight: 500;
   line-height: 0.94;
@@ -2186,7 +2207,7 @@ html[data-scroll-locked] .app-scroll {
   border-bottom: 1px solid rgba(240, 245, 255, 0.16);
 }
 .sd-wordmark .sd-marquee-item {
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(2.2rem, 7.6vw, 5.6rem);
   font-weight: 500;
   letter-spacing: -0.05em;
@@ -2472,7 +2493,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-interlude-line {
   margin: 0.7rem 0 1rem;
   max-width: 22ch;
-  font-family: "Space Grotesk", sans-serif;
+  font-family: var(--font-display);
   font-size: clamp(1.7rem, 4.4vw, 3.4rem);
   font-weight: 500;
   line-height: 1;

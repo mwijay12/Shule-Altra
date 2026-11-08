@@ -20,9 +20,17 @@
     "demo:email": "tsx --tsconfig tsconfig.json scripts/demo-smoke/email.ts",
     "demo:smtp": "tsx --tsconfig tsconfig.json scripts/demo-smoke/smtp.ts",
     "demo:marks": "tsx --tsconfig tsconfig.json scripts/demo-smoke/marks.ts",
-    "demo:photos": "tsx --tsconfig tsconfig.json scripts/demo-smoke/photos.ts"
+    "demo:photos": "tsx --tsconfig tsconfig.json scripts/demo-smoke/photos.ts",
+    "demo:smoke:olevel": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/o-level.tsx",
+    "demo:smoke:motion": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/motion.tsx",
+    "demo:smoke:landing": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/landing.tsx",
+    "demo:smoke:copy": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/copy.ts"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
     "@genkit-ai/google-genai": "^1.28.0",
     "@hookform/resolvers": "^4.1.3",
     "@hugeicons/core-free-icons": "^1.0.0",

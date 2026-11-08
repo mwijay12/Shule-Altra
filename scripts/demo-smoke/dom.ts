@@ -82,7 +82,7 @@ w.scrollTo = () => undefined;
 // Mirror DOM globals that third-party libs (file-saver, docx, gsap) expect at import time
 const DOM_GLOBALS = [
   'HTMLAnchorElement', 'HTMLElement', 'HTMLCanvasElement', 'HTMLInputElement', 'HTMLDivElement',
-  'Element', 'Node', 'Blob', 'File', 'FileReader', 'Image', 'URL', 'URLSearchParams', 'Event',
+  'Element', 'Node', 'NodeFilter', 'Blob', 'File', 'FileReader', 'Image', 'URL', 'URLSearchParams', 'Event',
   'CustomEvent', 'MutationObserver', 'DOMParser', 'XMLSerializer', 'CSSStyleDeclaration', 'Text',
   'KeyboardEvent', 'MouseEvent', 'PointerEvent', 'FormData', 'DOMRect', 'SVGElement',
   'DocumentFragment', 'ShadowRoot', 'Range', 'Selection', 'XMLHttpRequest', 'CSS', 'DOMTokenList',

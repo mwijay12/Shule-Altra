@@ -8,6 +8,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 interface ThreeOrbProps {
   className?: string;
@@ -19,6 +20,7 @@ interface ThreeOrbProps {
 
 export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbProps) {
   const mountRef = React.useRef<HTMLDivElement | null>(null);
+  const reduceMotion = useReducedMotion();
   const [ready, setReady] = React.useState(false);
 
   React.useEffect(() => {
@@ -33,9 +35,6 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
       return () => {};
     }
 
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
     (async () => {
       try {
@@ -125,8 +124,8 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
         const clock = new THREE.Clock();
         let frame = 0;
         const render = () => {
-          frame = requestAnimationFrame(render);
-          const elapsed = clock.getElapsedTime();
+          if (!reduceMotion) frame = requestAnimationFrame(render);
+          const elapsed = reduceMotion ? 0 : clock.getElapsedTime();
 
           target.x += (pointer.x - target.x) * 0.045;
           target.y += (pointer.y - target.y) * 0.045;
@@ -153,6 +152,7 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
           renderer.setSize(w, h);
           camera.aspect = w / h;
           camera.updateProjectionMatrix();
+          if (reduceMotion) renderer.render(scene, camera);
         };
         const observer =
           typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
@@ -180,7 +180,7 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
       disposed = true;
       cleanup();
     };
-  }, [hue, interactive]);
+  }, [hue, interactive, reduceMotion]);
 
   return (
     <div

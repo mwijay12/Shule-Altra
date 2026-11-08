@@ -10,7 +10,8 @@
  */
 
 import * as React from "react"
-import Image from "next/image"
+import { LandingImage as Image } from "./image"
+import { useLandingContent } from "./content-provider"
 
 type Beat = {
   time: string
@@ -29,7 +30,7 @@ const BEATS: Beat[] = [
     title: "The register is taken once, and it holds.",
     body:
       "Form masters mark the morning register on a phone or at the office machine. Absence streaks, boarding status and the parent contact all attach to the same learner record — no second list, no afternoon reconciliation.",
-    detail: ["900 entries this term", "88.2% presence", "SMS to guardian on third absence"],
+    detail: ["900 entries this term", "90.1% presence", "Absence streak flagged for follow-up"],
     image: "/landing/hero-classroom.jpg",
     alt: "Students writing at their desks in the morning",
   },
@@ -39,7 +40,7 @@ const BEATS: Beat[] = [
     title: "Marks land in the matrix, not in a drawer.",
     body:
       "A teacher enters a score once. It becomes a grade point, a subject average, a class position and a division on the NECTA matrix — the same number, read four ways, all of it printable the moment the head asks.",
-    detail: ["2,788 scores this term", "CSEE and FTNA matrices", "Division I–IV with class rank"],
+    detail: ["2,932 scores this term", "CSEE matrices · Form 1–4", "Division I–IV with class rank"],
     image: "/landing/paper-stack.jpg",
     alt: "Marked papers stacked on a green wooden desk",
   },
@@ -49,13 +50,23 @@ const BEATS: Beat[] = [
     title: "The day closes with the books already balanced.",
     body:
       "Every payment that came in — ClickPesa, Beem, bank, cash desk — is matched to a learner and written to the ledger before the gate closes. The fee statement the bursar prints at 16:05 is the one the parent receives.",
-    detail: ["140 movements reconciled", "TZS 19.5M collected", "Control number per learner"],
+    detail: ["140 movements reconciled", "TZS 61.0M collected", "Control number per learner"],
     image: "/landing/hands-ledger.jpg",
     alt: "A bursar writing entries in the fee ledger",
   },
 ]
 
 export function DayStory() {
+  const content = useLandingContent()
+  const beats = BEATS.map((beat) => {
+    const slot = ({
+      "/landing/hero-classroom.jpg": "heroClassroom",
+      "/landing/paper-stack.jpg": "paperStack",
+      "/landing/hands-ledger.jpg": "handsLedger",
+    } as const)[beat.image as "/landing/hero-classroom.jpg"]
+    const image = slot ? content.images[slot] : undefined
+    return image ? { ...beat, image: image.src, alt: image.alt } : beat
+  })
   const [active, setActive] = React.useState(0)
   const stepRefs = React.useRef<Array<HTMLLIElement | null>>([])
 
@@ -80,7 +91,7 @@ export function DayStory() {
     <div className="sd-story">
       <div className="sd-story-stage">
         <div className="sd-story-frames">
-          {BEATS.map((beat, index) => (
+          {beats.map((beat, index) => (
             <figure
               key={beat.image + index}
               className="sd-story-frame"
@@ -99,19 +110,19 @@ export function DayStory() {
         </div>
 
         <div className="sd-story-caption">
-          <span className="sd-story-caption-time">{BEATS[active].time}</span>
-          <span className="sd-story-caption-label">{BEATS[active].label}</span>
+          <span className="sd-story-caption-time">{beats[active].time}</span>
+          <span className="sd-story-caption-label">{beats[active].label}</span>
         </div>
 
         <div className="sd-story-ticks" aria-hidden>
-          {BEATS.map((beat, index) => (
+          {beats.map((beat, index) => (
             <i key={beat.time} data-on={index === active ? "true" : "false"} />
           ))}
         </div>
       </div>
 
       <ol className="sd-story-steps">
-        {BEATS.map((beat, index) => (
+        {beats.map((beat, index) => (
           <li
             key={beat.time}
             ref={(node) => {

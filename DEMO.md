@@ -32,34 +32,36 @@ Any password is accepted by the demo auth layer (`demo2026` is pre-wired).
 ## 2. What is pre-seeded
 
 The demo school is **Mwalimu Nyerere Secondary School** (Kinondoni, Dar es Salaam,
-NECTA centre `SD-2026-0421`), generated deterministically from a fixed seed so
-every stakeholder sees the same story:
+NECTA centre `SD-2026-0421`). It is an **O-level school: Form 1–4 only** — the same
+classes as the timetable, with no Standard 1–7 or Form 5–6 learners. The registry is
+generated deterministically from a fixed seed so every stakeholder sees the same story:
 
 | Node | Volume |
 |------|--------|
-| Student registry | 150 students, Standard 7 → Form 4, with generated portraits |
+| Student registry | 150 O-level learners: Form 1 (36), Form 2 (38), Form 3 (38), Form 4 (38), with generated initials portraits |
 | Staff | 16 members (admin, teachers, bursar, accounts) |
-| NECTA assessments | 2,788 grade records (Term 1 Mid-Term, Term 2 Annual, Form 4 Mock) |
+| NECTA assessments | 2,932 grade records (Term 1 Mid-Term, Term 2 Annual, Form 4 Mock) |
 | Fee ledger | 140 transactions with ClickPesa control numbers (Verified / Pending / Disputed) |
 | Attendance | 900 daily register records |
-| Boarding | 5 hostel wings, 108 boarders matched to wings |
-| Logistics | 5 bus routes, 42 day students assigned |
+| Boarding | 5 hostel wings, 101 boarders matched to wings |
+| Logistics | 5 bus routes, 49 day learners assigned; route payloads equal the roster |
 | Canteen | 18 cashless sales |
 | Inventory | 18 assets with QR tag values |
 | Petty cash | 10 expense lines with approval states |
 
 Everything is stored in `localStorage` under `shule-altra.demo.db.v2` and behaves
 like Firestore (real-time `onSnapshot` updates, batched writes, transactions,
-timestamps, increments).
+timestamps, increments). Schema version `5` (`shule-altra.demo.schema`) automatically
+refreshes an older mixed-level demo cache on the next load.
 
 ---
 
 ## 3. Five-minute demo script
 
 1. **Landing page** — “Launch Live Demo” → instant admin session.
-2. **Dashboard** — population, revenue (TZS 59.6M collected), attendance 96%+,
+2. **Dashboard** — population, revenue (TZS 61.04M collected), attendance about 90%,
    live fee/attendance pulse chart.
-3. **Students** — search “Neema”, open a profile sheet, tap *Synthesize* to generate
+3. **Students** — search `ALT-2026-005` (AUGUSTINO CASTRO SWAI, **Form 1**), open the profile sheet, tap *Synthesize* to generate
    an AI progress narrative (offline fallback text), export the report card.
 4. **Academics** — Form 4 / Term 2 / Annual: class rankings, Division I–IV
    classification, subject performance matrix, NECTA-compliant export.
@@ -145,9 +147,50 @@ chosen, a toast offers "Enable motion" / "Keep it still" — the page is never
 silently frozen. With motion off, every reveal, marquee and counter still shows
 its final state.
 
-Photography lives in `public/landing/` (`hero-classroom`, `hands-ledger`,
-`school-facade`, `teacher-portrait`, `paper-stack`), served through
-`next/image` with real `sizes`, one `priority` image, everything else lazy.
+Placeholder photography ships in `public/landing/` (`hero-classroom`,
+`hands-ledger`, `school-facade`, `teacher-portrait`, `paper-stack`, …), served
+through `next/image` with real `sizes`, one `priority` image, everything else
+lazy. **These are placeholders, not photographs of a real school** — replace them
+before showing the page to anyone outside the demo.
+
+### Editing the landing page (no code)
+
+**Settings → Landing Page** is the content studio. An administrator can edit:
+
+| Group | What is editable |
+|---|---|
+| Identity | School name, brand tagline |
+| Font choice | **Register** (Space Grotesk + Inter), **Gazette** (Instrument Serif headlines + Inter), **Signal** (Inter throughout) |
+| Hero copy | Kicker, three headline lines, paragraph, both buttons, photo caption |
+| Register numbers | The four counted-up figures with their labels and notes |
+| Photography | All **14** slots — upload, hosted URL, alt text, per-slot reset |
+| Section copy | Every section label / title / accent / note, the interlude and the footer |
+
+**Publish landing page** writes `schools/school-001/config/landing` (public read,
+admin write). The public page merges those overrides over the shipped defaults,
+so an empty or half-written document can never break the page. An
+**Unpublished changes** badge appears until the draft is published, and
+**View published** opens the live page rather than the draft.
+
+Fonts are self-hosted through Fontsource (`@fontsource-variable/inter`,
+`@fontsource-variable/space-grotesk`, `@fontsource-variable/jetbrains-mono`,
+`@fontsource/instrument-serif`) — no Google Fonts CDN call, no layout shift from a
+third-party round trip. The pairing is applied with `data-font` on `.landing`.
+
+Photograph uploads are downscaled to 1600 px and stripped of EXIF in the browser
+before they leave the machine (5 MB / image-type guard). In production they go to
+Cloudinary, or Firebase Storage when Cloudinary is not configured. In demo mode
+the blob is kept in IndexedDB (`shule-altra.demo.media`) and the document stores
+only a short `demo-media:` reference — localStorage cannot hold 14 photographs
+alongside the seeded database (~1.3 MB already), so this is what makes uploads
+survive a reload without exhausting the ~5 MB quota. Browsers that block
+IndexedDB fall back to an inline data URL for the session. **Reset** on a slot
+deletes its stored blob. Learner faces still require guardian consent before
+publication.
+
+```bash
+npm run demo:smoke:landing  # content merge, image slots, fonts, media refs
+```
 
 ### One palette, both sides of the door
 
@@ -173,6 +216,25 @@ header read as the same brand. The landing page borrows the same mark as
 printables were regenerated from the updated `COLORS` map, so printed documents
 match the screen.
 
+### Plain language, and only claims we can back
+
+The demo used to label ordinary school things with techno-jargon ("Student
+Node", "Male Node", "Sovereign Verification Gateway", "Institutional Matrix
+Hub"). All of it is now plain: **Students**, **Male**, **Staff**, **Canteen**,
+**Daily register**. `npm run demo:smoke:copy` fails the build if that language
+returns — it inspects string literals and JSX text only, so identifiers such as
+`node.current` are never flagged.
+
+The same suite blocks claims about things that were never built:
+
+| Claim that was removed | What is actually true |
+|---|---|
+| "Parent alerts dispatched via national gateways" | The event is forwarded to an optional n8n webhook; the toast reports whether it was accepted. No SMS provider exists. |
+| "Immutable audit trail" / "every export written to the log" | There is no audit-log writer. Payments do record `recordedBy`, and access is role-scoped. |
+| Hostel inspections showing *Verified / Stable / Normal* | A matron ticks each check and **Record inspection** saves it to the wing with a timestamp. |
+| "Gateway: Online", "SMS Node: 150 parents" | Real counts: guardian contacts on file, learners on the register. |
+
+
 ## 7. The command deck (GSAP + Three.js admin)
 
 The dashboard is a full re-skin of the admin shell, not a static mock-up:
@@ -181,16 +243,25 @@ The dashboard is a full re-skin of the admin shell, not a static mock-up:
 |---|---|
 | **Aurora shell** | App-shell layout: the rail is fixed furniture at `100dvh` and only the content column scrolls (it owns the scroll and resets it per route). Static, always-visible sidebar with a sliding active pill (Framer Motion `layoutId`), a quiet GSAP opacity stagger on first paint and a spring mobile drawer. The rail never resizes and never moves — scrolling can no longer push it off-screen. |
 | **Topbar** | ⌘K command palette (searches modules **and** learner records), reporting-window selector (7D / 30D / 90D / term), live notification stream derived from the ledger, light/midnight theme switch. |
-| **Route transitions** | `AnimatePresence` crossfade per pathname + GSAP `[data-reveal]` stagger for each section. |
+| **Route transitions** | `AnimatePresence` crossfade per pathname + GSAP `[data-reveal]` stagger, with a CSS entrance stagger for the other dashboard screens. |
 | **Command deck** | Three.js wireframe orb (pointer parallax, particle halo, WebGL-guarded fallback), animated KPI tiles with count-up + SVG progress rings + sparklines, collections chart with range filters, draggable follow-up queue. |
 | **Analytics studio** | `/dashboard/analytics` — cohort averages by stream, payment-method mix, presence trend, and two vector-PDF exports. |
+| **Shared motion** | `AnimatedNumber` counts from zero on arrival and from the current value on live updates. `Progress` animates the fill while exposing the real target to assistive technology; `SegmentedProgress` animates grade distributions. Used across finance, attendance, academics, boarding, transport, canteen, inventory, reports, staff, timetable, communications and settings. |
 
 The reporting window selected in the topbar is shared through `RangeProvider`, so
 the KPI tiles, the chart and the analytics filters stay in sync.
 
-**Reduced motion** and **no-WebGL** environments are handled: `prefers-reduced-motion`
-disables the GSAP sweeps, and the Three.js scene falls back to a CSS aurora when
-`WebGLRenderingContext` is missing (which is also what keeps the JSDOM suites quiet).
+**Reduced motion** and **no-WebGL** environments are handled: a live
+`prefers-reduced-motion` preference lands counters, progress fills, charts, route
+transitions and GSAP reveals immediately; the orb renders a still frame. The
+Three.js scene falls back to a CSS aurora when `WebGLRenderingContext` is missing
+(which is also what keeps the JSDOM suites quiet).
+
+```bash
+npm run demo:smoke:olevel  # registry/profile/timetable/cache/filter regressions
+npm run demo:smoke:motion  # count-up, progress, clamping and reduced motion
+npm run demo:smoke:copy    # plain language + no invented capabilities
+```
 
 ## 8. Vector printables (no screenshots)
 

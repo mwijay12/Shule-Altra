@@ -5,7 +5,6 @@ import * as React from "react"
 import { useState, useMemo, useEffect } from "react"
 import { 
   Search, 
-  Smartphone, 
   CheckCircle2, 
   Clock,
   CalendarDays,
@@ -16,13 +15,14 @@ import {
   MessageCircle,
   Zap,
   AlertCircle,
-  Globe,
   Loader2
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
@@ -60,7 +60,7 @@ export default function AttendancePage() {
     ? (students.filter((student) => student.attendanceStatus !== "Absent").length / students.length) * 100
     : 0
 
-  const handleStatusChange = (studentId: string, newStatus: string) => {
+  const handleStatusChange = async (studentId: string, newStatus: string) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     updateDocumentNonBlocking(doc(db, "schools", "school-001", "students", studentId), {
       attendanceStatus: newStatus,
@@ -68,14 +68,18 @@ export default function AttendancePage() {
     })
     
     if (newStatus === "Absent") {
-      triggerN8nWebhook("attendance-update", { 
-        studentId, 
-        status: "Absent", 
-        parentContact: students?.find(s => s.id === studentId)?.contact 
+      // The webhook returns false when automation is disabled or unconfigured —
+      // do not claim an alert went out when nothing was sent.
+      const forwarded = await triggerN8nWebhook("attendance-update", {
+        studentId,
+        status: "Absent",
+        parentContact: students?.find(s => s.id === studentId)?.contact
       })
       toast({
-        title: "Absence Logged",
-        description: "Parent notification queued via Beem Gateway.",
+        title: "Absence logged",
+        description: forwarded
+          ? "Forwarded to the automation webhook for guardian follow-up."
+          : "Saved to the register. Automation is off, so no alert was sent.",
       })
     }
   }
@@ -100,10 +104,10 @@ export default function AttendancePage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-2">
           <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 px-4 py-1 h-6 text-[9px] sm:text-[10px] font-black tracking-widest rounded-full shadow-sm uppercase">
-            <Database className="h-3.5 w-3.5 mr-2" /> OMNICHANNEL SYNC 2026
+            <Database className="h-3.5 w-3.5 mr-2" /> Daily register · 2026
           </Badge>
           <h1 className="text-3xl sm:text-4xl font-headline font-black text-primary tracking-tight">Daily Register</h1>
-          <p className="text-muted-foreground font-medium text-sm">Institutional Attendance Node • {identity?.name || "Sovereign Hub"}</p>
+          <p className="text-muted-foreground font-medium text-sm">Daily register · {identity?.name || "School"}</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto shrink-0">
           <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-12 px-6 border-primary/20 text-primary bg-white shadow-md font-black text-[10px] uppercase tracking-widest group">
@@ -117,10 +121,10 @@ export default function AttendancePage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Presence", value: `${presenceRate.toFixed(1)}%`, sub: "High Perf", color: "text-green-600", icon: Zap },
-          { label: "Absent", value: students?.filter(s => s.attendanceStatus === "Absent").length || "0", sub: "Action Req", color: "text-destructive", icon: AlertCircle },
-          { label: "SMS Node", value: `${students?.length || 0} Parents`, sub: "Beem Hub", color: "text-blue-600", icon: Smartphone },
-          { label: "Gateway", value: "Online", sub: "TZ Node", color: "text-primary", icon: Globe },
+          { label: "Presence", value: presenceRate, format: (n: number) => n.toFixed(1), suffix: "%", sub: "Not marked absent", color: "text-green-600", icon: Zap },
+          { label: "Absent", value: students?.filter(s => s.attendanceStatus === "Absent").length || 0, sub: "Follow up", color: "text-destructive", icon: AlertCircle },
+          { label: "Guardian contacts", value: students?.filter(s => s.contact)?.length || 0, sub: "On file", color: "text-blue-600", icon: MessageCircle },
+          { label: "On the register", value: students?.length || 0, sub: "Form 1–4", color: "text-primary", icon: Database },
         ].map((stat) => (
           <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
              <CardContent className="p-5 sm:p-6 relative overflow-hidden">
@@ -128,7 +132,8 @@ export default function AttendancePage() {
                   <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
                 </div>
                 <p className="text-[8px] sm:text-[10px] uppercase font-black text-muted-foreground tracking-widest">{stat.label}</p>
-                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{stat.value}</p>
+                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{typeof stat.value === "number" ? <AnimatedNumber value={stat.value} format={"format" in stat ? stat.format : undefined} suffix={"suffix" in stat ? stat.suffix : undefined} /> : stat.value}</p>
+                {stat.label === "Presence" && <Progress value={presenceRate} aria-label="Learner presence" className="mt-3 h-1.5 bg-muted/40" indicatorClassName="bg-emerald-500" />}
                 <p className="text-[8px] text-muted-foreground font-black mt-1 uppercase tracking-widest truncate">{stat.sub}</p>
              </CardContent>
           </Card>
@@ -144,7 +149,7 @@ export default function AttendancePage() {
               </div>
               <div className="overflow-hidden">
                 <CardTitle className="text-lg sm:text-xl font-black tracking-tight">{activeDate}</CardTitle>
-                <CardDescription className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-primary/60 truncate">Institutional Matrix Hub</CardDescription>
+                <CardDescription className="text-[9px] sm:text-[10px] uppercase font-black tracking-widest text-primary/60 truncate">Form 1–4 · day and boarding</CardDescription>
               </div>
             </div>
             <div className="flex gap-2 shrink-0">
@@ -167,7 +172,7 @@ export default function AttendancePage() {
           {isLoading ? (
             <div className="p-20 text-center flex flex-col items-center gap-4">
               <Loader2 className="animate-spin h-10 w-10 text-primary" />
-              <p className="text-[10px] font-black uppercase tracking-widest">Synchronizing Ledger...</p>
+              <p className="text-[10px] font-black uppercase tracking-widest">Loading the register…</p>
             </div>
           ) : (
             <div className="divide-y divide-muted/50 min-w-[600px]">
@@ -241,9 +246,9 @@ export default function AttendancePage() {
            <CloudOff className="h-6 w-6 sm:h-7 sm:w-7" />
          </div>
          <div className="space-y-1 overflow-hidden">
-           <p className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.2em]">Resilient Hub Protocol Active</p>
+           <p className="text-xs sm:text-sm font-black text-primary uppercase tracking-[0.2em]">How absence alerts work</p>
            <p className="text-[10px] sm:text-xs text-muted-foreground leading-relaxed max-w-sm font-medium mx-auto px-4">
-             Registers are synchronized with the 2026 Sovereign Ledger in real-time. Parent alerts are dispatched via high-priority national gateways.
+             Marking a learner absent saves it to the register immediately. If the automation webhook is enabled in Settings, the event is forwarded there; when it is off, no message is sent. Guardian emails are sent from Communications.
            </p>
          </div>
       </div>

@@ -13,8 +13,9 @@
  * and never depend on a third-party CDN being reachable from Dar es Salaam.
  */
 
-import Image from "next/image"
+import { LandingImage as Image } from "./image"
 import { Reveal } from "./reveal"
+import { useLandingContent } from "./content-provider"
 
 type Facility = {
   src: string
@@ -88,29 +89,46 @@ const FACILITIES: Facility[] = [
 ]
 
 export function SchoolLife() {
+  const content = useLandingContent()
+  const people = PEOPLE.map((person, index) => ({
+    ...person,
+    src: [content.images.learnerSenior, content.images.learnerJunior, content.images.learnerPortrait][index].src,
+    alt: [content.images.learnerSenior, content.images.learnerJunior, content.images.learnerPortrait][index].alt,
+  }))
+  const facilitySlots: Record<string, keyof typeof content.images> = {
+    "/media/campus/library.jpg": "library",
+    "/media/campus/science-lab.jpg": "scienceLab",
+    "/media/campus/computer-lab.jpg": "computerLab",
+    "/media/campus/dormitory.jpg": "dormitory",
+    "/media/campus/dining-hall.jpg": "diningHall",
+    "/media/campus/playing-field.jpg": "playingField",
+  }
+  const facilities = FACILITIES.map((facility) => {
+    const slot = facilitySlots[facility.src]
+    const image = slot ? content.images[slot] : undefined
+    return { ...facility, src: image?.src ?? facility.src, alt: image?.alt ?? facility.name }
+  })
   return (
     <section className="sd-section" id="campus" data-period="12:40 · Lunch">
       <header className="sd-head">
         <Reveal>
-          <span className="sd-label">12:40 — lunch</span>
+          <span className="sd-label">{content.sections.campus.label}</span>
         </Reveal>
         <Reveal delay={70}>
           <h2 className="sd-h2">
-            The rooms the record <em className="sd-serif">comes from</em>.
+            {content.sections.campus.title} <em className="sd-serif">{content.sections.campus.accent}</em>.
           </h2>
         </Reveal>
         <Reveal delay={130}>
           <p className="sd-note">
-            Six rooms and three faces. Nothing here is a stock photograph of somebody else’s
-            school — the rooms are the ones a Tanzanian secondary school actually runs, and each
-            one has a module that keeps it accountable.
+            {content.sections.campus.note}
           </p>
         </Reveal>
       </header>
 
       <div className="sd-life">
         <div className="sd-life-people">
-          {PEOPLE.map((person, index) => (
+          {people.map((person, index) => (
             <Reveal key={person.src} delay={index * 80} className="sd-life-person">
               <div className="sd-life-frame">
                 <Image
@@ -129,7 +147,7 @@ export function SchoolLife() {
         </div>
 
         <div className="sd-life-grid">
-          {FACILITIES.map((facility, index) => (
+          {facilities.map((facility, index) => (
             <Reveal
               key={facility.src}
               delay={index * 60}
@@ -138,7 +156,7 @@ export function SchoolLife() {
               <div className="sd-tile-frame">
                 <Image
                   src={facility.src}
-                  alt={facility.name}
+                  alt={facility.alt || facility.name}
                   fill
                   sizes="(max-width: 860px) 92vw, (max-width: 1200px) 45vw, 30vw"
                   className="sd-life-img"

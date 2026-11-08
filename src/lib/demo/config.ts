@@ -9,8 +9,8 @@ export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE !== 'false';
 export const DEMO_SCHOOL_NAME = 'MWALIMU NYERERE SECONDARY SCHOOL';
 
 export const DEMO_HIGHLIGHTS = [
-  '150 students across Standard 7 → Form 4',
-  '2,700+ NECTA-aligned assessment records',
-  '140 forensic fee transactions with control numbers',
-  'Boarding, fleet, canteen & inventory nodes',
+  '150 O-level students across Form 1 → Form 4',
+  '2,932 NECTA-aligned assessment records',
+  '140 fee transactions with control numbers',
+  'Boarding, transport, canteen & inventory',
 ];

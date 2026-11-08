@@ -23,22 +23,31 @@ instant administrator session. One-click demo roles:
 | Teacher | `teacher@shule.pro` | Students, attendance, academics |
 | Bursar | `bursar@shule.pro` | Finance, canteen, boarding |
 
-The demo school (**Mwalimu Nyerere Secondary School**, Kinondoni) is seeded with
-150 students, 2,788 NECTA assessment records, 140 fee transactions, 900 attendance
-records, 5 hostel wings, 5 bus routes and more. All of it lives in `localStorage`
+The demo school (**Mwalimu Nyerere Secondary School**, Kinondoni) is **O-level only:
+Form 1–4**, matching the timetable. It is seeded with 150 learners, 2,932 NECTA
+assessment records, 140 fee transactions, 900 attendance records, 5 hostel wings
+(101 boarders), 5 bus routes (49 day learners) and more. All of it lives in `localStorage`
 behind a Firestore-compatible shim, so real-time updates, batches and transactions
 all behave normally.
 
+* **Editable landing page:** **Settings → Landing Page** edits the public copy,
+  the four headline figures, the font pairing (three self-hosted pairings) and all
+  14 photographs by upload or hosted URL. The shipped images are placeholders —
+  replace them with your own consented photography before going public.
 * **Full walkthrough:** [`DEMO.md`](./DEMO.md)
 * **Showcase script (15 min, Kiswahili):** [`docs/SHOWCASE.md`](./docs/SHOWCASE.md) — what to open, what to say, what not to promise
 * **Going live in Tanzania:** [`docs/GO-LIVE-TZ.md`](./docs/GO-LIVE-TZ.md) — channels (Resend vs SMS), Cloudinary photos, pricing, pain points, the P0 fix list and an 8-week plan
 * **Admin shell:** GSAP + Three.js command deck, ⌘K palette, animated sidebar,
-  range-filtered collections chart, draggable follow-up queue and midnight theme
+  range-filtered collections chart, draggable follow-up queue and midnight theme;
+  shared count-up numbers and animated progress bars across dashboard screens,
+  with live `prefers-reduced-motion` support
 * **Vector printables:** `npm run demo:pdf` + `npm run demo:reports` generate fee
   statements, report cards, merit rankings, attendance registers, A4 ID cards, the
   master timetable and all 10 Reports-centre documents with `pdf-lib` (real text,
   school crest, no screenshots) → samples in `private/printables/`, served through the role gate (`npm run demo:docs`)
-* **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`, `npm run demo:pdf`
+* **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`,
+  `npm run demo:smoke:olevel`, `npm run demo:smoke:motion`,
+  `npm run demo:smoke:landing`, `npm run demo:smoke:copy`, `npm run demo:pdf`
 * **Mail room:** `/dashboard/communications` sends branded, role-scoped email to
   guardians and staff (fee reminder, absence alert, report card, receipts, staff
   briefing, timetable change) — preview first, then Nodemailer over SMTP
@@ -211,7 +220,7 @@ project-root/
 Stores the unified student registry.
 *   `id`: string (e.g., "ALT-2026-001") — **Primary Index**
 *   `name`: string (Upper Case)
-*   `class`: string (e.g., "Standard 7")
+*   `class`: string (demo: "Form 1"–"Form 4"; live schools use their configured tiers)
 *   `type`: "Boarder" | "Day"
 *   `balance`: number — **Indexed for financial reporting**
 *   `photo`: base64 — Institutional ID photo

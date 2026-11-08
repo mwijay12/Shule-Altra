@@ -46,6 +46,7 @@ import { usePettyCash } from "@/hooks/use-petty-cash"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, doc, Timestamp } from "firebase/firestore"
 import { Progress } from "@/components/ui/progress"
+import { AnimatedNumber } from "@/components/ui/animated-number"
 import type { Transaction } from "@/types/finance"
 import type { Student } from "@/types/student"
 
@@ -145,7 +146,7 @@ export default function FinancePage() {
             Institutional Financial Registry • 2026
           </Badge>
           <h1 className="text-2xl sm:text-3xl font-headline font-black text-primary tracking-tight">Revenue Assurance</h1>
-          <p className="text-muted-foreground font-medium text-xs sm:text-sm max-w-xl leading-relaxed uppercase tracking-tighter">Immutable audit trail and real-time fee reconciliation hub.</p>
+          <p className="text-muted-foreground font-medium text-xs sm:text-sm max-w-xl leading-relaxed uppercase tracking-tighter">Fee collection, reconciliation and statements — every entry tied to a learner.</p>
         </div>
         
         <div className="flex items-center gap-4 bg-primary p-6 rounded-3xl text-white shadow-xl min-w-[280px]">
@@ -154,10 +155,8 @@ export default function FinancePage() {
           </div>
           <div>
             <p className="text-[9px] font-black uppercase text-white/60 tracking-widest">Collection Rate</p>
-            <p className="text-2xl font-black">{collectionRate.toFixed(1)}%</p>
-            <div className="w-full bg-white/20 h-1 rounded-full mt-2 overflow-hidden">
-              <div className="bg-white h-full transition-all duration-1000" style={{ width: `${collectionRate}%` }} />
-            </div>
+            <p className="text-2xl font-black"><AnimatedNumber value={collectionRate} format={(n) => n.toFixed(1)} suffix="%" /></p>
+            <Progress value={collectionRate} aria-label="Fee collection rate" className="mt-2 h-1 bg-white/20" indicatorClassName="bg-white" />
           </div>
         </div>
       </div>
@@ -166,16 +165,18 @@ export default function FinancePage() {
         {[
           {
             title: "Revenue (7D)",
-            value: formatTZSCompact(weeklyTotal),
+            value: weeklyTotal,
+            format: formatTZSCompact,
             exact: formatTZS(weeklyTotal),
             icon: Zap,
             color: "text-green-600",
           },
-          { title: "Audit Disputions", value: disputed, icon: AlertTriangle, color: "text-destructive" },
-          { title: "Pending Hub Sync", value: pending, icon: History, color: "text-primary" },
+          { title: "Audit Disputes", value: disputed, format: undefined, icon: AlertTriangle, color: "text-destructive" },
+          { title: "Awaiting confirmation", value: pending, format: undefined, icon: History, color: "text-primary" },
           {
             title: "Outstanding Fees",
-            value: formatTZSCompact(outstanding),
+            value: outstanding,
+            format: formatTZSCompact,
             exact: formatTZS(outstanding),
             icon: Scale,
             color: "text-orange-600",
@@ -193,7 +194,7 @@ export default function FinancePage() {
                     stat.color
                   )}
                 >
-                  {stat.value}
+                  <AnimatedNumber value={stat.value} format={stat.format} />
                 </span>
               </div>
               {"exact" in stat ? (
@@ -218,21 +219,21 @@ export default function FinancePage() {
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/60 backdrop-blur-md">
             <CardHeader className="bg-muted/30 p-6 sm:p-10 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
               <div>
-                <CardTitle className="text-xl font-black uppercase tracking-tight">Institutional Audit Matrix</CardTitle>
+                <CardTitle className="text-xl font-black uppercase tracking-tight">Transaction ledger</CardTitle>
                 <CardDescription className="text-[10px] font-bold uppercase tracking-widest text-primary/60">Live verification of student fee status</CardDescription>
               </div>
               <Button 
                 onClick={() => exportToExcel(students || [], "Financial_Audit_Ledger")}
                 className="h-12 rounded-full colorful-gradient font-black text-[10px] uppercase px-8 shadow-xl"
               >
-                <FileSpreadsheet className="h-4 w-4 mr-2" /> Export Audit Node
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Export ledger
               </Button>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <Table className="min-w-[800px]">
                 <TableHeader className="bg-muted/10">
                   <TableRow className="border-none h-14">
-                    <TableHead className="pl-10 text-[9px] font-black uppercase tracking-widest">Student Node</TableHead>
+                    <TableHead className="pl-10 text-[9px] font-black uppercase tracking-widest">Student</TableHead>
                     <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Expected</TableHead>
                     <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Collected</TableHead>
                     <TableHead className="text-[9px] font-black uppercase tracking-widest text-center">Balance</TableHead>
@@ -241,7 +242,7 @@ export default function FinancePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={5} className="h-32 text-center"><Loader2 className="animate-spin inline mr-2" /> Synchronizing Ledger...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={5} className="h-32 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading transactions…</TableCell></TableRow>
                   ) : students?.map((s) => (
                     <TableRow key={s.id} className="group border-b last:border-none hover:bg-primary/[0.02]">
                       <TableCell className="pl-10 py-6">
@@ -283,7 +284,7 @@ export default function FinancePage() {
                   <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Target Student</Label>
                   <Select name="studentId" required>
                     <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold">
-                      <SelectValue placeholder="Select candidate node..." />
+                      <SelectValue placeholder="Select a student…" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl">
                       {students?.map(s => <SelectItem key={s.id} value={s.id}>{s.name} ({s.id})</SelectItem>)}
@@ -297,8 +298,8 @@ export default function FinancePage() {
                       <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold"><SelectValue /></SelectTrigger>
                       <SelectContent className="rounded-xl">
                         <SelectItem value="Tuition">Tuition Fee</SelectItem>
-                        <SelectItem value="Boarding">Boarding Hub</SelectItem>
-                        <SelectItem value="Transport">Fleet Node</SelectItem>
+                        <SelectItem value="Boarding">Boarding</SelectItem>
+                        <SelectItem value="Transport">Transport</SelectItem>
                         <SelectItem value="Exam Fee">Assessment Fee</SelectItem>
                       </SelectContent>
                     </Select>
@@ -328,7 +329,7 @@ export default function FinancePage() {
                   <div className="relative z-10 space-y-8">
                     <div className="flex justify-between items-start">
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Official Bill Node</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/60">Official bill</p>
                         <h3 className="text-3xl font-black tracking-tighter">{formatTZS(activeBill.amount)}</h3>
                       </div>
                       <Badge className="bg-white/20 text-white border-none px-4 py-1 rounded-full font-black text-[9px] uppercase">EXPIRY: {activeBill.expiresAt.toLocaleDateString('en-TZ')}</Badge>
@@ -337,11 +338,11 @@ export default function FinancePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                       <div className="bg-white p-6 rounded-[2rem] shadow-2xl flex flex-col items-center gap-4">
                         <img src={activeBill.qrCodeUrl} alt="Scan to pay" className="h-40 w-40" />
-                        <p className="text-[10px] font-black text-primary uppercase">Scan to Pay Node</p>
+                        <p className="text-[10px] font-black text-primary uppercase">Scan to pay</p>
                       </div>
                       <div className="space-y-6">
                         <div className="p-6 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/10">
-                          <p className="text-[10px] font-black uppercase text-white/60 mb-2">USSD Payment Node</p>
+                          <p className="text-[10px] font-black uppercase text-white/60 mb-2">USSD payment</p>
                           <code className="text-2xl font-black tracking-widest">{activeBill.ussdCode}</code>
                         </div>
                         <div className="p-6 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/10 group cursor-pointer" onClick={() => copyToClipboard(activeBill.controlNumber)}>
@@ -391,7 +392,7 @@ export default function FinancePage() {
               <form onSubmit={handleProcessManualPayment} className="space-y-8">
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Candidate Node</Label>
+                    <Label className="text-[10px] font-black uppercase text-muted-foreground ml-1">Student</Label>
                     <Select name="studentId" required>
                       <SelectTrigger className="h-14 rounded-2xl bg-muted/20 border-none font-bold text-lg px-6"><SelectValue placeholder="Identify student..." /></SelectTrigger>
                       <SelectContent className="rounded-2xl">
@@ -478,8 +479,8 @@ export default function FinancePage() {
               <Table className="min-w-[1000px]">
                 <TableHeader className="bg-muted/10">
                   <TableRow className="border-none h-14">
-                    <TableHead className="pl-10 text-[9px] font-black uppercase">Identity Node</TableHead>
-                    <TableHead className="text-[9px] font-black uppercase">Candidate Node</TableHead>
+                    <TableHead className="pl-10 text-[9px] font-black uppercase">Reference</TableHead>
+                    <TableHead className="text-[9px] font-black uppercase">Student</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-center">Amount</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-center">Category</TableHead>
                     <TableHead className="text-[9px] font-black uppercase text-center">Status</TableHead>
@@ -488,7 +489,7 @@ export default function FinancePage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-[10px] font-black uppercase tracking-widest"><Loader2 className="animate-spin inline mr-2" /> Syncing Audit Nodes...</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={6} className="h-48 text-center text-[10px] font-black uppercase tracking-widest"><Loader2 className="animate-spin inline mr-2" /> Loading transactions…</TableCell></TableRow>
                   ) : filteredTransactions.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground uppercase text-[10px] font-black tracking-widest">No verified transactions identified.</TableCell></TableRow>
                   ) : filteredTransactions.map((tx) => (
@@ -543,7 +544,7 @@ export default function FinancePage() {
                                   </div>
                                   <div className="space-y-1">
                                     <DialogTitle className="text-xl font-black uppercase">Payment Receipt</DialogTitle>
-                                    <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Verified Institutional Node</DialogDescription>
+                                    <DialogDescription className="text-[10px] font-bold uppercase tracking-widest">Payment receipt</DialogDescription>
                                   </div>
                                   <div className="p-8 rounded-[2rem] bg-muted/20 border-2 border-dashed border-muted text-left space-y-4">
                                      <div className="flex justify-between items-center text-[10px] font-black uppercase text-muted-foreground border-b border-muted pb-2">
@@ -551,7 +552,7 @@ export default function FinancePage() {
                                         <code className="text-primary">{tx.controlNumber}</code>
                                      </div>
                                      <div className="flex justify-between items-center text-[10px] font-black uppercase">
-                                        <span className="text-muted-foreground">Payer Node</span>
+                                        <span className="text-muted-foreground">Payer</span>
                                         <span>{tx.studentName}</span>
                                      </div>
                                      <div className="flex justify-between items-center text-[10px] font-black uppercase">

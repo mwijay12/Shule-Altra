@@ -40,7 +40,7 @@ export function useIntegrations() {
   }, [db, schoolId]);
 
   const updateConfig = async (updates: Partial<IntegrationConfig>) => {
-    if (!schoolId) throw new Error('Institutional node not identified.');
+    if (!schoolId) throw new Error('No school is signed in.');
     if (role !== 'ADMIN') {
       throw new Error('Unauthorized: ONLY the Hub Administrator can modify these settings.');
     }
@@ -53,7 +53,7 @@ export function useIntegrations() {
       });
     } catch (err) {
       console.error('[INTEGRATIONS] Update error:', err);
-      throw new Error('Failed to synchronize configuration node.');
+      throw new Error('Could not load the automation settings.');
     }
   };
 

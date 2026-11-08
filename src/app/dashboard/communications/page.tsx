@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { useToast } from "@/hooks/use-toast";
 
 type Template = {
@@ -296,9 +297,9 @@ export default function CommunicationsPage() {
                     </h2>
                     <p className="mt-1 text-[10px] font-medium leading-relaxed text-muted-foreground">
                       {AUDIENCE_LABEL[template.audience] ?? template.audience} ·{" "}
-                      <span className="text-foreground">{template.audienceSize}</span> recipients
+                      <AnimatedNumber value={template.audienceSize} className="text-foreground" /> recipients
                       {template.sendable < template.audienceSize ? (
-                        <span className="text-amber-600"> · {template.sendable} per click</span>
+                        <span className="text-amber-600"> · <AnimatedNumber value={template.sendable} /> per click</span>
                       ) : null}
                     </p>
                     <p className="mt-1 font-mono text-[9px] text-muted-foreground/80">

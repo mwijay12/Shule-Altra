@@ -30,6 +30,8 @@ import { RevenueChart, formatCompactTzs } from '@/components/admin/revenue-chart
 import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range-context';
 import { downloadClassRanking, downloadAttendanceRegister } from '@/lib/pdf/class-report';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { AnimatedNumber } from '@/components/ui/animated-number';
 
 const PIE_COLORS = ['hsl(214 85% 58%)', 'hsl(264 82% 66%)', 'hsl(160 74% 44%)', 'hsl(38 90% 55%)', 'hsl(340 75% 60%)', 'hsl(190 80% 45%)'];
 
@@ -43,6 +45,7 @@ function toDate(value: any): Date | null {
 
 export default function AnalyticsPage() {
   const db = useFirestore();
+  const reducedMotion = useReducedMotion();
   const { toast } = useToast();
   const { range, setRange, days, label } = useRange();
   const [exporting, setExporting] = React.useState<'ranking' | 'register' | null>(null);
@@ -238,7 +241,7 @@ export default function AnalyticsPage() {
           </p>
           <h2 className="mt-1 flex items-center gap-2 text-[15px] text-foreground">
             <Sparkles className="h-4 w-4 text-accent" />
-            {label} · {perLearner.length} learners with assessments
+            {label} · <AnimatedNumber value={perLearner.length} /> learners with assessments
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-border/70 bg-muted/25 p-1">
@@ -321,6 +324,7 @@ export default function AnalyticsPage() {
                   innerRadius="58%"
                   outerRadius="82%"
                   paddingAngle={3}
+                  isAnimationActive={!reducedMotion}
                   animationDuration={700}
                 >
                   {paymentMix.map((entry, index) => (
@@ -389,7 +393,8 @@ export default function AnalyticsPage() {
                   contentStyle={{ borderRadius: 16, fontSize: 10, fontWeight: 700 }}
                   cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
                 />
-                <Bar dataKey="average" fill="url(#barFill)" radius={[8, 8, 0, 0]} animationDuration={700} />
+                <Bar dataKey="average" fill="url(#barFill)" radius={[8, 8, 0, 0]} isAnimationActive={!reducedMotion}
+                  animationDuration={700} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -442,6 +447,7 @@ export default function AnalyticsPage() {
                   stroke="hsl(160 74% 44%)"
                   strokeWidth={2.4}
                   dot={false}
+                  isAnimationActive={!reducedMotion}
                   animationDuration={700}
                 />
               </LineChart>
