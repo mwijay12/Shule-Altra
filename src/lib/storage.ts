@@ -1,6 +1,7 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { initializeFirebase } from '@/firebase';
 import { photoCaptureAllowed } from '@/lib/media/policy';
+import { DEMO_MODE } from '@/lib/demo/config';
 
 const { storage } = initializeFirebase();
 
@@ -29,6 +30,13 @@ export async function uploadStudentPhoto(
 
   const compressed = await compressImage(file, 400, 400);
 
+  // Demo mode has no bucket to upload to, and a photographer should not need one
+  // to see a photograph on a card. The re-encoded JPEG is inlined as a data URL
+  // instead: same 400 px, same stripped metadata, same consent record — just
+  // carried by the document rather than by Storage. Production (DEMO_MODE=false)
+  // always goes to Storage; there is no silent fallback there.
+  if (DEMO_MODE) return blobToDataUrl(compressed);
+
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
   const storageRef = ref(requireStorage(), path);
   await uploadBytes(storageRef, compressed, {
@@ -42,8 +50,12 @@ export async function deleteStudentPhoto(
   schoolId: string,
   studentId: string
 ): Promise<void> {
+  // In demo mode the photograph travels inside the document, so clearing the
+  // field is the deletion. Nothing is left behind to erase.
+  if (DEMO_MODE || !storage) return;
+
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
-  const storageRef = ref(requireStorage(), path);
+  const storageRef = ref(storage, path);
   try {
     await deleteObject(storageRef);
   } catch (e) {
@@ -61,6 +73,16 @@ export async function deleteStudentPhoto(
  * no location, no device, no timestamp. Never "optimise" this into an upload of
  * the raw file.
  */
+/** A Blob as a data URL — how the demo carries a photograph without a bucket. */
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(reader.error ?? new Error('Could not read the compressed photograph'));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function compressImage(file: File, maxWidth: number, maxHeight: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
