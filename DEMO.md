@@ -290,7 +290,11 @@ npm run build             # production build
 
 `demo:smoke` boots the real page components against the demo Firestore shim and
 asserts that each of the 16 dashboard screens (including the new
-`/dashboard/analytics` studio) plus `/login` renders without console errors. `demo:smoke:data` checks the 150-student registry, fee
+`/dashboard/analytics` studio) plus `/login` renders without console errors. It
+closes with a **KPI FIT** block: the finance and dashboard tiles must show compact
+money (`TZS 57.8M`), the exact figure must still be reachable (`TZS 57,847,000`),
+no money token may be ellipsised, and `formatTZSCompact` is checked against seven
+amounts including a negative and a billion. `demo:smoke:data` checks the 150-student registry, fee
 reconciliation totals, petty cash, integrations, student balance history, the
 role access matrix (teacher cannot open finance/settings), live snapshot updates
 after writes, and sign-out.
