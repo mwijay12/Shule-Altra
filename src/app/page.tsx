@@ -23,6 +23,7 @@ import { Hero } from "@/components/landing/hero"
 import { Timetable } from "@/components/landing/timetable"
 import { DayStory } from "@/components/landing/day-story"
 import { DocCards } from "@/components/landing/doc-cards"
+import { SchoolLife } from "@/components/landing/school-life"
 import { Interlude } from "@/components/landing/interlude"
 import {
   Banknote,
@@ -396,6 +397,8 @@ function Landing() {
           </header>
           <DocCards />
         </section>
+
+        <SchoolLife />
 
         <Interlude />
 

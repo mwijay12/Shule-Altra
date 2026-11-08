@@ -2,6 +2,12 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import { initializeFirebase } from '@/firebase';
 import { photoCaptureAllowed } from '@/lib/media/policy';
 import { DEMO_MODE } from '@/lib/demo/config';
+import {
+  cloudinaryConfigured,
+  cloudinaryPublicId,
+  isCloudinaryUrl,
+  uploadToCloudinary,
+} from '@/lib/media/cloudinary';
 
 const { storage } = initializeFirebase();
 
@@ -30,11 +36,22 @@ export async function uploadStudentPhoto(
 
   const compressed = await compressImage(file, 400, 400);
 
-  // Demo mode has no bucket to upload to, and a photographer should not need one
-  // to see a photograph on a card. The re-encoded JPEG is inlined as a data URL
-  // instead: same 400 px, same stripped metadata, same consent record — just
-  // carried by the document rather than by Storage. Production (DEMO_MODE=false)
-  // always goes to Storage; there is no silent fallback there.
+  // Where the bytes land, in order of preference:
+  //
+  //  1. Cloudinary, when the school has an unsigned upload preset. This is the
+  //     one that works on Firebase's free Spark plan, where Storage is not
+  //     included at all — the upload otherwise fails as if the rules were wrong.
+  //  2. Demo mode: the JPEG is inlined as a data URL, so the showcase needs no
+  //     bucket, no preset and no CORS rule to get wrong.
+  //  3. Firebase Storage, for a project that has it.
+  if (cloudinaryConfigured()) {
+    const upload = await uploadToCloudinary(compressed, {
+      folder: `schools/${schoolId}/students`,
+      publicId: studentId,
+    });
+    return upload.url;
+  }
+
   if (DEMO_MODE) return blobToDataUrl(compressed);
 
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
@@ -46,10 +63,35 @@ export async function uploadStudentPhoto(
   return await getDownloadURL(storageRef);
 }
 
+/**
+ * Erase a learner's photograph from wherever it actually lives.
+ *
+ * The caller passes the URL that is stored on the document, because that is the
+ * only way to know whether this is a Cloudinary delivery URL, a Firebase object
+ * or an inlined data URL. Withdrawal of consent is a button, so this must not
+ * guess.
+ */
 export async function deleteStudentPhoto(
   schoolId: string,
-  studentId: string
+  studentId: string,
+  photoUrl?: string | null
 ): Promise<void> {
+  // Cloudinary needs a signed destroy, which can only be built server-side.
+  if (isCloudinaryUrl(photoUrl)) {
+    const publicId = cloudinaryPublicId(photoUrl as string);
+    if (!publicId) return;
+    const response = await fetch('/api/media/delete', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ publicId }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json().catch(() => ({}))) as { error?: string };
+      throw new Error(payload.error ?? 'Cloudinary refused to delete the photograph.');
+    }
+    return;
+  }
+
   // In demo mode the photograph travels inside the document, so clearing the
   // field is the deletion. Nothing is left behind to erase.
   if (DEMO_MODE || !storage) return;
@@ -61,6 +103,13 @@ export async function deleteStudentPhoto(
   } catch (e) {
     // Ignore if file doesn't exist
   }
+}
+
+/** Which keeper is active this build — surfaced in Settings and the docs. */
+export function photoStorageProvider(): 'cloudinary' | 'firebase' | 'inline-demo' | 'none' {
+  if (cloudinaryConfigured()) return 'cloudinary';
+  if (DEMO_MODE) return 'inline-demo';
+  return storage ? 'firebase' : 'none';
 }
 
 /**

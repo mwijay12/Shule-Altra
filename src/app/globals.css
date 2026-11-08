@@ -91,6 +91,34 @@
   animation: pulse-soft 4s ease-in-out infinite;
 }
 
+/* ----------------------------------------------------------------------------
+   One entrance for every dashboard screen.
+
+   Some pages animated their KPI strip and left the rest of the module static, so
+   moving from Finance to Canteen felt like leaving a finished product for a
+   draft. The layout gives each screen the same 480 ms rise, with its top-level
+   blocks staggered, so a short page and a dense page arrive the same way.
+   -------------------------------------------------------------------------- */
+@keyframes sd-page-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.sd-page-enter > * {
+  animation: sd-page-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sd-page-enter > *:nth-child(2) { animation-delay: 60ms; }
+.sd-page-enter > *:nth-child(3) { animation-delay: 120ms; }
+.sd-page-enter > *:nth-child(4) { animation-delay: 170ms; }
+.sd-page-enter > *:nth-child(n + 5) { animation-delay: 220ms; }
+
 .colorful-gradient {
   /* blue → deep indigo: one tonal ramp, no neon end-stop. */
   background: linear-gradient(135deg, #1f5ba6 0%, #7c5ae0 100%);
@@ -288,9 +316,163 @@ html[data-scroll-locked] .app-scroll {
   .sheen::after,
   .hover-lift,
   .animate-float,
-  .animate-pulse-soft {
+  .animate-pulse-soft,
+  .sd-page-enter > * {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+
+/* ----------------------------------------------------------------------------
+   Period five — the place. Photography band.
+   Muted by default, full colour under the pointer: the page stays editorial
+   until you look directly at a room.
+   -------------------------------------------------------------------------- */
+.sd-life {
+  margin-top: clamp(2.4rem, 5vw, 4rem);
+  display: grid;
+  gap: clamp(1.6rem, 3vw, 2.6rem);
+}
+
+.sd-life-people {
+  display: grid;
+  gap: clamp(0.9rem, 2vw, 1.4rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.sd-life-person {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.sd-life-frame {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.sd-life-img {
+  object-fit: cover;
+  filter: saturate(0.72) contrast(1.02);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
+}
+
+.sd-life-person:hover .sd-life-img,
+.sd-tile:hover .sd-life-img {
+  transform: scale(1.035);
+  filter: saturate(1) contrast(1.02);
+}
+
+.sd-life-name {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mark);
+}
+
+.sd-life-note {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+.sd-life-grid {
+  display: grid;
+  gap: clamp(0.9rem, 2vw, 1.4rem);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.sd-tile {
+  grid-column: span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.sd-tile-wide {
+  grid-column: span 3;
+}
+
+.sd-tile-frame {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+.sd-tile-module {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(10, 16, 26, 0.72);
+  backdrop-filter: blur(6px);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.sd-tile-name {
+  margin: 0;
+  font-family: "Space Grotesk", Inter, sans-serif;
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.sd-tile-note {
+  margin: 0;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: rgba(15, 23, 42, 0.6);
+}
+
+@media (max-width: 900px) {
+  .sd-life-people {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sd-life-people > :last-child {
+    grid-column: span 2;
+  }
+  .sd-life-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sd-tile,
+  .sd-tile-wide {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .sd-life-people {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sd-life-people > :last-child {
+    grid-column: span 1;
+  }
+  .sd-life-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-life-img,
+  .sd-life-person:hover .sd-life-img,
+  .sd-tile:hover .sd-life-img {
+    transition: none !important;
+    transform: none !important;
   }
 }
 

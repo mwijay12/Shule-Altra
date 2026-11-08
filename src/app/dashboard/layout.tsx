@@ -82,7 +82,10 @@ export default function DashboardLayout({
   return (
     <>
       <AuroraShell role={role} canAccess={canAccess} signOut={handleSignOut}>
-        {children}
+        {/* keyed on the route so every screen replays the same entrance */}
+        <div key={pathname} className="sd-page-enter">
+          {children}
+        </div>
       </AuroraShell>
       <Toaster />
     </>

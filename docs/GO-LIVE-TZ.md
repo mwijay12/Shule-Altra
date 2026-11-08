@@ -58,6 +58,9 @@ Provider choice is **env-only** — no code change, no redeploy of business logi
 | **`EMAIL_TEST_MODE`** | `true` \| `false` | `false` | **Every message is redirected** to `EMAIL_TEST_RECIPIENTS`, subject prefixed `[TEST]`, and the UI shows a blue *Test mode · N inboxes* badge. The audience is still computed from the real register — only the envelope changes. This is how you demo to a school before it has parents in the system. |
 | **`EMAIL_TEST_RECIPIENTS`** | comma / semicolon / newline list | — | One or more inboxes that receive the redirected mail. Invalid addresses are dropped and reported, never silently swallowed. |
 | **`NEXT_PUBLIC_PHOTO_POLICY`** | `none` \| `optional` \| `required` | `optional` | `none` hides the camera entirely and every ID card prints with initials. `optional` stores a photo only with recorded guardian consent. `required` asks for one but still records consent. |
+| **`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`** | cloud name | — | When set together with the preset, photographs upload to Cloudinary instead of Firebase Storage — the only option on the free Spark plan. |
+| **`NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`** | an **unsigned** preset name | — | Created in Cloudinary → Settings → Upload. The browser never holds a secret. |
+| `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | server only | — | Used by `/api/media/delete` to sign a `destroy` when a guardian withdraws consent. Never prefix with `NEXT_PUBLIC_`. |
 
 Two notes that matter for a school conversation:
 
@@ -82,6 +85,8 @@ In **demo mode** (`NEXT_PUBLIC_DEMO_MODE` not `false`) the compressed photograph
 `npm run demo:photos` drives that planner against a deliberately filthy folder — duplicates, a HEIC file, a 6 MB photo, camera names, an unknown admission number and an empty register — and exits non-zero if any of it stops being honest.
 
 ## 3. Cloudinary for photos — yes, with a plan
+
+**Spark has no Storage.** Firebase's free plan does not include it, so the first school you sell to will hit `storage/unauthorized` on the first photograph and assume your software is broken. Order of preference in `src/lib/storage.ts`: **Cloudinary** (unsigned preset) → **inline data URL** in demo mode → **Firebase Storage**. The compression step is identical in all three: 400 px, EXIF/GPS dropped, 2 MB cap, consent recorded. Deletion follows the same order — a signed `destroy` through `/api/media/delete` for Cloudinary, `deleteObject` for Storage, and clearing the field for the demo.
 
 **What the product already does** (so you can answer the question a head teacher will actually ask): a photo is re-encoded to 400×400 JPEG in the browser, stripped of EXIF and GPS on the way in, capped at 2 MB, stored at `schools/{schoolId}/students/{id}/photo.jpg`, and guarded by storage rules. It is used by the roster, the profile sheet and the ID card. ID cards are rendered **in the browser** by pdf-lib, so no server ever caches a child's face. The record carries `photoConsent` (granted by whom, when) and, on withdrawal, `revokedAt` — the file is deleted, not merely hidden. Leavers are archived for **90 days** then erased, with `photoDeletedAt` recorded.
 
