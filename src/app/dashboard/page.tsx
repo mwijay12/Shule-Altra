@@ -35,6 +35,7 @@ import { RevenueChart } from '@/components/admin/revenue-chart';
 import { PriorityBoard, type FollowUpItem } from '@/components/admin/priority-board';
 import { useRange } from '@/components/admin/range-context';
 import { downloadFeeStatement } from '@/lib/pdf/fee-statement';
+import { formatTZSCompact } from '@/lib/finance-engine';
 import { downloadIdCards } from '@/lib/pdf/id-card';
 import { cn } from '@/lib/utils';
 import { DEMO_MODE } from '@/lib/demo/config';
@@ -265,7 +266,7 @@ export default function CommandDeckPage() {
         <KpiCard
           label="Collected (all time)"
           value={metrics.collected}
-          format={(value) => `TZS ${Math.round(value).toLocaleString('en-US')}`}
+          format={formatTZSCompact}
           delta={12.4}
           caption={`${metrics.verifiedCount} verified receipts`}
           icon={CircleDollarSign}
@@ -277,7 +278,7 @@ export default function CommandDeckPage() {
         <KpiCard
           label="Outstanding"
           value={metrics.outstanding}
-          format={(value) => `TZS ${Math.round(value).toLocaleString('en-US')}`}
+          format={formatTZSCompact}
           delta={-4.8}
           caption={`${metrics.followUps.length} learners`}
           icon={Wallet}

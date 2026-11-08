@@ -172,7 +172,7 @@ export function KpiCard({
           <p className="truncate text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 truncate font-headline text-[22px] font-black leading-none tracking-tight text-foreground sm:text-[26px]">
+          <p className="mt-2 font-headline text-[22px] font-black leading-none tracking-tight text-foreground tabular-nums sm:text-[26px]">
             {format(display)}
           </p>
           <div className="mt-2 flex items-center gap-1.5">

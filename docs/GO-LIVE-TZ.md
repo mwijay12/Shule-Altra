@@ -45,9 +45,30 @@ Tanzanian parents are reachable by **SMS first**, WhatsApp second, email a dista
 
 So: *email = Resend in production, Gmail only while showing.* SMS = Beem. Not either/or — both, different jobs.
 
+### The environment contract for channels and photos
+
+Provider choice is **env-only** — no code change, no redeploy of business logic. Every value below has a working fallback, so the app runs with none of them set.
+
+| Variable | Values | Default | What it changes |
+|---|---|---|---|
+| `EMAIL_PROVIDER` | `dry-run` \| `smtp` \| `resend` | `dry-run` | Which transport sends. `dry-run` composes and logs the full message, sends nothing. |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_FROM` | Gmail values | — | Port decides TLS (465 implicit, 587 STARTTLS). Only needed when `EMAIL_PROVIDER=smtp`. |
+| `RESEND_API_KEY` / `EMAIL_FROM` | `re_…` | — | Production sender. Only when `EMAIL_PROVIDER=resend`. |
+| `ADMIN_NOTIFICATION_EMAIL` | one address | — | Where "something broke" / new-enquiry mail goes. |
+| **`EMAIL_TEST_MODE`** | `true` \| `false` | `false` | **Every message is redirected** to `EMAIL_TEST_RECIPIENTS`, subject prefixed `[TEST]`, and the UI shows a blue *Test mode · N inboxes* badge. The audience is still computed from the real register — only the envelope changes. This is how you demo to a school before it has parents in the system. |
+| **`EMAIL_TEST_RECIPIENTS`** | comma / semicolon / newline list | — | One or more inboxes that receive the redirected mail. Invalid addresses are dropped and reported, never silently swallowed. |
+| **`NEXT_PUBLIC_PHOTO_POLICY`** | `none` \| `optional` \| `required` | `optional` | `none` hides the camera entirely and every ID card prints with initials. `optional` stores a photo only with recorded guardian consent. `required` asks for one but still records consent. |
+
+Two notes that matter for a school conversation:
+
+1. **Test mode is not a toy.** Point `EMAIL_TEST_RECIPIENTS` at your own inbox and you can run a full term's fee reminders, absence alerts and report-card mail without a single real parent — that is the only honest way to prove the pipeline before a school has data. Nothing is faked: same templates, same audience query, same attachments.
+2. **Photos are never required**, whatever the policy says. A refused photo is a first-class state, not an error: the learner keeps an initials avatar, the ID card still prints, the roster still sorts. PDPA treats a child's image as sensitive personal data — a school that cannot produce consent must be able to operate with none.
+
 ---
 
 ## 3. Cloudinary for photos — yes, with a plan
+
+**What the product already does** (so you can answer the question a head teacher will actually ask): a photo is re-encoded to 400×400 JPEG in the browser, stripped of EXIF and GPS on the way in, capped at 2 MB, stored at `schools/{schoolId}/students/{id}/photo.jpg`, and guarded by storage rules. It is used by the roster, the profile sheet and the ID card. ID cards are rendered **in the browser** by pdf-lib, so no server ever caches a child's face. The record carries `photoConsent` (granted by whom, when) and, on withdrawal, `revokedAt` — the file is deleted, not merely hidden. Leavers are archived for **90 days** then erased, with `photoDeletedAt` recorded.
 
 Firebase Storage works and is already guarded (2 MB, image types, role-checked rules). Cloudinary is better at **what schools do with photos**: ID cards, report card headers, staff lists, class photo grids — all needing the same face at six sizes, cropped to the face, in print resolution.
 
@@ -179,7 +200,7 @@ Read that table twice. Items **1, 2, 3, 4** are the sale; **6, 9, 10, 12** are h
 | 10 | **Offline attendance** (PWA + IndexedDB queue, sync on reconnect) | Classrooms have no signal; a register that needs internet will not be used | 4 days |
 
 ### P1 — first 90 days after the first paying school
-Editable timetable (incl. double shifts) · exam workflow (invigilation, marks entry, moderation) · teacher professional documents (scheme of work, lesson plans) · student lifecycle (transfer/repeat/dropout) · Swahili UI · parent portal (statement + report card + receipts) · WhatsApp channel · TAMISEMI export · per-school branding on printables · canteen/kitchen stock as a real inventory · bulk marks import from Excel.
+Editable timetable (incl. double shifts) · exam workflow (invigilation, marks entry, moderation) · teacher professional documents (scheme of work, lesson plans) · student lifecycle (transfer/repeat/dropout) · Swahili UI · parent portal (statement + report card + receipts) · WhatsApp channel · TAMISEMI export · per-school branding on printables · canteen/kitchen stock as a real inventory · **bulk photo import** (a folder of `ADM-2026-014.jpg` matched to admission numbers).
 
 ### P2 — when a school asks and pays
 Bus tracking · library · payroll/loans · USSD for feature phones · AI marking (already prototyped) · multi-campus reporting · partner API.

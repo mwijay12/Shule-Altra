@@ -207,6 +207,31 @@ export function providerStatus(env: Env = process.env): ProviderStatus {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Test mode                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Before a school is live there are no parents to mail — just you and a phone.
+ *
+ * With `EMAIL_TEST_MODE=true` every message is redirected to
+ * `EMAIL_TEST_RECIPIENTS` and the subject is prefixed `[TEST]`, so the whole
+ * pipeline (render → transport → inbox → bounce report) can be exercised
+ * against your own Gmail without touching a single guardian address. The
+ * audience is still computed from the register; only the envelope changes.
+ */
+const ADDRESS = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+export function testRecipients(env: Env = process.env): { enabled: boolean; list: string[] } {
+  const raw = clean(env.EMAIL_TEST_RECIPIENTS) || clean(env.EMAIL_TEST_TO)
+  const list = raw
+    .split(/[,;\n]/)
+    .map((entry) => entry.trim())
+    .filter((entry) => ADDRESS.test(entry))
+  const enabled = clean(env.EMAIL_TEST_MODE).toLowerCase() === 'true' && list.length > 0
+  return { enabled, list }
+}
+
+/* -------------------------------------------------------------------------- */
 /*  The demo guard                                                            */
 /* -------------------------------------------------------------------------- */
 

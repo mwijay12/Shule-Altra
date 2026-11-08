@@ -280,6 +280,10 @@ or a cloud project:
 npm run demo:smoke        # renders every screen, fails on runtime errors
 npm run demo:smoke:data   # auth roles, queries, snapshots, writes, transactions
 npm run demo:pdf          # builds + verifies the vector printable suite
+npm run demo:reports      # all 10 Reports-centre PDFs, one geometry each
+npm run demo:email        # six branded emails + provider precedence
+npm run demo:smtp         # Nodemailer failure path against a closed port
+npm run demo:marks        # Excel marks import against a deliberately messy sheet
 npm run typecheck         # TypeScript across the whole repo
 npm run build             # production build
 ```
