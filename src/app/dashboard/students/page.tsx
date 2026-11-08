@@ -98,6 +98,7 @@ export default function StudentsPage() {
   const [tierFilter, setTierFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
+  const [sheetStudentId, setSheetStudentId] = useState<string | null>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const photoInputRef = React.useRef<HTMLInputElement | null>(null)
   const photoPolicyValue = photoPolicy()
@@ -328,6 +329,17 @@ export default function StudentsPage() {
   }
 
   /**
+   * One click on a row is enough. The profile sheet is where the school reads a
+   * learner: photograph, guardian, balance, ID card, transcript. Making that
+   * three clicks deep (row → button → sheet) is how a register stops being used.
+   */
+  const openStudentSheet = (student: Student) => {
+    setSelectedStudent(student)
+    setAiSummary(null)
+    setSheetStudentId(student.id)
+  }
+
+  /**
    * Attach or replace a learner's photograph from the register itself.
    *
    * The file goes through the same `uploadStudentPhoto` boundary the enrollment
@@ -374,7 +386,7 @@ export default function StudentsPage() {
     if (!selectedStudent) return
     setPhotoBusy(true)
     try {
-      await deleteStudentPhoto("school-001", selectedStudent.id).catch(() => undefined)
+      await deleteStudentPhoto("school-001", selectedStudent.id, selectedStudent.photoUrl).catch(() => undefined)
       await setDoc(
         doc(db, "schools", "school-001", "students", selectedStudent.id),
         {
@@ -964,7 +976,20 @@ export default function StudentsPage() {
               </TableHeader>
               <TableBody>
                 {filteredStudents.map((student) => (
-                  <TableRow key={student.id} className="group hover:bg-primary/[0.02] border-b last:border-none transition-colors">
+                  <TableRow
+                    key={student.id}
+                    onClick={() => openStudentSheet(student)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        openStudentSheet(student)
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open ${student.name}`}
+                    className="group cursor-pointer border-b transition-colors last:border-none hover:bg-primary/[0.04] focus-visible:bg-primary/[0.06] focus-visible:outline-none"
+                  >
                     <TableCell className="pl-8 py-5">
                       <div className="flex items-center gap-4">
                         <Avatar className="h-12 w-12 rounded-2xl shadow-lg shrink-0 border-2 border-white transition-transform group-hover:scale-110 overflow-hidden">
@@ -994,12 +1019,16 @@ export default function StudentsPage() {
                       {student.conductPoints || 100} PTS
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <Sheet onOpenChange={(open) => { if (open) { setSelectedStudent(student); setAiSummary(null); } }}>
-                        <SheetTrigger asChild>
-                          <Button variant="ghost" className="text-[10px] font-black text-primary uppercase rounded-full group/btn hover:bg-primary/5">
-                            Access Hub <ChevronRight className="ml-1 h-3 w-3 group-hover/btn:translate-x-1 transition-transform" />
-                          </Button>
-                        </SheetTrigger>
+                      <Sheet
+                        open={sheetStudentId === student.id}
+                        onOpenChange={(open) => {
+                          setSheetStudentId(open ? student.id : null)
+                          if (!open && selectedStudent?.id === student.id) setSelectedStudent(null)
+                        }}
+                      >
+                        <span className="inline-flex items-center rounded-full px-3 py-2 text-[10px] font-black uppercase text-primary transition-transform group-hover:translate-x-0.5">
+                          Access Hub <ChevronRight className="ml-1 h-3 w-3" />
+                        </span>
                         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl">
                           <div className="bg-primary/5 p-10 border-b relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
