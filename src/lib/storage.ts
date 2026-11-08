@@ -1,5 +1,6 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { initializeFirebase } from '@/firebase';
+import { photoCaptureAllowed } from '@/lib/media/policy';
 
 const { storage } = initializeFirebase();
 
@@ -14,6 +15,11 @@ export async function uploadStudentPhoto(
   studentId: string,
   file: File
 ): Promise<string> {
+  // The school's own policy, not the browser's, decides whether a child's
+  // photograph may be stored. See src/lib/media/policy.ts.
+  if (!photoCaptureAllowed()) {
+    throw new Error('This school does not keep learner photographs (PHOTO_POLICY=none).');
+  }
   if (!file.type.startsWith('image/')) {
     throw new Error('Only image files allowed');
   }
@@ -21,7 +27,6 @@ export async function uploadStudentPhoto(
     throw new Error('Image must be under 2MB');
   }
 
-  // Compress for demo
   const compressed = await compressImage(file, 400, 400);
 
   const path = `schools/${schoolId}/students/${studentId}/photo.jpg`;
@@ -46,6 +51,16 @@ export async function deleteStudentPhoto(
   }
 }
 
+/**
+ * Downscales to a passport-sized JPEG and, in doing so, drops the original
+ * file's metadata.
+ *
+ * This is a privacy feature, not an optimisation: a phone photo carries EXIF
+ * with GPS coordinates, the device serial and the capture time. Drawing it onto
+ * a canvas and re-encoding writes a brand-new JPEG containing pixels only —
+ * no location, no device, no timestamp. Never "optimise" this into an upload of
+ * the raw file.
+ */
 function compressImage(file: File, maxWidth: number, maxHeight: number): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();

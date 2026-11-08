@@ -47,6 +47,7 @@ type Capabilities = {
   limits: { maxPerSend: number; dailyLimit?: number; dailyRemaining?: number };
   copyTo: string | null;
   replyTo: string | null;
+  testMode: { enabled: boolean; recipients: string[] };
   mailbox: { ok: boolean; message: string } | null;
   role: string | null;
   roleLabel: string | null;
@@ -74,6 +75,8 @@ type Sent = {
   auditId: string;
   subject?: string;
   copyTo?: string | null;
+  testMode?: string[] | null;
+  sentTo?: string[];
   error?: string;
 };
 
@@ -169,7 +172,9 @@ export default function CommunicationsPage() {
           record.provider === "dry-run"
             ? "Add SMTP_HOST/SMTP_USER/SMTP_PASS (or RESEND_API_KEY) to deliver them for real."
             : record.error ??
-              `${where} · audit ${record.auditId.slice(0, 8)}${record.copyTo ? ` · office copy to ${record.copyTo}` : ""}`,
+              `${where}${record.testMode ? " · test inboxes only" : ""} · audit ${record.auditId.slice(0, 8)}${
+                record.copyTo ? ` · office copy to ${record.copyTo}` : ""
+              }`,
       });
     } catch {
       toast({ variant: "destructive", title: "Network error", description: "Nothing was sent." });
@@ -194,6 +199,16 @@ export default function CommunicationsPage() {
             are resolved on the server, so what you send is exactly who the record says.
           </p>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+        {caps?.testMode?.enabled ? (
+          <Badge
+            variant="outline"
+            className="h-7 rounded-full border-sky-500/30 bg-sky-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-sky-700"
+            title={caps.testMode.recipients.join(", ")}
+          >
+            Test mode · {caps.testMode.recipients.length} inbox{caps.testMode.recipients.length === 1 ? "" : "es"}
+          </Badge>
+        ) : null}
         <Badge
           variant="outline"
           className={
@@ -208,6 +223,7 @@ export default function CommunicationsPage() {
               ? "Resend connected"
               : "Dry run"}
         </Badge>
+        </div>
       </header>
 
       <Card className="glass-panel border-border/60">

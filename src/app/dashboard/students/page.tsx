@@ -57,7 +57,8 @@ import { buildReportCardData } from "@/lib/report-card-builder"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { studentSchema, type StudentFormData } from "@/lib/validations/student"
-import { uploadStudentPhoto } from "@/lib/storage"
+import { uploadStudentPhoto, deleteStudentPhoto } from "@/lib/storage"
+import { PHOTO_POLICY_LABEL, PHOTO_POLICY_NOTE, photoCaptureAllowed, photoPolicy } from "@/lib/media/policy"
 import type { Student } from "@/types/student"
 import { DEMO_MODE } from "@/lib/demo/config"
 import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
@@ -79,6 +80,8 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const photoInputRef = React.useRef<HTMLInputElement | null>(null)
+  const photoPolicyValue = photoPolicy()
+  const canCapturePhoto = photoCaptureAllowed()
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
   const [isManualEnrolling, setIsManualEnrolling] = useState(false)
@@ -307,9 +310,14 @@ export default function StudentsPage() {
     setPhotoBusy(true)
     try {
       const photoUrl = await uploadStudentPhoto("school-001", selectedStudent.id, file)
+      // Consent is recorded with the photograph, not assumed from it.
       await setDoc(
         doc(db, "schools", "school-001", "students", selectedStudent.id),
-        { photoUrl, photoUpdatedAt: serverTimestamp() },
+        {
+          photoUrl,
+          photoUpdatedAt: serverTimestamp(),
+          photoConsent: { granted: true, by: "guardian", at: serverTimestamp() },
+        },
         { merge: true }
       )
       toast({
@@ -320,6 +328,38 @@ export default function StudentsPage() {
       toast({
         variant: "destructive",
         title: "Could not store the photograph",
+        description: err?.message ?? "Unknown storage error",
+      })
+    } finally {
+      setPhotoBusy(false)
+    }
+  }
+
+  /**
+   * Withdrawing consent deletes the photograph — the PDPA right to erasure is
+   * a button here, not a support ticket. Marks, attendance and fees stay.
+   */
+  const handleRemovePhoto = async () => {
+    if (!selectedStudent) return
+    setPhotoBusy(true)
+    try {
+      await deleteStudentPhoto("school-001", selectedStudent.id).catch(() => undefined)
+      await setDoc(
+        doc(db, "schools", "school-001", "students", selectedStudent.id),
+        {
+          photoUrl: "",
+          photoConsent: { granted: false, by: "guardian", revokedAt: serverTimestamp() },
+        },
+        { merge: true }
+      )
+      toast({
+        title: "Photograph removed",
+        description: `${selectedStudent.name} now prints with initials. Academic and fee records are untouched.`,
+      })
+    } catch (err: any) {
+      toast({
+        variant: "destructive",
+        title: "Could not remove the photograph",
         description: err?.message ?? "Unknown storage error",
       })
     } finally {
@@ -625,15 +665,17 @@ export default function StudentsPage() {
                                   <AvatarImage src={selectedStudent?.photoUrl || (selectedStudent as any)?.photo} className="object-cover" />
                                   <AvatarFallback className="text-3xl font-black text-primary bg-white uppercase">{selectedStudent?.name?.charAt(0)}</AvatarFallback>
                                 </Avatar>
-                                <button
-                                  type="button"
-                                  onClick={() => photoInputRef.current?.click()}
-                                  disabled={photoBusy}
-                                  title={selectedStudent?.photoUrl ? "Replace photograph" : "Attach a photograph"}
-                                  className="absolute -bottom-2 -right-2 grid h-9 w-9 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-lg transition-transform hover:scale-105 disabled:opacity-60"
-                                >
-                                  {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                                </button>
+                                {canCapturePhoto ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => photoInputRef.current?.click()}
+                                    disabled={photoBusy}
+                                    title={selectedStudent?.photoUrl ? "Replace photograph" : "Attach a photograph"}
+                                    className="absolute -bottom-2 -right-2 grid h-9 w-9 place-items-center rounded-full border-2 border-white bg-primary text-white shadow-lg transition-transform hover:scale-105 disabled:opacity-60"
+                                  >
+                                    {photoBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                                  </button>
+                                ) : null}
                                 <input
                                   ref={photoInputRef}
                                   type="file"
@@ -647,6 +689,24 @@ export default function StudentsPage() {
                                 <div className="flex flex-wrap gap-2">
                                   <Badge className="rounded-full bg-white text-primary border-none shadow-md px-4 py-1 text-[9px] uppercase tracking-widest font-black">{selectedStudent?.class}</Badge>
                                   <span className="text-[9px] font-mono font-black text-muted-foreground px-3 py-1 bg-white rounded-lg shadow-inner">{selectedStudent?.id}</span>
+                                </div>
+                                <div className="space-y-1">
+                                  <p className="text-[8px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                                    {PHOTO_POLICY_LABEL[photoPolicyValue]}
+                                  </p>
+                                  <p className="max-w-xs text-[8px] font-medium leading-relaxed text-muted-foreground/80">
+                                    {PHOTO_POLICY_NOTE[photoPolicyValue]}
+                                  </p>
+                                  {canCapturePhoto && selectedStudent?.photoUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => void handleRemovePhoto()}
+                                      disabled={photoBusy}
+                                      className="text-[8px] font-black uppercase tracking-[0.16em] text-destructive underline-offset-2 hover:underline disabled:opacity-50"
+                                    >
+                                      Remove photograph &amp; withdraw consent
+                                    </button>
+                                  ) : null}
                                 </div>
                               </div>
                             </SheetHeader>

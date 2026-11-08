@@ -64,6 +64,38 @@ export function formatTZS(amount: number): string {
   return `TZS ${Math.round(amount).toLocaleString('en-TZ')}`;
 }
 
+const trimZeros = (value: number, digits: number) =>
+  value
+    .toFixed(digits)
+    .replace(/\.0+$/, '')
+    .replace(/(\.\d*?)0+$/, '$1');
+
+/**
+ * TZS for cards, tiles and charts — the same money, short enough to never be
+ * cut off. A KPI that reads "TZS 6,09…" is worse than no KPI at all, and a
+ * bursar reads 6.09M faster than 6,094,000.
+ *
+ *   < 1 000        TZS 950
+ *   < 1 000 000    TZS 19.5K
+ *   < 1bn          TZS 6.09M
+ *   ≥ 1bn          TZS 1.2B
+ */
+export function formatTZSCompact(amount: number): string {
+  const value = Math.round(Number.isFinite(amount) ? amount : 0);
+  const sign = value < 0 ? '-' : '';
+  const abs = Math.abs(value);
+
+  const scale = (input: number, suffix: string) => {
+    const digits = input >= 100 ? 0 : input >= 10 ? 1 : 2;
+    return `TZS ${sign}${trimZeros(input, digits)}${suffix}`;
+  };
+
+  if (abs < 1_000) return `TZS ${sign}${abs}`;
+  if (abs < 1_000_000) return scale(abs / 1_000, 'K');
+  if (abs < 1_000_000_000) return scale(abs / 1_000_000, 'M');
+  return scale(abs / 1_000_000_000, 'B');
+}
+
 /**
  * Generates a hardened Control Number
  */

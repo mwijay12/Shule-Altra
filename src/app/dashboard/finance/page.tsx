@@ -40,7 +40,7 @@ import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
 import { exportToExcel } from "@/lib/export-utils"
-import { processPaymentTransaction, generateInstitutionalControlNumber, ControlNumberResponse, formatTZS, generateControlNumber } from "@/lib/finance-engine"
+import { processPaymentTransaction, generateInstitutionalControlNumber, ControlNumberResponse, formatTZS, formatTZSCompact, generateControlNumber } from "@/lib/finance-engine"
 import { useInstitutionalReconciliation } from "@/hooks/use-finance"
 import { usePettyCash } from "@/hooks/use-petty-cash"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase"
@@ -164,20 +164,43 @@ export default function FinancePage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { title: "Revenue (7D)", value: formatTZS(weeklyTotal), icon: Zap, color: "text-green-600" },
+          {
+            title: "Revenue (7D)",
+            value: formatTZSCompact(weeklyTotal),
+            exact: formatTZS(weeklyTotal),
+            icon: Zap,
+            color: "text-green-600",
+          },
           { title: "Audit Disputions", value: disputed, icon: AlertTriangle, color: "text-destructive" },
           { title: "Pending Hub Sync", value: pending, icon: History, color: "text-primary" },
-          { title: "Outstanding Fees", value: formatTZS(outstanding), icon: Scale, color: "text-orange-600" },
+          {
+            title: "Outstanding Fees",
+            value: formatTZSCompact(outstanding),
+            exact: formatTZS(outstanding),
+            icon: Scale,
+            color: "text-orange-600",
+          },
         ].map((stat) => (
           <Card key={stat.title} className="border-none shadow-xl rounded-[2rem] bg-white/60 backdrop-blur-md overflow-hidden group hover:-translate-y-1 transition-all">
             <CardContent className="p-5 sm:p-6">
               <p className="text-[8px] sm:text-[10px] font-black uppercase text-muted-foreground tracking-widest">{stat.title}</p>
-              <div className="flex items-baseline gap-1 mt-2">
-                <stat.icon className={cn("h-4 w-4 mr-2", stat.color)} />
-                <span className={cn("text-xl sm:text-2xl font-black truncate", stat.color)}>
+              <div className="mt-2 flex items-baseline gap-2">
+                <stat.icon className={cn("h-4 w-4 shrink-0", stat.color)} />
+                <span
+                  title={"exact" in stat ? String(stat.exact) : undefined}
+                  className={cn(
+                    "font-black tabular-nums tracking-tight text-[clamp(1.05rem,3.1vw,1.5rem)]",
+                    stat.color
+                  )}
+                >
                   {stat.value}
                 </span>
               </div>
+              {"exact" in stat ? (
+                <p className="mt-1 text-[8px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                  {stat.exact}
+                </p>
+              ) : null}
             </CardContent>
           </Card>
         ))}

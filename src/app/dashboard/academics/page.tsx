@@ -17,7 +17,10 @@ import {
   FileText,
   TrendingUp,
   Filter,
-  Download
+  Download,
+  Upload,
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -43,6 +46,7 @@ import { cn } from "@/lib/utils"
 import type { Student } from "@/types/student"
 import type { GradeRecord } from "@/types/grade"
 import { SUBJECTS_SECONDARY } from "@/data/fixtures/tanzanian-names"
+import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 
 export default function AcademicsPage() {
   const { toast } = useToast()
@@ -56,6 +60,10 @@ export default function AcademicsPage() {
   const [gradingStudent, setGradingStudent] = useState<Student | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isExporting, setIsExporting] = useState<string | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importFileName, setImportFileName] = useState<string | null>(null)
+  const [importResult, setImportResult] = useState<MarkParseResult | null>(null)
 
   // Data Fetching
   const studentsQuery = useMemoFirebase(() => query(collection(db, "schools", "school-001", "students"), orderBy("name", "asc")), [db])
@@ -219,6 +227,103 @@ export default function AcademicsPage() {
     }
   }
 
+  /**
+   * The sheet a teacher fills in: their class, their subjects, one row each.
+   * Downloading a template beats explaining a template.
+   */
+  const handleDownloadMarksTemplate = async () => {
+    const XLSX = await import("xlsx")
+    const classStudents = (students ?? [])
+      .filter((student) => student.class === activeClass)
+      .map((student) => ({ id: student.id, name: student.name, class: student.class }))
+    const rows = marksTemplateRows(classStudents, SUBJECTS_SECONDARY, {
+      term: activeTerm,
+      examType: activeExam,
+    })
+    const sheet = XLSX.utils.json_to_sheet(rows)
+    const book = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(book, sheet, "Marks")
+    XLSX.writeFile(book, `marks-${activeClass.replace(/\s+/g, "-").toLowerCase()}-${activeTerm.replace(/\s+/g, "-").toLowerCase()}.xlsx`)
+    toast({
+      title: "Template ready",
+      description: `${classStudents.length} learners × ${SUBJECTS_SECONDARY.length} subjects · fill the Score column and upload it back.`,
+    })
+  }
+
+  const handleMarksFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ""
+    if (!file) return
+    setImportFileName(file.name)
+    try {
+      const XLSX = await import("xlsx")
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" })
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+      const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(firstSheet, { defval: "" })
+      const result = parseMarks(
+        raw,
+        (students ?? []).map((student) => ({ id: student.id, name: student.name, class: student.class })),
+        { term: activeTerm, examType: activeExam, subjects: SUBJECTS_SECONDARY }
+      )
+      setImportResult(result)
+      toast({
+        title: result.stats.errors > 0 ? "Sheet read with problems" : "Sheet ready",
+        description: `${result.stats.valid} marks for ${result.stats.learners} learners · ${result.stats.errors} error(s), ${result.stats.warnings} warning(s).`,
+        variant: result.stats.errors > 0 ? "destructive" : "default",
+      })
+    } catch (error: any) {
+      setImportResult(null)
+      toast({
+        variant: "destructive",
+        title: "Could not read that file",
+        description: error?.message ?? "Use the downloaded .xlsx template.",
+      })
+    }
+  }
+
+  const handleCommitMarks = async () => {
+    if (!importResult || importResult.rows.length === 0 || !db) return
+    setImporting(true)
+    try {
+      // Chunks of 100 so a 1,500-row sheet does not open 1,500 writes at once.
+      const rows = importResult.rows
+      for (let start = 0; start < rows.length; start += 100) {
+        const chunk = rows.slice(start, start + 100)
+        await Promise.all(
+          chunk.map((row) =>
+            addDoc(collection(db, "schools", "school-001", "grades"), {
+              studentId: row.studentId,
+              studentName: row.studentName,
+              class: row.className,
+              subject: row.subject,
+              score: row.score,
+              term: row.term,
+              examType: row.examType,
+              academicYear: "2026",
+              recordedBy: "Marks import",
+              createdAt: serverTimestamp(),
+            })
+          )
+        )
+      }
+      toast({
+        title: "Marks imported",
+        description: `${rows.length} assessments across ${importResult.stats.learners} learners · report cards are ready to issue.`,
+      })
+      setImportOpen(false)
+      setImportResult(null)
+      setImportFileName(null)
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Import stopped",
+        description: error?.message ?? "Some rows could not be written.",
+      })
+    } finally {
+      setImporting(false)
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
       {/* HEADER Node */}
@@ -233,6 +338,13 @@ export default function AcademicsPage() {
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1">
+          <Button
+            variant="outline"
+            onClick={() => setImportOpen(true)}
+            className="h-10 shrink-0 rounded-full bg-white shadow-sm font-black text-[10px] uppercase border-primary/20 text-primary"
+          >
+            <Upload className="mr-1.5 h-3.5 w-3.5" /> Import marks
+          </Button>
           <Select value={activeTerm} onValueChange={setActiveTerm}>
             <SelectTrigger className="h-10 rounded-full bg-white shadow-sm font-bold text-[10px] uppercase border-primary/10">
               <SelectValue placeholder="Term" />
@@ -498,6 +610,136 @@ export default function AcademicsPage() {
               Authorize Grade Node
             </Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* MARKS IMPORT — the sheet is the input, the register is the referee. */}
+      <Dialog open={importOpen} onOpenChange={(open) => { setImportOpen(open); if (!open) { setImportResult(null); setImportFileName(null) } }}>
+        <DialogContent className="max-w-3xl rounded-[2rem] border-none p-0 overflow-hidden shadow-2xl">
+          <DialogHeader className="bg-primary/5 p-8 border-b">
+            <DialogTitle className="text-xl font-black uppercase tracking-tight text-primary">Import marks from Excel</DialogTitle>
+            <DialogDescription className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              {activeClass} · {activeTerm} · {activeExam} — nothing is written until you press import.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="max-h-[70vh] space-y-6 overflow-y-auto p-8">
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                variant="outline"
+                onClick={() => void handleDownloadMarksTemplate()}
+                className="h-11 flex-1 rounded-xl font-black text-[10px] uppercase tracking-widest"
+              >
+                <Download className="mr-2 h-4 w-4" /> Download template
+              </Button>
+              <label className="h-11 flex-1 cursor-pointer">
+                <span className="flex h-11 items-center justify-center rounded-xl colorful-gradient text-[10px] font-black uppercase tracking-widest text-white shadow-lg">
+                  <Upload className="mr-2 h-4 w-4" /> Choose filled sheet
+                </span>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls,.csv"
+                  className="hidden"
+                  onChange={handleMarksFile}
+                />
+              </label>
+            </div>
+
+            <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+              Columns: Admission No · Subject · Score (Term and Exam are taken from the selectors if the sheet omits them).
+              {importFileName ? ` · ${importFileName}` : ""}
+            </p>
+
+            {importResult ? (
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {[
+                    { label: "Rows read", value: importResult.stats.read },
+                    { label: "Marks ready", value: importResult.stats.valid },
+                    { label: "Learners", value: importResult.stats.learners },
+                    { label: "Average", value: importResult.stats.average === null ? "—" : `${importResult.stats.average}%` },
+                  ].map((cell) => (
+                    <div key={cell.label} className="rounded-2xl border border-border/60 bg-muted/20 p-4">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{cell.label}</p>
+                      <p className="mt-1 text-xl font-black tabular-nums text-foreground">{cell.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {importResult.issues.length > 0 ? (
+                  <div className="space-y-2">
+                    <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                      <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                      {importResult.stats.errors} error(s) · {importResult.stats.warnings} warning(s)
+                    </p>
+                    <div className="max-h-40 space-y-1 overflow-y-auto rounded-2xl border border-border/60 bg-white p-3">
+                      {importResult.issues.slice(0, 40).map((issue, index) => (
+                        <p key={`${issue.row}-${index}`} className="text-[9px] font-medium leading-relaxed text-muted-foreground">
+                          <span className={issue.severity === "error" ? "font-black text-destructive" : "font-black text-orange-600"}>
+                            row {issue.row}
+                          </span>{" "}
+                          {issue.message}
+                        </p>
+                      ))}
+                      {importResult.issues.length > 40 ? (
+                        <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
+                          +{importResult.issues.length - 40} more
+                        </p>
+                      ) : null}
+                    </div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                      Rows with errors are skipped. The rest still import.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-widest text-emerald-600">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Every row is clean
+                  </p>
+                )}
+
+                {importResult.rows.length > 0 ? (
+                  <div className="overflow-hidden rounded-2xl border border-border/60">
+                    <Table>
+                      <TableHeader className="bg-muted/30">
+                        <TableRow>
+                          <TableHead className="text-[8px] font-black uppercase tracking-widest">Learner</TableHead>
+                          <TableHead className="text-[8px] font-black uppercase tracking-widest">Subject</TableHead>
+                          <TableHead className="text-[8px] font-black uppercase tracking-widest text-center">Score</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {importResult.rows.slice(0, 6).map((row) => (
+                          <TableRow key={`${row.studentId}-${row.subject}`}>
+                            <TableCell className="py-2 text-[10px] font-black uppercase text-foreground/80">{row.studentName}</TableCell>
+                            <TableCell className="py-2 text-[10px] font-bold text-muted-foreground">{row.subject}</TableCell>
+                            <TableCell className="py-2 text-center text-[11px] font-black tabular-nums text-primary">{row.score}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {importResult.rows.length > 6 ? (
+                      <p className="bg-muted/10 px-4 py-2 text-[8px] font-black uppercase tracking-widest text-muted-foreground">
+                        +{importResult.rows.length - 6} more rows
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <Button
+                  disabled={importing || importResult.rows.length === 0}
+                  onClick={() => void handleCommitMarks()}
+                  className="h-12 w-full rounded-xl colorful-gradient text-[11px] font-black uppercase tracking-widest text-white shadow-xl"
+                >
+                  {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+                  Import {importResult.rows.length} marks
+                </Button>
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-dashed border-border/70 bg-muted/10 px-4 py-6 text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Download the template, fill the Score column, upload it back.
+              </p>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

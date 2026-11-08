@@ -31,7 +31,7 @@ import {
   canSendTemplate,
   templateDataFor,
 } from '@/lib/email/audience'
-import { providerStatus, deliver, verifyTransport } from '@/lib/email/provider'
+import { providerStatus, deliver, testRecipients, verifyTransport } from '@/lib/email/provider'
 import { SCHOOL, TEMPLATE_TITLES, renderEmail } from '@/lib/email/templates'
 import type { EmailTemplateId, RenderedEmail } from '@/lib/email/types'
 
@@ -88,6 +88,7 @@ export async function GET(request: Request) {
 
   const probe = new URL(request.url).searchParams.get('probe')
   const mailbox = probe ? await verifyTransport() : null
+  const test = testRecipients()
 
   return NextResponse.json({
     provider: status.provider,
@@ -96,6 +97,7 @@ export async function GET(request: Request) {
     note: status.note,
     limits: status.limits,
     copyTo: process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || null,
+    testMode: { enabled: test.enabled, recipients: test.list },
     replyTo: process.env.EMAIL_REPLY_TO?.trim() || process.env.SMTP_REPLY_TO?.trim() || null,
     mailbox,
     role,
@@ -175,13 +177,15 @@ export async function POST(request: Request) {
   }
 
   const linkBase = appUrl(request)
-  const messages: RenderedEmail[] = recipients.map((recipient, index) =>
+  const rendered: RenderedEmail[] = recipients.map((recipient, index) =>
     renderEmail(
       template,
       { recipient, school: SCHOOL, demo: true, linkBase },
       templateDataFor(template, recipient, index) as Record<string, any>
     )
   )
+
+  const test = testRecipients()
 
   if (mode === 'preview') {
     return NextResponse.json({
@@ -190,14 +194,24 @@ export async function POST(request: Request) {
       title: TEMPLATE_TITLES[template],
       recipients: everyone.length,
       sendable: recipients.length,
-      subject: messages[0]?.subject,
-      to: messages[0]?.to.email,
-      html: messages[0]?.html,
-      text: messages[0]?.text,
+      subject: rendered[0]?.subject,
+      to: rendered[0]?.to.email,
+      html: rendered[0]?.html,
+      text: rendered[0]?.text,
       provider: status.provider,
       note: status.note,
+      testMode: test.enabled ? test.list : null,
     })
   }
+
+  // Test mode: keep the rendered school message, change only the envelope.
+  const messages: RenderedEmail[] = test.enabled
+    ? test.list.map((email) => ({
+        ...rendered[0],
+        to: { email, name: 'Test recipient' },
+        subject: `[TEST] ${rendered[0].subject}`,
+      }))
+    : rendered
 
   // A human pressed "send": keep two sends of the same template apart.
   const key = `${status.provider}:${role}:${template}`
@@ -245,6 +259,7 @@ export async function POST(request: Request) {
       template,
       audience: policy.audience,
       attempted: messages.length,
+      testMode: test.enabled,
       provider: result.provider,
       delivered: result.delivered,
       failed: result.failed,
@@ -267,6 +282,8 @@ export async function POST(request: Request) {
     provider: result.provider,
     note: after.note,
     limits: after.limits,
+    testMode: test.enabled ? test.list : null,
+    sentTo: test.enabled ? test.list : undefined,
     copyTo: copyTo ?? null,
     error: result.error,
     subject: messages[0]?.subject,
