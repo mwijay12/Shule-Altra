@@ -77,6 +77,8 @@ No school photographs learners one at a time. They photograph a class on a Frida
 - **Consent is attested before the folder can even be picked**, and recorded per learner with the account, the file name and the time (`photoConsent.method = 'bulk-import'`). With `PHOTO_POLICY=none` the button is disabled — there is no path through this screen that stores a face.
 - Uploads run one file at a time with a progress bar. A failure on photograph 40 does not undo 1–39; the failures are listed by file name and the rest of the register is untouched.
 
+In **demo mode** (`NEXT_PUBLIC_DEMO_MODE` not `false`) the compressed photograph is carried inside the learner document as a data URL, so the showcase works without a Storage bucket or CORS setup. With real Firebase the same 400 px JPEG goes to `schools/{schoolId}/students/{id}/photo.jpg` — there is no silent fallback in production.
+
 `npm run demo:photos` drives that planner against a deliberately filthy folder — duplicates, a HEIC file, a 6 MB photo, camera names, an unknown admission number and an empty register — and exits non-zero if any of it stops being honest.
 
 ## 3. Cloudinary for photos — yes, with a plan
