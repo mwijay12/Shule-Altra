@@ -20,6 +20,7 @@ import {
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range-context';
 import { cn } from '@/lib/utils';
+import { ChartFrame } from '@/components/admin/chart-motion';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { GlidingTooltip, useSeriesFocus, useStableSeries } from '@/components/motion/chart-interaction';
@@ -186,7 +187,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
         </div>
       </div>
 
-      <div className="mt-5 h-[260px] w-full sm:h-[300px]">
+      <ChartFrame className="mt-5 h-[260px] w-full sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 6, bottom: 0, left: -18 }}>
             <defs>
@@ -268,7 +269,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
             />
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
+      </ChartFrame>
 
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-4 sm:grid-cols-4">
         {[
