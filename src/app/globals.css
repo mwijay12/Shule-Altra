@@ -28,6 +28,14 @@
     --ring: 214 69% 39%;
     --radius: 1.25rem;
 
+    /* Published per palette by lib/theme/apply.ts (and the pre-paint script).
+       Declared here too so hue-derived surfaces — the landing page's deep
+       editorial sections — resolve to something sane if that script never
+       runs, rather than becoming an invalid colour. */
+    --brand-hue: 217;
+    --brand-primary: 214 69% 39%;
+    --brand-accent: 255 68% 62%;
+
     /* Self-hosted type. The landing page can switch pairing without a network. */
     --font-body: "Inter Variable", Inter, ui-sans-serif, system-ui, sans-serif;
     --font-display: "Space Grotesk Variable", "Space Grotesk", var(--font-body);
@@ -170,12 +178,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: hsl(var(--border));
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: hsl(var(--muted-foreground) / 0.6);
 }
 /* ==========================================================================
    AURORA ADMIN — premium shell tokens & utilities
@@ -238,13 +246,14 @@
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6) !important;
 }
 .dark .colorful-gradient {
-  background: linear-gradient(135deg, #2f6fbd 0%, #8b5cf6 100%);
+  /* Was a fixed blue→violet, so dark mode ignored the school's palette too. */
+  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: #33415c;
+  background: hsl(var(--border));
 }
 .dark ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: hsl(var(--muted-foreground) / 0.6);
 }
 
 /* Surfaces */
@@ -391,7 +400,7 @@ html[data-scroll-locked] .app-scroll {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.06);
+  background: hsl(var(--foreground) / 0.06);
 }
 
 .sd-life-img {
@@ -419,7 +428,7 @@ html[data-scroll-locked] .app-scroll {
   margin: 0;
   font-size: 0.86rem;
   line-height: 1.5;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
 }
 
 .sd-life-grid {
@@ -445,7 +454,7 @@ html[data-scroll-locked] .app-scroll {
   aspect-ratio: 3 / 2;
   overflow: hidden;
   border-radius: 14px;
-  background: rgba(15, 23, 42, 0.06);
+  background: hsl(var(--foreground) / 0.06);
 }
 
 .sd-tile-module {
@@ -454,7 +463,7 @@ html[data-scroll-locked] .app-scroll {
   bottom: 10px;
   padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(10, 16, 26, 0.72);
+  background: hsl(var(--brand-hue) 48% 8% / 0.72);
   backdrop-filter: blur(6px);
   color: rgba(255, 255, 255, 0.9);
   font-family: var(--mono);
@@ -475,7 +484,7 @@ html[data-scroll-locked] .app-scroll {
   margin: 0;
   font-size: 0.84rem;
   line-height: 1.5;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
 }
 
 @media (max-width: 900px) {
@@ -521,27 +530,25 @@ html[data-scroll-locked] .app-scroll {
    ========================================================================== */
 
 .landing {
-  /* One palette with the hub: the same cool workspace white, the same blue
-     #1F5BA6 and the same violet #7C5AE0. Nothing on this page is a colour the
-     dashboard does not already use. */
-  --ink: #111a24;
-  --ink-2: #3c4859;
-  --paper: #f6f8fc;
-  --paper-2: #e9eef7;
-  --card: #ffffff;
-  --mark: #6b4be0;
-  --mark-deep: #5232c4;
-  --forest: #1a1e45;
-  --forest-deep: #0e1130;
-  /* highlight: violet — as a fill on light, as a light tint on dark */
-  --glow: #7c5ae0;
-  --glow-on-dark: #c3b2ff;
-  --mist: #dbe3f0;
-  --system: #1f5ba6;
-  --rule: rgba(15, 23, 42, 0.12);
-  --rule-soft: rgba(15, 23, 42, 0.07);
-  --rule-light: rgba(240, 245, 255, 0.22);
-  --brand-gradient: linear-gradient(135deg, #1f5ba6 0%, #7c5ae0 100%);
+  /* Every colour here resolves from the palette the school publishes in Theme
+     Studio. This block used to hard-code #1f5ba6 and #7c5ae0, so changing the
+     palette restyled the dashboard and left the front page behind.
+     --brand-hue is published by lib/theme/apply.ts alongside the tokens and
+     gives the deep editorial sections a tint of the same brand. */
+  --ink: hsl(var(--foreground));
+  --paper: hsl(var(--background));
+  --mark: hsl(var(--accent));
+  --forest: hsl(var(--brand-hue) 42% 14%);
+  --forest-deep: hsl(var(--brand-hue) 48% 8%);
+  /* highlight: the accent as a fill on paper, a light tint of the brand on dark */
+  --glow: hsl(var(--accent));
+  --glow-on-dark: hsl(var(--brand-hue) 92% 84%);
+  --mist: hsl(var(--border));
+  --system: hsl(var(--primary));
+  --rule: hsl(var(--foreground) / 0.12);
+  --rule-soft: hsl(var(--foreground) / 0.07);
+  --rule-light: hsl(0 0% 100% / 0.22);
+  --brand-gradient: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
   --mono: var(--font-mono);
   --serif: var(--font-serif);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
@@ -549,7 +556,7 @@ html[data-scroll-locked] .app-scroll {
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
   --r-card: 24px;
   --r-inner: 16px;
-  --shadow: 0 40px 70px -55px rgba(15, 23, 42, 0.55);
+  --shadow: 0 40px 70px -55px hsl(var(--brand-hue) 48% 8% / 0.55);
   --gutter: clamp(1rem, 3.4vw, 2.6rem);
 
   position: relative;
@@ -558,9 +565,9 @@ html[data-scroll-locked] .app-scroll {
   color: var(--ink);
   font-family: var(--font-body);
   background:
-    radial-gradient(85% 55% at 4% -4%, rgba(31, 91, 166, 0.13), transparent 62%),
-    radial-gradient(70% 45% at 98% 2%, rgba(124, 90, 224, 0.16), transparent 60%),
-    radial-gradient(90% 60% at 92% 92%, rgba(124, 90, 224, 0.1), transparent 62%),
+    radial-gradient(85% 55% at 4% -4%, hsl(var(--primary) / 0.13), transparent 62%),
+    radial-gradient(70% 45% at 98% 2%, hsl(var(--accent) / 0.16), transparent 60%),
+    radial-gradient(90% 60% at 92% 92%, hsl(var(--accent) / 0.1), transparent 62%),
     var(--paper);
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
@@ -590,9 +597,9 @@ html[data-scroll-locked] .app-scroll {
   pointer-events: none;
   background: linear-gradient(
     180deg,
-    rgba(31, 91, 166, 0) 0%,
-    rgba(31, 91, 166, 0.14) 55%,
-    rgba(124, 90, 224, 0.2) 100%
+    hsl(var(--primary) / 0) 0%,
+    hsl(var(--primary) / 0.14) 55%,
+    hsl(var(--accent) / 0.2) 100%
   );
   opacity: calc(0.2 + var(--day, 0) * 0.85);
   transition: opacity 0.4s linear;
@@ -620,7 +627,7 @@ html[data-scroll-locked] .app-scroll {
 
 .landing ::selection {
   background: var(--glow);
-  color: #ffffff;
+  color: hsl(var(--primary-foreground));
 }
 
 .landing a:focus-visible,
@@ -664,7 +671,7 @@ html[data-scroll-locked] .app-scroll {
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.64);
+  color: hsl(var(--foreground) / 0.64);
 }
 .sd-label::before {
   content: "";
@@ -673,7 +680,7 @@ html[data-scroll-locked] .app-scroll {
   background: var(--mark);
 }
 .sd-label-light {
-  color: rgba(240, 245, 255, 0.62);
+  color: hsl(0 0% 100% / 0.62);
 }
 .sd-label-light::before {
   background: var(--glow-on-dark);
@@ -699,7 +706,7 @@ html[data-scroll-locked] .app-scroll {
   max-width: 46ch;
   font-size: clamp(0.95rem, 1.1vw, 1.05rem);
   line-height: 1.62;
-  color: rgba(15, 23, 42, 0.66);
+  color: hsl(var(--foreground) / 0.66);
 }
 
 .sd-head {
@@ -782,7 +789,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-header[data-scrolled="true"] .sd-header-inner {
   background: rgba(255, 255, 255, 0.82);
   border-color: var(--rule-soft);
-  box-shadow: 0 20px 40px -34px rgba(15, 23, 42, 0.7);
+  box-shadow: 0 20px 40px -34px hsl(var(--foreground) / 0.7);
   backdrop-filter: blur(18px) saturate(150%);
 }
 
@@ -809,7 +816,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
   margin-top: 3px;
 }
 
@@ -820,7 +827,7 @@ html[data-scroll-locked] .app-scroll {
   gap: 2px;
   padding: 4px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.055);
+  background: hsl(var(--foreground) / 0.055);
   border: 1px solid var(--rule-soft);
 }
 .land-nav-link {
@@ -832,7 +839,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.01em;
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
   text-decoration: none;
   transition: color 0.3s var(--ease);
   isolation: isolate;
@@ -868,7 +875,7 @@ html[data-scroll-locked] .app-scroll {
   border-radius: 999px;
   border: 1px solid var(--rule);
   background: transparent;
-  color: rgba(15, 23, 42, 0.66);
+  color: hsl(var(--foreground) / 0.66);
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.14em;
@@ -881,7 +888,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-motion-toggle:hover {
   color: var(--ink);
-  border-color: rgba(15, 23, 42, 0.4);
+  border-color: hsl(var(--foreground) / 0.4);
 }
 .sd-motion-toggle[aria-pressed="true"] .sd-motion-toggle-state {
   color: var(--mark);
@@ -922,7 +929,7 @@ html[data-scroll-locked] .app-scroll {
   transition: transform 0.55s var(--ease);
 }
 .sd-cta:hover {
-  color: #ffffff;
+  color: hsl(var(--primary-foreground));
 }
 .sd-cta:hover .sd-cta-fill {
   transform: none;
@@ -932,8 +939,8 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-cta-inverse {
   background: var(--brand-gradient);
-  color: #ffffff;
-  box-shadow: 0 14px 30px -18px rgba(31, 91, 166, 0.85);
+  color: hsl(var(--primary-foreground));
+  box-shadow: 0 14px 30px -18px hsl(var(--primary) / 0.85);
 }
 .sd-cta-inverse .sd-cta-fill {
   background: rgba(255, 255, 255, 0.16);
@@ -1010,14 +1017,14 @@ html[data-scroll-locked] .app-scroll {
   font-style: normal;
   font-size: 10px;
   letter-spacing: 0.16em;
-  color: rgba(15, 23, 42, 0.45);
+  color: hsl(var(--foreground) / 0.45);
 }
 .sd-mobile-foot {
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.45);
+  color: hsl(var(--foreground) / 0.45);
 }
 
 /* ── the clock (scroll = school day) ───────────────────────────────────── */
@@ -1029,7 +1036,7 @@ html[data-scroll-locked] .app-scroll {
   right: 0;
   z-index: 120;
   height: 3px;
-  background: rgba(15, 23, 42, 0.08);
+  background: hsl(var(--foreground) / 0.08);
 }
 .sd-pen-fill {
   display: block;
@@ -1049,9 +1056,9 @@ html[data-scroll-locked] .app-scroll {
   gap: 10px;
   padding: 8px 14px 8px 10px;
   border-radius: 999px;
-  background: rgba(240, 245, 255, 0.86);
+  background: hsl(var(--card) / 0.86);
   border: 1px solid var(--rule-soft);
-  box-shadow: 0 18px 30px -26px rgba(15, 23, 42, 0.8);
+  box-shadow: 0 18px 30px -26px hsl(var(--foreground) / 0.8);
   backdrop-filter: blur(14px);
 }
 /* Parked while the footer is on screen: the clock must not sit on top of the
@@ -1071,7 +1078,7 @@ html[data-scroll-locked] .app-scroll {
   height: 7px;
   border-radius: 50%;
   background: var(--mark);
-  box-shadow: 0 0 0 3px rgba(107, 75, 224, 0.18);
+  box-shadow: 0 0 0 3px hsl(var(--accent) / 0.18);
 }
 .sd-clock-time {
   font-family: var(--mono);
@@ -1085,7 +1092,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
   max-width: 18ch;
   white-space: nowrap;
   overflow: hidden;
@@ -1103,7 +1110,7 @@ html[data-scroll-locked] .app-scroll {
   border-radius: 20px;
   background: var(--ink);
   color: var(--paper);
-  box-shadow: 0 30px 50px -30px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 30px 50px -30px hsl(var(--foreground) / 0.9);
   animation: sd-toast-in 0.6s var(--ease) both;
 }
 .sd-toast-mark {
@@ -1119,7 +1126,7 @@ html[data-scroll-locked] .app-scroll {
   margin: 0 0 12px;
   font-size: 12.5px;
   line-height: 1.55;
-  color: rgba(240, 245, 255, 0.78);
+  color: hsl(0 0% 100% / 0.78);
 }
 .sd-toast strong {
   color: var(--paper);
@@ -1142,13 +1149,13 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-toast-primary {
   background: var(--brand-gradient);
-  color: #ffffff;
+  color: hsl(var(--primary-foreground));
   font-weight: 600;
 }
 .sd-toast-ghost {
   background: transparent;
-  border-color: rgba(240, 245, 255, 0.28);
-  color: rgba(240, 245, 255, 0.78);
+  border-color: hsl(0 0% 100% / 0.28);
+  color: hsl(0 0% 100% / 0.78);
 }
 @keyframes sd-toast-in {
   from {
@@ -1186,7 +1193,7 @@ html[data-scroll-locked] .app-scroll {
   top: 0;
   bottom: 0;
   width: 50.5%;
-  background: linear-gradient(160deg, #0e1130 0%, #1a1e45 46%, #3b2a92 100%);
+  background: linear-gradient(160deg, var(--forest-deep) 0%, var(--forest) 46%, hsl(var(--brand-hue) 52% 28%) 100%);
   transition: transform 1s var(--ease-in-out);
 }
 .land-loader-panel-a {
@@ -1194,7 +1201,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .land-loader-panel-b {
   right: 0;
-  background: linear-gradient(200deg, #0e1130 0%, #1a1e45 46%, #3b2a92 100%);
+  background: linear-gradient(200deg, var(--forest-deep) 0%, var(--forest) 46%, hsl(var(--brand-hue) 52% 28%) 100%);
 }
 .land-loader[data-exiting="true"] .land-loader-panel-a {
   transform: translateX(-100%);
@@ -1217,7 +1224,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(240, 245, 255, 0.6);
+  color: hsl(0 0% 100% / 0.6);
 }
 .land-loader-mark {
   margin-top: 2.4rem;
@@ -1243,13 +1250,13 @@ html[data-scroll-locked] .app-scroll {
 .land-loader-bar {
   margin-top: 1.4rem;
   height: 1px;
-  background: rgba(240, 245, 255, 0.22);
+  background: hsl(0 0% 100% / 0.22);
   overflow: hidden;
 }
 .land-loader-bar i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #a8cdff, #ffffff 55%, #d2c6ff);
+  background: linear-gradient(90deg, hsl(var(--brand-hue) 90% 82%), hsl(0 0% 100%) 55%, hsl(var(--accent) / 0.55));
   transform-origin: left center;
   transition: transform 0.12s linear;
 }
@@ -1272,7 +1279,7 @@ html[data-scroll-locked] .app-scroll {
   width: 46vw;
   height: 46vw;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(124, 90, 224, 0.26), transparent 68%);
+  background: radial-gradient(circle, hsl(var(--accent) / 0.26), transparent 68%);
   filter: blur(20px);
   pointer-events: none;
 }
@@ -1299,7 +1306,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
 }
 .sd-kicker-dot {
   width: 6px;
@@ -1327,7 +1334,7 @@ html[data-scroll-locked] .app-scroll {
   max-width: 40ch;
   font-size: clamp(0.98rem, 1.15vw, 1.08rem);
   line-height: 1.62;
-  color: rgba(15, 23, 42, 0.7);
+  color: hsl(var(--foreground) / 0.7);
 }
 
 .sd-hero-actions {
@@ -1343,14 +1350,14 @@ html[data-scroll-locked] .app-scroll {
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: rgba(15, 23, 42, 0.78);
+  color: hsl(var(--foreground) / 0.78);
   text-decoration: none;
 }
 .sd-ghost-rule {
   display: block;
   height: 1px;
   width: 100%;
-  background: rgba(15, 23, 42, 0.35);
+  background: hsl(var(--foreground) / 0.35);
   transform-origin: left center;
   transition: transform 0.5s var(--ease), background 0.3s;
 }
@@ -1387,7 +1394,7 @@ html[data-scroll-locked] .app-scroll {
   line-height: 1.5;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
 }
 
 .sd-hero-media {
@@ -1406,7 +1413,7 @@ html[data-scroll-locked] .app-scroll {
   margin-inline: auto;
   border-radius: 30px;
   overflow: hidden;
-  box-shadow: 0 60px 90px -60px rgba(15, 23, 42, 0.85);
+  box-shadow: 0 60px 90px -60px hsl(var(--foreground) / 0.85);
   background: var(--mist);
 }
 .sd-hero[data-ready="true"] .sd-hero-frame {
@@ -1425,8 +1432,8 @@ html[data-scroll-locked] .app-scroll {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgba(240, 245, 255, 0.28);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.16));
+  box-shadow: inset 0 0 0 1px hsl(0 0% 100% / 0.28);
+  background: linear-gradient(180deg, hsl(var(--foreground) / 0.04), hsl(var(--foreground) / 0.16));
   pointer-events: none;
 }
 
@@ -1444,9 +1451,9 @@ html[data-scroll-locked] .app-scroll {
   gap: 12px;
   padding: 12px 16px 12px 12px;
   border-radius: 18px;
-  background: var(--card);
-  box-shadow: 0 30px 50px -34px rgba(15, 23, 42, 0.8);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: hsl(var(--card));
+  box-shadow: 0 30px 50px -34px hsl(var(--foreground) / 0.8);
+  border: 1px solid hsl(var(--foreground) / 0.06);
 }
 .sd-hero-tag-time {
   display: grid;
@@ -1455,7 +1462,7 @@ html[data-scroll-locked] .app-scroll {
   height: 44px;
   border-radius: 12px;
   background: var(--system);
-  color: #fff;
+  color: hsl(var(--primary-foreground));
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
@@ -1476,7 +1483,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.58);
+  color: hsl(var(--foreground) / 0.58);
 }
 .sd-hero-tag-tick {
   width: 20px;
@@ -1515,10 +1522,10 @@ html[data-scroll-locked] .app-scroll {
   font-size: 8.5px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.56);
+  color: hsl(var(--foreground) / 0.56);
 }
 .sd-hero-stamp b {
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
   font-weight: 500;
 }
 
@@ -1539,7 +1546,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
   text-decoration: none;
 }
 .sd-cue-line {
@@ -1547,7 +1554,7 @@ html[data-scroll-locked] .app-scroll {
   display: block;
   width: 46px;
   height: 1px;
-  background: rgba(15, 23, 42, 0.22);
+  background: hsl(var(--foreground) / 0.22);
   overflow: hidden;
 }
 .sd-cue-line::after {
@@ -1569,7 +1576,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.52);
+  color: hsl(var(--foreground) / 0.52);
 }
 
 /* ── the bell (marquee) ────────────────────────────────────────────────── */
@@ -1577,7 +1584,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-bell {
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
-  background: rgba(240, 245, 255, 0.34);
+  background: hsl(var(--card) / 0.34);
 }
 .sd-marquee {
   position: relative;
@@ -1609,7 +1616,7 @@ html[data-scroll-locked] .app-scroll {
 
 .sd-bell-a {
   background: var(--brand-gradient);
-  color: #ffffff;
+  color: hsl(var(--primary-foreground));
   padding: 11px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.18);
 }
@@ -1621,7 +1628,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-bell-b {
   background: var(--forest);
-  color: rgba(240, 245, 255, 0.86);
+  color: hsl(0 0% 100% / 0.86);
   padding: 9px 0;
 }
 .sd-bell-b .sd-marquee-item {
@@ -1659,11 +1666,11 @@ html[data-scroll-locked] .app-scroll {
   flex-direction: column;
   gap: 4px;
   padding: clamp(1.1rem, 2.4vw, 1.8rem);
-  background: var(--card);
+  background: hsl(var(--card));
   transition: background 0.45s var(--ease);
 }
 .sd-stat:hover {
-  background: #f7f9ff;
+  background: hsl(var(--muted) / 0.5);
 }
 .sd-stat-icon {
   display: grid;
@@ -1672,7 +1679,7 @@ html[data-scroll-locked] .app-scroll {
   height: 34px;
   margin-bottom: 0.9rem;
   border-radius: 50%;
-  background: rgba(107, 75, 224, 0.1);
+  background: hsl(var(--accent) / 0.1);
   color: var(--forest);
 }
 .sd-stat-value {
@@ -1703,7 +1710,7 @@ html[data-scroll-locked] .app-scroll {
   line-height: 1.5;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.56);
+  color: hsl(var(--foreground) / 0.56);
 }
 
 /* ── 09:10 · the timetable (index) ─────────────────────────────────────── */
@@ -1722,7 +1729,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.56);
+  color: hsl(var(--foreground) / 0.56);
 }
 .sd-table-rows {
   position: relative;
@@ -1755,7 +1762,7 @@ html[data-scroll-locked] .app-scroll {
   font-style: normal;
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: rgba(15, 23, 42, 0.52);
+  color: hsl(var(--foreground) / 0.52);
 }
 .sd-row-title {
   display: flex;
@@ -1771,12 +1778,12 @@ html[data-scroll-locked] .app-scroll {
   font-family: var(--mono);
   font-size: 9px;
   letter-spacing: 0.1em;
-  color: rgba(15, 23, 42, 0.34);
+  color: hsl(var(--foreground) / 0.34);
 }
 .sd-row-meta {
   font-size: 12px;
   line-height: 1.5;
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
 }
 .sd-row-stat {
   display: flex;
@@ -1795,7 +1802,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 8.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.56);
+  color: hsl(var(--foreground) / 0.56);
 }
 .sd-row-arrow {
   justify-self: end;
@@ -1822,7 +1829,7 @@ html[data-scroll-locked] .app-scroll {
 }
 
 .sd-row[data-active="true"] {
-  background: rgba(15, 23, 42, 0.028);
+  background: hsl(var(--foreground) / 0.028);
 }
 .sd-row[data-active="true"] .sd-row-pen {
   transform: scaleX(1);
@@ -1850,7 +1857,7 @@ html[data-scroll-locked] .app-scroll {
   overflow: hidden;
   pointer-events: none;
   opacity: 0;
-  box-shadow: 0 40px 60px -40px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 40px 60px -40px hsl(var(--foreground) / 0.9);
   transition: opacity 0.35s var(--ease);
   will-change: transform;
 }
@@ -1871,8 +1878,8 @@ html[data-scroll-locked] .app-scroll {
   bottom: 10px;
   padding: 5px 9px;
   border-radius: 999px;
-  background: rgba(31, 91, 166, 0.94);
-  color: #fff;
+  background: hsl(var(--primary) / 0.94);
+  color: hsl(var(--primary-foreground));
   font-family: var(--mono);
   font-size: 8.5px;
   letter-spacing: 0.12em;
@@ -1900,7 +1907,7 @@ html[data-scroll-locked] .app-scroll {
   border-radius: 26px;
   overflow: hidden;
   background: var(--mist);
-  box-shadow: 0 55px 80px -60px rgba(15, 23, 42, 0.9);
+  box-shadow: 0 55px 80px -60px hsl(var(--foreground) / 0.9);
 }
 .sd-story-frame {
   position: absolute;
@@ -1929,7 +1936,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
 }
 .sd-story-caption-time {
   padding: 4px 9px;
@@ -1950,7 +1957,7 @@ html[data-scroll-locked] .app-scroll {
   display: block;
   width: 2px;
   height: 22px;
-  background: rgba(240, 245, 255, 0.45);
+  background: hsl(0 0% 100% / 0.45);
   transition: background 0.4s var(--ease);
 }
 .sd-story-ticks i[data-on="true"] {
@@ -1992,7 +1999,7 @@ html[data-scroll-locked] .app-scroll {
   font-weight: 600;
 }
 .sd-step-label {
-  color: rgba(15, 23, 42, 0.45);
+  color: hsl(var(--foreground) / 0.45);
 }
 .sd-step-title {
   margin: 12px 0 0;
@@ -2008,7 +2015,7 @@ html[data-scroll-locked] .app-scroll {
   max-width: 44ch;
   font-size: 13.5px;
   line-height: 1.68;
-  color: rgba(15, 23, 42, 0.66);
+  color: hsl(var(--foreground) / 0.66);
 }
 .sd-step-detail {
   display: flex;
@@ -2029,7 +2036,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 8.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.62);
+  color: hsl(var(--foreground) / 0.62);
 }
 .sd-step-detail li::before {
   content: "✓";
@@ -2052,8 +2059,8 @@ html[data-scroll-locked] .app-scroll {
   min-height: 236px;
   padding: clamp(1.1rem, 2.2vw, 1.8rem);
   border-radius: var(--r-card);
-  border: 1px solid rgba(15, 23, 42, 0.07);
-  background: var(--card);
+  border: 1px solid hsl(var(--foreground) / 0.07);
+  background: hsl(var(--card));
   color: inherit;
   text-decoration: none;
   overflow: hidden;
@@ -2066,7 +2073,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-doc:hover {
   box-shadow: var(--shadow);
-  border-color: rgba(15, 23, 42, 0.14);
+  border-color: hsl(var(--foreground) / 0.14);
 }
 .sd-doc-glow {
   position: absolute;
@@ -2074,7 +2081,7 @@ html[data-scroll-locked] .app-scroll {
   z-index: -1;
   background: radial-gradient(
     300px circle at var(--gx, 50%) var(--gy, 50%),
-    rgba(124, 90, 224, 0.28),
+    hsl(var(--accent) / 0.28),
     transparent 62%
   );
   opacity: 0;
@@ -2091,7 +2098,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.58);
+  color: hsl(var(--foreground) / 0.58);
 }
 .sd-doc-name {
   font-family: var(--font-display);
@@ -2103,7 +2110,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-doc-note {
   font-size: 12.5px;
   line-height: 1.55;
-  color: rgba(15, 23, 42, 0.58);
+  color: hsl(var(--foreground) / 0.58);
   max-width: 34ch;
 }
 .sd-doc-foot {
@@ -2120,7 +2127,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.6);
+  color: hsl(var(--foreground) / 0.6);
 }
 .sd-doc-open {
   display: inline-flex;
@@ -2146,7 +2153,7 @@ html[data-scroll-locked] .app-scroll {
   top: 18px;
   right: 16px;
   padding: 4px 8px;
-  border: 1px solid rgba(107, 75, 224, 0.55);
+  border: 1px solid hsl(var(--accent) / 0.55);
   border-radius: 3px;
   color: var(--mark);
   font-family: var(--mono);
@@ -2178,7 +2185,7 @@ html[data-scroll-locked] .app-scroll {
   inset: 0;
   background: radial-gradient(
     620px circle at var(--mx, 50%) var(--my, 36%),
-    rgba(124, 90, 224, 0.16),
+    hsl(var(--accent) / 0.16),
     transparent 68%
   );
   pointer-events: none;
@@ -2223,7 +2230,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-fact-body {
   font-size: 13px;
   line-height: 1.62;
-  color: rgba(240, 245, 255, 0.68);
+  color: hsl(0 0% 100% / 0.68);
   max-width: 36ch;
 }
 .sd-close-actions {
@@ -2237,7 +2244,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: rgba(240, 245, 255, 0.58);
+  color: hsl(0 0% 100% / 0.58);
 }
 
 /* ── footer ────────────────────────────────────────────────────────────── */
@@ -2248,7 +2255,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-wordmark {
   padding: clamp(0.8rem, 2.2vw, 1.6rem) 0;
-  border-bottom: 1px solid rgba(240, 245, 255, 0.16);
+  border-bottom: 1px solid hsl(0 0% 100% / 0.16);
 }
 .sd-wordmark .sd-marquee-item {
   font-family: var(--font-display);
@@ -2256,7 +2263,7 @@ html[data-scroll-locked] .app-scroll {
   font-weight: 500;
   letter-spacing: -0.05em;
   color: transparent;
-  -webkit-text-stroke: 1px rgba(240, 245, 255, 0.5);
+  -webkit-text-stroke: 1px hsl(0 0% 100% / 0.5);
 }
 .sd-wordmark .sd-marquee-item:nth-child(even) {
   color: var(--paper);
@@ -2277,7 +2284,7 @@ html[data-scroll-locked] .app-scroll {
   padding: clamp(2.4rem, 5vw, 4rem) var(--gutter);
 }
 .sd-footer .sd-label {
-  color: rgba(240, 245, 255, 0.5);
+  color: hsl(0 0% 100% / 0.5);
 }
 .sd-footer .sd-label::before {
   background: var(--glow-on-dark);
@@ -2286,7 +2293,7 @@ html[data-scroll-locked] .app-scroll {
   margin: 12px 0 0;
   font-size: 13px;
   line-height: 1.65;
-  color: rgba(240, 245, 255, 0.62);
+  color: hsl(0 0% 100% / 0.62);
   max-width: 40ch;
 }
 .sd-footer-col nav {
@@ -2298,7 +2305,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-footer-col nav a {
   width: fit-content;
   font-size: 13px;
-  color: rgba(240, 245, 255, 0.72);
+  color: hsl(0 0% 100% / 0.72);
   text-decoration: none;
   transition: color 0.3s, transform 0.4s var(--ease);
 }
@@ -2338,7 +2345,7 @@ html[data-scroll-locked] .app-scroll {
 .sd-footer-note {
   font-size: 11px;
   line-height: 1.7;
-  color: rgba(240, 245, 255, 0.5);
+  color: hsl(0 0% 100% / 0.5);
 }
 .sd-footer-legal {
   max-width: 1520px;
@@ -2352,7 +2359,7 @@ html[data-scroll-locked] .app-scroll {
 }
 .sd-footer-legal a {
   font-size: 12px;
-  color: rgba(240, 245, 255, 0.66);
+  color: hsl(0 0% 100% / 0.66);
   text-decoration: none;
   transition: color 0.3s;
 }
@@ -2368,12 +2375,12 @@ html[data-scroll-locked] .app-scroll {
   max-width: 1520px;
   margin-inline: auto;
   padding: 16px var(--gutter) 22px;
-  border-top: 1px solid rgba(240, 245, 255, 0.14);
+  border-top: 1px solid hsl(0 0% 100% / 0.14);
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(240, 245, 255, 0.6);
+  color: hsl(0 0% 100% / 0.6);
 }
 
 /* ── breakpoints ───────────────────────────────────────────────────────── */
@@ -2566,8 +2573,8 @@ html[data-scroll-locked] .app-scroll {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(14, 17, 48, 0.2) 0%, rgba(14, 17, 48, 0.74) 100%),
-    linear-gradient(90deg, rgba(14, 17, 48, 0.6), transparent 60%);
+    linear-gradient(180deg, hsl(var(--brand-hue) 48% 8% / 0.2) 0%, hsl(var(--brand-hue) 48% 8% / 0.74) 100%),
+    linear-gradient(90deg, hsl(var(--brand-hue) 48% 8% / 0.6), transparent 60%);
 }
 .sd-interlude-inner {
   position: relative;
@@ -2594,7 +2601,7 @@ html[data-scroll-locked] .app-scroll {
   font-size: 9px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(240, 245, 255, 0.6);
+  color: hsl(0 0% 100% / 0.6);
 }
 
 /* anchors must clear the fixed header */
@@ -2619,11 +2626,11 @@ html[data-scroll-locked] .app-scroll {
    dropped hydration looked like a blank site. It now opens on the brand:
    navy → violet, the mark, and a real progress ramp. */
 .inst-boot {
-  color: #fff;
+  color: hsl(var(--primary-foreground));
   background:
-    radial-gradient(60% 50% at 18% 8%, rgba(124, 90, 224, 0.55) 0%, transparent 62%),
-    radial-gradient(55% 45% at 88% 92%, rgba(31, 91, 166, 0.5) 0%, transparent 60%),
-    linear-gradient(158deg, #0e1130 0%, #1a1e45 44%, #2a2470 76%, #3b2a92 100%);
+    radial-gradient(60% 50% at 18% 8%, hsl(var(--accent) / 0.55) 0%, transparent 62%),
+    radial-gradient(55% 45% at 88% 92%, hsl(var(--primary) / 0.5) 0%, transparent 60%),
+    linear-gradient(158deg, var(--forest-deep) 0%, var(--forest) 44%, hsl(var(--brand-hue) 50% 22%) 76%, hsl(var(--brand-hue) 52% 28%) 100%);
   animation: inst-boot-vanish 0.6s cubic-bezier(0.22, 1, 0.36, 1) 3.2s forwards;
 }
 .inst-boot[data-leaving="true"] {
@@ -2646,7 +2653,7 @@ html[data-scroll-locked] .app-scroll {
   position: absolute;
   inset: -20% -10% auto -10%;
   height: 60%;
-  background: radial-gradient(50% 50% at 50% 50%, rgba(124, 90, 224, 0.35), transparent 70%);
+  background: radial-gradient(50% 50% at 50% 50%, hsl(var(--accent) / 0.35), transparent 70%);
   filter: blur(30px);
   pointer-events: none;
 }
@@ -2654,9 +2661,9 @@ html[data-scroll-locked] .app-scroll {
   animation: inst-boot-breathe 3.4s ease-in-out infinite;
 }
 .inst-boot-bar {
-  background: linear-gradient(90deg, #8fd0ff 0%, #ffffff 46%, #c9b8ff 100%);
+  background: linear-gradient(90deg, hsl(var(--brand-hue) 90% 80%) 0%, hsl(0 0% 100%) 46%, hsl(var(--accent) / 0.6) 100%);
   transition: width 0.12s linear;
-  box-shadow: 0 0 18px rgba(201, 184, 255, 0.7);
+  box-shadow: 0 0 18px hsl(var(--accent) / 0.7);
 }
 @keyframes inst-boot-breathe {
   0%, 100% { transform: translateY(0) scale(1); }
