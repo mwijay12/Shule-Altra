@@ -1,83 +1,96 @@
 'use client';
 
-/**
- * @fileOverview Route transition wrapper. Framer Motion handles the crossfade,
- * GSAP choreographs the staggered reveal of `[data-reveal]` blocks.
- */
-
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { EASE_OUT_QUART } from '@/lib/motion/tokens';
+import { DURATION, ENTER_Y, GSAP_EASE, STAGGER, EASE_OUT_QUART } from '@/lib/motion/tokens';
 
-export function PageTransition({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
+/** Each route owns its observers, including when AnimatePresence delays its mount. */
+function RouteContent({ children }: { children: React.ReactNode }) {
   const reducedMotion = useReducedMotion();
   const containerRef = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     const root = containerRef.current;
-    if (!root) return;
-    if (reducedMotion) return;
+    if (!root || reducedMotion) return;
 
-    let ctx: { revert: () => void } | undefined;
-    let observer: MutationObserver | undefined;
     let cancelled = false;
+    let mutationObserver: MutationObserver | undefined;
+    let intersectionObserver: IntersectionObserver | undefined;
+    let context: { revert: () => void } | undefined;
+    const animations: Array<{ progress: (value: number) => unknown }> = [];
 
     (async () => {
       const { gsap } = await import('gsap');
-      if (cancelled || !containerRef.current) return;
-      // Blocks marked [data-reveal] often mount *after* the route changes,
-      // because they wait on Firestore. A single query on navigation missed
-      // every one of them. Watch for arrivals and reveal each block once.
+      if (cancelled) return;
       const seen = new WeakSet<HTMLElement>();
-      const reveal = () => {
-        const fresh = gsap
-          .utils.toArray<HTMLElement>('[data-reveal]')
-          .filter((node) => !seen.has(node))
-          // A WaveSection runs its own timeline; revealing it here too would
-          // fight it over the same transform.
-          .filter((node) => !node.closest('[data-wave-root]'));
-        if (fresh.length === 0) return;
-        fresh.forEach((node) => seen.add(node));
-        gsap.from(fresh, {
-          y: 18,
-          opacity: 0,
-          duration: 0.45,
-          ease: 'power3.out',
-          stagger: 0.045,
-          clearProps: 'transform,opacity',
-        });
-      };
+      const scrollRoot = root.closest<HTMLElement>('[data-app-scroll]');
 
-      ctx = gsap.context(() => {
-        reveal();
-        observer = new MutationObserver(reveal);
-        observer.observe(root, { childList: true, subtree: true });
-      }, containerRef);
+      context = gsap.context(() => {
+        const reveal = (nodes: HTMLElement[]) => {
+          if (!nodes.length) return;
+          animations.push(gsap.from(nodes, {
+            y: ENTER_Y,
+            opacity: 0,
+            duration: DURATION.enter,
+            ease: GSAP_EASE,
+            stagger: STAGGER.card,
+            clearProps: 'transform,opacity',
+          }));
+        };
+
+        if (typeof IntersectionObserver !== 'undefined') {
+          intersectionObserver = new IntersectionObserver((entries) => {
+            const visible = entries.filter((entry) => entry.isIntersecting).map((entry) => entry.target as HTMLElement);
+            visible.forEach((node) => intersectionObserver?.unobserve(node));
+            reveal(visible);
+          }, { root: scrollRoot, threshold: 0.05 });
+        }
+
+        const discover = () => {
+          const fresh = Array.from(root.querySelectorAll<HTMLElement>('[data-reveal]'))
+            .filter((node) => !seen.has(node) && !node.closest('[data-wave-root]'));
+          fresh.forEach((node) => {
+            seen.add(node);
+            intersectionObserver?.observe(node);
+          });
+          if (!intersectionObserver) reveal(fresh);
+        };
+        discover();
+        mutationObserver = new MutationObserver(discover);
+        mutationObserver.observe(root, { childList: true, subtree: true });
+      }, root);
     })();
 
     return () => {
       cancelled = true;
-      observer?.disconnect();
-      ctx?.revert();
+      mutationObserver?.disconnect();
+      intersectionObserver?.disconnect();
+      animations.forEach((animation) => animation.progress(1));
+      context?.revert();
     };
-  }, [pathname, reducedMotion]);
+  }, [reducedMotion]);
 
   return (
+    <motion.div
+      ref={containerRef}
+      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+      transition={{ duration: reducedMotion ? 0 : 0.2, ease: EASE_OUT_QUART }}
+      className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+export function PageTransition({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  return (
     <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={pathname}
-        ref={containerRef}
-        initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-        transition={{ duration: reducedMotion ? 0 : 0.2, ease: EASE_OUT_QUART }}
-        className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
-      >
-        {children}
-      </motion.div>
+      <RouteContent key={pathname}>{children}</RouteContent>
     </AnimatePresence>
   );
 }

@@ -191,7 +191,10 @@ async function main() {
     const transition = read('src/components/admin/page-transition.tsx');
     assert.match(transition, /MutationObserver/, 'late-mounting charts would never reveal');
     assert.match(transition, /WeakSet/, 'a block must not re-animate on every mutation');
-    assert.match(transition, /observer\?\.disconnect\(\)/, 'the observer must be cleaned up');
+    assert.match(transition, /mutationObserver\?\.disconnect\(\)/, 'the mutation observer must be cleaned up');
+    assert.match(transition, /intersectionObserver\?\.disconnect\(\)/, 'the viewport observer must be cleaned up');
+    assert.match(transition, /intersectionObserver\?\.observe\(node\)/, 'blocks should reveal when they enter the viewport');
+    assert.match(read('src/components/admin/revenue-chart.tsx'), /<ChartFrame/, 'the dashboard chart should wait until visible');
   });
 
   check('the page entrance staggers, and only composites opacity and transform', () => {
