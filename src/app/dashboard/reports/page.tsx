@@ -6,9 +6,11 @@
  */
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
+import { currencySpec } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
-import { AnimatedNumber } from "@/components/ui/animated-number";
-import { Progress } from "@/components/ui/progress";
+import { StatCard } from "@/components/admin/stat-card";
+import { ChartPanel, FeesByClass, AttendanceByClass } from "@/components/admin/module-charts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
@@ -211,7 +213,8 @@ export default function ReportsPage() {
     }
   };
 
-  const { role: authRole } = useAuth();
+  const { role: authRole, canAccess } = useAuth();
+  const CURRENCY = currencySpec();
   const role = (authRole ?? null) as DocRole | null;
 
   const printables = [
@@ -350,55 +353,55 @@ export default function ReportsPage() {
             Every report is a real vector PDF — letterhead, crest and selectable text.
           </p>
         </div>
-        <Button variant="outline" className="rounded-full h-11 border-border/70 text-primary bg-card shadow-sm font-semibold text-[12px] px-8">
-          <History className="mr-2 h-4 w-4" /> Audit History
-        </Button>
+        {canAccess('audit') ? (
+          <Button asChild variant="outline" className="rounded-full h-11 border-border/70 text-primary bg-card shadow-sm font-semibold text-[12px] px-8">
+            <Link href="/dashboard/audit">
+              <History className="mr-2 h-4 w-4" /> Audit trail
+            </Link>
+          </Button>
+        ) : null}
       </div>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 px-1">
-        <Card className="colorful-gradient text-white border-none shadow-xl rounded-[2rem] overflow-hidden group">
-          <CardContent className="p-6 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 opacity-10 group-hover:rotate-12 transition-transform">
-              <DollarSign className="h-20 w-20" />
-            </div>
-            <p className="text-[13px] font-semibold opacity-70">Total Fee Collection</p>
-            <h2 className="text-2xl font-semibold mt-2"><AnimatedNumber value={totalCollected} prefix="TZS " /></h2>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-white/20 text-white border-none font-semibold text-[11px] rounded-full"><AnimatedNumber value={collectionRate} suffix="% OF BILLED" /></Badge>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          index={0}
+          label="Total fee collection"
+          value={totalCollected}
+          prefix={`${CURRENCY.code} `}
+          tone="primary"
+          icon={DollarSign}
+          progress={collectionRate}
+          sub={`${collectionRate}% of what was billed`}
+        />
+        <StatCard
+          index={1}
+          label="Overall pass rate"
+          value={overallPassRate}
+          format={(n) => (gradeRows.length > 0 ? n.toFixed(1) : '—')}
+          suffix={gradeRows.length > 0 ? '%' : ''}
+          tone="emerald"
+          icon={GraduationCap}
+          progress={overallPassRate}
+          sub={gradeRows.length > 0 ? `${gradeRows.length} recorded marks` : 'No marks recorded yet'}
+        />
+        <StatCard
+          index={2}
+          label="Still outstanding"
+          value={totalOutstanding}
+          prefix={`${CURRENCY.code} `}
+          tone={totalOutstanding > 0 ? 'amber' : 'emerald'}
+          icon={Receipt}
+          sub={`${learners.filter((l) => Number(l.balance) > 0).length} learners carry a balance`}
+        />
+      </div>
 
-        <Card className="glass-panel border-border/60 shadow-lg rounded-[2rem] overflow-hidden group">
-          <CardContent className="p-6 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-              <TrendingUp className="h-20 w-20" />
-            </div>
-            <p className="text-[13px] font-semibold text-muted-foreground">Overall Pass Rate</p>
-            <h2 className="text-2xl font-semibold text-primary mt-2">
-              {gradeRows.length > 0 ? <AnimatedNumber value={overallPassRate} format={(n) => n.toFixed(1)} suffix="%" /> : "—"}
-            </h2>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-emerald-500/12 text-emerald-600 border-none font-semibold text-[11px] rounded-full">NECTA CSEE SCALE</Badge>
-              <Progress value={overallPassRate} aria-label="Overall CSEE pass rate" className="h-1.5 flex-1 bg-muted/40" indicatorClassName="bg-emerald-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="glass-panel border-border/60 shadow-lg rounded-[2rem] overflow-hidden group">
-          <CardContent className="p-6 relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-              <Package className="h-20 w-20" />
-            </div>
-            <p className="text-[13px] font-semibold text-muted-foreground">Printables queued</p>
-            <h2 className="text-2xl font-semibold text-emerald-600 mt-2">
-              <AnimatedNumber value={(assets || []).length} /> assets · <AnimatedNumber value={(staff || []).length} /> staff
-            </h2>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge className="bg-primary/10 text-primary border-none font-semibold text-[11px] rounded-full">VECTOR ENGINE ONLINE</Badge>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 px-1 lg:grid-cols-2">
+        <ChartPanel title="Collected against owed" hint="Per class, from the live register." data-reveal>
+          <FeesByClass students={learners} />
+        </ChartPanel>
+        <ChartPanel title="Presence by class" hint="From the recorded register." data-reveal>
+          <AttendanceByClass students={attendanceRows.length > 0 ? learners : []} />
+        </ChartPanel>
       </div>
 
       <div className="px-1 space-y-3">

@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { OccupancyPanel, ChartPanel } from "@/components/admin/module-charts"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Sheet,
@@ -232,6 +233,11 @@ export default function HostelPage() {
           </Card>
         ))}
       </div>
+
+      <ChartPanel title="Occupancy by wing" hint="Beds filled against capacity, from the live roster" className="mx-1" data-reveal>
+        <OccupancyPanel hostels={hostels ?? []} students={students ?? []} />
+      </ChartPanel>
+
 
       {isLoading ? (
         <div className="p-20 flex flex-col items-center justify-center text-muted-foreground">

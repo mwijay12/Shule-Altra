@@ -54,6 +54,36 @@ service cloud.firestore {
         return inRole(['ADMIN', 'TEACHER']);
       }
 
+      // ── audit log ────────────────────────────────────────────────────────
+      // Append-only, enforced here rather than trusted to the client.
+      //
+      // Any staff member may append the entry describing what they just did,
+      // but NOBODY may update or delete one — not an administrator, not the
+      // install owner. That is what makes the hash chain meaningful: an editor
+      // would have to rewrite every later entry, and the rules forbid touching
+      // any of them.
+      //
+      // The entry must name the signed-in user as its actor, so a teacher
+      // cannot file an entry attributing a change to the bursar.
+      match /audit/{entryId} {
+        allow read: if inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
+
+        allow create: if isStaff()
+          && request.resource.data.actor.uid == request.auth.uid
+          && request.resource.data.seq is int
+          && request.resource.data.seq > 0
+          && request.resource.data.hash is string
+          && request.resource.data.hash.size() == 64
+          && request.resource.data.prevHash is string
+          && request.resource.data.action in [
+               'create', 'update', 'delete', 'sign_in', 'sign_out',
+               'export', 'send', 'publish'
+             ];
+
+        // No update. No delete. History is not editable by design.
+        allow update, delete: if false;
+      }
+
       // ── identity ─────────────────────────────────────────────────────────
       // A staff member may always read their own record (that is how the hub
       // resolves a role); only an administrator may touch anybody's.

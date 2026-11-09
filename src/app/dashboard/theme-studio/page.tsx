@@ -388,7 +388,7 @@ export default function ThemeStudioPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]" data-reveal>
         <div className="space-y-6">
           <Card>
             <CardHeader>

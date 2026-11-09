@@ -21,6 +21,7 @@ import {
   Palette,
   LifeBuoy,
   Mails,
+  FileClock,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -75,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Intelligence & system',
     items: [
       { title: 'Reports', url: '/dashboard/reports', icon: FileBarChart2, module: 'reports', hint: 'PDF & printable output' },
+      { title: 'Audit trail', url: '/dashboard/audit', icon: FileClock, module: 'audit', hint: 'Who changed what, and when' },
       { title: 'Settings', url: '/dashboard/settings', icon: Settings2, module: 'settings', hint: 'Institution profile' },
       { title: 'Theme Studio', url: '/dashboard/theme-studio', icon: Palette, module: 'themeStudio', hint: 'Colours, type & letterhead' },
       { title: 'Help', url: '/dashboard/help', icon: LifeBuoy, module: 'help', hint: 'Support desk' },

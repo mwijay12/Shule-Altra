@@ -488,3 +488,65 @@ propagation, icon container, rules, type floor):
 ```bash
 npm run demo:smoke:brand
 ```
+
+## Audit trail
+
+Every write through the mutation helpers appends an entry to
+`schools/{schoolId}/audit`: the actor, their role, the action, the fields before
+and after, and the time. Open **Intelligence & system → Audit trail**.
+
+- **Append-only.** `firestore.rules` refuses `update` and `delete` on that
+  collection for every role, including the install owner. An entry must name the
+  signed-in user as its actor.
+- **Hash-chained.** Each entry carries the SHA-256 digest of the one before it.
+  **Verify chain** recomputes every digest and every link, and names the entry
+  where history stopped being trustworthy.
+- **Redacted.** Photographs, phone numbers and secrets never reach the log; long
+  values are truncated. Only fields that actually changed are recorded.
+- **Bulk actions record once.** Marking a whole register present writes one entry
+  describing that decision, not 150 near-identical rows.
+- **Non-blocking.** A failed append never reverses the change; it is surfaced
+  through `onAuditFailure` rather than swallowed.
+
+Access is the money band: ADMIN, ACCOUNTANT, BURSAR. A teacher is refused.
+
+Regression suite: `npm run demo:smoke:audit` — 23 checks that edit a fee after the
+fact, forge an actor, backdate, delete a row, reorder, and re-hash an edited row.
+Each attack must be caught.
+
+Honest limit: the chain is written by the application, so someone holding the
+cloud project's own administrator credentials could rewrite it and recompute the
+digests. The rules stop every application role; that is why the deployment
+belongs to the school. This is stated on `/legal/security`.
+
+## Dashboard motion
+
+One stat tile (`StatCard`) and one chart grammar (`chart-motion.tsx`) are shared
+by every module, so moving between screens no longer feels like leaving a
+finished page for a draft. All eighteen dashboard pages are covered; `ai-tools`
+is only a redirect into Reports.
+
+Pages that are forms or prose — Settings, Theme Studio, Help — get the staggered
+entrance and scroll reveal but **no invented statistics**. A settings screen does
+not have a "total" worth counting.
+
+- Numbers count up; rings and bars draw; sparklines trace.
+- Tiles and charts below the fold animate when reached, not while off-screen.
+- Ledger rows arrive in sequence, capped so a 150-row register is not slow.
+- Only `opacity` and `transform` are animated — both GPU-composited, which
+  matters on the low-end machines this product is used on.
+- `prefers-reduced-motion` lands every value immediately.
+
+Charts added in the second pass: mean score by subject and divisions awarded
+(Academics), establishment by role and staff per department (Staff), collected
+against owed and presence by class (Reports), week utilisation (Timetable), and
+what each send reached (Mail room).
+
+Two defects found by looking at the rendered pages rather than the code:
+
+- A `ResponsiveContainer` with `height="100%"` inside `ChartFrame` collapsed to
+  zero, so the Staff donut painted as blank space. `ChartFrame` sets `minHeight`,
+  not `height`. Both are now guarded by a smoke check.
+- The GSAP reveal queried `[data-reveal]` once on navigation, before Firestore
+  resolved, so every chart that mounts with the data was never revealed. It now
+  observes arrivals and reveals each block once.

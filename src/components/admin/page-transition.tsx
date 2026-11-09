@@ -21,15 +21,23 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     if (reducedMotion) return;
 
     let ctx: { revert: () => void } | undefined;
+    let observer: MutationObserver | undefined;
     let cancelled = false;
 
     (async () => {
       const { gsap } = await import('gsap');
       if (cancelled || !containerRef.current) return;
-      ctx = gsap.context(() => {
-        const targets = gsap.utils.toArray<HTMLElement>('[data-reveal]');
-        if (targets.length === 0) return;
-        gsap.from(targets, {
+      // Blocks marked [data-reveal] often mount *after* the route changes,
+      // because they wait on Firestore. A single query on navigation missed
+      // every one of them. Watch for arrivals and reveal each block once.
+      const seen = new WeakSet<HTMLElement>();
+      const reveal = () => {
+        const fresh = gsap
+          .utils.toArray<HTMLElement>('[data-reveal]')
+          .filter((node) => !seen.has(node));
+        if (fresh.length === 0) return;
+        fresh.forEach((node) => seen.add(node));
+        gsap.from(fresh, {
           y: 18,
           opacity: 0,
           duration: 0.45,
@@ -37,11 +45,18 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
           stagger: 0.045,
           clearProps: 'transform,opacity',
         });
+      };
+
+      ctx = gsap.context(() => {
+        reveal();
+        observer = new MutationObserver(reveal);
+        observer.observe(root, { childList: true, subtree: true });
       }, containerRef);
     })();
 
     return () => {
       cancelled = true;
+      observer?.disconnect();
       ctx?.revert();
     };
   }, [pathname, reducedMotion]);

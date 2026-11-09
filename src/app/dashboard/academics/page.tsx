@@ -19,6 +19,9 @@ import {
   Filter,
   Download,
   Upload,
+  Users,
+  Target,
+  ClipboardCheck,
   CheckCircle2,
   AlertTriangle
 } from "lucide-react"
@@ -48,6 +51,8 @@ import type { GradeRecord } from "@/types/grade"
 import { SUBJECTS_SECONDARY } from "@/data/fixtures/tanzanian-names"
 import { O_LEVEL_CLASSES } from "@/lib/academics/config"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { ChartPanel, SubjectAverages, DivisionSpread } from "@/components/admin/module-charts"
 import { SegmentedProgress } from "@/components/ui/progress"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 
@@ -126,6 +131,18 @@ export default function AcademicsPage() {
       return { subject, ...stats }
     }).filter(Boolean)
   }, [grades, students, activeClass])
+
+  const classPerformance = (subjectPerformance ?? []) as Array<{
+    subject: string; averageScore: number; passRate: number; totalStudents: number;
+  }>;
+  const markedCandidates = rankings.length;
+  const classAverage = classPerformance.length > 0
+    ? classPerformance.reduce((sum, p) => sum + p.averageScore, 0) / classPerformance.length
+    : 0;
+  const classPassRate = classPerformance.length > 0
+    ? classPerformance.reduce((sum, p) => sum + p.passRate, 0) / classPerformance.length
+    : 0;
+  const divisionOne = rankings.filter((r: any) => String(r.division) === 'I').length;
 
   const handleSaveGrade = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -379,6 +396,22 @@ export default function AcademicsPage() {
             </SelectContent>
           </Select>
         </div>
+      </div>
+
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <StatCard index={0} label="Candidates" value={filteredStudents.length} icon={Users} tone="primary" sub={`${activeClass} · ${activeTerm}`} />
+        <StatCard index={1} label="Class mean" value={classAverage} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={Target} tone="accent" progress={classAverage} sub={`${classPerformance.length} subjects marked`} />
+        <StatCard index={2} label="Pass rate" value={classPassRate} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={ClipboardCheck} tone="emerald" progress={classPassRate} sub="Grade D or better, per subject" />
+        <StatCard index={3} label="Division I" value={divisionOne} icon={Trophy} tone="amber" progress={markedCandidates ? (divisionOne / markedCandidates) * 100 : 0} sub={`${markedCandidates} candidates ranked`} />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ChartPanel title="Mean score by subject" hint={`${activeClass} · ${activeExam}. Amber sits below the 45% pass mark.`} className="lg:col-span-2" data-reveal>
+          <SubjectAverages performance={classPerformance} />
+        </ChartPanel>
+        <ChartPanel title="Divisions awarded" hint="Best seven subjects, CSEE rules." data-reveal>
+          <DivisionSpread rankings={rankings} />
+        </ChartPanel>
       </div>
 
       <Tabs defaultValue="ledger" className="space-y-6">

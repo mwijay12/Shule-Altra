@@ -73,6 +73,7 @@ import type { Student } from "@/types/student"
 import { DEMO_MODE } from "@/lib/demo/config"
 import { ACADEMIC_LEVEL_LABEL, DEFAULT_CLASS, classOptions, isOLevelClass } from "@/lib/academics/config"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { RegisterSplit, FeesByClass, ChartPanel } from "@/components/admin/module-charts"
 import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
 
 /** Colour codes for the bulk-import plan, one per outcome. */
@@ -903,6 +904,16 @@ export default function StudentsPage() {
         </div>
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2" data-reveal>
+        <ChartPanel title="Register composition" hint="Boarding and day scholars across Form 1–4">
+          <RegisterSplit students={students ?? []} />
+        </ChartPanel>
+        <ChartPanel title="Outstanding by class" hint="Balances still open, largest first">
+          <FeesByClass students={students ?? []} />
+        </ChartPanel>
+      </div>
+
+
       <Card className="border-none shadow-2xl overflow-hidden bg-white/60 rounded-[2.5rem]">
         <CardHeader className="bg-muted/20 border-b p-6 sm:p-8 flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative flex-1 max-w-sm group">
@@ -961,7 +972,7 @@ export default function StudentsPage() {
                   <TableHead className="text-right pr-8 text-[12px] font-semibold">Control</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="sd-stagger-rows">
                 {filteredStudents.map((student) => (
                   <TableRow
                     key={student.id}

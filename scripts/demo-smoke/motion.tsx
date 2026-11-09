@@ -4,6 +4,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Progress, SegmentedProgress } from '@/components/ui/progress';
@@ -97,6 +99,90 @@ async function main() {
 
   await act(async () => { root.unmount(); });
   check('unmount removes preference listeners', () => assert.equal(listeners.size, 0));
+
+  // ── the dashboard motion rework ────────────────────────────────────────────
+  const read = (file: string) => readFileSync(path.resolve(file), 'utf8');
+
+  check('every module shares one animated stat tile', () => {
+    const modules = ['finance', 'attendance', 'canteen', 'assets', 'transport', 'audit'];
+    for (const name of modules) {
+      const source = read(`src/app/dashboard/${name}/page.tsx`);
+      assert.match(source, /StatCard/, `${name} is not using the shared stat tile`);
+    }
+    const tile = read('src/components/admin/stat-card.tsx');
+    assert.match(tile, /useCountUp/, 'the tile must count up');
+    assert.match(tile, /useReducedMotion/, 'the tile must honour reduced motion');
+    assert.match(tile, /data-count-value/, 'the tile must expose its target for testing');
+    assert.match(tile, /useInView/, 'below-the-fold tiles must animate on arrival');
+  });
+
+  check('charts share one motion grammar and wait to be seen', () => {
+    const motion = read('src/components/admin/chart-motion.tsx');
+    assert.match(motion, /isAnimationActive: !reducedMotion/);
+    assert.match(motion, /animationDuration: reducedMotion \? 0/);
+    assert.match(motion, /useInView/, 'a chart must not play its entrance off-screen');
+    const charts = read('src/components/admin/module-charts.tsx');
+    assert.match(charts, /ChartFrame/);
+    // Honest empty states rather than an empty axis.
+    assert.match(charts, /function Empty/);
+  });
+
+  check('modules that had no chart now have one', () => {
+    const expected: Record<string, string> = {
+      attendance: 'AttendanceByClass',
+      finance: 'FeesByClass',
+      students: 'RegisterSplit',
+      canteen: 'CanteenMix',
+      assets: 'AssetCondition',
+      hostel: 'OccupancyPanel',
+      transport: 'FleetLoad',
+    };
+    for (const [name, component] of Object.entries(expected)) {
+      assert.match(read(`src/app/dashboard/${name}/page.tsx`), new RegExp(component), `${name} lost its chart`);
+    }
+  });
+
+  check('every ResponsiveContainer inside ChartFrame has a definite height', () => {
+    // ChartFrame sets minHeight, not height, so height="100%" collapses to zero
+    // and the chart renders as blank space. This shipped once; keep it caught.
+    // Strip comments first: the file documents this very trap, and a regex over
+    // raw source matched the prose explaining it.
+    const charts = read('src/components/admin/module-charts.tsx')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    const tags = charts.match(/<ResponsiveContainer\b[^>]*>/g) ?? [];
+    assert.ok(tags.length > 0, 'expected charts to use ResponsiveContainer');
+    for (const tag of tags) {
+      assert.ok(
+        !/height="100%"/.test(tag),
+        `a percentage height inside ChartFrame collapses to zero: ${tag}`,
+      );
+    }
+  });
+
+  check('the reveal catches blocks that mount after the data arrives', () => {
+    const transition = read('src/components/admin/page-transition.tsx');
+    assert.match(transition, /MutationObserver/, 'late-mounting charts would never reveal');
+    assert.match(transition, /WeakSet/, 'a block must not re-animate on every mutation');
+    assert.match(transition, /observer\?\.disconnect\(\)/, 'the observer must be cleaned up');
+  });
+
+  check('the page entrance staggers, and only composites opacity and transform', () => {
+    const css = read('src/app/globals.css');
+    const keyframes = css.slice(css.indexOf('@keyframes sd-page-in'), css.indexOf('.sd-page-enter'));
+    assert.ok(!/filter:|height:|width:/.test(keyframes), 'a repaint-heavy property crept into the entrance');
+    assert.match(keyframes, /transform:/);
+    // Five blocks used to land inside 220ms, which read as one flat fade.
+    assert.match(css, /nth-child\(5\) \{ animation-delay: 330ms; \}/);
+    assert.match(css, /sd-stagger-rows/);
+  });
+
+  check('reduced motion stills the new row and tile animations', () => {
+    const css = read('src/app/globals.css');
+    const block = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce)'));
+    assert.ok(/sd-stagger-rows/.test(block.slice(0, 900)), 'row stagger must be disabled under reduced motion');
+  });
+
   console.log(failures === 0 ? '\nMOTION REGRESSIONS PASSED' : `\n${failures} MOTION REGRESSION(S) FAILED`);
   process.exit(failures === 0 ? 0 : 1);
 }

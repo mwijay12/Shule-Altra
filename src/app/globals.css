@@ -106,25 +106,53 @@
    draft. The layout gives each screen the same 480 ms rise, with its top-level
    blocks staggered, so a short page and a dense page arrive the same way.
    -------------------------------------------------------------------------- */
+/* Only opacity and transform: both are GPU-composited. A blur or a height
+   transition would repaint the whole subtree every frame, and this product is
+   used on the low-end machines and 2G connections the studio builds for. */
 @keyframes sd-page-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(20px) scale(0.985);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* A longer, wider stagger than before: five blocks used to land within 220 ms,
+   which read as one flat fade. Each block now has room to be seen arriving. */
 .sd-page-enter > * > *:not([data-reveal]) {
-  animation: sd-page-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: sd-page-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.sd-page-enter > * > *:nth-child(2) { animation-delay: 60ms; }
-.sd-page-enter > * > *:nth-child(3) { animation-delay: 120ms; }
-.sd-page-enter > * > *:nth-child(4) { animation-delay: 170ms; }
-.sd-page-enter > * > *:nth-child(n + 5) { animation-delay: 220ms; }
+.sd-page-enter > * > *:nth-child(2) { animation-delay: 90ms; }
+.sd-page-enter > * > *:nth-child(3) { animation-delay: 180ms; }
+.sd-page-enter > * > *:nth-child(4) { animation-delay: 260ms; }
+.sd-page-enter > * > *:nth-child(5) { animation-delay: 330ms; }
+.sd-page-enter > * > *:nth-child(6) { animation-delay: 390ms; }
+.sd-page-enter > * > *:nth-child(n + 7) { animation-delay: 440ms; }
+
+/* Rows inside a table or list arrive in sequence too, so a long ledger reads as
+   filling in rather than appearing all at once. Capped so a 150-row register
+   does not spend ten seconds animating. */
+@keyframes sd-row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sd-stagger-rows > * {
+  animation: sd-row-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.sd-stagger-rows > *:nth-child(1) { animation-delay: 40ms; }
+.sd-stagger-rows > *:nth-child(2) { animation-delay: 80ms; }
+.sd-stagger-rows > *:nth-child(3) { animation-delay: 120ms; }
+.sd-stagger-rows > *:nth-child(4) { animation-delay: 160ms; }
+.sd-stagger-rows > *:nth-child(5) { animation-delay: 200ms; }
+.sd-stagger-rows > *:nth-child(6) { animation-delay: 240ms; }
+.sd-stagger-rows > *:nth-child(7) { animation-delay: 275ms; }
+.sd-stagger-rows > *:nth-child(8) { animation-delay: 305ms; }
+.sd-stagger-rows > *:nth-child(n + 9) { animation-delay: 330ms; }
 
 .colorful-gradient {
   /* One tonal ramp built from the active palette, so switching themes in the
@@ -327,6 +355,7 @@ html[data-scroll-locked] .app-scroll {
   .animate-pulse-soft,
   /* The clock still parks for the footer, just without the slide. */
   .sd-clock,
+  .sd-stagger-rows > *,
   .sd-page-enter > * > *:not([data-reveal]) {
     animation: none !important;
     transition: none !important;

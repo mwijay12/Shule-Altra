@@ -16,6 +16,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card";
+import { ChartPanel, WeekUtilisation } from "@/components/admin/module-charts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
@@ -90,6 +92,22 @@ export default function TimetablePage() {
         </div>
       </div>
 
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 px-1">
+        <StatCard index={0} label="Teaching periods" value={teachingSlots} icon={Clock} tone="primary" sub={`${timetable.className} · Stream ${timetable.stream}`} />
+        <StatCard index={1} label="Subjects taught" value={timetable.subjectLoad.filter((s) => s.periods > 0).length} icon={FileCheck2} tone="accent" sub="On this class timetable" />
+        <StatCard index={2} label="Teachers assigned" value={new Set(timetable.subjectLoad.map((s) => s.teacher).filter(Boolean)).size} icon={User} tone="emerald" sub="Distinct teachers on the grid" />
+        <StatCard index={3} label="Free periods" value={timetable.grid.flat().filter((cell) => cell === null).length} icon={CalendarDays} tone="slate" sub="Breaks and unallocated slots" />
+      </div>
+
+      <ChartPanel
+        title="How full is the week"
+        hint={`${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`}
+        className="mx-1"
+        data-reveal
+      >
+        <WeekUtilisation grid={timetable.grid} subjectCount={timetable.subjectLoad.length} />
+      </ChartPanel>
+
       <div className="grid gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-3 border border-border/60 shadow-xl bg-card/70 backdrop-blur-md rounded-[2.5rem] h-fit">
           <CardHeader className="bg-primary/5 border-b border-border/60 p-8">
@@ -129,8 +147,8 @@ export default function TimetablePage() {
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent/5 text-accent border border-accent/10">
                 <Zap className="h-5 w-5 fill-accent" />
                 <div>
-                  <p className="text-[12px] font-semibold">Schedule Sync</p>
-                  <p className="text-[13px] font-bold">Live on Parent Portal</p>
+                  <p className="text-[12px] font-semibold">Clash check</p>
+                  <p className="text-[13px] font-bold">No teacher booked twice</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 text-emerald-600 border border-emerald-500/10">
@@ -142,17 +160,7 @@ export default function TimetablePage() {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-dashed border-border/60">
-              <p className="text-[12px] font-semibold text-muted-foreground mb-2">Subject load</p>
-              <div className="space-y-1.5">
-                {timetable.subjectLoad.slice(0, 6).map((entry) => (
-                  <div key={entry.subject} className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-bold text-foreground/80 truncate">{entry.subject}</span>
-                    <span className="text-[12px] font-bold text-primary tabular-nums"><AnimatedNumber value={entry.periods} /></span>
-                  </div>
-                ))}
-              </div>
-            </div>
+
           </CardContent>
         </Card>
 

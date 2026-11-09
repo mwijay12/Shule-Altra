@@ -36,10 +36,8 @@ The role refusal is the strongest moment in the demo. Do it on purpose.
 These are gaps a serious buyer will find. Being honest about them is fine;
 being caught unaware is not.
 
-1. **Audit log.** The security page admits there is no tamper-evident trail.
-   A private school board will ask "who changed this fee?". Build an append-only
-   `audit` collection: actor, role, action, document, before/after, timestamp.
-   This is the single highest-value next feature.
+1. ~~**Audit log.**~~ **Shipped.** Append-only, hash-chained, with a Verify chain
+   button. This is now a demo moment, not a gap — see the script below.
 2. **Two-factor enforcement.** Google sign-in supports it; we do not require it.
    Add a per-school "require 2FA for finance roles" switch.
 3. **Backups.** Document a restore procedure and *test it once*. "We have backups"
@@ -249,6 +247,10 @@ privacy view, 404, and `og-card.png` (1200×630) for any platform.
    Excel every term."
 4. **Switch to a teacher, try the fee ledger** (20s) — refused. Say nothing;
    let it land.
+4b. **Open the audit trail, press Verify chain** (20s) — "Chain intact". Then say:
+   "Every change is recorded with the name against it, and nobody — including me
+   — can edit or delete a row. If anyone tampers with it, this button says where."
+   This is the strongest trust moment in the demo.
 5. **Change the school name and logo in Theme Studio** (15s) — regenerate the
    PDF, show it rebranded.
 6. **Close** (10s) — "Your school, your data, your cloud account. One term pilot,
