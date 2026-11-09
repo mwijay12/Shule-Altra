@@ -145,11 +145,19 @@ async function main() {
   check('every ResponsiveContainer inside ChartFrame has a definite height', () => {
     // ChartFrame sets minHeight, not height, so height="100%" collapses to zero
     // and the chart renders as blank space. This shipped once; keep it caught.
-    const charts = read('src/components/admin/module-charts.tsx');
-    assert.ok(
-      !/ResponsiveContainer[^>]*height="100%"/.test(charts),
-      'a percentage height inside ChartFrame collapses to zero',
-    );
+    // Strip comments first: the file documents this very trap, and a regex over
+    // raw source matched the prose explaining it.
+    const charts = read('src/components/admin/module-charts.tsx')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    const tags = charts.match(/<ResponsiveContainer\b[^>]*>/g) ?? [];
+    assert.ok(tags.length > 0, 'expected charts to use ResponsiveContainer');
+    for (const tag of tags) {
+      assert.ok(
+        !/height="100%"/.test(tag),
+        `a percentage height inside ChartFrame collapses to zero: ${tag}`,
+      );
+    }
   });
 
   check('the reveal catches blocks that mount after the data arrives', () => {
