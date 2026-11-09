@@ -72,7 +72,7 @@ export type CloudinaryUpload = {
 
 /**
  * Upload one already-compressed photograph. Throws with a message a bursar can
- * act on — an unsigned preset with the wrong name is the common failure.
+ * act on, an unsigned preset with the wrong name is the common failure.
  */
 export async function uploadToCloudinary(
   blob: Blob,

@@ -6,11 +6,12 @@
  */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCountUp } from '@/hooks/use-count-up';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { EASE_OUT_QUART } from '@/lib/motion/tokens';
 
 interface KpiCardProps {
   label: string;
@@ -106,7 +107,7 @@ export function KpiCard({
     <motion.div
       initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: EASE_OUT_QUART }}
       className={cn(
         'glass-panel hover-lift sheen group relative overflow-hidden rounded-3xl p-4 sm:p-5',
         palette.glow
@@ -155,7 +156,7 @@ export function KpiCard({
                 strokeDasharray={circumference}
                 initial={reducedMotion ? false : { strokeDashoffset: circumference }}
                 animate={{ strokeDashoffset: circumference * (1 - ringProgress / 100) }}
-                transition={{ duration: reducedMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1], delay: reducedMotion ? 0 : delay + 0.1 }}
+                transition={{ duration: reducedMotion ? 0 : 1.1, ease: EASE_OUT_QUART, delay: reducedMotion ? 0 : delay + 0.1 }}
               />
             </svg>
           )}

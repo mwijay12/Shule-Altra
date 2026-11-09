@@ -191,7 +191,7 @@ export default function HostelPage() {
           { label: "Water Flow", value: utilityData.water, icon: Droplets, key: "water", color: "text-blue-600" },
           { label: "Hygiene Status", value: utilityData.hygiene, icon: ShieldCheck, key: "hygiene", color: "text-green-600" },
         ].map((item) => (
-          <Card key={item.key} className="border-none shadow-lg bg-white/60 backdrop-blur-md rounded-[2rem] group hover:shadow-xl transition-all">
+          <Card key={item.key} className="border-none shadow-lg bg-card rounded-[2rem] group hover:shadow-xl transition-shadow">
             <CardContent className="p-6 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className={cn("h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center transition-transform group-hover:scale-110", item.color)}>
@@ -251,7 +251,7 @@ export default function HostelPage() {
             const occupancyPercentage = Math.round((currentOccupancy / (hostel.capacity || 1)) * 100);
 
             return (
-              <Card key={hostel.id} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2.5rem] overflow-hidden group hover:-translate-y-1 transition-all">
+              <Card key={hostel.id} className="border-none shadow-xl bg-card rounded-[2.5rem] overflow-hidden group hover:-translate-y-1 transition-[transform,box-shadow]">
                 <div className={cn("h-2 w-full", hostel.type === "Boys" ? "bg-primary" : hostel.type === "Girls" ? "bg-accent" : "bg-orange-500")} />
                 <CardHeader className="p-8 pb-4">
                   <div className="flex justify-between items-start mb-2">
@@ -345,7 +345,7 @@ export default function HostelPage() {
                                   type="button"
                                   aria-pressed={!!inspection[item.key]}
                                   onClick={() => setInspection((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                                  className="w-full flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm border border-muted/50 hover:border-primary/20 transition-all text-left"
+                                  className="w-full flex items-center justify-between p-5 bg-white rounded-2xl shadow-sm border border-muted/50 hover:border-primary/20 transition-[border-color,background-color] text-left"
                                 >
                                   <div className="flex items-center gap-4">
                                     <div className="h-10 w-10 rounded-xl bg-muted/20 flex items-center justify-center text-primary">

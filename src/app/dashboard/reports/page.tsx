@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileOverview Reports centre — every "generate" action produces a real vector
+ * @fileOverview Reports centre, every "generate" action produces a real vector
  * PDF (letterhead + crest, metadata, summary cards, tables, signatures).
  */
 
@@ -49,6 +49,7 @@ import {
   buildPerLearnerScores,
   buildReportPayload,
 } from "@/lib/reports/builders";
+import { WaveSection } from '@/components/motion/wave-section';
 
 interface ReportItem {
   id: string;
@@ -343,13 +344,13 @@ export default function ReportsPage() {
 
   return (
     <div className="space-y-8 pb-24 font-body">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
+      <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-1">
-          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
+          <Badge data-wave="badge" variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
             <Zap className="h-2.5 w-2.5 mr-1.5" /> Reports centre
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Reports Center</h1>
-          <p className="text-muted-foreground text-[13px] font-bold leading-none">
+          <h1 data-wave="heading" className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Reports Center</h1>
+          <p data-wave="subcopy" className="text-muted-foreground text-[13px] font-bold leading-none">
             Every report is a real vector PDF — letterhead, crest and selectable text.
           </p>
         </div>
@@ -360,7 +361,7 @@ export default function ReportsPage() {
             </Link>
           </Button>
         ) : null}
-      </div>
+      </WaveSection>
 
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-3 px-1">
         <StatCard

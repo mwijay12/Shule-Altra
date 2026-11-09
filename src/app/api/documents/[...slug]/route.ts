@@ -98,7 +98,7 @@ export async function GET(
   const { slug: parts } = await context.params
   const slug = (parts ?? []).join('/')
 
-  // Only registry entries exist as far as this route is concerned — which also
+  // Only registry entries exist as far as this route is concerned, which also
   // means no `..` traversal can reach a path the registry never named.
   const doc = DOCUMENT_BY_SLUG.get(slug)
   if (!doc) {

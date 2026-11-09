@@ -1,7 +1,7 @@
 /**
  * @fileOverview The only way a child's photograph is erased from Cloudinary.
  *
- * Cloudinary uploads are unsigned, so the browser holds no secret — which is why
+ * Cloudinary uploads are unsigned, so the browser holds no secret, which is why
  * it also cannot delete. Destruction needs a signed request, and the signature
  * needs `CLOUDINARY_API_SECRET`, which must never reach a browser.
  *
@@ -13,7 +13,7 @@
  *
  * Withdrawal of consent is a button in the learner profile; if this route fails,
  * the UI clears the field anyway and tells the school the file is still in the
- * media library — a broken promise in a log, not a silent one.
+ * media library, a broken promise in a log, not a silent one.
  */
 
 import { NextResponse } from 'next/server'

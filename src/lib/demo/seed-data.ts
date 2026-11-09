@@ -2,7 +2,7 @@
  * @fileOverview Deterministic demo dataset for the Shule Altra offline demo.
  *
  * The dataset models a realistic Tanzanian secondary school
- * (Mwalimu Nyerere Secondary School — Kinondoni, Dar es Salaam) with a full
+ * (Mwalimu Nyerere Secondary School, Kinondoni, Dar es Salaam) with a full
  * academic year of students, staff, NECTA grades, fee ledger, attendance,
  * boarding, transport, canteen and inventory records.
  *
@@ -46,7 +46,7 @@ function mulberry32(seed: number) {
  * One seeded generator for the whole school.
  *
  * It used to live at module scope and simply keep advancing, so two calls in
- * the same process produced two different schools — a preview in the mail room
+ * the same process produced two different schools, a preview in the mail room
  * could promise 97 recipients and the send then hit 91. `buildDemoDataset()`
  * now rewinds the seed, which makes the demo deterministic: same names, same
  * balances, same counts, every build.
@@ -194,7 +194,7 @@ const PETTY_CASH = [
 
 /**
  * The demo school's identity. Exported so the printable generators stamp the
- * same school the dashboard shows — they used to fall back to the generic
+ * same school the dashboard shows, they used to fall back to the generic
  * Shule Altra letterhead, which named a different school on every sample.
  */
 export function demoIdentity(): Record<string, any> {

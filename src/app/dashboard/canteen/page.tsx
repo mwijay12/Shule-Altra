@@ -151,7 +151,7 @@ export default function CanteenPage() {
         <CanteenMix sales={sales ?? []} />
       </ChartPanel>
 
-      <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/60 backdrop-blur-md">
+      <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
         <CardHeader className="bg-muted/30 p-8 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div className="space-y-1">
             <CardTitle className="text-xl font-semibold">Live Sales Stream</CardTitle>

@@ -1,7 +1,7 @@
 /**
  * @fileOverview Turning a teacher's spreadsheet into assessment records.
  *
- * Every school already has marks in Excel — every subject teacher keeps one,
+ * Every school already has marks in Excel, every subject teacher keeps one,
  * with their own column names, their own spelling of the subjects, and rows in
  * whatever order the register was printed. Asking them to retype 2,700 scores
  * into a web form is how a rollout dies in week two.

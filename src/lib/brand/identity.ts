@@ -5,7 +5,7 @@
  * the Theme Studio writes `config/branding` (palette, type pairing). This module
  * folds both into a single resolved brand that the chrome, the crest and the PDF
  * kit all read, so renaming a school or recolouring it changes the letterhead in
- * the same save — not in a second place someone has to remember.
+ * the same save, not in a second place someone has to remember.
  *
  * Print always uses the palette's LIGHT tokens: paper is white, and a colour
  * tuned for a midnight screen disappears on a laser printer.
@@ -87,7 +87,7 @@ export function deriveShortName(name: string): string {
     .trim();
   const base = stripped || trimmed;
   // Names are stored shouted for the letterhead; the sidebar should not shout.
-  // Capitalise after a space or hyphen only — an apostrophe is inside a word,
+  // Capitalise after a space or hyphen only, an apostrophe is inside a word,
   // so "MARY'S" must become "Mary's", not "Mary'S".
   return base === base.toUpperCase()
     ? base.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, sep, char) => sep + char.toUpperCase())
@@ -111,7 +111,7 @@ export function resolveBrand(identity: IdentityDoc, branding: BrandingDoc): Scho
   const palette = resolvePalette(paletteId);
 
   // A school that has been named is a real school. From that point on we print
-  // only what it actually told us — never Shule Altra's sample address, phone or
+  // only what it actually told us, never Shule Altra's sample address, phone or
   // registration number. Inventing a NECTA centre number on a school's letterhead
   // is worse than leaving the line blank.
   const configured = typeof identity?.name === 'string' && identity.name.trim().length > 0;

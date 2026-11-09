@@ -63,10 +63,9 @@ import { PHOTO_POLICY_LABEL, PHOTO_POLICY_NOTE, photoCaptureAllowed, photoPolicy
 import {
   BULK_PHOTO_HINT,
   describeBulkPhotoPlan,
-  planBulkPhotos,
-  type BulkPhotoPlan,
   type BulkPhotoStatus,
 } from "@/lib/media/bulk-photos"
+import { useBulkPhotoImport } from "@/hooks/use-bulk-photo-import"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import type { Student } from "@/types/student"
@@ -107,15 +106,6 @@ export default function StudentsPage() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Bulk photo import — a folder named by admission number, planned in full
-  // before a single child's face moves (see src/lib/media/bulk-photos.ts).
-  const [isPhotoImportOpen, setIsPhotoImportOpen] = useState(false)
-  const [photoImportFiles, setPhotoImportFiles] = useState<File[]>([])
-  const [photoImportPlan, setPhotoImportPlan] = useState<BulkPhotoPlan | null>(null)
-  const [photoConsentAttested, setPhotoConsentAttested] = useState(false)
-  const [photoImportBusy, setPhotoImportBusy] = useState(false)
-  const [photoImportProgress, setPhotoImportProgress] = useState({ done: 0, total: 0 })
-  const [photoImportFailures, setPhotoImportFailures] = useState<string[]>([])
   const { user } = useUser()
 
   const identityRef = useMemoFirebase(() => doc(db, "schools", "school-001", "config", "identity"), [db])
@@ -129,6 +119,26 @@ export default function StudentsPage() {
   // The seeded offline registry is authoritative. Never append a second,
   // hand-written roster: it disagreed with the timetable and survived purges.
   const students = useMemo(() => firestoreStudents || [], [firestoreStudents])
+
+  const {
+    isPhotoImportOpen,
+    onImportOpenChange,
+    photoImportPlan,
+    photoConsentAttested,
+    setPhotoConsentAttested,
+    photoImportBusy,
+    photoImportProgress,
+    photoImportFailures,
+    handlePhotoFolder,
+    handleCommitPhotoImport,
+  } = useBulkPhotoImport({
+    db,
+    schoolId: "school-001",
+    students,
+    policy: photoPolicyValue,
+    canCapture: canCapturePhoto,
+    attestedBy: user?.email ?? "school administrator",
+  })
 
   const filteredStudents = useMemo(() => {
     return students.filter(s => {
@@ -372,7 +382,7 @@ export default function StudentsPage() {
   }
 
   /**
-   * Withdrawing consent deletes the photograph — the PDPA right to erasure is
+   * Withdrawing consent deletes the photograph, the PDPA right to erasure is
    * a button here, not a support ticket. Marks, attendance and fees stay.
    */
   const handleRemovePhoto = async () => {
@@ -400,118 +410,6 @@ export default function StudentsPage() {
       })
     } finally {
       setPhotoBusy(false)
-    }
-  }
-
-  /**
-   * Read the folder the school picked and turn it into a plan — no writes, no
-   * uploads. Every file is classified (ready / replace / unmatched / duplicate /
-   * unsupported / too large) and the counts are what the dialog shows.
-   */
-  const handlePhotoFolder = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const picked = Array.from(event.target.files ?? [])
-    event.target.value = ""
-    setPhotoImportFailures([])
-    setPhotoImportProgress({ done: 0, total: 0 })
-    setPhotoImportFiles(picked)
-    setPhotoImportPlan(
-      planBulkPhotos(
-        picked.map((file) => ({ name: file.name, type: file.type, size: file.size })),
-        students.map((student) => ({
-          id: student.id,
-          name: student.name,
-          className: student.class,
-          hasPhoto: Boolean(student.photoUrl),
-        })),
-        photoPolicyValue
-      )
-    )
-  }
-
-  /**
-   * Store the photographs the plan approved.
-   *
-   * Each one goes through the same `uploadStudentPhoto` boundary as a single
-   * capture (400 px, EXIF stripped, 2 MB cap) and each one records consent with
-   * who attested it, which file it came from, and when. A failure on row 40 does
-   * not roll back rows 1–39: the school is told exactly what landed and what did
-   * not, and the register is refreshed by the live query.
-   */
-  const handleCommitPhotoImport = async () => {
-    if (!photoImportPlan || photoImportPlan.importable.length === 0) return
-    if (!canCapturePhoto) {
-      toast({
-        variant: "destructive",
-        title: "Photographs are disabled",
-        description: "This school keeps no learner photographs (PHOTO_POLICY=none).",
-      })
-      return
-    }
-    if (!photoConsentAttested) {
-      toast({
-        variant: "destructive",
-        title: "Consent not confirmed",
-        description: "Confirm that each guardian agreed before photographs are stored.",
-      })
-      return
-    }
-
-    setPhotoImportBusy(true)
-    setPhotoImportFailures([])
-    const total = photoImportPlan.importable.length
-    setPhotoImportProgress({ done: 0, total })
-
-    const failures: string[] = []
-    let done = 0
-
-    for (const row of photoImportPlan.importable) {
-      const file = photoImportFiles[photoImportPlan.rows.indexOf(row)]
-      try {
-        if (!row.studentId) throw new Error("no learner on this row")
-        if (!file) throw new Error("the file is no longer available — choose the folder again")
-        const photoUrl = await uploadStudentPhoto("school-001", row.studentId, file)
-        await setDoc(
-          doc(db, "schools", "school-001", "students", row.studentId),
-          {
-            photoUrl,
-            photoUpdatedAt: serverTimestamp(),
-            photoConsent: {
-              granted: true,
-              by: user?.email ?? "school administrator",
-              method: "bulk-import",
-              fileName: row.fileName,
-              at: serverTimestamp(),
-            },
-          },
-          { merge: true }
-        )
-      } catch (err: any) {
-        failures.push(`${row.fileName} — ${err?.message ?? "upload failed"}`)
-      } finally {
-        done += 1
-        setPhotoImportProgress({ done, total })
-      }
-    }
-
-    const stored = total - failures.length
-    setPhotoImportFailures(failures)
-    setPhotoImportBusy(false)
-
-    toast({
-      variant: stored === 0 ? "destructive" : "default",
-      title: stored === 0 ? "No photographs stored" : `${stored} photograph${stored === 1 ? "" : "s"} stored`,
-      description:
-        failures.length === 0
-          ? "Consent recorded with each one. ID cards will use them immediately."
-          : `${failures.length} failed — the list is in the dialog, nothing else was lost.`,
-    })
-
-    if (failures.length === 0) {
-      setIsPhotoImportOpen(false)
-      setPhotoImportFiles([])
-      setPhotoImportPlan(null)
-      setPhotoConsentAttested(false)
-      setPhotoImportProgress({ done: 0, total: 0 })
     }
   }
 
@@ -571,16 +469,7 @@ export default function StudentsPage() {
 
           <Dialog
             open={isPhotoImportOpen}
-            onOpenChange={(open) => {
-              setIsPhotoImportOpen(open)
-              if (!open) {
-                setPhotoImportFiles([])
-                setPhotoImportPlan(null)
-                setPhotoConsentAttested(false)
-                setPhotoImportFailures([])
-                setPhotoImportProgress({ done: 0, total: 0 })
-              }
-            }}
+            onOpenChange={onImportOpenChange}
           >
             <DialogTrigger asChild>
               <Button
@@ -593,7 +482,7 @@ export default function StudentsPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[2rem] p-0 max-w-2xl border-none shadow-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader className="sticky top-0 z-10 border-b bg-white/90 p-6 backdrop-blur-md sm:p-8">
+              <DialogHeader className="sticky top-0 z-10 border-b bg-card p-6 sm:p-8">
                 <DialogTitle className="text-lg font-semibold tracking-tight text-primary sm:text-xl">
                   Import photographs
                 </DialogTitle>
@@ -803,7 +692,7 @@ export default function StudentsPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="rounded-[2.5rem] p-0 overflow-y-auto border-none shadow-2xl max-w-lg max-h-[90vh]">
-              <DialogHeader className="bg-primary/5 p-8 border-b sticky top-0 z-10 bg-white/80 backdrop-blur-md">
+              <DialogHeader className="bg-primary/5 p-8 border-b sticky top-0 z-10 bg-card">
                 <DialogTitle className="text-xl font-semibold text-primary">Manual Enrollment</DialogTitle>
                 <DialogDescription className="text-[13px] font-bold">{DEMO_MODE ? "O-Level admission · Form 1–4 · Form 1 selected by default" : "Admission · choose the school’s configured tier"}</DialogDescription>
               </DialogHeader>
@@ -914,7 +803,7 @@ export default function StudentsPage() {
       </div>
 
 
-      <Card className="border-none shadow-2xl overflow-hidden bg-white/60 rounded-[2.5rem]">
+      <Card className="border-none shadow-2xl overflow-hidden bg-card rounded-[2.5rem]">
         <CardHeader className="bg-muted/20 border-b p-6 sm:p-8 flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative flex-1 max-w-sm group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />

@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview 06:50 — before the bell.
+ * @fileOverview 06:50, before the bell.
  *
  * One photograph, one sentence, one number the visitor can act on. The type
  * arrives line by line from behind a mask; the photograph un-crops itself and

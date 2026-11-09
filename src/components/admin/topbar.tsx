@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { Bell, CalendarRange, Check, Command, Moon, Search, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRange, RANGE_OPTIONS, type RangeKey } from '@/components/admin/range-context';

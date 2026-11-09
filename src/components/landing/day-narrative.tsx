@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview "One day, three states." A sticky stage swaps the frame as the
- * reader scrolls the three steps — capture, reconcile, issue. The stage is
+ * reader scrolls the three steps, capture, reconcile, issue. The stage is
  * sticky (not pinned by script) so it stays interruptible and cheap.
  */
 

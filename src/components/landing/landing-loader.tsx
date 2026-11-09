@@ -5,7 +5,7 @@
  * two-panel curtain that hands off to the hero.
  *
  * The counter is driven by one rAF loop that must never restart, so `onDone`
- * is held in a ref instead of the effect's dependency list — an unstable
+ * is held in a ref instead of the effect's dependency list, an unstable
  * callback used to re-run the effect every frame and leave the counter at 000%.
  * Skipped entirely when motion is off, and hard-capped at 1.8s.
  */

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Segmented navigation with a black pill that slides between
- * items — driven by scroll-spy, so the pill follows the reader down the page.
+ * items, driven by scroll-spy, so the pill follows the reader down the page.
  * One pill, one `layoutId`, no per-item transitions.
  */
 

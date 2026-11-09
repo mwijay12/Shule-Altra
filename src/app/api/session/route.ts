@@ -4,7 +4,7 @@
  *
  * The hub resolves roles on the client, but a PDF served from the server cannot
  * trust the client. This endpoint used to accept whatever role was posted and
- * write it straight into the cookie — meaning anyone could POST {"role":"ADMIN"}
+ * write it straight into the cookie, meaning anyone could POST {"role":"ADMIN"}
  * with no session at all and pull the defaulters register or the fee ledger.
  *
  * Against a real project the browser now posts a Firebase ID token. The server

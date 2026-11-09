@@ -1,6 +1,6 @@
 /**
  * The school's academic scope. Keep the registry, enrollment form, assessment
- * filters and timetable on these same options — never mix primary and O-level
+ * filters and timetable on these same options, never mix primary and O-level
  * classes in the default school.
  */
 export const O_LEVEL_CLASSES = ['Form 1', 'Form 2', 'Form 3', 'Form 4'] as const;

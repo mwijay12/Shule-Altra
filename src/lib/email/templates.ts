@@ -8,7 +8,7 @@
  *     rule, footer, PDPA line), each template only supplies the body;
  *   – every message answers three questions: what happened, what it costs the
  *     reader, what to do next;
- *   – no external images, no webfonts, no CSS variables — those break in mail.
+ *   – no external images, no webfonts, no CSS variables, those break in mail.
  */
 
 import type { EmailTemplateId, RenderedEmail, Recipient } from './types'
@@ -171,7 +171,7 @@ export type TemplateContext = {
   linkBase: string
 }
 
-/** One switch, one place — every message the school sends lives here. */
+/** One switch, one place, every message the school sends lives here. */
 export function renderEmail(
   id: EmailTemplateId,
   ctx: TemplateContext,

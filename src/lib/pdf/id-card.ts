@@ -1,5 +1,5 @@
 /**
- * @fileOverview Learner ID cards — printed 2-up on A4 with crop marks.
+ * @fileOverview Learner ID cards, printed 2-up on A4 with crop marks.
  * Text, crest, rules and barcode are vector; the verification QR is embedded
  * from a generated matrix (not a screenshot).
  */
@@ -20,7 +20,7 @@ export interface IdCardLearner {
   /**
    * A photograph, when the school has one: a `data:` URL (the demo and any
    * offline capture), or an https URL on the storage bucket. SVG avatars are
-   * skipped — pdf-lib embeds raster only, and a printed ID card wants a photo.
+   * skipped, pdf-lib embeds raster only, and a printed ID card wants a photo.
    */
   photoUrl?: string;
 }
@@ -38,7 +38,7 @@ function bytesFromBase64(base64: string): Uint8Array {
 /**
  * Embeds the learner's photograph, or returns null and lets the card print
  * without one. Every failure mode (SVG, dead URL, offline, corrupt bytes) has
- * to degrade to a text card — a print run cannot stop because one file is bad.
+ * to degrade to a text card, a print run cannot stop because one file is bad.
  */
 async function embedPhoto(
   doc: PDFDocument,

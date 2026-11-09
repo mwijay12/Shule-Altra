@@ -20,17 +20,17 @@ const STORE = 'blobs';
 /** Scheme used inside demo documents to point at an IndexedDB blob. */
 export const DEMO_MEDIA_SCHEME = 'demo-media:';
 
-/** Build the stored reference for a key. Pure — safe in Node/tests. */
+/** Build the stored reference for a key. Pure, safe in Node/tests. */
 export function demoMediaRef(key: string): string {
   return `${DEMO_MEDIA_SCHEME}${key}`;
 }
 
-/** Is this src a demo media reference? Pure — safe in Node/tests. */
+/** Is this src a demo media reference? Pure, safe in Node/tests. */
 export function isDemoMediaRef(src: unknown): src is string {
   return typeof src === 'string' && src.startsWith(DEMO_MEDIA_SCHEME);
 }
 
-/** Extract the storage key from a reference. Pure — safe in Node/tests. */
+/** Extract the storage key from a reference. Pure, safe in Node/tests. */
 export function demoMediaKey(src: string): string {
   return isDemoMediaRef(src) ? src.slice(DEMO_MEDIA_SCHEME.length) : '';
 }

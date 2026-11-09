@@ -32,6 +32,7 @@ import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase
 import { collection, query, orderBy, doc } from "firebase/firestore"
 import { updateDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { triggerN8nWebhook } from "@/lib/n8n"
+import { WaveSection } from '@/components/motion/wave-section';
 
 export default function AttendancePage() {
   const { toast } = useToast()
@@ -71,7 +72,7 @@ export default function AttendancePage() {
     })
 
     if (newStatus === "Absent") {
-      // The webhook returns false when automation is disabled or unconfigured —
+      // The webhook returns false when automation is disabled or unconfigured , 
       // do not claim an alert went out when nothing was sent.
       const forwarded = await triggerN8nWebhook("attendance-update", {
         studentId,
@@ -112,13 +113,13 @@ export default function AttendancePage() {
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-24 overflow-x-hidden relative">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
+      <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-2">
-          <Badge variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 px-4 py-1 h-6 text-[12px] sm:text-[13px] font-semibold rounded-full shadow-sm">
+          <Badge data-wave="badge" variant="outline" className="border-blue-200 bg-blue-50 text-blue-600 px-4 py-1 h-6 text-[12px] sm:text-[13px] font-semibold rounded-full shadow-sm">
             <Database className="h-3.5 w-3.5 mr-2" /> Daily register · 2026
           </Badge>
-          <h1 className="text-3xl sm:text-4xl font-headline font-semibold text-primary tracking-tight">Daily Register</h1>
-          <p className="text-muted-foreground font-medium text-sm">Daily register · {identity?.name || "School"}</p>
+          <h1 data-wave="heading" className="text-3xl sm:text-4xl font-headline font-semibold text-primary tracking-tight">Daily Register</h1>
+          <p data-wave="subcopy" className="text-muted-foreground font-medium text-sm">Daily register · {identity?.name || "School"}</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto shrink-0">
           <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-12 px-6 border-primary/20 text-primary bg-white shadow-md font-semibold text-[13px] group">
@@ -128,7 +129,7 @@ export default function AttendancePage() {
             <UserCheck className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Mark All Present
           </Button>
         </div>
-      </div>
+      </WaveSection>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
@@ -150,7 +151,7 @@ export default function AttendancePage() {
         </ChartPanel>
       </div>
 
-      <Card className="border-none shadow-2xl overflow-hidden bg-white/60 backdrop-blur-md rounded-[2.5rem]">
+      <Card className="border-none shadow-2xl overflow-hidden bg-card rounded-[2.5rem]">
         <CardHeader className="bg-muted/30 pb-6 pt-8 px-4 sm:px-8 border-b overflow-hidden">
           <div className="flex flex-col lg:flex-row justify-between gap-6">
             <div className="flex items-center gap-4">
@@ -187,10 +188,10 @@ export default function AttendancePage() {
           ) : (
             <div className="divide-y divide-muted/50 min-w-[600px]">
               {filteredStudents.map((student) => (
-                <div key={student.id} className="p-4 sm:p-6 lg:px-10 flex items-center justify-between gap-4 sm:gap-6 hover:bg-primary/[0.02] transition-all group">
+                <div key={student.id} className="p-4 sm:p-6 lg:px-10 flex items-center justify-between gap-4 sm:gap-6 hover:bg-primary/[0.02] transition-colors group">
                   <div className="flex items-center gap-4 sm:gap-6 min-w-0">
                     <div className={cn(
-                      "h-12 w-12 sm:h-16 sm:w-16 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center font-black text-white shadow-xl transition-all group-hover:rotate-6 shrink-0",
+                      "h-12 w-12 sm:h-16 sm:w-16 rounded-[1.5rem] sm:rounded-[2rem] flex items-center justify-center font-black text-white shadow-xl transition-transform group-hover:rotate-6 shrink-0",
                       student.attendanceStatus === "Present" ? "bg-green-500 shadow-green-100" :
                       student.attendanceStatus === "Absent" ? "bg-destructive shadow-destructive/10" : "bg-orange-500 shadow-orange-100"
                     )}>
@@ -214,7 +215,7 @@ export default function AttendancePage() {
                       variant={student.attendanceStatus === "Present" ? "default" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-colors whitespace-nowrap",
                         student.attendanceStatus === "Present" ? "bg-green-600 hover:bg-green-700 shadow-green-100" : "hover:bg-green-50 text-green-600 border-green-200"
                       )}
                       onClick={() => handleStatusChange(student.id, "Present")}
@@ -225,7 +226,7 @@ export default function AttendancePage() {
                       variant={student.attendanceStatus === "Late" ? "secondary" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-colors whitespace-nowrap",
                         student.attendanceStatus === "Late" ? "bg-orange-100 text-orange-700 hover:bg-orange-200 shadow-orange-50" : "hover:bg-orange-50 text-orange-600 border-orange-100"
                       )}
                       onClick={() => handleStatusChange(student.id, "Late")}
@@ -236,7 +237,7 @@ export default function AttendancePage() {
                       variant={student.attendanceStatus === "Absent" ? "destructive" : "outline"}
                       size="sm"
                       className={cn(
-                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-all whitespace-nowrap",
+                        "rounded-full h-9 sm:h-11 text-[11px] sm:text-[12px] font-black uppercase tracking-widest px-4 sm:px-6 shadow-sm transition-colors whitespace-nowrap",
                         student.attendanceStatus === "Absent" ? "bg-destructive hover:bg-destructive/90 shadow-destructive/20" : "hover:bg-destructive/5 text-destructive border-destructive/20"
                       )}
                       onClick={() => handleStatusChange(student.id, "Absent")}

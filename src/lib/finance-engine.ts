@@ -63,7 +63,7 @@ export interface ControlNumberResponse {
  *
  * The name is kept for the sixteen call sites that already use it; the behaviour
  * is no longer Tanzania-only. Set NEXT_PUBLIC_CURRENCY to bill in KES, RWF, USD
- * or anything else — see src/lib/money.ts.
+ * or anything else, see src/lib/money.ts.
  */
 export function formatTZS(amount: number): string {
   const currency = currencySpec();
@@ -85,7 +85,7 @@ const trimZeros = (value: number, digits: number) =>
     .replace(/(\.\d*?)0+$/, '$1');
 
 /**
- * TZS for cards, tiles and charts — the same money, short enough to never be
+ * TZS for cards, tiles and charts, the same money, short enough to never be
  * cut off. A KPI that reads "TZS 6,09…" is worse than no KPI at all, and a
  * bursar reads 6.09M faster than 6,094,000.
  *

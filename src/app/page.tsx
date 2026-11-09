@@ -1,12 +1,12 @@
 "use client"
 
 /**
- * @fileOverview Public landing page — "one school day, on the timetable".
+ * @fileOverview Public landing page, "one school day, on the timetable".
  *
  * The concept owns the page: scroll progress is the school clock (06:40 →
  * 16:40), each section is a period, and the red pen rule at the top fills as the
- * day is worked through. Everything else — the paper's daylight, the bell
- * marquee, the photographs — derives from that one variable.
+ * day is worked through. Everything else, the paper's daylight, the bell
+ * marquee, the photographs, derives from that one variable.
  */
 
 import * as React from "react"
@@ -17,6 +17,7 @@ import { LandNav } from "@/components/landing/nav"
 import { NAV_LINKS } from "@/components/landing/links"
 import { BrandMark } from "@/components/brand/logo"
 import { MotionProvider, MotionToggle, useLandingMotion } from "@/components/landing/motion"
+import { SmoothScroll } from "@/components/system/smooth-scroll"
 import { SchoolClock } from "@/components/landing/clock"
 import { Marquee } from "@/components/landing/marquee"
 import { Hero } from "@/components/landing/hero"
@@ -249,6 +250,8 @@ function Landing() {
 
   return (
     <div className="landing" data-motion={on ? "on" : "off"} data-font={content.font}>
+      {/* The landing scrolls the window, so no wrapper is passed. */}
+      <SmoothScroll enabled={on} />
       {!ready && <LandingLoader onDone={() => setReady(true)} />}
 
       <a className="sd-skip uh" href="#main">

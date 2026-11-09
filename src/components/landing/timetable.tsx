@@ -6,7 +6,7 @@
  * The concept is "one school day, on the timetable", so the module list is not
  * a list: it is a period sheet. Times run down the left in mono, the current row
  * is marked with a red pen rule, and on a fine pointer the row pulls a photograph
- * that follows the cursor — the one place imagery is allowed to interrupt.
+ * that follows the cursor, the one place imagery is allowed to interrupt.
  */
 
 import * as React from "react"

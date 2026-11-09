@@ -126,7 +126,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <Card className="border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[2.5rem] overflow-hidden bg-white/90 backdrop-blur-xl">
+        <Card className="border-none shadow-[0_40px_100px_rgba(0,0,0,0.1)] rounded-[2.5rem] overflow-hidden bg-card">
           <CardHeader className="bg-primary/5 pb-10 pt-12 border-b text-center relative overflow-hidden">
             <div className="absolute inset-0 opacity-5 pointer-events-none">
               <Building2 className="h-64 w-64 -right-10 -top-10 absolute rotate-12" />
@@ -245,7 +245,7 @@ export default function LoginPage() {
                         type="button"
                         onClick={() => handleRoleLogin(role.email)}
                         disabled={loading || demoLoading}
-                        className="group flex items-center justify-between gap-3 w-full rounded-2xl border border-primary/10 bg-white px-4 py-3 text-left shadow-sm transition-all hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
+                        className="group flex items-center justify-between gap-3 w-full rounded-2xl border border-primary/10 bg-white px-4 py-3 text-left shadow-sm transition-[border-color,background-color,box-shadow] hover:border-primary/30 hover:bg-primary/5 disabled:opacity-60"
                       >
                         <div className="min-w-0">
                           <p className="text-[14px] font-black uppercase tracking-widest text-primary">{role.label}</p>
@@ -265,7 +265,7 @@ export default function LoginPage() {
                     variant="outline"
                     onClick={handleDemoLogin}
                     disabled={loading || demoLoading}
-                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[13px] group hover:bg-primary/5 transition-all uppercase tracking-[0.16em]"
+                    className="w-full h-12 rounded-2xl font-black border-primary/20 text-primary bg-white shadow-sm text-[13px] group hover:bg-primary/5 transition-colors uppercase tracking-[0.16em]"
                   >
                     {demoLoading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />

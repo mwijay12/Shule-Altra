@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview Period three — the day itself.
+ * @fileOverview Period three, the day itself.
  *
  * A sticky photographic stage on the left, three moments of one school day on
  * the right. As each moment crosses the middle of the viewport the photograph

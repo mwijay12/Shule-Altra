@@ -1,5 +1,5 @@
 /**
- * @fileOverview Printable master timetable — landscape A4, fully vector.
+ * @fileOverview Printable master timetable, landscape A4, fully vector.
  * Replaces the old `window.print()` path: the grid is drawn with real PDF
  * primitives, so the output is crisp at any DPI and the text stays selectable.
  */

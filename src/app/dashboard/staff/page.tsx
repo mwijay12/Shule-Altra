@@ -263,7 +263,7 @@ export default function StaffPage() {
         </ChartPanel>
       </div>
 
-      <Card className="border-none shadow-2xl overflow-hidden bg-white/60 rounded-[2.5rem]">
+      <Card className="border-none shadow-2xl overflow-hidden bg-card rounded-[2.5rem]">
         <CardHeader className="bg-muted/20 border-b p-6 sm:p-8 flex flex-col sm:flex-row justify-between gap-4">
           <div className="relative flex-1 max-w-sm group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors z-10" />

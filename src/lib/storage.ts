@@ -12,7 +12,7 @@ import {
 
 const { storage } = initializeFirebase();
 
-/** Uploads are optional — the dashboard must still work without a bucket. */
+/** Uploads are optional, the dashboard must still work without a bucket. */
 function requireStorage() {
   if (!storage) throw new Error('Photo storage is not configured for this Firebase project.');
   return storage;
@@ -41,7 +41,7 @@ export async function uploadStudentPhoto(
   //
   //  1. Cloudinary, when the school has an unsigned upload preset. This is the
   //     one that works on Firebase's free Spark plan, where Storage is not
-  //     included at all — the upload otherwise fails as if the rules were wrong.
+  //     included at all, the upload otherwise fails as if the rules were wrong.
   //  2. Demo mode: the JPEG is inlined as a data URL, so the showcase needs no
   //     bucket, no preset and no CORS rule to get wrong.
   //  3. Firebase Storage, for a project that has it.
@@ -106,7 +106,7 @@ export async function deleteStudentPhoto(
   }
 }
 
-/** Which keeper is active this build — surfaced in Settings and the docs. */
+/** Which keeper is active this build, surfaced in Settings and the docs. */
 export function photoStorageProvider(): 'cloudinary' | 'firebase' | 'inline-demo' | 'none' {
   if (cloudinaryConfigured()) return 'cloudinary';
   if (DEMO_MODE) return 'inline-demo';
@@ -119,11 +119,11 @@ export function photoStorageProvider(): 'cloudinary' | 'firebase' | 'inline-demo
  *
  * This is a privacy feature, not an optimisation: a phone photo carries EXIF
  * with GPS coordinates, the device serial and the capture time. Drawing it onto
- * a canvas and re-encoding writes a brand-new JPEG containing pixels only —
+ * a canvas and re-encoding writes a brand-new JPEG containing pixels only , 
  * no location, no device, no timestamp. Never "optimise" this into an upload of
  * the raw file.
  */
-/** A Blob as a data URL — how the demo carries a photograph without a bucket. */
+/** A Blob as a data URL, how the demo carries a photograph without a bucket. */
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -207,7 +207,7 @@ export async function uploadLandingImage(
       return demoMediaRef(key);
     } catch (error) {
       // Private mode / blocked storage: still show the photograph this session,
-      // but warn — a data URL in the document counts against the small quota.
+      // but warn, a data URL in the document counts against the small quota.
       console.warn('[DEMO] IndexedDB unavailable, keeping photograph inline for this session:', error);
       return blobToDataUrl(compressed);
     }
@@ -224,7 +224,7 @@ export async function uploadLandingImage(
  *
  * PNG or JPEG only: the PDF engine embeds those two formats directly, so an SVG
  * would render in the sidebar and then silently vanish from every letterhead.
- * Transparency is preserved, and the image is capped at 512px — a letterhead
+ * Transparency is preserved, and the image is capped at 512px, a letterhead
  * prints it at 46pt, so anything larger is wasted bytes on every document.
  */
 export async function uploadSchoolLogo(schoolId: string, file: File): Promise<string> {

@@ -22,8 +22,8 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const [isInitialLoading, setIsInitialLoading] = useState(true)
 
-  // The boot screen is decoration, never a gate. If it fails to report back —
-  // a dropped frame, a stalled timer, a hydration error — the shell still opens.
+  // The boot screen is decoration, never a gate. If it fails to report back , 
+  // a dropped frame, a stalled timer, a hydration error, the shell still opens.
   useEffect(() => {
     const failsafe = window.setTimeout(() => setIsInitialLoading(false), 2000)
     return () => window.clearTimeout(failsafe)

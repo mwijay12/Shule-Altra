@@ -3,7 +3,7 @@
  *
  * One place for the company facts, so the footer, the legal pages, the proposal
  * and the PDF colophon can never disagree. Every value here is published on
- * https://altra.tanzaniareach.com/ — nothing is invented, and nothing claims a
+ * https://altra.tanzaniareach.com/, nothing is invented, and nothing claims a
  * certification or a client we do not have.
  */
 

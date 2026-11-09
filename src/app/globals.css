@@ -130,7 +130,7 @@
 
 /* A longer, wider stagger than before: five blocks used to land within 220 ms,
    which read as one flat fade. Each block now has room to be seen arriving. */
-.sd-page-enter > * > *:not([data-reveal]) {
+.sd-page-enter > * > *:not([data-reveal]):not([data-wave-root]) {
   animation: sd-page-in 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 

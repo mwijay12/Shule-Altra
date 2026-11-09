@@ -50,7 +50,7 @@ export function activeLocale(
   if (!locale) return 'en-TZ'
   try {
     // Intl does not throw for a structurally valid but unsupported tag such as
-    // "not-a-locale" — it silently falls back. Check the resolved language
+    // "not-a-locale", it silently falls back. Check the resolved language
     // actually matches what was asked for, so a typo cannot change grouping
     // without anyone noticing.
     const requested = new Intl.NumberFormat(locale).resolvedOptions().locale

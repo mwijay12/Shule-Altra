@@ -3,7 +3,7 @@
 /**
  * @fileOverview The boot screen for the admin shell.
  *
- * Two rules learned the hard way:
+ * Two constraints:
  *  1. It must never be the only thing between the visitor and the app. The
  *     caller keeps its own timeout, and this component self-dismisses on a CSS
  *     timer as well as through React, so a stalled frame cannot leave a white

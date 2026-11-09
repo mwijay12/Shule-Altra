@@ -4,7 +4,7 @@
  * @fileOverview Route-level error boundary.
  *
  * A blank white screen with "A client-side exception has occurred" is the worst
- * possible failure mode for a school system — the bursar mid-term. This renders
+ * possible failure mode for a school system, the bursar mid-term. This renders
  * a branded recovery surface instead: what happened, what to do, and a reload
  * that re-requests the latest chunks (the usual cause after a redeploy).
  */

@@ -1,7 +1,7 @@
 /**
  * @fileOverview Who may change the school's identity.
  *
- * The email list here is a UI convenience only — it decides what to render. The
+ * The email list here is a UI convenience only, it decides what to render. The
  * actual gate is in firestore.rules and storage.rules, which check the verified
  * email on the request token. Editing this file does not grant anyone access.
  *

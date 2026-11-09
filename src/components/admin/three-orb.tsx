@@ -96,7 +96,7 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
         scene.add(group);
 
         // three.js only understands the COMMA form of hsl(). The space-separated
-        // CSS syntax silently parses to white — which is exactly why this orb
+        // CSS syntax silently parses to white, which is exactly why this orb
         // used to vanish against the pale hero. Keep the commas here. (The CSS
         // gradients below are real CSS and correctly use the space form.)
         // On paper the lines must be darker than the surface and mostly opaque;
@@ -235,7 +235,7 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
           renderer.domElement.remove();
         };
       } catch {
-        // WebGL unavailable — the CSS fallback below stays visible.
+        // WebGL unavailable, the CSS fallback below stays visible.
       }
     })();
 

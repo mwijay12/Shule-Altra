@@ -22,7 +22,7 @@ export function BrandMark({
   className?: string
   size?: number
   radius?: number
-  /** flat ink plate instead of the gradient — for busy surfaces */
+  /** flat ink plate instead of the gradient, for busy surfaces */
   subtle?: boolean
 }) {
   const id = React.useId().replace(/[:]/g, "")

@@ -10,7 +10,7 @@
  * someone remembered to instrument.
  *
  * The audit append never blocks or reverses the change. If it fails, the failure
- * is surfaced (see onAuditFailure) instead of being swallowed — a silent gap in
+ * is surfaced (see onAuditFailure) instead of being swallowed, a silent gap in
  * an audit log is worse than a visible one.
  */
 

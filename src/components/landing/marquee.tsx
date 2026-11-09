@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview The bell strip — an infinite marquee that actually moves.
+ * @fileOverview The bell strip, an infinite marquee that actually moves.
  *
  * Driven by rAF (not a CSS animation) so scroll velocity can push it: faster
  * down the page, slower up it, never a visible seam and never a restart jump.

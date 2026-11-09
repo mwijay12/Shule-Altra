@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { COMPANY, PRODUCT, LEGAL_UPDATED, SUPPORT } from '@/lib/company'
 
 /**
- * A quiet reading layout for the legal pages. No dashboard chrome, no motion —
+ * A quiet reading layout for the legal pages. No dashboard chrome, no motion , 
  * these are documents a head teacher or a procurement officer reads and prints.
  */
 export function LegalShell({

@@ -90,7 +90,7 @@ export function storePreference(preference: ThemePreference): void {
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(preference));
   } catch {
-    /* private mode — the session still renders correctly */
+    /* private mode, the session still renders correctly */
   }
 }
 
@@ -128,7 +128,7 @@ export function applyPreference(preference: ThemePreference): Palette {
 
 /**
  * Pre-paint script. Runs before React hydrates so the chosen palette and mode
- * are on <html> for the very first frame — no flash of the default theme.
+ * are on <html> for the very first frame, no flash of the default theme.
  */
 export function themeBootstrapScript(): string {
   const payload = JSON.stringify({

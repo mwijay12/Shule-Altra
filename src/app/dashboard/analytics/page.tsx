@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Analytics studio — cross-module intelligence with live filters and
+ * @fileOverview Analytics studio, cross-module intelligence with live filters and
  * vector PDF exports (merit ranking + attendance register).
  */
 

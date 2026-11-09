@@ -7,8 +7,9 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { EASE_OUT_QUART } from '@/lib/motion/tokens';
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,7 +35,10 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
       const reveal = () => {
         const fresh = gsap
           .utils.toArray<HTMLElement>('[data-reveal]')
-          .filter((node) => !seen.has(node));
+          .filter((node) => !seen.has(node))
+          // A WaveSection runs its own timeline; revealing it here too would
+          // fight it over the same transform.
+          .filter((node) => !node.closest('[data-wave-root]'));
         if (fresh.length === 0) return;
         fresh.forEach((node) => seen.add(node));
         gsap.from(fresh, {
@@ -69,7 +73,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         initial={reducedMotion ? false : { opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
         exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-        transition={{ duration: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: reducedMotion ? 0 : 0.2, ease: EASE_OUT_QUART }}
         className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
       >
         {children}

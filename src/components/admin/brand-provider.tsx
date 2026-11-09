@@ -5,7 +5,7 @@
  *
  * Reads the two config documents the school actually edits, folds them into a
  * SchoolBrand, and publishes it to the PDF kit. This is a provider rather than a
- * hook because three components used to call the hook independently — six
+ * hook because three components used to call the hook independently, six
  * Firestore listeners and three competing writes to the document kit's active
  * brand for a single page.
  *
@@ -44,7 +44,7 @@ export function SchoolBrandProvider({
 
   // useDoc reports isLoading=false on its very first render, before its effect
   // runs. Without this flag the chrome would show the fallback sample identity
-  // for a frame — a different school's name and an invented motto.
+  // for a frame, a different school's name and an invented motto.
   const [booted, setBooted] = React.useState(false);
   React.useEffect(() => setBooted(true), []);
   const ready = booted && !identityLoading;

@@ -63,7 +63,7 @@ export function AppSidebar() {
   const filteredItems = allNavItems.filter(item => canAccess(item.module))
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50 shadow-sm transition-all duration-300 font-body">
+    <Sidebar collapsible="icon" className="border-r border-border/50 shadow-sm transition-[width,box-shadow] duration-300 font-body">
       <SidebarHeader className="p-4 sm:p-6 mb-2 sm:mb-4 relative">
         <Link href="/" className="flex items-center gap-3 group overflow-hidden">
           <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl colorful-gradient text-white shadow-xl group-hover:rotate-12 transition-transform duration-500">
@@ -94,7 +94,7 @@ export function AppSidebar() {
                   isActive={isActive}
                   tooltip={item.title}
                   className={cn(
-                    "relative group h-10 sm:h-12 px-3 sm:px-4 rounded-xl sm:rounded-[1.25rem] transition-all duration-300",
+                    "relative group h-10 sm:h-12 px-3 sm:px-4 rounded-xl sm:rounded-[1.25rem] transition-[color,background-color,box-shadow] duration-300",
                     isActive 
                       ? "bg-primary text-white shadow-lg shadow-primary/20 scale-[1.02]" 
                       : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
@@ -144,7 +144,7 @@ export function AppSidebar() {
           <button 
             onClick={signOut}
             className={cn(
-              "flex items-center gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl text-destructive font-black text-[8px] sm:text-[10px] uppercase tracking-widest hover:bg-destructive/10 transition-all group",
+              "flex items-center gap-3 p-2 sm:p-3 rounded-xl sm:rounded-2xl text-destructive font-black text-[8px] sm:text-[10px] uppercase tracking-widest hover:bg-destructive/10 transition-colors group",
               isCollapsed ? "justify-center" : "w-full"
             )}
           >

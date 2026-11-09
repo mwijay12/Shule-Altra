@@ -206,7 +206,7 @@ export default function SettingsPage() {
         </TabsList>
 
         <TabsContent value="identity" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white/60 backdrop-blur-md">
+          <Card className="border-none shadow-2xl rounded-[2.5rem] bg-card">
             <CardHeader className="bg-primary/5 border-b p-8">
               <div className="flex justify-between items-center">
                 <div>
@@ -232,7 +232,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="academic" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-          <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60 backdrop-blur-md">
+          <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
             <CardHeader className="bg-primary/5 border-b p-8">
               <CardTitle className="text-base font-semibold">{DEMO_MODE ? `${ACADEMIC_LEVEL} academic tiers` : "Academic tiers"}</CardTitle>
               <CardDescription className="text-[13px] font-bold leading-relaxed">
@@ -280,7 +280,7 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="dev" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-           <Card className="border-none shadow-2xl rounded-[2.5rem] bg-white/60 border border-orange-100">
+           <Card className="border-none shadow-2xl rounded-[2.5rem] bg-card border border-orange-100">
              <CardHeader className="bg-orange-50/50 border-b p-8">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-2xl bg-white shadow-xl flex items-center justify-center text-orange-600">
