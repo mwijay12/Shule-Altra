@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { CanteenMix, ChartPanel } from "@/components/admin/module-charts"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
@@ -136,23 +138,18 @@ export default function CanteenPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Daily Revenue", value: totalRevenue, prefix: "TZS ", sub: "Recorded today", icon: TrendingUp, color: "text-green-600" },
-          { label: "Avg Basket", value: averageSale, prefix: "TZS ", sub: "Per Sale", icon: Wallet, color: "text-primary" },
-          { label: "Sales Recorded", value: sales.length, sub: "Cashless receipts", icon: Utensils, color: "text-accent" },
-          { label: "Students", value: students?.length || 0, sub: "Cards on file", icon: Users, color: "text-orange-600" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
-             <CardContent className="p-6 relative">
-                <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-                  <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
-                </div>
-                <p className="text-[11px] sm:text-[13px] font-semibold text-muted-foreground">{stat.label}</p>
-                <p className={cn("text-xl sm:text-2xl font-black mt-2 tracking-tighter truncate", stat.color)}><AnimatedNumber value={stat.value} prefix={"prefix" in stat ? stat.prefix : undefined} /></p>
-                <p className="text-[11px] text-muted-foreground font-semibold mt-1">{stat.sub}</p>
-             </CardContent>
-          </Card>
+          { label: "Daily Revenue", value: totalRevenue, prefix: "TZS ", sub: "Recorded today", icon: TrendingUp, tone: "emerald" as const },
+          { label: "Avg Basket", value: averageSale, prefix: "TZS ", sub: "Per Sale", icon: Wallet, tone: "primary" as const },
+          { label: "Sales Recorded", value: sales.length, sub: "Cashless receipts", icon: Utensils, tone: "accent" as const },
+          { label: "Students", value: students?.length || 0, sub: "Cards on file", icon: Users, tone: "amber" as const },
+        ].map((stat, i) => (
+          <StatCard key={stat.label} index={i} {...stat} />
         ))}
       </div>
+
+      <ChartPanel title="What sold" hint="Takings per item, largest first — from recorded sales" data-reveal>
+        <CanteenMix sales={sales ?? []} />
+      </ChartPanel>
 
       <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/60 backdrop-blur-md">
         <CardHeader className="bg-muted/30 p-8 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -186,7 +183,7 @@ export default function CanteenPage() {
                   <TableHead className="text-right pr-8 text-[12px] font-semibold">Status</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="sd-stagger-rows">
                 {sales.filter(s => s.studentName.toLowerCase().includes(searchTerm.toLowerCase())).map((tx) => (
                   <TableRow key={tx.id} className="group hover:bg-primary/[0.02] border-b last:border-none transition-colors">
                     <TableCell className="pl-8 py-6">

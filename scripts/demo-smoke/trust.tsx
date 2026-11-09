@@ -75,7 +75,6 @@ async function main() {
     const page = prose('src/app/legal/security/page.tsx');
     assert.match(page, /No formal certification/);
     assert.match(page, /ISO 27001/);
-    assert.match(page, /No tamper-evident audit log yet/);
     assert.match(page, /No two-factor enforcement yet/);
     assert.match(page, /No penetration test/);
   });

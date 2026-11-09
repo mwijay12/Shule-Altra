@@ -49,8 +49,11 @@ const FILES = sources('src');
 const JARGON = /\b(node|nodes|sovereign|synthesis|omnichannel)\b/i;
 // Capabilities the code does not implement.
 const FALSE_CLAIMS: Array<[RegExp, string]> = [
-  [/immutable audit/i, 'there is no append-only audit log'],
-  [/audit trail/i, 'no audit-log writer exists'],
+  // There IS an append-only, hash-chained log now (src/lib/audit, enforced by
+  // firestore.rules and covered by demo:smoke:audit), so naming it is accurate.
+  // "Immutable" is still overclaiming: a cloud-project administrator could
+  // rewrite it, which the security page states plainly.
+  [/immutable audit/i, 'the log is append-only, not immutable against a project owner'],
   [/national gateways?/i, 'alerts go through an optional n8n webhook'],
   [/SMS (alerts? )?(sent|via Beem)/i, 'no SMS provider is implemented'],
   [/Every export (written )?to the log/i, 'exports are not logged'],

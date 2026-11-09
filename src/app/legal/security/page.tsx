@@ -73,7 +73,35 @@ export default function SecurityPage() {
         </p>
       </Section>
 
-      <Section number="06" title="Infrastructure">
+      <Section number="06" title="Every change is recorded, and history cannot be rewritten">
+        <p>
+          Each write to a learner, a fee, a staff record or a setting appends an audit entry:
+          who made the change, their role, the fields before and after, and the time. Bulk
+          actions record one entry describing the decision rather than one per row.
+        </p>
+        <p>
+          The log is <strong>append-only</strong>. The database rules refuse an update or a
+          delete for every role, including the install owner. An entry must name the
+          signed-in user as its actor, so a teacher cannot file a change under the
+          bursar&apos;s name.
+        </p>
+        <p>
+          Entries are <strong>hash-chained</strong>: each carries the SHA-256 digest of the one
+          before it. Editing a fee after the fact changes that entry&apos;s digest, so the next
+          entry no longer follows it. The audit screen recomputes every digest and every link
+          and names the entry where the chain broke. Photographs, phone numbers and secrets
+          are redacted before they reach the log.
+        </p>
+        <p>
+          One honest limit: the chain is written by the application, so a person with direct
+          database-administrator access could in principle rewrite the whole log and recompute
+          it. The rules stop every application role from doing so; they cannot stop someone
+          holding the cloud project&apos;s own credentials. That is why the deployment belongs
+          to the school.
+        </p>
+      </Section>
+
+      <Section number="07" title="Infrastructure">
         <p>
           A live installation runs in the school&apos;s own cloud project, so the school retains
           ownership and can revoke our access. Traffic is HTTPS. Secrets live in deployment
@@ -82,7 +110,7 @@ export default function SecurityPage() {
         </p>
       </Section>
 
-      <Section number="07" title="How we build">
+      <Section number="08" title="How we build">
         <p>
           Every change runs a continuous-integration pipeline: type checking, a production build,
           and regression suites covering the data layer, the access matrix, session lifecycle,
@@ -92,13 +120,12 @@ export default function SecurityPage() {
         </p>
       </Section>
 
-      <Section number="08" title="What is not in place yet">
+      <Section number="09" title="What is not in place yet">
         <p>
           Stated plainly, because a school deserves to know before it signs:
         </p>
         <ul>
           <li><strong>No formal certification.</strong> We hold no ISO 27001 or SOC 2 certificate, and we do not imply one.</li>
-          <li><strong>No tamper-evident audit log yet.</strong> Mail sends are logged; a full immutable trail of every record change is on the roadmap.</li>
           <li><strong>No two-factor enforcement yet.</strong> Accounts use Google sign-in, which supports it, but the system does not currently require it.</li>
           <li><strong>Role changes can lag.</strong> A revoked role takes effect when the session renews, within the 30-minute idle window.</li>
           <li><strong>No penetration test by a third party.</strong> Our security review is internal and test-backed.</li>
@@ -109,7 +136,7 @@ export default function SecurityPage() {
         </p>
       </Section>
 
-      <Section number="09" title="Reporting a problem">
+      <Section number="10" title="Reporting a problem">
         <p>
           If you find a weakness, write to{' '}
           <a href={`mailto:${SUPPORT.email}`}>{SUPPORT.email}</a> or call{' '}

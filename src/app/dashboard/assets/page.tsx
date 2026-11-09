@@ -28,6 +28,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { AssetCondition, ChartPanel } from "@/components/admin/module-charts"
+import { RatioDonut } from "@/components/admin/chart-motion"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useToast } from "@/hooks/use-toast"
@@ -213,23 +216,29 @@ export default function AssetsPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Total assets", value: assets?.length || 0, sub: "On the register", icon: HardDrive, color: "text-primary" },
-          { label: "Faulty", value: faultyCount, sub: "Action Required", icon: AlertCircle, color: "text-destructive" },
-          { label: "Maintenance", value: maintenanceCount, sub: "In workshop", icon: Activity, color: "text-orange-600" },
-          { label: "QR Tagged", value: auditRate, suffix: "%", sub: "Registry coverage", icon: ShieldCheck, color: "text-green-600" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
-             <CardContent className="p-5 sm:p-6 relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-                  <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
-                </div>
-                <p className="text-[11px] sm:text-[13px] font-semibold text-muted-foreground">{stat.label}</p>
-                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{typeof stat.value === "number" ? <AnimatedNumber value={stat.value} suffix={"suffix" in stat ? stat.suffix : undefined} /> : stat.value}</p>
-                {stat.label === "QR Tagged" && <Progress value={auditRate} aria-label="Asset QR coverage" className="mt-3 h-1.5 bg-muted/40" indicatorClassName="bg-emerald-500" />}
-                <p className="text-[11px] text-muted-foreground font-semibold mt-1 truncate">{stat.sub}</p>
-             </CardContent>
-          </Card>
+          { label: "Total assets", value: assets?.length || 0, sub: "On the register", icon: HardDrive, tone: "primary" as const },
+          { label: "Faulty", value: faultyCount, sub: "Action Required", icon: AlertCircle, tone: "rose" as const },
+          { label: "Maintenance", value: maintenanceCount, sub: "In workshop", icon: Activity, tone: "amber" as const },
+          { label: "QR Tagged", value: auditRate, suffix: "%", sub: "Registry coverage", icon: ShieldCheck, tone: "emerald" as const, progress: auditRate },
+        ].map((stat, i) => (
+          <StatCard key={stat.label} index={i} {...stat} />
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2" data-reveal>
+        <ChartPanel title="Asset condition" hint="Every item counted by its recorded status">
+          <AssetCondition assets={assets ?? []} />
+        </ChartPanel>
+        <ChartPanel title="QR tag coverage" hint="Tagged items against the whole register">
+          <div className="grid min-h-[230px] place-items-center">
+            <RatioDonut
+              value={auditRate}
+              label="Registry tagged"
+              caption={`${taggedCount} of ${assets?.length ?? 0} items carry a QR code`}
+              colour="hsl(160 74% 42%)"
+            />
+          </div>
+        </ChartPanel>
       </div>
 
       <Card className="border-none shadow-2xl overflow-hidden bg-white/60 backdrop-blur-md rounded-[2.5rem]">
@@ -272,7 +281,7 @@ export default function AssetsPage() {
                   <TableHead className="text-right pr-8 text-[12px] font-semibold">Control</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="sd-stagger-rows">
                 {assets?.map((asset) => (
                   <TableRow key={asset.id} className="group hover:bg-primary/[0.02] border-b last:border-none transition-colors">
                     <TableCell className="pl-8 py-6">

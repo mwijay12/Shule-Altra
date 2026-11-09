@@ -30,6 +30,8 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { FleetLoad, ChartPanel } from "@/components/admin/module-charts"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
@@ -152,23 +154,18 @@ export default function TransportPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 px-1">
         {[
-          { label: "Fleet Ready", value: routes.filter((r: any) => r.status === "Active" && r.vehicle).length, suffix: " Buses", sub: "Operational", icon: Bus, color: "text-primary" },
-          { label: "Active Routes", value: routes.filter((r: any) => r.status === "Active").length, sub: "In Transit", icon: Navigation, color: "text-accent" },
-          { label: "Safety Score", value: 100, suffix: "%", sub: "Audit Passed", icon: ShieldCheck, color: "text-green-600" },
-          { label: "Day Students", value: fleetPayload, sub: "Fleet Payload", icon: Users, color: "text-orange-600" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-none shadow-md bg-white/60 backdrop-blur-md rounded-[1.5rem] group overflow-hidden">
-             <CardContent className="p-5 relative">
-                <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-                  <stat.icon className="h-16 w-16" />
-                </div>
-                <p className="text-[11px] font-semibold text-muted-foreground">{stat.label}</p>
-                <p className={cn("text-xl font-black mt-1 truncate", stat.color)}><AnimatedNumber value={stat.value} suffix={"suffix" in stat ? stat.suffix : undefined} /></p>
-                <p className="text-[11px] text-muted-foreground font-semibold mt-1 truncate">{stat.sub}</p>
-             </CardContent>
-          </Card>
+          { label: "Fleet Ready", value: routes.filter((r: any) => r.status === "Active" && r.vehicle).length, suffix: " Buses", sub: "Operational", icon: Bus, tone: "primary" as const },
+          { label: "Active Routes", value: routes.filter((r: any) => r.status === "Active").length, sub: "In Transit", icon: Navigation, tone: "accent" as const },
+          { label: "Safety Score", value: 100, suffix: "%", sub: "Audit Passed", icon: ShieldCheck, tone: "emerald" as const },
+          { label: "Day Students", value: fleetPayload, sub: "Fleet Payload", icon: Users, tone: "amber" as const },
+        ].map((stat, i) => (
+          <StatCard key={stat.label} index={i} {...stat} />
         ))}
       </div>
+
+      <ChartPanel title="Seat load per route" hint="Learners assigned against the seats available" className="mx-1" data-reveal>
+        <FleetLoad routes={routes ?? []} />
+      </ChartPanel>
 
       <Card className="border-none shadow-xl overflow-hidden bg-card/60 backdrop-blur-md rounded-[2.5rem] mx-1">
         <CardHeader className="bg-muted/30 p-6 sm:p-8 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
@@ -203,7 +200,7 @@ export default function TransportPage() {
                   <TableHead className="text-right pr-8 text-[12px] font-semibold">Action</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="sd-stagger-rows">
                 {routes.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase())).map((route) => (
                   <TableRow key={route.id} className="group hover:bg-primary/[0.02] border-b last:border-none transition-colors">
                     <TableCell className="pl-8 py-5">

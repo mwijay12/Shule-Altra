@@ -23,6 +23,9 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { recordAudit } from "@/lib/audit/record"
+import { AttendanceByClass, RegisterSplit, ChartPanel } from "@/components/admin/module-charts"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from "@/firebase"
@@ -87,11 +90,19 @@ export default function AttendancePage() {
   const handleMarkAllPresent = () => {
     if (!students) return
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    // One register-wide entry, not 150 near-identical ones: the decision a
+    // person made was "mark everyone present:", and that is what the log shows.
     students.forEach(s => {
       updateDocumentNonBlocking(doc(db, "schools", "school-001", "students", s.id), {
         attendanceStatus: "Present",
         lastAttendanceUpdate: time
-      })
+      }, { audit: false })
+    })
+    void recordAudit({
+      action: 'update',
+      path: 'schools/school-001/students',
+      summary: `Marked the whole register present (${students.length} learners) at ${time}.`,
+      label: `${students.length} learners`,
     })
     toast({
       title: "Batch Completion",
@@ -121,23 +132,22 @@ export default function AttendancePage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "Presence", value: presenceRate, format: (n: number) => n.toFixed(1), suffix: "%", sub: "Not marked absent", color: "text-green-600", icon: Zap },
-          { label: "Absent", value: students?.filter(s => s.attendanceStatus === "Absent").length || 0, sub: "Follow up", color: "text-destructive", icon: AlertCircle },
-          { label: "Guardian contacts", value: students?.filter(s => s.contact)?.length || 0, sub: "On file", color: "text-blue-600", icon: MessageCircle },
-          { label: "On the register", value: students?.length || 0, sub: "Form 1–4", color: "text-primary", icon: Database },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2rem] overflow-hidden group hover:-translate-y-1 transition-all">
-             <CardContent className="p-5 sm:p-6 relative overflow-hidden">
-                <div className="absolute -right-4 -top-4 opacity-5 group-hover:rotate-12 transition-transform">
-                  <stat.icon className="h-16 w-16 sm:h-20 sm:w-20" />
-                </div>
-                <p className="text-[11px] sm:text-[13px] font-semibold text-muted-foreground">{stat.label}</p>
-                <p className={cn("text-xl sm:text-3xl font-black mt-2 tracking-tighter truncate", stat.color)}>{typeof stat.value === "number" ? <AnimatedNumber value={stat.value} format={"format" in stat ? stat.format : undefined} suffix={"suffix" in stat ? stat.suffix : undefined} /> : stat.value}</p>
-                {stat.label === "Presence" && <Progress value={presenceRate} aria-label="Learner presence" className="mt-3 h-1.5 bg-muted/40" indicatorClassName="bg-emerald-500" />}
-                <p className="text-[11px] text-muted-foreground font-semibold mt-1 truncate">{stat.sub}</p>
-             </CardContent>
-          </Card>
+          { label: "Presence", value: presenceRate, format: (n: number) => n.toFixed(1), suffix: "%", sub: "Not marked absent", tone: "emerald" as const, icon: Zap, progress: presenceRate },
+          { label: "Absent", value: students?.filter(s => s.attendanceStatus === "Absent").length || 0, sub: "Follow up", tone: "rose" as const, icon: AlertCircle },
+          { label: "Guardian contacts", value: students?.filter(s => s.contact)?.length || 0, sub: "On file", tone: "primary" as const, icon: MessageCircle },
+          { label: "On the register", value: students?.length || 0, sub: "Form 1–4", tone: "accent" as const, icon: Database },
+        ].map((stat, i) => (
+          <StatCard key={stat.label} index={i} {...stat} />
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2" data-reveal>
+        <ChartPanel title="Presence by class" hint="Share not marked absent, from today's register">
+          <AttendanceByClass students={students ?? []} />
+        </ChartPanel>
+        <ChartPanel title="Register composition" hint="Boarding and day scholars on file">
+          <RegisterSplit students={students ?? []} />
+        </ChartPanel>
       </div>
 
       <Card className="border-none shadow-2xl overflow-hidden bg-white/60 backdrop-blur-md rounded-[2.5rem]">

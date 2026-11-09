@@ -268,7 +268,7 @@ export default function StaffPage() {
                   <TableHead className="text-right pr-8 text-[12px] font-semibold">Control</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBody className="sd-stagger-rows">
                 {filteredStaff.map((person) => (
                   <TableRow key={person.id} className={cn("group hover:bg-primary/[0.02] border-b last:border-none transition-colors", !person.active && "opacity-60")}>
                     <TableCell className="pl-8 py-5">

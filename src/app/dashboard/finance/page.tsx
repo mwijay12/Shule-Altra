@@ -47,6 +47,8 @@ import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebas
 import { collection, query, orderBy, doc, Timestamp } from "firebase/firestore"
 import { Progress } from "@/components/ui/progress"
 import { AnimatedNumber } from "@/components/ui/animated-number"
+import { StatCard } from "@/components/admin/stat-card"
+import { FeesByClass, RegisterSplit, ChartPanel } from "@/components/admin/module-charts"
 import type { Transaction } from "@/types/finance"
 import type { Student } from "@/types/student"
 
@@ -164,47 +166,35 @@ export default function FinancePage() {
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
           {
-            title: "Revenue (7D)",
+            label: "Revenue (7D)",
             value: weeklyTotal,
             format: formatTZSCompact,
             exact: formatTZS(weeklyTotal),
             icon: Zap,
-            color: "text-green-600",
+            tone: "emerald" as const,
           },
-          { title: "Audit Disputes", value: disputed, format: undefined, icon: AlertTriangle, color: "text-destructive" },
-          { title: "Awaiting confirmation", value: pending, format: undefined, icon: History, color: "text-primary" },
+          { label: "Audit Disputes", value: disputed, icon: AlertTriangle, tone: "rose" as const },
+          { label: "Awaiting confirmation", value: pending, icon: History, tone: "primary" as const },
           {
-            title: "Outstanding Fees",
+            label: "Outstanding Fees",
             value: outstanding,
             format: formatTZSCompact,
             exact: formatTZS(outstanding),
             icon: Scale,
-            color: "text-orange-600",
+            tone: "amber" as const,
           },
-        ].map((stat) => (
-          <Card key={stat.title} className="border-none shadow-xl rounded-[2rem] bg-white/60 backdrop-blur-md overflow-hidden group hover:-translate-y-1 transition-all">
-            <CardContent className="p-5 sm:p-6">
-              <p className="text-[11px] sm:text-[13px] font-semibold text-muted-foreground">{stat.title}</p>
-              <div className="mt-2 flex items-baseline gap-2">
-                <stat.icon className={cn("h-4 w-4 shrink-0", stat.color)} />
-                <span
-                  title={"exact" in stat ? String(stat.exact) : undefined}
-                  className={cn(
-                    "font-black tabular-nums tracking-tight text-[clamp(1.05rem,3.1vw,1.5rem)]",
-                    stat.color
-                  )}
-                >
-                  <AnimatedNumber value={stat.value} format={stat.format} />
-                </span>
-              </div>
-              {"exact" in stat ? (
-                <p className="mt-1 text-[11px] font-bold text-muted-foreground">
-                  {stat.exact}
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
+        ].map((stat, i) => (
+          <StatCard key={stat.label} index={i} {...stat} />
         ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2" data-reveal>
+        <ChartPanel title="Outstanding by class" hint="Where the balance actually sits, largest first">
+          <FeesByClass students={students ?? []} />
+        </ChartPanel>
+        <ChartPanel title="Register composition" hint="Boarding and day scholars behind these figures">
+          <RegisterSplit students={students ?? []} />
+        </ChartPanel>
       </div>
 
       <Tabs defaultValue="forensic-ledger" className="space-y-8">
@@ -240,7 +230,7 @@ export default function FinancePage() {
                     <TableHead className="text-right pr-10 text-[12px] font-semibold">Status</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="sd-stagger-rows">
                   {isLoading ? (
                     <TableRow><TableCell colSpan={5} className="h-32 text-center"><Loader2 className="animate-spin inline mr-2" /> Loading transactions…</TableCell></TableRow>
                   ) : students?.map((s) => (
