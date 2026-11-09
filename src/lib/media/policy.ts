@@ -6,7 +6,7 @@
  * a deletion path. Most schools will never write that policy down, so the
  * system has to ask them, once, and then behave accordingly.
  *
- *   PHOTO_POLICY=none       no photographs at all — initials avatars, ID cards
+ *   PHOTO_POLICY=none       no photographs at all, initials avatars, ID cards
  *                           still print. The safest default for a school that
  *                           has not thought about it.
  *   PHOTO_POLICY=optional   (default) a photograph is captured only when a

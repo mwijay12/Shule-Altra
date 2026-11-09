@@ -153,10 +153,20 @@ async function main() {
   });
 
   check('chart draws are long enough to be seen, and series are staggered', () => {
+    // Read the tokens, not literals: the values moved to src/lib/motion/tokens.ts
+    // so every engine shares them. The brief specifies a 900ms draw and an
+    // 800-1200ms counter.
+    const tokens = read('src/lib/motion/tokens.ts');
+    const chart = tokens.match(/chart: ([\d.]+)/);
+    const counter = tokens.match(/counter: ([\d.]+)/);
+    const series = tokens.match(/series: ([\d.]+)/);
+    assert.ok(chart && Number(chart[1]) >= 0.9, 'a draw under 900ms reads as a jump');
+    assert.ok(counter && Number(counter[1]) >= 0.8 && Number(counter[1]) <= 1.2, 'counter outside 800-1200ms');
+    assert.ok(series && Number(series[1]) > 0, 'series must not all land at once');
+
     const motion = read('src/components/admin/chart-motion.tsx');
-    const duration = motion.match(/duration = (\d+)\)/);
-    assert.ok(duration && Number(duration[1]) >= 1000, 'a sub-second draw reads as a jump');
-    assert.match(motion, /order \* 190/, 'series must not all land at once');
+    assert.match(motion, /DURATION\.chart \* 1000/, 'chart-motion must derive its duration from tokens');
+    assert.match(motion, /STAGGER\.series \* 1000/, 'chart-motion must derive its stagger from tokens');
   });
 
   check('every ResponsiveContainer inside ChartFrame has a definite height', () => {

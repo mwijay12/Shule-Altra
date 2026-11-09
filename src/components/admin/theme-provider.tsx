@@ -7,7 +7,7 @@
  *   • Palette + type pairing belong to the SCHOOL. They load from
  *     `schools/<id>/config/branding` and are published from the Theme Studio.
  *   • Light / dark belongs to the PERSON reading the screen, and defaults to
- *     light — the dashboard is a daytime office tool, not a media player.
+ *     light, the dashboard is a daytime office tool, not a media player.
  *
  * A pre-paint script (ThemeScript) puts the cached values on <html> before React
  * hydrates, so there is no flash and no dependency on the network to look right.

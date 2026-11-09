@@ -3,9 +3,9 @@
  *
  * Two ways in, one shape out:
  *
- *   1. `NEXT_PUBLIC_FIREBASE_CONFIG` — the whole web config as JSON. This is
+ *   1. `NEXT_PUBLIC_FIREBASE_CONFIG`, the whole web config as JSON. This is
  *      what a real deployment uses, and it keeps the keys out of the source
- *      tree (they are still public by nature — Firebase web keys are not
+ *      tree (they are still public by nature, Firebase web keys are not
  *      secrets; the rules decide what they may do).
  *   2. The fallback below, which points at the demo project so the hub still
  *      boots when somebody clones the repo without an env file.
@@ -40,7 +40,7 @@ function parse(raw: string | undefined): FirebaseWebConfig | null {
     if (!parsed?.projectId || !parsed?.apiKey || !parsed?.appId) return null
     return parsed as FirebaseWebConfig
   } catch {
-    // A malformed env var must not take the app down — fall back loudly.
+    // A malformed env var must not take the app down, fall back loudly.
     console.warn('[firebase] NEXT_PUBLIC_FIREBASE_CONFIG is not valid JSON; using the demo project.')
     return null
   }

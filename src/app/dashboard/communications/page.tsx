@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * @fileOverview Communications — the school's outbound mail room.
+ * @fileOverview Communications, the school's outbound mail room.
  *
  * The page never holds an address list. It asks the server what this role may
  * send and to how many people, previews the exact email that would go out, and
@@ -117,7 +117,7 @@ export default function CommunicationsPage() {
     void load();
   }, [load]);
 
-  // "Does the mailbox actually work?" — logs in, sends nothing.
+  // "Does the mailbox actually work?", logs in, sends nothing.
   const probe = React.useCallback(async () => {
     setProbing(true);
     try {
@@ -190,7 +190,7 @@ export default function CommunicationsPage() {
   const totalDelivered = sent.reduce((sum, run) => sum + Number(run.delivered || 0), 0);
   const totalFailed = sent.reduce((sum, run) => sum + Number(run.failed || 0), 0);
   const permitted = (caps?.templates ?? []).filter((t) => t.allowed);
-  // Guardians reachable today: the largest permitted audience, not a sum —
+  // Guardians reachable today: the largest permitted audience, not a sum , 
   // the same guardian appears on several templates and would be counted twice.
   const reachable = permitted.reduce((max, t) => Math.max(max, Number(t.audienceSize || 0)), 0);
 

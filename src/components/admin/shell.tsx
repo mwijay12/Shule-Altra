@@ -1,18 +1,19 @@
 'use client';
 
 /**
- * @fileOverview Aurora admin shell — sidebar, topbar, palette, notifications and
+ * @fileOverview Aurora admin shell, sidebar, topbar, palette, notifications and
  * route transitions wrapped around the authenticated dashboard.
  */
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { MotionConfig } from 'framer-motion';
+import { MotionConfig } from 'motion/react';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { AuroraSidebar } from '@/components/admin/sidebar';
 import { Topbar, type NotificationItem } from '@/components/admin/topbar';
 import { CommandPalette, type PaletteStudent } from '@/components/admin/command-palette';
 import { PageTransition } from '@/components/admin/page-transition';
+import { SmoothScroll, scrollToTop } from '@/components/system/smooth-scroll';
 import { RangeProvider } from '@/components/admin/range-context';
 import { ALL_NAV_ITEMS } from '@/components/admin/nav-config';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
@@ -50,8 +51,9 @@ function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) 
   React.useEffect(() => {
     setMobileOpen(false);
     // The content column owns the scroll (the rail is fixed furniture), so route
-    // changes must reset it explicitly — the window no longer scrolls.
+    // changes must reset it explicitly, the window no longer scrolls.
     scrollRef.current?.scrollTo({ top: 0 });
+    scrollToTop();
   }, [pathname]);
 
   React.useEffect(() => {
@@ -174,7 +176,9 @@ function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) 
               data-app-scroll
               className="app-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain scroll-smooth"
             >
-              <PageTransition>{children}</PageTransition>
+              <SmoothScroll>
+                <PageTransition>{children}</PageTransition>
+              </SmoothScroll>
             </main>
           </div>
         </div>

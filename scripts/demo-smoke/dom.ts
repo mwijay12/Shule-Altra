@@ -86,6 +86,9 @@ const DOM_GLOBALS = [
   'CustomEvent', 'MutationObserver', 'DOMParser', 'XMLSerializer', 'CSSStyleDeclaration', 'Text',
   'KeyboardEvent', 'MouseEvent', 'PointerEvent', 'FormData', 'DOMRect', 'SVGElement',
   'DocumentFragment', 'ShadowRoot', 'Range', 'Selection', 'XMLHttpRequest', 'CSS', 'DOMTokenList',
+  // Lenis checks `wrapper instanceof Window` to decide between a resize listener
+  // and a ResizeObserver. Without the constructor global it throws on import.
+  'Window', 'Document', 'HTMLBodyElement', 'HTMLHtmlElement', 'WheelEvent', 'TouchEvent',
 ];
 for (const key of DOM_GLOBALS) {
   if (w[key] !== undefined) {

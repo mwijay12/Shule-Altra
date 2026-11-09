@@ -12,7 +12,7 @@
  * A school that has neither key still sees exactly what parents would receive,
  * which is what keeps the demo honest.
  *
- * Two guards exist because the most common provider here — Gmail — punishes
+ * Two guards exist because the most common provider here, Gmail, punishes
  * bursts and then silently starts dropping mail:
  *
  *   – a per-send ceiling (`SMTP_MAX_PER_SEND`, default 200), refused up front
@@ -91,7 +91,7 @@ export function readSmtpConfig(env: Env = process.env): SmtpConfig | null {
 
   // Port decides TLS, not the env file. A school that copies a template with
   // SMTP_SECURE=true and then switches to 587 gets a connection that opens and
-  // never greets — the single most common SMTP support ticket there is.
+  // never greets, the single most common SMTP support ticket there is.
   const secure =
     port === 587
       ? false
@@ -136,7 +136,7 @@ export function dailyLimit(env: Env = process.env): number {
 /* -------------------------------------------------------------------------- */
 
 const DAY_MS = 86_400_000
-/** UTC+3 — the school's own midnight, not the server's. */
+/** UTC+3, the school's own midnight, not the server's. */
 const EAT_OFFSET_MS = 3 * 60 * 60 * 1000
 
 function todayInDar(): string {
@@ -211,7 +211,7 @@ export function providerStatus(env: Env = process.env): ProviderStatus {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Before a school is live there are no parents to mail — just you and a phone.
+ * Before a school is live there are no parents to mail, just you and a phone.
  *
  * With `EMAIL_TEST_MODE=true` every message is redirected to
  * `EMAIL_TEST_RECIPIENTS` and the subject is prefixed `[TEST]`, so the whole

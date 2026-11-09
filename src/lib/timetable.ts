@@ -29,7 +29,7 @@ export interface Timetable {
   term: string;
   days: string[];
   periods: Period[];
-  /** grid[periodIndex][dayIndex] — null for break rows */
+  /** grid[periodIndex][dayIndex], null for break rows */
   grid: Array<Array<Slot | null>>;
   subjectLoad: Array<{ subject: string; teacher: string; periods: number }>;
 }

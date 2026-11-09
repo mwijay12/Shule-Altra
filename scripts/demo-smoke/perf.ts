@@ -1,20 +1,18 @@
 /**
- * @fileOverview Guard the frame budget, because animation nobody can see is not
- * animation.
+ * @fileOverview Guard the frame budget.
  *
- * The lesson this suite exists for: the motion suite reported PASSED while the
- * dashboard actually ran at 2–3 fps against a 60 fps baseline. Every counter,
- * ring and chart was animating — in three frames. It looked static, and three
- * rounds of "add more animation" could not fix it because nothing was missing.
+ * The motion suite reported PASSED while the dashboard ran at 2-3 fps against a
+ * 60 fps baseline. Counters, rings and charts animated in three frames, which
+ * reads as a jump. Adding more animation could not fix it.
  *
- * Measured causes, isolated one at a time in Chromium:
+ * Causes, isolated one at a time in Chromium:
  *   baseline                          2 fps
- *   − backdrop-filter on every panel   9 fps
- *   − blur() on the orb fallback      15 fps
- *   − the WebGL orb canvas            59 fps
+ *   - backdrop-filter on every panel   9 fps
+ *   - blur() on the orb fallback      15 fps
+ *   - the WebGL orb canvas            59 fps
  *
- * These checks read the source so CI catches a regression without a browser.
- * .preview/fps-probe.mjs measures the real frame rate.
+ * These checks read source so CI needs no browser. .preview/fps-probe.mjs
+ * measures the real frame rate.
  */
 
 import assert from 'node:assert/strict';

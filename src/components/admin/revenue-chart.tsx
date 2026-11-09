@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   Area,
   CartesianGrid,
@@ -22,6 +22,8 @@ import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range
 import { cn } from '@/lib/utils';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { GlidingTooltip, useSeriesFocus, useStableSeries } from '@/components/motion/chart-interaction';
+import { SPRING_TACTILE, DURATION, STAGGER } from '@/lib/motion/tokens';
 
 interface RevenueChartProps {
   transactions: any[];
@@ -104,28 +106,27 @@ function buildBuckets(transactions: any[], days: number): Bucket[] {
   return buckets;
 }
 
-function ChartTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-2xl border border-border/70 bg-popover/95 px-3 py-2 shadow-2xl backdrop-blur">
-      <p className="text-[11px] font-semibold text-muted-foreground">{label}</p>
-      {payload.map((entry: any) => (
-        <p key={entry.dataKey} className="mt-1 flex items-center justify-between gap-4 text-[13px] font-bold">
-          <span className="flex items-center gap-1.5 tracking-wide text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: entry.color }} />
-            {entry.dataKey === 'collected' ? 'Verified' : entry.dataKey === 'pending' ? 'Pending' : 'Target'}
-          </span>
-          <span className="tabular-nums text-foreground">TZS {Number(entry.value).toLocaleString('en-US')}</span>
-        </p>
-      ))}
-    </div>
-  );
-}
+/** Series colours follow the school's published palette, not a fixed blue. */
+const SERIES = {
+  collected: 'hsl(var(--primary))',
+  pending: 'hsl(var(--accent))',
+  target: 'hsl(38 90% 55%)',
+} as const;
+
+const SERIES_LABEL: Record<string, string> = {
+  collected: 'Verified',
+  pending: 'Pending',
+  target: 'Target',
+};
 
 export function RevenueChart({ transactions, target, isLoading }: RevenueChartProps) {
   const { range, setRange, days } = useRange();
   const reducedMotion = useReducedMotion();
-  const data = React.useMemo(() => buildBuckets(transactions ?? [], days), [transactions, days]);
+  const buckets = React.useMemo(() => buildBuckets(transactions ?? [], days), [transactions, days]);
+  // Hold the last dataset while the next one loads so Recharts interpolates the
+  // points in place. Unmounting here made every 7D -> 30D switch redraw from zero.
+  const data = useStableSeries(buckets, isLoading);
+  const { focused, opacityFor, bind } = useSeriesFocus();
 
   const totals = React.useMemo(() => {
     const collected = data.reduce((sum, bucket) => sum + bucket.collected, 0);
@@ -176,7 +177,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
                 <motion.span
                   layoutId="chart-range-pill"
                   className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-md shadow-primary/30"
-                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  transition={SPRING_TACTILE}
                 />
               )}
               <span className="relative z-10">{option.short}</span>
@@ -190,8 +191,8 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
           <ComposedChart data={data} margin={{ top: 8, right: 6, bottom: 0, left: -18 }}>
             <defs>
               <linearGradient id="collectedFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(214 85% 58%)" stopOpacity={0.45} />
-                <stop offset="100%" stopColor="hsl(214 85% 58%)" stopOpacity={0.02} />
+                <stop offset="0%" stopColor={SERIES.collected} stopOpacity={0.45} />
+                <stop offset="100%" stopColor={SERIES.collected} stopOpacity={0.02} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
@@ -209,43 +210,61 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               tickLine={false}
               width={54}
             />
-            <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'hsl(var(--primary))', strokeDasharray: '4 4' }} />
+            <Tooltip
+              content={
+                <GlidingTooltip
+                  formatter={(value) => `TZS ${value.toLocaleString('en-US')}`}
+                />
+              }
+              cursor={{ stroke: 'hsl(var(--primary))', strokeDasharray: '4 4' }}
+              wrapperStyle={{ transition: 'none', zIndex: 20 }}
+            />
             <Area
               type="monotone"
               dataKey="collected"
-              stroke="hsl(214 85% 58%)"
+              stroke={SERIES.collected}
               strokeWidth={2.4}
               fill="url(#collectedFill)"
               isAnimationActive={!reducedMotion}
-              animationDuration={700}
+              animationDuration={DURATION.chart * 1000}
               animationEasing="ease-out"
-              animationBegin={40}
+              animationBegin={0}
+              strokeOpacity={opacityFor('collected')}
+              fillOpacity={opacityFor('collected')}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: 'hsl(var(--card))' }}
+              onMouseEnter={() => bind('collected').onMouseEnter()}
+              onMouseLeave={() => bind('collected').onMouseLeave()}
             />
             <Line
               type="monotone"
               dataKey="pending"
-              stroke="hsl(264 82% 66%)"
+              stroke={SERIES.pending}
               strokeWidth={2}
               strokeDasharray="5 4"
               dot={false}
               isAnimationActive={!reducedMotion}
-              animationDuration={650}
+              animationDuration={DURATION.chart * 1000}
               animationEasing="ease-out"
-              animationBegin={80}
+              animationBegin={STAGGER.series * 1000}
+              strokeOpacity={opacityFor('pending')}
+              onMouseEnter={() => bind('pending').onMouseEnter()}
+              onMouseLeave={() => bind('pending').onMouseLeave()}
             />
             <Line
               type="monotone"
               dataKey="target"
-              stroke="hsl(38 90% 55%)"
+              stroke={SERIES.target}
               strokeWidth={1.4}
               strokeDasharray="2 5"
               dot={false}
               isAnimationActive={!reducedMotion}
-              animationDuration={650}
+              animationDuration={DURATION.chart * 1000}
               animationEasing="ease-out"
-              animationBegin={120}
+              animationBegin={STAGGER.series * 2000}
+              strokeOpacity={opacityFor('target')}
+              onMouseEnter={() => bind('target').onMouseEnter()}
+              onMouseLeave={() => bind('target').onMouseLeave()}
             />
           </ComposedChart>
         </ResponsiveContainer>
@@ -253,12 +272,21 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
 
       <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-4 sm:grid-cols-4">
         {[
-          { label: 'Verified', value: totals.collected, dot: 'bg-primary' },
-          { label: 'Pending', value: totals.pending, dot: 'bg-accent' },
-          { label: 'Target', value: totals.expected, dot: 'bg-amber-500' },
-          { label: 'Avg / bucket', value: Math.round(average), dot: 'bg-emerald-500' },
+          { label: 'Verified', value: totals.collected, dot: 'bg-primary', series: 'collected' },
+          { label: 'Pending', value: totals.pending, dot: 'bg-accent', series: 'pending' },
+          { label: 'Target', value: totals.expected, dot: 'bg-amber-500', series: 'target' },
+          { label: 'Avg / bucket', value: Math.round(average), dot: 'bg-emerald-500', series: null },
         ].map((item) => (
-          <div key={item.label}>
+          <div
+            key={item.label}
+            {...(item.series ? bind(item.series) : {})}
+            tabIndex={item.series ? 0 : undefined}
+            className={cn(
+              'rounded-lg outline-none transition-opacity duration-200 focus-visible:ring-2 focus-visible:ring-ring',
+              item.series && 'cursor-default',
+              focused && item.series && focused !== item.series && 'opacity-40'
+            )}
+          >
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
               <span className={cn('h-1.5 w-1.5 rounded-full', item.dot)} />
               {item.label}
@@ -268,8 +296,6 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
         ))}
       </div>
 
-      <div className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 left-10 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
       <TrendingUp className="pointer-events-none absolute right-6 top-6 hidden h-4 w-4 text-primary/20 sm:block" />
     </div>
   );

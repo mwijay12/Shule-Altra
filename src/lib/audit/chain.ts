@@ -59,7 +59,7 @@ export type ChainReport = {
 
 /**
  * Walk the log in order and prove every link. Entries must be supplied oldest
- * first — the caller orders by `seq` ascending.
+ * first, the caller orders by `seq` ascending.
  */
 export async function verifyChain(entries: AuditEntry[]): Promise<ChainReport> {
   const failures: ChainFailure[] = [];

@@ -9,13 +9,13 @@
  *
  * So the PDFs moved out of `public/` into `private/printables/`, and this file
  * is the only thing that decides whether a request for one of them succeeds.
- * The route handler reads it, the UI reads it, the smoke test reads it — one
+ * The route handler reads it, the UI reads it, the smoke test reads it, one
  * policy, no second opinion.
  *
  * Three sensitivities:
- *   public     — school-level aggregates, no learner-level personal data
- *   internal   — any signed-in staff member with the role listed
- *   restricted — money, identity or staff records; named roles only
+ *   public    , school-level aggregates, no learner-level personal data
+ *   internal  , any signed-in staff member with the role listed
+ *   restricted, money, identity or staff records; named roles only
  */
 
 export type DocRole = 'ADMIN' | 'TEACHER' | 'ACCOUNTANT' | 'BURSAR' | 'VIEWER'

@@ -51,6 +51,7 @@ import { StatCard } from "@/components/admin/stat-card"
 import { FeesByClass, RegisterSplit, ChartPanel } from "@/components/admin/module-charts"
 import type { Transaction } from "@/types/finance"
 import type { Student } from "@/types/student"
+import { WaveSection } from '@/components/motion/wave-section';
 
 const BUDGETS = {
   "Science Lab": 500000,
@@ -142,13 +143,13 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-32 px-1">
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+      <WaveSection as="div" className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
         <div className="space-y-4">
-          <Badge variant="outline" className="w-fit border-primary/20 bg-primary/5 text-primary px-4 py-1 h-6 text-[12px] font-semibold rounded-full shadow-sm">
+          <Badge data-wave="badge" variant="outline" className="w-fit border-primary/20 bg-primary/5 text-primary px-4 py-1 h-6 text-[12px] font-semibold rounded-full shadow-sm">
             Institutional Financial Registry • 2026
           </Badge>
-          <h1 className="text-2xl sm:text-3xl font-headline font-semibold text-primary tracking-tight">Revenue Assurance</h1>
-          <p className="text-muted-foreground font-medium text-xs sm:text-sm max-w-xl leading-relaxed tracking-tighter">Fee collection, reconciliation and statements — every entry tied to a learner.</p>
+          <h1 data-wave="heading" className="text-2xl sm:text-3xl font-headline font-semibold text-primary tracking-tight">Revenue Assurance</h1>
+          <p data-wave="subcopy" className="text-muted-foreground font-medium text-xs sm:text-sm max-w-xl leading-relaxed tracking-tighter">Fee collection, reconciliation and statements — every entry tied to a learner.</p>
         </div>
 
         <div className="flex items-center gap-4 bg-primary p-6 rounded-3xl text-white shadow-xl min-w-[280px]">
@@ -161,7 +162,7 @@ export default function FinancePage() {
             <Progress value={collectionRate} aria-label="Fee collection rate" className="mt-2 h-1 bg-white/20" indicatorClassName="bg-white" />
           </div>
         </div>
-      </div>
+      </WaveSection>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
@@ -206,7 +207,7 @@ export default function FinancePage() {
         </TabsList>
 
         <TabsContent value="reconciliation" className="space-y-6">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/60 backdrop-blur-md">
+          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/60">
             <CardHeader className="bg-muted/30 p-6 sm:p-10 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
               <div>
                 <CardTitle className="text-xl font-semibold tracking-tight">Transaction ledger</CardTitle>
@@ -331,11 +332,11 @@ export default function FinancePage() {
                         <p className="text-[13px] font-semibold text-primary">Scan to pay</p>
                       </div>
                       <div className="space-y-6">
-                        <div className="p-6 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/10">
+                        <div className="p-6 rounded-[2rem] bg-white/10 border border-white/10">
                           <p className="text-[13px] font-semibold text-white/60 mb-2">USSD payment</p>
                           <code className="text-2xl font-semibold">{activeBill.ussdCode}</code>
                         </div>
-                        <div className="p-6 rounded-[2rem] bg-white/10 backdrop-blur-md border border-white/10 group cursor-pointer" onClick={() => copyToClipboard(activeBill.controlNumber)}>
+                        <div className="p-6 rounded-[2rem] bg-white/10 border border-white/10 group cursor-pointer" onClick={() => copyToClipboard(activeBill.controlNumber)}>
                           <div className="flex justify-between items-center mb-2">
                             <p className="text-[13px] font-semibold text-white/60">Control Number</p>
                             <Copy className="h-3 w-3 opacity-40 group-hover:opacity-100 transition-opacity" />
@@ -346,7 +347,7 @@ export default function FinancePage() {
                     </div>
 
                     <div className="flex gap-4">
-                      <Button className="flex-1 rounded-2xl h-14 bg-white text-primary hover:bg-white/90 font-semibold text-[13px] shadow-xl">
+                      <Button className="flex-1 rounded-2xl h-14 bg-white text-primary hover:bg-card font-semibold text-[13px] shadow-xl">
                         <Smartphone className="mr-2 h-4 w-4" /> Send Notification
                       </Button>
                       <Button variant="outline" className="flex-1 rounded-2xl h-14 border-white/20 text-white hover:bg-white/10 font-semibold text-[13px]">
@@ -447,7 +448,7 @@ export default function FinancePage() {
         </TabsContent>
 
         <TabsContent value="forensic-ledger" className="space-y-6">
-          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/60 backdrop-blur-md">
+          <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card">
             <CardHeader className="bg-muted/30 p-8 border-b">
               <div className="flex flex-col lg:flex-row justify-between gap-6">
                 <div>

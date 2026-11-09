@@ -1,5 +1,5 @@
 /**
- * @fileOverview Termly report card — vector PDF with computed grades, division and remarks.
+ * @fileOverview Termly report card, vector PDF with computed grades, division and remarks.
  */
 
 import {

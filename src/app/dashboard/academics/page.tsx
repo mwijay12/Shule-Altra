@@ -55,6 +55,7 @@ import { StatCard } from "@/components/admin/stat-card"
 import { ChartPanel, SubjectAverages, DivisionSpread } from "@/components/admin/module-charts"
 import { SegmentedProgress } from "@/components/ui/progress"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
+import { WaveSection } from '@/components/motion/wave-section';
 
 export default function AcademicsPage() {
   const { toast } = useToast()
@@ -349,13 +350,13 @@ export default function AcademicsPage() {
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
       {/* HEADER Node */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
+          <Badge data-wave="badge" variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
             <Database className="h-2.5 w-2.5 mr-1.5" /> NECTA assessment · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Academics</h1>
-          <p className="text-muted-foreground text-[13px] font-bold leading-none">
+          <h1 data-wave="heading" className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Academics</h1>
+          <p data-wave="subcopy" className="text-muted-foreground text-[13px] font-bold leading-none">
             {activeClass} · <AnimatedNumber value={filteredStudents.length} /> Candidates • Term: {activeTerm} • Exam: {activeExam}
           </p>
         </div>
@@ -396,7 +397,7 @@ export default function AcademicsPage() {
             </SelectContent>
           </Select>
         </div>
-      </div>
+      </WaveSection>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard index={0} label="Candidates" value={filteredStudents.length} icon={Users} tone="primary" sub={`${activeClass} · ${activeTerm}`} />
@@ -422,7 +423,7 @@ export default function AcademicsPage() {
         </TabsList>
 
         <TabsContent value="ledger" className="space-y-6">
-          <Card className="border-none shadow-xl overflow-hidden bg-card/60 backdrop-blur-md rounded-[2.5rem]">
+          <Card className="border-none shadow-xl overflow-hidden bg-card/60 rounded-[2.5rem]">
             <CardHeader className="bg-muted/20 border-b p-6 sm:p-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <CardTitle className="text-lg font-semibold tracking-tight">Institutional Ledger</CardTitle>
               <div className="relative w-full sm:w-64">
@@ -571,7 +572,7 @@ export default function AcademicsPage() {
         <TabsContent value="performance" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
              {subjectPerformance.map((p) => (
-               <Card key={p!.subject} className="border-none shadow-xl bg-white/60 backdrop-blur-md rounded-[2.5rem] group hover:-translate-y-1 transition-all overflow-hidden">
+               <Card key={p!.subject} className="border-none shadow-xl bg-card rounded-[2.5rem] group hover:-translate-y-1 transition-[transform,box-shadow] overflow-hidden">
                  <div className={cn(
                    "h-2 w-full",
                    p!.passRate > 80 ? "bg-green-500" : p!.passRate > 50 ? "bg-blue-500" : "bg-destructive"

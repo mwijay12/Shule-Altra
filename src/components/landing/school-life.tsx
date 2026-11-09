@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview Period five — the place itself.
+ * @fileOverview Period five, the place itself.
  *
  * A school does not buy software because of a dashboard; it buys because the
  * library is the room its learners actually sit in. This band is the only part

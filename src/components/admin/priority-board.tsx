@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react';
-import { Reorder, useDragControls } from 'framer-motion';
+import { Reorder, useDragControls } from 'motion/react';
 import { Download, GripVertical, Loader2, Wallet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';

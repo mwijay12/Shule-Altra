@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Command deck — the flagship landing surface of the admin.
+ * @fileOverview Command deck, the flagship landing surface of the admin.
  * Three.js centrepiece, GSAP-driven KPI motion, interactive collections chart,
  * draggable follow-up queue and live ledger preview.
  */
@@ -9,7 +9,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { collection, limit, orderBy, query } from 'firebase/firestore';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   ArrowUpRight,

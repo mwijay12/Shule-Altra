@@ -2,7 +2,7 @@
  * @fileOverview A one-page letterhead proof.
  *
  * The Theme Studio offers this so a super admin can see the school's name, logo
- * and palette on a real PDF before publishing — not on an HTML mock that might
+ * and palette on a real PDF before publishing, not on an HTML mock that might
  * drift from what the printer receives. It goes through exactly the same kit as
  * a report card or fee statement.
  */

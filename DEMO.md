@@ -650,3 +650,75 @@ mid-animation so the motion can be looked at.
 `npm run demo:smoke:perf` guards the frame budget in CI, so the next
 `backdrop-blur` on a shared surface fails the build. **The old motion suite
 reported PASSED at 2–3 fps** — attributes existing is not motion being visible.
+
+---
+
+## Motion contract
+
+One file holds every duration, spring and stagger: `src/lib/motion/tokens.ts`.
+Import from it instead of typing numbers at the call site.
+
+| Token | Value | Used by |
+|---|---|---|
+| `SPRING_TACTILE` | stiffness 300, damping 24 | tabs, range pill, pointer-driven UI |
+| `SPRING_GLIDE` | stiffness 260, damping 26 | chart tooltip |
+| `EASE_OUT_QUART` | `cubic-bezier(0.16, 1, 0.3, 1)` | entrances, chart draws |
+| `DURATION.chart` | 900ms | line traces, bar growth |
+| `DURATION.counter` | 1100ms | KPI odometer |
+| `STAGGER.bar` | 40ms | each bar in a series |
+| `STAGGER.card` | 60ms | each card in a grid |
+| `STAGGER.series` | 190ms | each Recharts series |
+| `DIMMED_OPACITY` | 0.25 | sibling series on hover |
+
+### Engines
+
+- **`motion/react`** for micro-interactions and `layoutId` morphs. No file imports
+  `framer-motion` directly, so one copy of the engine ships.
+- **GSAP + ScrollTrigger + `useGSAP()`** for viewport choreography.
+  `WaveSection` plays badge, heading (+60ms), subcopy (+120ms), then cards
+  (60ms apart). Mark children `data-wave="badge|heading|subcopy|card"`.
+- **Lenis** for weighted scroll, advanced from `gsap.ticker` so scrub-linked
+  scenes stay on the same clock. The dashboard scrolls a `<main>` column, the
+  landing scrolls the window; `[data-app-scroll]` tells the two apart.
+
+### Charts
+
+- Bars grow from the baseline through `GrowingBar`, 40ms apart. It animates
+  `scaleY` with `originY: 1`, because Motion treats a `y` prop as `translateY`
+  and overwrites CSS `transform-origin`. The parent `<Bar>` sets
+  `isAnimationActive={false}`; leaving Recharts' own animation on makes the bar
+  jump twice.
+- Hovering a legend row or a series dims its siblings to 0.25. The revenue
+  chart's footer stats double as its legend.
+- `GlidingTooltip` springs between points instead of snapping.
+- `useStableSeries` holds the last dataset while the next one loads, so 7D → 30D
+  morphs the points in place. Never put `key={range}` on a chart.
+
+### Two hard limits
+
+**Blur.** Only a heading carries an entrance blur, it animates to the string
+`'none'` rather than `'blur(0px)'` (which still promotes a compositor layer), and
+`clearProps` strips it on completion. Cards never carry a filter. No in-flow
+surface may use `backdrop-filter`; modal scrims and the 6px topbar are the only
+exceptions.
+
+**`transition-all`.** Banned. Name the properties: `transition-[transform,box-shadow]`.
+
+### Verified by observation
+
+| Check | Result |
+|---|---|
+| fps, 7 dashboard routes | 60 (baseline 60) |
+| Wave headers, 5 routes | paint, settle at opacity 1, `filter: none` |
+| Bar stagger | `0.09,0,0,0 → 0.82,0.75,0.66,0.53 → 1,1,1,1` |
+| Legend hover | `[1,1,1] → [1,0.25,0.25] → [1,1,1]` |
+| Timeframe switch | 47 distinct paths, same SVG node |
+| Lenis, dashboard | 43 distinct scroll positions per wheel tick |
+| Landing motion off | Lenis releases the page, native scroll returns |
+
+`npm run demo:smoke:motionspec` (17 checks) and `demo:smoke:perf` (10 checks) guard
+all of the above in CI. Both are mutation-tested.
+
+Note for future probes: `AnimatePresence` runs with `initial={false}`, so a hard
+reload skips the first entrance. Film through a sidebar click, which is the path
+a user takes.

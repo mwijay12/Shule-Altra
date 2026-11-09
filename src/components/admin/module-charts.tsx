@@ -5,11 +5,11 @@
  *
  * Most dashboard pages showed a number and a table with nothing in between, so a
  * bursar could not see a shape without exporting to Excel. These charts are built
- * from the records the page already holds — no invented series, no placeholder
+ * from the records the page already holds, no invented series, no placeholder
  * trend. Where there is not enough data to draw, they say so rather than render an
  * empty axis.
  *
- * Two rules learned the hard way:
+ * Two constraints:
  *   1. A ResponsiveContainer inside ChartFrame needs a definite height.
  *      ChartFrame sets minHeight, so height="100%" collapses to zero and the
  *      chart paints as blank space.
@@ -32,18 +32,10 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartFrame, ShareBar, RatioDonut, useSeriesMotion } from '@/components/admin/chart-motion';
+import { GrowingBar, GlidingTooltip } from '@/components/motion/chart-interaction';
 import { cn } from '@/lib/utils';
 
 const AXIS = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' } as const;
-
-const tooltipStyle = {
-  borderRadius: 14,
-  border: '1px solid hsl(var(--border))',
-  background: 'hsl(var(--card) / 0.97)',
-  boxShadow: '0 18px 40px -22px hsl(var(--primary) / 0.4)',
-  fontSize: 12,
-  padding: '8px 12px',
-} as const;
 
 export function ChartPanel({
   title,
@@ -98,7 +90,6 @@ function Empty({ message }: { message: string }) {
 
 /** Presence per class, from the live register. */
 export function AttendanceByClass({ students }: { students: any[] }) {
-  const motion = useSeriesMotion(0, 950);
   const rows = React.useMemo(() => {
     const groups = new Map<string, { present: number; total: number }>();
     for (const student of students ?? []) {
@@ -126,29 +117,33 @@ export function AttendanceByClass({ students }: { students: any[] }) {
         <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: -24 }}>
           <defs>
             <linearGradient id="attendanceBar" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="hsl(160 74% 42%)" stopOpacity="0.95" />
-              <stop offset="100%" stopColor="hsl(160 74% 42%)" stopOpacity="0.45" />
+              <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.95" />
+              <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0.45" />
             </linearGradient>
           </defs>
           <CartesianGrid strokeDasharray="3 6" vertical={false} stroke="hsl(var(--border))" />
           <XAxis dataKey="form" tick={AXIS} tickLine={false} axisLine={false} />
           <YAxis domain={[0, 100]} tick={AXIS} tickLine={false} axisLine={false} unit="%" />
           <Tooltip
-            contentStyle={tooltipStyle}
+            content={<GlidingTooltip formatter={(value, _name) => `${value}% present`} />}
             cursor={{ fill: 'hsl(var(--muted) / 0.35)' }}
-            formatter={(value: number, _key, item: any) => [
-              `${value}% · ${item.payload.present}/${item.payload.total} present`,
-              'Presence',
-            ]}
+            wrapperStyle={{ transition: 'none', zIndex: 20 }}
           />
-          <Bar dataKey="rate" fill="url(#attendanceBar)" radius={[8, 8, 0, 0]} maxBarSize={54} {...motion} />
+          <Bar
+            dataKey="rate"
+            fill="url(#attendanceBar)"
+            maxBarSize={54}
+            // GrowingBar owns the entrance; Recharts' own animation would fight it.
+            isAnimationActive={false}
+            shape={(props: any) => <GrowingBar {...props} radius={8} />}
+          />
         </BarChart>
       </ResponsiveContainer>
     </ChartFrame>
   );
 }
 
-/** Boarding vs day, and the fee status split — both from the register. */
+/** Boarding vs day, and the fee status split, both from the register. */
 export function RegisterSplit({ students }: { students: any[] }) {
   const motion = useSeriesMotion(0, 1000);
   const data = React.useMemo(() => {
@@ -183,7 +178,10 @@ export function RegisterSplit({ students }: { students: any[] }) {
               <Cell key={entry.name} fill={entry.fill} stroke="transparent" />
             ))}
           </Pie>
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => [`${v} learners`, n]} />
+          <Tooltip
+            content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} learners`} />}
+            wrapperStyle={{ transition: 'none', zIndex: 20 }}
+          />
         </PieChart>
       </ResponsiveContainer>
       <div className="mt-2 flex flex-wrap justify-center gap-x-5 gap-y-1">
@@ -198,7 +196,7 @@ export function RegisterSplit({ students }: { students: any[] }) {
   );
 }
 
-/** Fee collection per class — collected against what is still owed. */
+/** Fee collection per class, collected against what is still owed. */
 export function FeesByClass({ students }: { students: any[] }) {
   const rows = React.useMemo(() => {
     const groups = new Map<string, number>();
@@ -354,7 +352,10 @@ export function AssetCondition({ assets }: { assets: any[] }) {
               <Cell key={entry.name} fill={entry.fill} stroke="transparent" />
             ))}
           </Pie>
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => [`${v} assets`, n]} />
+          <Tooltip
+            content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} assets`} />}
+            wrapperStyle={{ transition: 'none', zIndex: 20 }}
+          />
         </PieChart>
       </ResponsiveContainer>
       <div className="mt-2 flex flex-wrap justify-center gap-x-5 gap-y-1">
@@ -450,7 +451,10 @@ export function StaffMix({ staff }: { staff: any[] }) {
           >
             {rows.map((row) => <Cell key={row.role} fill={row.fill} />)}
           </Pie>
-          <Tooltip contentStyle={tooltipStyle} formatter={(value: any, name: any) => [`${value} of ${total}`, name]} />
+          <Tooltip
+            content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} of ${total}`} />}
+            wrapperStyle={{ transition: 'none', zIndex: 20 }}
+          />
         </PieChart>
       </ResponsiveContainer>
       <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
@@ -494,7 +498,7 @@ export function DeliveryRuns({ runs }: { runs: Array<{ title: string; delivered:
   );
 }
 
-/** Staff recorded per department — where the establishment is thin. */
+/** Staff recorded per department, where the establishment is thin. */
 export function DepartmentLoad({ staff }: { staff: any[] }) {
   const rows = React.useMemo(() => {
     const counts = new Map<string, number>();
@@ -590,7 +594,10 @@ export function DivisionSpread({ rankings }: { rankings: any[] }) {
           <Pie data={rows} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="86%" paddingAngle={3} {...motion}>
             {rows.map((entry) => <Cell key={entry.division} fill={entry.fill} stroke="transparent" />)}
           </Pie>
-          <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => [`${v} of ${total} candidates`, n]} />
+          <Tooltip
+            content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} of ${total} candidates`} />}
+            wrapperStyle={{ transition: 'none', zIndex: 20 }}
+          />
         </PieChart>
       </ResponsiveContainer>
       <div className="mt-2 flex flex-wrap justify-center gap-x-5 gap-y-1">
@@ -610,7 +617,7 @@ export function DivisionSpread({ rankings }: { rankings: any[] }) {
  *
  * The generator deliberately gives every subject the same weight, so a ranked
  * "subject load" chart draws ten identical bars and tells a head teacher nothing.
- * Utilisation does vary — by class, stream and any manual edits — so that is
+ * Utilisation does vary, by class, stream and any manual edits, so that is
  * what gets drawn, with the balance stated in words.
  */
 export function WeekUtilisation({

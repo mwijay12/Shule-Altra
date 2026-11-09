@@ -160,7 +160,7 @@ export function FeatureCarousel() {
                     onMouseEnter={() => setIsPaused(true)}
                     onMouseLeave={() => setIsPaused(false)}
                     className={cn(
-                      "relative flex items-center gap-4 px-6 md:px-10 lg:px-8 py-3.5 md:py-5 lg:py-4 rounded-full transition-all duration-700 text-left group border",
+                      "relative flex items-center gap-4 px-6 md:px-10 lg:px-8 py-3.5 md:py-5 lg:py-4 rounded-full transition-[color,background-color,border-color,box-shadow] duration-700 text-left group border",
                       isActive
                         ? "bg-white text-primary border-white z-10 shadow-xl"
                         : "bg-transparent text-white/60 border-white/10 hover:border-white/40 hover:text-white"
@@ -222,7 +222,7 @@ export function FeatureCarousel() {
                     src={feature.image}
                     alt={feature.label}
                     className={cn(
-                      "w-full h-full object-cover transition-all duration-700",
+                      "w-full h-full object-cover transition-[transform,opacity] duration-700",
                       isActive
                         ? "grayscale-0 blur-0 scale-105"
                         : "grayscale blur-[2px] brightness-75 scale-100"

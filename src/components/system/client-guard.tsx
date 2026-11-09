@@ -6,7 +6,7 @@
  * The one client-side failure that hits real visitors but never a test runner
  * is the chunk that does not exist any more: a tab left open across a deploy,
  * or a CDN serving yesterday's manifest. It surfaces as "A client-side
- * exception has occurred". One silent reload fixes it, so we do that — once,
+ * exception has occurred". One silent reload fixes it, so we do that, once,
  * and never in a loop.
  */
 

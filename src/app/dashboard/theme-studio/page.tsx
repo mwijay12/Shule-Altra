@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Theme Studio — the super admin's brand control room.
+ * @fileOverview Theme Studio, the super admin's brand control room.
  *
  * Everything here writes to the same two documents the rest of the app reads:
  * `config/branding` (palette + type pairing) and `config/identity` (name, logo,
@@ -72,7 +72,7 @@ function PaletteCard({
       aria-pressed={active}
       aria-label={`Use the ${palette.name} palette`}
       className={cn(
-        'group relative flex flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-all',
+        'group relative flex flex-col gap-3 rounded-2xl border bg-card p-4 text-left transition-[color,background-color,border-color,box-shadow]',
         'hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         active ? 'border-primary ring-2 ring-primary/30' : 'border-border',
         disabled && 'cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-none'
@@ -176,8 +176,8 @@ export default function ThemeStudioPage() {
    * Only fields the operator actually edited are written back.
    *
    * The form starts empty and fills from Firestore a moment later. Sending the
-   * whole form meant an early click on "Save identity" — before that snapshot
-   * arrived — merged empty strings over the school's real name and contacts.
+   * whole form meant an early click on "Save identity", before that snapshot
+   * arrived, merged empty strings over the school's real name and contacts.
    * A touched-set makes that impossible whatever the connection does.
    */
   const [touched, setTouched] = React.useState<Set<keyof typeof form>>(new Set());
@@ -291,7 +291,7 @@ export default function ThemeStudioPage() {
 
   /**
    * The studio previews unpublished choices, so the letterhead mock and the PDF
-   * proof must be built from those choices — not from the published doc the rest
+   * proof must be built from those choices, not from the published doc the rest
    * of the app is still using. Otherwise "preview" would show the old colours.
    */
   const previewBrand = React.useMemo(
@@ -613,7 +613,7 @@ export default function ThemeStudioPage() {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={logoSrc} alt="" className="h-9 w-9 shrink-0 object-contain" />
                     ) : (
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white/95 text-[13px] font-bold text-slate-900">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-card text-[13px] font-bold text-slate-900">
                         {monogram(previewName, previewShort)}
                       </span>
                     )}

@@ -4,7 +4,7 @@
  * This module is aliased in `next.config.ts` in place of `firebase/firestore`
  * when demo mode is enabled. It implements the subset of the Firestore Web SDK
  * that Shule Altra uses, so every page, hook and helper keeps working
- * unchanged — but all reads/writes stay inside the browser.
+ * unchanged, but all reads/writes stay inside the browser.
  */
 
 import {

@@ -4,12 +4,12 @@
  *   GET  → what this role may send, to how many people, whether mail is live
  *          (SMTP or Resend) or a dry run, and what is left of today's budget.
  *          `?probe=1` additionally logs in to the mailbox to prove the
- *          credentials work — without sending a single message.
+ *          credentials work, without sending a single message.
  *   POST → render from the register, then deliver.
  *
  * The role comes from the same httpOnly cookie the document gate uses, so one
  * sign-in governs everything a staff member can do. Recipients are always
- * recomputed here from the school's own data — the browser never supplies an
+ * recomputed here from the school's own data, the browser never supplies an
  * address list, and `mode: "preview"` renders the exact HTML that would be
  * posted without sending it.
  *

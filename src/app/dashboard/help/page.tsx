@@ -102,7 +102,7 @@ export default function HelpPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4" data-reveal>
         {articles.map((section) => (
-          <Card key={section.cat} className="border-none shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer overflow-hidden rounded-[2rem]">
+          <Card key={section.cat} className="border-none shadow-sm hover:shadow-xl transition-shadow duration-500 group cursor-pointer overflow-hidden rounded-[2rem]">
             <CardHeader className="pb-4">
               <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", section.bg, section.color)}>
                 <section.icon className="h-6 w-6" />
@@ -171,7 +171,7 @@ export default function HelpPage() {
               <CardDescription className="text-white/70 font-medium">Watch 2-minute tutorials on core workflows.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Button className="w-full bg-white text-primary hover:bg-white/90 rounded-full font-semibold shadow-lg">
+              <Button className="w-full bg-white text-primary hover:bg-card rounded-full font-semibold shadow-lg">
                 <Video className="mr-2 h-4 w-4" /> Start Learning
               </Button>
             </CardContent>

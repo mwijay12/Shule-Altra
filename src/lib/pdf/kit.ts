@@ -3,7 +3,7 @@
  *
  * Every document produced here is a genuine PDF: real text runs, selectable and
  * searchable, drawn with vector primitives. Nothing is screenshotted or
- * rasterised from the UI — the output can be printed at any DPI, indexed by
+ * rasterised from the UI, the output can be printed at any DPI, indexed by
  * PDF text search and re-flowed by screen readers.
  */
 
@@ -15,7 +15,7 @@ export const A4: [number, number] = [595.28, 841.89];
 export const A4_LANDSCAPE: [number, number] = [841.89, 595.28];
 export const CARD: [number, number] = [242.65, 153.07]; // 85.6mm x 54mm ID-1
 
-/** Scale a token's lightness — used to deepen the primary into a letterhead band. */
+/** Scale a token's lightness, used to deepen the primary into a letterhead band. */
 function shade(triple: string, factor: number): RGB {
   const parts = triple.trim().split(/[\s,]+/);
   const l = parseFloat((parts[2] ?? '0').replace('%', ''));
@@ -24,7 +24,7 @@ function shade(triple: string, factor: number): RGB {
 }
 
 export const COLORS = {
-  // Derived from the school's palette (light mode — paper is white). These are
+  // Derived from the school's palette (light mode, paper is white). These are
   // getters, so a palette change in the Theme Studio reaches the next document
   // without touching any of the sixteen builders.
   get navy() {
@@ -225,7 +225,7 @@ export function drawCrest(
 /**
  * Embed the school's logo. pdf-lib takes PNG or JPEG only, which is why the
  * uploader rejects SVG rather than silently producing a crest-only letterhead.
- * A missing or unreadable logo falls back to the vector crest — a document is
+ * A missing or unreadable logo falls back to the vector crest, a document is
  * never blocked by a broken image.
  */
 async function embedBrandLogo(doc: PDFDocument): Promise<PDFImage | undefined> {

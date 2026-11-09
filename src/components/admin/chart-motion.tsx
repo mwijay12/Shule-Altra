@@ -6,30 +6,31 @@
  * Recharts animates by default, but each page was passing its own duration and
  * easing, and two pages had chart containers that simply appeared. These helpers
  * give one grammar: the frame rises, then bars grow from the baseline, lines
- * trace left to right, and arcs sweep — each series a beat behind the last.
+ * trace left to right, and arcs sweep, each series a beat behind the last.
  *
  * Under reduced motion every duration is zero and Recharts animation is off, so
  * the final chart is drawn immediately rather than half-drawn.
  */
 
 import * as React from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView } from 'motion/react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { cn } from '@/lib/utils';
+import { EASE_OUT_QUART, DURATION, STAGGER } from '@/lib/motion/tokens';
 
-/** One easing curve for the whole product. */
-export const CHART_EASE = [0.22, 1, 0.36, 1] as const;
+/** One easing curve for the whole product. Kept as an alias for existing callers. */
+export const CHART_EASE = EASE_OUT_QUART;
 
 /**
  * Spread this onto a Recharts series (Bar, Line, Area, Pie).
  * `order` staggers multiple series so they do not all move at once.
  */
-export function useSeriesMotion(order = 0, duration = 1150) {
+export function useSeriesMotion(order = 0, duration = DURATION.chart * 1000) {
   const reducedMotion = useReducedMotion();
   return {
     isAnimationActive: !reducedMotion,
     animationDuration: reducedMotion ? 0 : duration,
-    animationBegin: reducedMotion ? 0 : 150 + order * 190,
+    animationBegin: reducedMotion ? 0 : 150 + order * STAGGER.series * 1000,
     animationEasing: 'ease-out' as const,
   };
 }
@@ -72,7 +73,7 @@ export function ChartFrame({
 }
 
 /**
- * A horizontal bar that grows to its share — for league tables and breakdowns
+ * A horizontal bar that grows to its share, for league tables and breakdowns
  * where a whole Recharts instance would be overkill.
  */
 export function ShareBar({
@@ -94,7 +95,7 @@ export function ShareBar({
   const ref = React.useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.4 });
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
-  const delay = Math.min(index, 10) * 0.09;
+  const delay = Math.min(index, 10) * STAGGER.card;
 
   return (
     <div ref={ref}>

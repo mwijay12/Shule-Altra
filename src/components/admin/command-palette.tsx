@@ -6,7 +6,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { ArrowRight, CornerDownLeft, Search, User2, X } from 'lucide-react';
 import { ALL_NAV_ITEMS } from '@/components/admin/nav-config';
 import { cn } from '@/lib/utils';

@@ -6,7 +6,7 @@
  * credit the learner's account. `crypto` was imported and never used.
  *
  * This computes HMAC-SHA256 over the exact raw body with the shared secret and
- * compares in constant time. No secret configured means no payment is accepted —
+ * compares in constant time. No secret configured means no payment is accepted , 
  * the endpoint fails closed rather than trusting the network.
  */
 

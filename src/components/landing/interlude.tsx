@@ -1,10 +1,10 @@
 "use client"
 
 /**
- * @fileOverview 16:20 — the interlude.
+ * @fileOverview 16:20, the interlude.
  *
  * A full-bleed breath before the closing statement: the school itself, drifting
- * a little slower than the page. No copy competing with it — one line, one
+ * a little slower than the page. No copy competing with it, one line, one
  * location, one time.
  */
 

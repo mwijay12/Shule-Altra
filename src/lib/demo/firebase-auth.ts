@@ -114,7 +114,7 @@ function persistSession(user: DemoUser | null) {
         JSON.stringify({ uid: user.uid, email: user.email, displayName: user.displayName, isAnonymous: user.isAnonymous })
       );
   } catch {
-    /* storage unavailable — session simply won't survive refresh */
+    /* storage unavailable, session simply won't survive refresh */
   }
 }
 

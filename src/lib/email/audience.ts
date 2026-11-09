@@ -1,5 +1,5 @@
 /**
- * @fileOverview Who an email is going to — resolved on the server, never on the
+ * @fileOverview Who an email is going to, resolved on the server, never on the
  * client.
  *
  * The browser may ask for "the fee reminder to the defaulters"; it may not hand
@@ -27,7 +27,7 @@ function buckets(): Record<string, Collection[]> {
 }
 
 /**
- * Guardians do not all have an address on file — a phone number is the norm in
+ * Guardians do not all have an address on file, a phone number is the norm in
  * Tanzania. Where one is missing we derive the school's parent alias, which is
  * exactly what the fees office would hand to a bulk-mail provider.
  */

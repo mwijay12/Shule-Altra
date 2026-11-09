@@ -109,7 +109,7 @@ export default function TimetablePage() {
       </ChartPanel>
 
       <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-3 border border-border/60 shadow-xl bg-card/70 backdrop-blur-md rounded-[2.5rem] h-fit">
+        <Card className="lg:col-span-3 border border-border/60 shadow-xl bg-card/70 rounded-[2.5rem] h-fit">
           <CardHeader className="bg-primary/5 border-b border-border/60 p-8">
             <CardTitle className="text-sm font-semibold">Global Filters</CardTitle>
           </CardHeader>
@@ -164,7 +164,7 @@ export default function TimetablePage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-9 border border-border/60 shadow-2xl overflow-hidden bg-card/70 backdrop-blur-md rounded-[2.5rem]">
+        <Card className="lg:col-span-9 border border-border/60 shadow-2xl overflow-hidden bg-card/70 rounded-[2.5rem]">
           <CardHeader className="bg-muted/30 p-8 border-b border-border/60 flex flex-row justify-between items-center">
             <div className="space-y-1">
               <CardTitle className="text-xl font-semibold tracking-tight">

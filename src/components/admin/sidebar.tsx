@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * @fileOverview Aurora sidebar — a static, always-visible rail on desktop.
+ * @fileOverview Aurora sidebar, a static, always-visible rail on desktop.
  *
  * Motion is deliberately quiet: a single sliding active pill (Framer Motion
  * layout animation), a GSAP opacity stagger on first paint, and hover states
- * that never move the layout. No collapse, no width animation — the rail is a
+ * that never move the layout. No collapse, no width animation, the rail is a
  * fixed piece of furniture so the content grid never shifts.
  */
 
@@ -14,7 +14,7 @@ import { SchoolLogo } from '@/components/brand/school-logo';
 import { useSchoolBrand } from '@/components/admin/brand-provider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { LogOut, Plus, ShieldCheck, X } from 'lucide-react';
 import { NAV_GROUPS } from '@/components/admin/nav-config';
 import { cn } from '@/lib/utils';

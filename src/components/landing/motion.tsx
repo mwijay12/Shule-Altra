@@ -29,7 +29,7 @@ const MotionContext = React.createContext<MotionContextValue>({
 
 export const MOTION_KEY = "altra:motion"
 
-/** Safe media query — the smoke harness (JSDOM) has no `matchMedia`. */
+/** Safe media query, the smoke harness (JSDOM) has no `matchMedia`. */
 export function mediaMatches(query: string) {
   if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false
   return window.matchMedia(query).matches
@@ -84,7 +84,7 @@ export function MotionProvider({ children }: { children: React.ReactNode }) {
       try {
         window.localStorage.setItem(MOTION_KEY, next ? "on" : "off")
       } catch {
-        /* storage may be unavailable — the session still works */
+        /* storage may be unavailable, the session still works */
       }
       return next
     })

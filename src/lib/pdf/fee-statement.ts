@@ -1,5 +1,5 @@
 /**
- * @fileOverview Official fee statement — vector PDF generated from live ledger rows.
+ * @fileOverview Official fee statement, vector PDF generated from live ledger rows.
  */
 
 import {

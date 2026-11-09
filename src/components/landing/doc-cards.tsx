@@ -1,10 +1,10 @@
 "use client"
 
 /**
- * @fileOverview Period six — the paper.
+ * @fileOverview Period six, the paper.
  *
  * Four documents, each a real file generated from the demo school. Cards tilt
- * under the pointer (max 6°, never more — the register is a serious object) and
+ * under the pointer (max 6°, never more, the register is a serious object) and
  * carry a wax-seal style "generated" stamp that presses in on hover.
  */
 
@@ -18,7 +18,7 @@ type Doc = {
   stat: string
   file: string
   note: string
-  /** `signed-in` documents are not public files — the role gate decides */
+  /** `signed-in` documents are not public files, the role gate decides */
   access: "public" | "signed-in"
 }
 

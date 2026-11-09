@@ -4,7 +4,7 @@
  * Defaults live in code so the page works with no database. An administrator can
  * override copy, photography and the font pairing from Settings → Landing page;
  * overrides are stored at schools/school-001/config/landing and merged over these
- * defaults. Replace photography with the school's own consented images — the
+ * defaults. Replace photography with the school's own consented images, the
  * bundled files are editorial placeholders, not proof of a real campus.
  */
 

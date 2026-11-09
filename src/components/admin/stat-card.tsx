@@ -11,14 +11,15 @@
  * This is that card, shared. It counts up, draws its own progress ring or bar,
  * traces a sparkline when there is a series to show, and arrives in sequence
  * with its siblings. Everything collapses to a still, final state under
- * reduced motion — the numbers are never hidden from a screen reader.
+ * reduced motion, the numbers are never hidden from a screen reader.
  */
 
 import * as React from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { EASE_OUT_QUART, DURATION, SPRING_TACTILE } from '@/lib/motion/tokens';
 import { useCountUp } from '@/hooks/use-count-up';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
@@ -110,7 +111,7 @@ function Sparkline({ points, colour, delay }: { points: number[]; colour: string
         vectorEffect="non-scaling-stroke"
         initial={reducedMotion ? false : { pathLength: 0 }}
         animate={{ pathLength: 1 }}
-        transition={{ duration: reducedMotion ? 0 : 1.2, ease: [0.22, 1, 0.36, 1], delay: reducedMotion ? 0 : delay + 0.25 }}
+        transition={{ duration: reducedMotion ? 0 : 1.2, ease: EASE_OUT_QUART, delay: reducedMotion ? 0 : delay + 0.25 }}
       />
     </svg>
   );
@@ -151,7 +152,7 @@ export function StatCard({
       ref={ref}
       initial={reducedMotion ? false : { opacity: 0, y: 18, scale: 0.98 }}
       animate={show ? { opacity: 1, y: 0, scale: 1 } : undefined}
-      transition={{ duration: reducedMotion ? 0 : 0.5, delay: reducedMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: reducedMotion ? 0 : 0.5, delay: reducedMotion ? 0 : delay, ease: EASE_OUT_QUART }}
       className={cn(
         'glass-panel sheen group relative overflow-hidden rounded-[1.75rem] p-5 sm:p-6',
         'transition-[transform,box-shadow] duration-300 ease-out',
@@ -235,7 +236,7 @@ export function StatCard({
                   animate={show ? { strokeDashoffset: circumference * (1 - ringProgress / 100) } : undefined}
                   transition={{
                     duration: reducedMotion ? 0 : 1.15,
-                    ease: [0.22, 1, 0.36, 1],
+                    ease: EASE_OUT_QUART,
                     delay: reducedMotion ? 0 : delay + 0.15,
                   }}
                 />
@@ -258,7 +259,7 @@ export function StatCard({
             style={{ background: palette.stroke }}
             initial={reducedMotion ? false : { width: 0 }}
             animate={show ? { width: `${ringProgress}%` } : undefined}
-            transition={{ duration: reducedMotion ? 0 : 1.1, ease: [0.22, 1, 0.36, 1], delay: reducedMotion ? 0 : delay + 0.2 }}
+            transition={{ duration: reducedMotion ? 0 : 1.1, ease: EASE_OUT_QUART, delay: reducedMotion ? 0 : delay + 0.2 }}
           />
         </div>
       )}

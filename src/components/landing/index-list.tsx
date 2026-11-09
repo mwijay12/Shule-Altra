@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview The registrar's index — an index-style list of the six modules.
+ * @fileOverview The registrar's index, an index-style list of the six modules.
  * Hovering or focusing a row fills it from the left, rolls the label and swaps
  * the preview panel. On touch there is no preview: the meta line carries it.
  */

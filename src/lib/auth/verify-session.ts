@@ -3,7 +3,7 @@
  *
  * The document gate reads an httpOnly cookie. That cookie is only trustworthy if
  * the server decided its value, so this module verifies a Firebase ID token and
- * then reads the caller's own staff record — using the caller's token, so
+ * then reads the caller's own staff record, using the caller's token, so
  * Firestore rules apply to the lookup as well.
  *
  * No Admin SDK and no service-account key: both calls are plain REST against the
@@ -42,7 +42,7 @@ export class SessionVerificationError extends Error {
 }
 
 /**
- * Verify the token and resolve the role. Throws on anything it cannot prove —
+ * Verify the token and resolve the role. Throws on anything it cannot prove , 
  * the caller must fail closed rather than guess.
  */
 export async function resolveServerRole(

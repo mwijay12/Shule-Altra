@@ -2,7 +2,7 @@
  * @fileOverview The signed cookie that carries the session role to the server.
  *
  * This used to store the bare role string, so `Cookie: altra.role=ADMIN` typed
- * by hand was accepted by every gate — the /api/session verification could be
+ * by hand was accepted by every gate, the /api/session verification could be
  * bypassed entirely by never calling it. Verified: a hand-written cookie pulled
  * the defaulters register, listed 97 guardian addresses and passed the photo
  * deletion gate.
@@ -68,9 +68,9 @@ export type SessionClaims = {
   sub: string
   /** Unix seconds. */
   iat: number
-  /** Unix seconds — idle expiry. */
+  /** Unix seconds, idle expiry. */
   exp: number
-  /** Unix seconds — absolute expiry from first sign-in. */
+  /** Unix seconds, absolute expiry from first sign-in. */
   abs: number
 }
 
@@ -95,7 +95,7 @@ export function issueSessionToken(
 
 /**
  * Returns the claims only when the signature, the shape and both deadlines are
- * valid. Everything else — including a bare "ADMIN" — returns null.
+ * valid. Everything else, including a bare "ADMIN", returns null.
  */
 export function readSessionToken(
   token: string | undefined | null,

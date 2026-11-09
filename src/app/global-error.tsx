@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * @fileOverview Root error boundary — the last line of defence.
+ * @fileOverview Root error boundary, the last line of defence.
  *
  * Renders its own <html>/<body> because it replaces the root layout when the
  * layout itself fails. Styled with inline values only: no Tailwind, no provider,

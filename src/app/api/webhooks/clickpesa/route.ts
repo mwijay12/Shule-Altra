@@ -11,7 +11,7 @@
  * Deployment note: this uses the web SDK's Firestore instance. Against a live
  * project it needs a server credential whose writes the rules accept, and
  * CLICKPESA_WEBHOOK_SECRET must be set. Until then the endpoint refuses every
- * delivery rather than guessing — see docs/FIREBASE.md.
+ * delivery rather than guessing, see docs/FIREBASE.md.
  */
 
 import { NextResponse } from 'next/server';

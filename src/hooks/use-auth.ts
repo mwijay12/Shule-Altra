@@ -83,7 +83,7 @@ let stopProfile: (() => void) | null = null;
 function emit(next: AuthState) {
   current = next;
   // The audit recorder attributes writes to whoever is signed in. Setting it
-  // here means every transition — sign-in, role change, sign-out — is covered
+  // here means every transition, sign-in, role change, sign-out, is covered
   // by one line rather than by remembering at each call site.
   setAuditActor(
     next.user && next.role
@@ -114,7 +114,7 @@ function start() {
       return;
     }
 
-    // The install owner. UI only — firestore.rules enforces the same address.
+    // The install owner. UI only, firestore.rules enforces the same address.
     if (isSuperAdminEmail(user.email) && user.emailVerified) {
       emit({
         user,

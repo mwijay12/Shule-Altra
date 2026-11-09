@@ -1,5 +1,5 @@
 /**
- * @fileOverview Matching a folder of photographs to learners — without guessing.
+ * @fileOverview Matching a folder of photographs to learners, without guessing.
  *
  * A school that decides to photograph 150 learners does not hand them over one
  * at a time. It hands over a folder, usually straight off a phone or a camera,
@@ -10,7 +10,7 @@
  *     ADM-2026-016 (1).png
  *
  * This module turns that folder into a plan. It is pure: no Firestore, no
- * Storage, no DOM. It never *uploads* anything — it decides what would happen
+ * Storage, no DOM. It never *uploads* anything, it decides what would happen
  * if you did, so the screen can show the plan and the school can refuse it
  * before a single child's face moves.
  *
@@ -23,7 +23,7 @@
  *     unmatched with a plain instruction: rename it.
  *   - HEIC is refused rather than silently mangled: browsers cannot decode it
  *     reliably, so the school is told to export JPEG.
- *   - Two files for one admission number is a duplicate, not "last one wins" —
+ *   - Two files for one admission number is a duplicate, not "last one wins" , 
  *     the first is kept and the second is reported with the name of the winner.
  *   - An existing photograph is a *replace*, counted separately, because it
  *     destroys a picture the school may have consent for.
@@ -83,7 +83,7 @@ export type BulkPhotoPlan = {
   importable: BulkPhotoRow[]
   /** everything the school must look at first */
   blocked: BulkPhotoRow[]
-  /** ready + replace — the number on the button */
+  /** ready + replace, the number on the button */
   matched: number
 }
 
@@ -94,8 +94,8 @@ const CAMERA_PREFIX = /^(IMG|DSC|DSCN|PXL|MVIMG|PHOTO|WA|Screenshot|Snapchat|rec
  * Admission number from a filename.
  *
  * `ADM-2026-014.jpg`, `adm 2026 014.JPG`, `ADM_2026_014 (1).png` and
- * `ADM-2026-014 copy.jpg` all collapse to `ADM-2026-014`. Anything else —
- * including `IMG_2093.jpg` — returns whatever token the name yields, which is
+ * `ADM-2026-014 copy.jpg` all collapse to `ADM-2026-014`. Anything else , 
+ * including `IMG_2093.jpg`, returns whatever token the name yields, which is
  * then looked up in the register and almost certainly reported unmatched.
  */
 export function admissionKeyFromFile(fileName: string): string {
@@ -131,7 +131,7 @@ export function planBulkPhotos(
   const rows: BulkPhotoRow[] = []
 
   // A school with PHOTO_POLICY=none has said no. Every file is refused, and the
-  // reason is the policy — not the filename — so the message is not misleading.
+  // reason is the policy, not the filename, so the message is not misleading.
   if (policy === 'none') {
     for (const file of files) {
       rows.push({

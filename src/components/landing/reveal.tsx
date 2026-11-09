@@ -5,7 +5,7 @@
  *
  * Motion verb for the public site is **settle**: every element wipes up from a
  * clipped line and locks onto the grid with one expo-out curve (0.9s). No
- * scattered effects, no scroll-jacking — one system, reused everywhere.
+ * scattered effects, no scroll-jacking, one system, reused everywhere.
  */
 
 import * as React from "react"

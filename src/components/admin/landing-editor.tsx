@@ -129,7 +129,7 @@ export function LandingEditor() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-      <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60 backdrop-blur-md">
+      <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60">
         <CardHeader className="bg-primary/5 border-b p-8">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
             <div>
@@ -171,7 +171,7 @@ export function LandingEditor() {
                   aria-pressed={form.font === font.id}
                   onClick={() => patch((c) => ({ ...c, font: font.id }))}
                   className={cn(
-                    "rounded-2xl border p-5 text-left transition-all",
+                    "rounded-2xl border p-5 text-left transition-[color,background-color,border-color,box-shadow]",
                     form.font === font.id ? "border-primary bg-primary/5 shadow-lg" : "border-border/60 bg-muted/20 hover:border-primary/40"
                   )}
                 >

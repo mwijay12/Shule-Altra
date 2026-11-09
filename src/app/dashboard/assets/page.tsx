@@ -51,6 +51,7 @@ import { Html5QrcodeScanner } from "html5-qrcode"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, doc, serverTimestamp, query } from "firebase/firestore"
 import { addDocumentNonBlocking, deleteDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates"
+import { WaveSection } from '@/components/motion/wave-section';
 
 export default function AssetsPage() {
   const { toast } = useToast()
@@ -134,13 +135,13 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-8 max-w-full mx-auto pb-24">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
+      <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-1">
         <div className="space-y-2">
-          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-4 py-1 h-6 text-[12px] font-semibold rounded-full shadow-sm">
+          <Badge data-wave="badge" variant="outline" className="border-primary/20 bg-primary/5 text-primary px-4 py-1 h-6 text-[12px] font-semibold rounded-full shadow-sm">
             Asset register · 2026
           </Badge>
-          <h1 className="text-3xl sm:text-4xl font-headline font-semibold text-primary tracking-tight">Property & Assets</h1>
-          <p className="text-muted-foreground font-medium text-sm">Real-world QR auditing and maintenance lifecycle management.</p>
+          <h1 data-wave="heading" className="text-3xl sm:text-4xl font-headline font-semibold text-primary tracking-tight">Property & Assets</h1>
+          <p data-wave="subcopy" className="text-muted-foreground font-medium text-sm">Real-world QR auditing and maintenance lifecycle management.</p>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto shrink-0">
           <Dialog open={isScanning} onOpenChange={setIsScanning}>
@@ -212,7 +213,7 @@ export default function AssetsPage() {
             </DialogContent>
           </Dialog>
         </div>
-      </div>
+      </WaveSection>
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {[
@@ -241,7 +242,7 @@ export default function AssetsPage() {
         </ChartPanel>
       </div>
 
-      <Card className="border-none shadow-2xl overflow-hidden bg-white/60 backdrop-blur-md rounded-[2.5rem]">
+      <Card className="border-none shadow-2xl overflow-hidden bg-card rounded-[2.5rem]">
         <CardHeader className="bg-muted/30 pb-6 pt-8 px-4 sm:px-8 border-b">
           <div className="flex flex-col lg:flex-row justify-between gap-6">
             <div className="flex items-center gap-4">

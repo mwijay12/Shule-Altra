@@ -93,7 +93,7 @@ export function SessionKeeper() {
     <div
       role="alertdialog"
       aria-labelledby="session-expired-title"
-      className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-card/95 px-4 py-4 backdrop-blur md:px-6"
+      className="fixed inset-x-0 bottom-0 z-[100] border-t border-border bg-card/95 px-4 py-4 md:px-6"
     >
       <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>

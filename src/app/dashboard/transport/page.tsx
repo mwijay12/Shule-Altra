@@ -167,7 +167,7 @@ export default function TransportPage() {
         <FleetLoad routes={routes ?? []} />
       </ChartPanel>
 
-      <Card className="border-none shadow-xl overflow-hidden bg-card/60 backdrop-blur-md rounded-[2.5rem] mx-1">
+      <Card className="border-none shadow-xl overflow-hidden bg-card/60 rounded-[2.5rem] mx-1">
         <CardHeader className="bg-muted/30 p-6 sm:p-8 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div className="space-y-1">
             <CardTitle className="text-lg font-semibold">Institutional Routes</CardTitle>
