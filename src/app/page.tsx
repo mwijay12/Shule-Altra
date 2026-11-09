@@ -33,6 +33,7 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react"
+import { COMPANY, PRODUCT } from "@/lib/company"
 
 const BELL = [
   "EVERY REGISTER",
@@ -171,7 +172,7 @@ function Footer() {
           </nav>
         </div>
         <div className="sd-footer-col">
-          <span className="sd-label">Demo credentials</span>
+          <span className="sd-label">Walk the demo</span>
           <p className="sd-footer-mono">
             admin@shule.pro
             <br />
@@ -181,20 +182,44 @@ function Footer() {
             <br />
             <b>demo2026</b>
           </p>
+          <p className="sd-footer-note">Invented data. No real learner records.</p>
         </div>
         <div className="sd-footer-col">
-          <span className="sd-label">Where</span>
+          <span className="sd-label">Built by</span>
+          <p className="sd-footer-studio">
+            <a href={COMPANY.website} target="_blank" rel="noopener noreferrer">
+              {COMPANY.name}
+            </a>
+          </p>
           <p className="sd-footer-mono">
-            {content.footer.location.split("\n").map((line, index) => (
-              <React.Fragment key={line}>{index > 0 ? <br /> : null}{line}</React.Fragment>
-            ))}
+            <a href={COMPANY.phoneHref}>{COMPANY.phone}</a>
+            <br />
+            <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>
+            <br />
+            {COMPANY.city}, {COMPANY.country}
+            <br />
+            {COMPANY.hours}
+          </p>
+          <p className="sd-footer-note">
+            <a href={COMPANY.whatsapp} target="_blank" rel="noopener noreferrer">
+              Chat on WhatsApp →
+            </a>
           </p>
         </div>
       </div>
 
+      <div className="sd-footer-legal">
+        <nav aria-label="Legal">
+          <Link href="/legal/privacy">Privacy</Link>
+          <Link href="/legal/terms">Terms</Link>
+          <Link href="/legal/security">Security</Link>
+          <Link href="/legal/dpa">Data agreement</Link>
+        </nav>
+      </div>
+
       <div className="sd-footer-base">
-        <span>© 2026 Shule Altra · V3.26</span>
-        <span>PDPA 2022 · NECTA · ClickPesa</span>
+        <span>© 2026 {PRODUCT.name} · V{PRODUCT.version} · {COMPANY.name}</span>
+        <span>PDPA 2022 aware · NECTA-aligned · Role-scoped access</span>
         <span>Every document generated, none photographed</span>
       </div>
     </footer>

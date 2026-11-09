@@ -33,6 +33,8 @@ jobs:
         run: npm run demo:smoke:brand
       - name: Auth and session lifecycle
         run: npm run demo:smoke:auth
+      - name: Trust surface (legal, brand, international)
+        run: npm run demo:smoke:trust
       - name: Firestore seed (dry run)
         run: npm run firebase:seed -- --dry-run
 

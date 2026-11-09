@@ -20,11 +20,10 @@
  */
 
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { randomUUID } from 'node:crypto'
 
-import { SESSION_COOKIE } from '@/lib/session'
-import { isDocRole, ROLE_LABEL } from '@/lib/documents/registry'
+import { serverRole } from '@/lib/auth/server-session'
+import { ROLE_LABEL } from '@/lib/documents/registry'
 import {
   EMAIL_POLICY,
   buildAudience,
@@ -58,10 +57,20 @@ function isTemplate(value: unknown): value is EmailTemplateId {
   return typeof value === 'string' && (TEMPLATE_IDS as string[]).includes(value)
 }
 
+/**
+ * The mailbox status is staff-only: it names the school, counts the guardian
+ * audience and includes a sample parent address. It used to answer all of that
+ * to a signed-out caller. `probe` also opens an SMTP connection, so it is kept
+ * behind the same gate rather than reachable by anyone with the URL.
+ */
 export async function GET(request: Request) {
-  const cookieStore = await cookies()
-  const raw = cookieStore.get(SESSION_COOKIE)?.value
-  const role = isDocRole(raw) ? raw : null
+  const role = await serverRole()
+  if (!role) {
+    return NextResponse.json(
+      { error: 'Sign in to the school to see the mail room.' },
+      { status: 401 }
+    )
+  }
   const status = providerStatus()
 
   const templates = TEMPLATE_IDS.map((id) => {
@@ -108,9 +117,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  const raw = cookieStore.get(SESSION_COOKIE)?.value
-  const role = isDocRole(raw) ? raw : null
+  const role = await serverRole()
 
   if (!role) {
     return NextResponse.json(

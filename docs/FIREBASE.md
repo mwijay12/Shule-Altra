@@ -246,3 +246,43 @@ certified integration.
 - Firebase web config values are public by design. The rules, not the keys, are
   what protect the data. The service account key is **not** public and must stay
   out of the repo and out of `NEXT_PUBLIC_*`.
+
+### `/api/session` — the cookie is signed, not just issued
+
+The cookie value is an **HMAC-SHA256 token** (role, uid, issued-at, idle expiry,
+absolute expiry). Before this, the cookie held the bare role string, so
+`Cookie: altra.role=ADMIN` written by hand was accepted by every gate — the
+verification in `/api/session` could be skipped entirely by never calling it.
+
+Set **`SESSION_SECRET`** to at least 32 characters:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+With `NEXT_PUBLIC_DEMO_MODE=false` and no secret, the gates **refuse** rather than
+fall back to a known value. The offline demo uses a fixed demo-only key, which is
+safe because that demo holds invented data and hands out roles by design.
+
+| Setting | Value |
+| --- | --- |
+| Idle expiry | 30 minutes, slides while the tab is in use |
+| Absolute expiry | 8 hours from sign-in, cannot be extended |
+| Cookie flags | httpOnly · SameSite=Lax · Secure in production |
+| On sign-out | cleared immediately |
+
+`SessionKeeper` (`src/components/system/session-keeper.tsx`) refreshes the session
+every 10 minutes while the tab is visible and the person is active, and shows a
+plain "sign in again" bar if the server refuses. All four gated routes —
+documents, media deletion, the mail room and session itself — read the signature
+through `serverSession()`.
+
+The mail room's GET is now staff-only: it names the school, counts the guardian
+audience and returns a sample parent address, and it used to answer all of that
+to a signed-out caller.
+
+### Currency and locale
+
+Money is no longer hard-coded to TZS. Set `NEXT_PUBLIC_CURRENCY` (TZS, KES, UGX,
+RWF, ZAR, NGN, GHS, USD, EUR, GBP, or any valid three-letter code) and optionally
+`NEXT_PUBLIC_LOCALE`. The default is unchanged for existing schools.

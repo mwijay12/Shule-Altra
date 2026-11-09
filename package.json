@@ -32,7 +32,8 @@
     "demo:smoke:brand": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/brand.tsx",
     "firebase:seed": "tsx --tsconfig tsconfig.smoke.json scripts/firebase/seed-firestore.ts",
     "firebase:rules": "firebase deploy --only firestore:rules,firestore:indexes,storage",
-    "demo:smoke:auth": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/auth.tsx"
+    "demo:smoke:auth": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/auth.tsx",
+    "demo:smoke:trust": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/trust.tsx"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

@@ -43,7 +43,10 @@ function displayStrings(source: string): string[] {
 const FILES = sources('src');
 
 // Jargon glued onto ordinary school nouns.
-const JARGON = /\b(node|nodes|sovereign|altraware|synthesis|omnichannel)\b/i;
+// "Altraware" was on this list when it appeared as decorative filler. It is now
+// the studio's actual name in the credit and the legal pages, which is exactly
+// where a company name belongs — so it is no longer treated as jargon.
+const JARGON = /\b(node|nodes|sovereign|synthesis|omnichannel)\b/i;
 // Capabilities the code does not implement.
 const FALSE_CLAIMS: Array<[RegExp, string]> = [
   [/immutable audit/i, 'there is no append-only audit log'],
