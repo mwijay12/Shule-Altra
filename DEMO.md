@@ -523,7 +523,12 @@ belongs to the school. This is stated on `/legal/security`.
 
 One stat tile (`StatCard`) and one chart grammar (`chart-motion.tsx`) are shared
 by every module, so moving between screens no longer feels like leaving a
-finished page for a draft.
+finished page for a draft. All eighteen dashboard pages are covered; `ai-tools`
+is only a redirect into Reports.
+
+Pages that are forms or prose — Settings, Theme Studio, Help — get the staggered
+entrance and scroll reveal but **no invented statistics**. A settings screen does
+not have a "total" worth counting.
 
 - Numbers count up; rings and bars draw; sparklines trace.
 - Tiles and charts below the fold animate when reached, not while off-screen.
@@ -531,3 +536,17 @@ finished page for a draft.
 - Only `opacity` and `transform` are animated — both GPU-composited, which
   matters on the low-end machines this product is used on.
 - `prefers-reduced-motion` lands every value immediately.
+
+Charts added in the second pass: mean score by subject and divisions awarded
+(Academics), establishment by role and staff per department (Staff), collected
+against owed and presence by class (Reports), week utilisation (Timetable), and
+what each send reached (Mail room).
+
+Two defects found by looking at the rendered pages rather than the code:
+
+- A `ResponsiveContainer` with `height="100%"` inside `ChartFrame` collapsed to
+  zero, so the Staff donut painted as blank space. `ChartFrame` sets `minHeight`,
+  not `height`. Both are now guarded by a smoke check.
+- The GSAP reveal queried `[data-reveal]` once on navigation, before Firestore
+  resolved, so every chart that mounts with the data was never revealed. It now
+  observes arrivals and reveals each block once.

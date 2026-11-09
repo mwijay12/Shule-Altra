@@ -142,6 +142,23 @@ async function main() {
     }
   });
 
+  check('every ResponsiveContainer inside ChartFrame has a definite height', () => {
+    // ChartFrame sets minHeight, not height, so height="100%" collapses to zero
+    // and the chart renders as blank space. This shipped once; keep it caught.
+    const charts = read('src/components/admin/module-charts.tsx');
+    assert.ok(
+      !/ResponsiveContainer[^>]*height="100%"/.test(charts),
+      'a percentage height inside ChartFrame collapses to zero',
+    );
+  });
+
+  check('the reveal catches blocks that mount after the data arrives', () => {
+    const transition = read('src/components/admin/page-transition.tsx');
+    assert.match(transition, /MutationObserver/, 'late-mounting charts would never reveal');
+    assert.match(transition, /WeakSet/, 'a block must not re-animate on every mutation');
+    assert.match(transition, /observer\?\.disconnect\(\)/, 'the observer must be cleaned up');
+  });
+
   check('the page entrance staggers, and only composites opacity and transform', () => {
     const css = read('src/app/globals.css');
     const keyframes = css.slice(css.indexOf('@keyframes sd-page-in'), css.indexOf('.sd-page-enter'));

@@ -17,6 +17,7 @@ import {
   Loader2,
   MailCheck,
   Send,
+  Users,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -25,6 +26,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { AnimatedNumber } from "@/components/ui/animated-number";
+import { StatCard } from "@/components/admin/stat-card";
+import { ChartPanel, DeliveryRuns } from "@/components/admin/module-charts";
 import { useToast } from "@/hooks/use-toast";
 
 type Template = {
@@ -184,6 +187,13 @@ export default function CommunicationsPage() {
     }
   };
 
+  const totalDelivered = sent.reduce((sum, run) => sum + Number(run.delivered || 0), 0);
+  const totalFailed = sent.reduce((sum, run) => sum + Number(run.failed || 0), 0);
+  const permitted = (caps?.templates ?? []).filter((t) => t.allowed);
+  // Guardians reachable today: the largest permitted audience, not a sum —
+  // the same guardian appears on several templates and would be counted twice.
+  const reachable = permitted.reduce((max, t) => Math.max(max, Number(t.audienceSize || 0)), 0);
+
   return (
     <div className="space-y-8 pb-16 font-body">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -226,6 +236,19 @@ export default function CommunicationsPage() {
         </Badge>
         </div>
       </header>
+
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <StatCard index={0} label="Delivered this session" value={totalDelivered} icon={MailCheck} tone="emerald" sub="Confirmed by the provider" />
+        <StatCard index={1} label="Failed" value={totalFailed} icon={AlertTriangle} tone={totalFailed > 0 ? 'rose' : 'slate'} sub={totalFailed > 0 ? 'Check the addresses on the register' : 'Nothing bounced'} />
+        <StatCard index={2} label="Guardians reachable" value={reachable} icon={Users} tone="primary" sub={`${permitted.length} of ${caps?.templates?.length ?? 0} templates permitted for your role`} />
+        <StatCard index={3} label="Per click" value={caps?.limits?.maxPerSend ?? 0} icon={Send} tone="accent" sub={caps?.limits?.dailyRemaining !== undefined ? `${caps.limits.dailyRemaining} left today` : 'Provider send limit'} />
+      </div>
+
+      {sent.length > 0 ? (
+        <ChartPanel title="What each send reached" hint="Delivered against attempted, most recent first." data-reveal>
+          <DeliveryRuns runs={sent} />
+        </ChartPanel>
+      ) : null}
 
       <Card className="glass-panel border-border/60">
         <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">

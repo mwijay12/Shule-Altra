@@ -100,7 +100,7 @@ export default function HelpPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4" data-reveal>
         {articles.map((section) => (
           <Card key={section.cat} className="border-none shadow-sm hover:shadow-xl transition-all duration-500 group cursor-pointer overflow-hidden rounded-[2rem]">
             <CardHeader className="pb-4">
@@ -125,7 +125,7 @@ export default function HelpPage() {
         ))}
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3" data-reveal>
         <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
           <CardHeader className="bg-muted/20 border-b pb-4">
             <CardTitle className="text-xl">Frequently Asked Questions</CardTitle>

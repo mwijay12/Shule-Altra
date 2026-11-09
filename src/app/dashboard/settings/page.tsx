@@ -196,7 +196,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="identity" className="space-y-6">
+      <Tabs defaultValue="identity" className="space-y-6" data-reveal>
         <TabsList className="bg-muted/40 p-1 rounded-2xl w-full flex h-auto gap-1 border border-muted/50 px-1 overflow-x-auto shadow-inner">
           <TabsTrigger value="identity" className="rounded-xl font-semibold text-[12px] flex-1 py-3">School identity</TabsTrigger>
           <TabsTrigger value="academic" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Tier Config</TabsTrigger>

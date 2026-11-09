@@ -14,7 +14,10 @@ import {
   Briefcase,
   AlertCircle,
   Users,
-  ChevronRight
+  ChevronRight,
+  GraduationCap,
+  UserCheck,
+  Building2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -59,6 +62,8 @@ import { useAuth } from "@/hooks/use-auth"
 import { staffSchema, type StaffFormData } from "@/lib/validations/staff"
 import { generateStaffNo } from "@/lib/staff-utils"
 import { Staff } from "@/types/staff"
+import { StatCard } from "@/components/admin/stat-card";
+import { ChartPanel, StaffMix, DepartmentLoad } from "@/components/admin/module-charts";
 
 export default function StaffPage() {
   const { toast } = useToast()
@@ -162,6 +167,8 @@ export default function StaffPage() {
 
   const isAdmin = currentUserRole === 'ADMIN'
 
+  const roster = (staff ?? []) as Staff[];
+
   return (
     <div className="space-y-6 pb-24 px-1 font-body">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -234,6 +241,26 @@ export default function StaffPage() {
             </Dialog>
           )}
         </div>
+      </div>
+
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard index={0} label="On the establishment" value={roster.length} icon={Users} tone="primary" sub="Every enrolled staff member" />
+        <StatCard index={1} label="Teaching" value={roster.filter((p) => p.role === 'TEACHER').length} icon={GraduationCap} tone="accent"
+          progress={roster.length ? (roster.filter((p) => p.role === 'TEACHER').length / roster.length) * 100 : 0}
+          sub="Share of the establishment" />
+        <StatCard index={2} label="Active" value={roster.filter((p) => p.active).length} icon={UserCheck} tone="emerald"
+          progress={roster.length ? (roster.filter((p) => p.active).length / roster.length) * 100 : 0}
+          sub={`${roster.filter((p) => !p.active).length} marked inactive`} />
+        <StatCard index={3} label="Departments" value={new Set(roster.map((p) => p.department).filter(Boolean)).size} icon={Building2} tone="slate" sub="Distinct departments recorded" />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <ChartPanel title="Establishment by role" hint="Who holds which band of access." className="lg:col-span-1" data-reveal>
+          <StaffMix staff={roster} />
+        </ChartPanel>
+        <ChartPanel title="Teaching coverage" hint="Staff recorded against each department." className="lg:col-span-2" data-reveal>
+          <DepartmentLoad staff={roster} />
+        </ChartPanel>
       </div>
 
       <Card className="border-none shadow-2xl overflow-hidden bg-white/60 rounded-[2.5rem]">

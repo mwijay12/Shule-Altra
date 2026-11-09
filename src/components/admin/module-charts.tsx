@@ -3,11 +3,19 @@
 /**
  * @fileOverview Small, honest charts for the modules that had none.
  *
- * Sixteen dashboard pages showed a number and a table with nothing in between,
- * so a bursar could not see a shape without exporting to Excel. These charts are
- * built from the records the page already holds — no invented series, no
- * placeholder trend. Where there is not enough data to draw, they say so rather
- * than rendering an empty axis.
+ * Most dashboard pages showed a number and a table with nothing in between, so a
+ * bursar could not see a shape without exporting to Excel. These charts are built
+ * from the records the page already holds — no invented series, no placeholder
+ * trend. Where there is not enough data to draw, they say so rather than render an
+ * empty axis.
+ *
+ * Two rules learned the hard way:
+ *   1. A ResponsiveContainer inside ChartFrame needs a definite height.
+ *      ChartFrame sets minHeight, so height="100%" collapses to zero and the
+ *      chart paints as blank space.
+ *   2. Do not chart a series that cannot vary. The timetable planner weights
+ *      every subject evenly, so a ranked subject-load chart drew ten identical
+ *      bars; it was replaced with utilisation, which does vary.
  */
 
 import * as React from 'react';
@@ -380,6 +388,254 @@ export function CanteenMix({ sales }: { sales: any[] }) {
             colour={i === 0 ? 'hsl(160 74% 42%)' : 'hsl(var(--primary))'}
           />
         ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** Who is on the establishment, by role. */
+export function StaffMix({ staff }: { staff: any[] }) {
+  const motion = useSeriesMotion(0, 900);
+  const rows = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const member of staff ?? []) {
+      const role = String(member.role ?? 'UNASSIGNED');
+      counts.set(role, (counts.get(role) ?? 0) + 1);
+    }
+    const labels: Record<string, string> = {
+      ADMIN: 'Administration',
+      TEACHER: 'Teaching',
+      ACCOUNTANT: 'Finance',
+      BURSAR: 'Bursary',
+      VIEWER: 'Read only',
+      UNASSIGNED: 'No role yet',
+    };
+    const colours = ['hsl(var(--primary))', 'hsl(160 74% 42%)', 'hsl(38 92% 50%)', 'hsl(var(--accent))', 'hsl(215 16% 60%)'];
+    return [...counts.entries()]
+      .map(([role, value], i) => ({ role, name: labels[role] ?? role, value, fill: colours[i % colours.length] }))
+      .sort((a, b) => b.value - a.value);
+  }, [staff]);
+
+  if (rows.length === 0) return <Empty message="No staff are enrolled yet." />;
+  const total = rows.reduce((sum, r) => sum + r.value, 0);
+
+  return (
+    <ChartFrame height={260}>
+      <ResponsiveContainer width="100%" height={210}>
+        <PieChart>
+          <Pie
+            data={rows}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={54}
+            outerRadius={82}
+            paddingAngle={2}
+            stroke="none"
+            {...motion}
+          >
+            {rows.map((row) => <Cell key={row.role} fill={row.fill} />)}
+          </Pie>
+          <Tooltip contentStyle={tooltipStyle} formatter={(value: any, name: any) => [`${value} of ${total}`, name]} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1.5">
+        {rows.map((row) => (
+          <span key={row.role} className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ background: row.fill }} />
+            {row.name} · <span className="font-semibold tabular-nums text-foreground">{row.value}</span>
+          </span>
+        ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** What each send actually reached, most recent first. */
+export function DeliveryRuns({ runs }: { runs: Array<{ title: string; delivered: number; failed: number; attempted: number }> }) {
+  const rows = React.useMemo(() => (runs ?? []).slice(0, 8), [runs]);
+  if (rows.length === 0) return <Empty message="Nothing has been sent from this screen yet." />;
+  const max = Math.max(...rows.map((r) => Math.max(r.attempted, r.delivered + r.failed)), 1);
+
+  return (
+    <ChartFrame height={rows.length * 46 + 16}>
+      <div className="space-y-4">
+        {rows.map((row, i) => (
+          <ShareBar
+            key={`${row.title}-${i}`}
+            index={i}
+            label={row.title}
+            value={row.delivered}
+            max={max}
+            caption={
+              row.failed > 0
+                ? `${row.delivered} delivered · ${row.failed} failed`
+                : `${row.delivered} delivered`
+            }
+            colour={row.failed > 0 ? 'hsl(38 92% 50%)' : 'hsl(160 74% 42%)'}
+          />
+        ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** Staff recorded per department — where the establishment is thin. */
+export function DepartmentLoad({ staff }: { staff: any[] }) {
+  const rows = React.useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const member of staff ?? []) {
+      const name = String(member.department ?? '').trim() || 'Not assigned';
+      counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .map(([department, count]) => ({ department, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 8);
+  }, [staff]);
+
+  if (rows.length === 0) return <Empty message="No staff are enrolled yet." />;
+  const max = Math.max(...rows.map((r) => r.count), 1);
+
+  return (
+    <ChartFrame height={rows.length * 46 + 16}>
+      <div className="space-y-4">
+        {rows.map((row, i) => (
+          <ShareBar
+            key={row.department}
+            index={i}
+            label={row.department}
+            value={row.count}
+            max={max}
+            caption={`${row.count} ${row.count === 1 ? 'member' : 'members'}`}
+            colour={row.department === 'Not assigned' ? 'hsl(215 16% 60%)' : 'hsl(var(--primary))'}
+          />
+        ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** Mean score per subject, with the pass mark drawn as the reference. */
+export function SubjectAverages({
+  performance,
+}: {
+  performance: Array<{ subject: string; averageScore: number; passRate: number; totalStudents: number }>;
+}) {
+  const rows = React.useMemo(
+    () => [...(performance ?? [])].sort((a, b) => b.averageScore - a.averageScore).slice(0, 10),
+    [performance],
+  );
+  if (rows.length === 0) return <Empty message="No marks are recorded for this class and exam yet." />;
+
+  return (
+    <ChartFrame height={rows.length * 46 + 16}>
+      <div className="space-y-4">
+        {rows.map((row, i) => (
+          <ShareBar
+            key={row.subject}
+            index={i}
+            label={row.subject}
+            value={row.averageScore}
+            max={100}
+            caption={`mean ${row.averageScore.toFixed(1)}% · ${row.passRate}% passed · ${row.totalStudents} marked`}
+            colour={row.averageScore >= 45 ? 'hsl(160 74% 42%)' : 'hsl(38 92% 50%)'}
+          />
+        ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/** How the class divides across the CSEE bands. */
+export function DivisionSpread({ rankings }: { rankings: any[] }) {
+  const motion = useSeriesMotion(0, 900);
+  const rows = React.useMemo(() => {
+    const order = ['I', 'II', 'III', 'IV', '0'];
+    const labels: Record<string, string> = {
+      I: 'Division I', II: 'Division II', III: 'Division III', IV: 'Division IV', '0': 'Ungraded',
+    };
+    const colours = ['hsl(160 74% 42%)', 'hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(38 92% 50%)', 'hsl(0 72% 56%)'];
+    const counts = new Map<string, number>();
+    for (const row of rankings ?? []) {
+      const division = String(row.division ?? '0');
+      counts.set(division, (counts.get(division) ?? 0) + 1);
+    }
+    return order
+      .filter((d) => (counts.get(d) ?? 0) > 0)
+      .map((d, i) => ({ division: d, name: labels[d] ?? d, value: counts.get(d) ?? 0, fill: colours[i % colours.length] }));
+  }, [rankings]);
+
+  if (rows.length === 0) return <Empty message="No candidate has a full set of marks yet, so no division can be awarded." />;
+  const total = rows.reduce((sum, r) => sum + r.value, 0);
+
+  return (
+    <ChartFrame height={230}>
+      <ResponsiveContainer width="100%" height={230}>
+        <PieChart>
+          <Pie data={rows} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="86%" paddingAngle={3} {...motion}>
+            {rows.map((entry) => <Cell key={entry.division} fill={entry.fill} stroke="transparent" />)}
+          </Pie>
+          <Tooltip contentStyle={tooltipStyle} formatter={(v: number, n) => [`${v} of ${total} candidates`, n]} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="mt-2 flex flex-wrap justify-center gap-x-5 gap-y-1">
+        {rows.map((entry) => (
+          <span key={entry.division} className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+            <span className="h-2 w-2 rounded-full" style={{ background: entry.fill }} />
+            {entry.name} · <span className="font-semibold tabular-nums text-foreground">{entry.value}</span>
+          </span>
+        ))}
+      </div>
+    </ChartFrame>
+  );
+}
+
+/**
+ * How much of the available week is actually timetabled.
+ *
+ * The generator deliberately gives every subject the same weight, so a ranked
+ * "subject load" chart draws ten identical bars and tells a head teacher nothing.
+ * Utilisation does vary — by class, stream and any manual edits — so that is
+ * what gets drawn, with the balance stated in words.
+ */
+export function WeekUtilisation({
+  grid,
+  subjectCount,
+}: {
+  grid: Array<Array<unknown | null>>;
+  subjectCount: number;
+}) {
+  const cells = React.useMemo(() => grid.flat(), [grid]);
+  const filled = cells.filter(Boolean).length;
+  const total = cells.length;
+  if (total === 0) return <Empty message="This timetable has no periods yet." />;
+  const pct = (filled / total) * 100;
+
+  return (
+    <ChartFrame height={230}>
+      <div className="flex flex-col items-center gap-4 py-2 sm:flex-row sm:justify-center sm:gap-10">
+        <RatioDonut
+          value={pct}
+          label="of the week"
+          caption={`${filled} of ${total} slots`}
+          colour="hsl(var(--primary))"
+        />
+        <dl className="space-y-3 text-[13px]">
+          <div>
+            <dt className="text-muted-foreground">Teaching periods</dt>
+            <dd className="text-lg font-semibold tabular-nums text-foreground">{filled}</dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground">Breaks and free slots</dt>
+            <dd className="text-lg font-semibold tabular-nums text-foreground">{total - filled}</dd>
+          </div>
+          <div className="max-w-[30ch]">
+            <dt className="text-muted-foreground">Subject balance</dt>
+            <dd className="font-medium leading-snug text-foreground">
+              {subjectCount} subjects, weighted evenly by the planner.
+            </dd>
+          </div>
+        </dl>
       </div>
     </ChartFrame>
   );

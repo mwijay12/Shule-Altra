@@ -209,7 +209,7 @@ export function StatCard({
               </motion.span>
             )}
             {sub && (
-              <span className="truncate text-[12px] font-medium text-muted-foreground">{sub}</span>
+              <span className="line-clamp-2 text-[12px] font-medium leading-snug text-muted-foreground">{sub}</span>
             )}
           </div>
           {exact && (

@@ -235,7 +235,7 @@ export default function AuditPage() {
     });
   }, [oldestFirst, schoolId]);
 
-  if (!canAccess('settings')) {
+  if (!canAccess('audit')) {
     return (
       <div className="grid min-h-[50vh] place-items-center px-6 text-center">
         <div className="max-w-md">
