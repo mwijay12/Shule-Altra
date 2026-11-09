@@ -17,15 +17,13 @@
 import { NextResponse } from 'next/server'
 import { readFile } from 'node:fs/promises'
 import { join, resolve, sep } from 'node:path'
-import { cookies } from 'next/headers'
 
 import {
   DOCUMENT_BY_SLUG,
   ROLE_LABEL,
   canOpenDocument,
-  isDocRole,
 } from '@/lib/documents/registry'
-import { SESSION_COOKIE } from '@/lib/session'
+import { serverRole } from '@/lib/auth/server-session'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -112,9 +110,7 @@ export async function GET(
     })
   }
 
-  const cookieStore = await cookies()
-  const rawRole = cookieStore.get(SESSION_COOKIE)?.value
-  const role = isDocRole(rawRole) ? rawRole : null
+  const role = await serverRole()
 
   if (!role && doc.sensitivity !== 'public') {
     return page({

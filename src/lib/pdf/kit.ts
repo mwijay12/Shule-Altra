@@ -9,6 +9,7 @@
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage, type RGB } from 'pdf-lib';
 import { DEFAULT_BRAND, getActiveBrand, hslToRgb, monogram } from '@/lib/brand/identity';
+import { COMPANY, PRODUCT } from '@/lib/company';
 
 export const A4: [number, number] = [595.28, 841.89];
 export const A4_LANDSCAPE: [number, number] = [841.89, 595.28];
@@ -680,6 +681,21 @@ export async function finalize(ctx: BuildContext, note?: string): Promise<Uint8A
       font: ctx.italic,
       color: COLORS.muted,
     });
+
+    // The studio credit. Small and out of the way: the document belongs to the
+    // school, but every parent who reads one learns who built it. A school that
+    // buys white-label handover sets PRINT_VENDOR_CREDIT=false.
+    if (process.env.PRINT_VENDOR_CREDIT !== 'false') {
+      const credit = `${PRODUCT.name} by ${COMPANY.name} · ${COMPANY.phone}`;
+      const creditWidth = ctx.font.widthOfTextAtSize(sanitize(credit), 6.2);
+      page.drawText(sanitize(credit), {
+        x: width - ctx.margin - creditWidth,
+        y: 20,
+        size: 6.2,
+        font: ctx.font,
+        color: COLORS.muted,
+      });
+    }
   });
 
   return await ctx.doc.save();

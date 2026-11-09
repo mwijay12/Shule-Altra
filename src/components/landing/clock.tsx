@@ -74,6 +74,16 @@ export function SchoolClock() {
       }
       const next = active?.dataset.period ?? "Before the bell"
       if (period.textContent !== next) period.textContent = next
+
+      // The clock is pinned to the bottom-left, which is exactly where the
+      // footer's copyright and contact line sit. Park it once the footer comes
+      // into view so it never covers the studio's phone number.
+      const footer = document.querySelector("footer")
+      const clockBox = clock.closest(".sd-clock") as HTMLElement | null
+      if (footer && clockBox) {
+        const covered = footer.getBoundingClientRect().top <= window.innerHeight - 56
+        clockBox.classList.toggle("sd-clock--parked", covered)
+      }
     }
 
     const schedule = () => {

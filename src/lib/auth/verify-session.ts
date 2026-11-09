@@ -45,7 +45,9 @@ export class SessionVerificationError extends Error {
  * Verify the token and resolve the role. Throws on anything it cannot prove —
  * the caller must fail closed rather than guess.
  */
-export async function resolveServerRole(idToken: string): Promise<DocRole> {
+export async function resolveServerRole(
+  idToken: string
+): Promise<{ role: DocRole; uid: string }> {
   if (!idToken || typeof idToken !== 'string') {
     throw new SessionVerificationError('A Firebase ID token is required.', 400);
   }
@@ -69,7 +71,7 @@ export async function resolveServerRole(idToken: string): Promise<DocRole> {
 
   // 2. The install owner. Same verified-email rule as firestore.rules.
   if (account.emailVerified === true && isSuperAdminEmail(account.email)) {
-    return 'ADMIN';
+    return { role: 'ADMIN', uid: account.localId };
   }
 
   // 3. Everybody else: their staff record, read as themselves so the security
@@ -79,7 +81,7 @@ export async function resolveServerRole(idToken: string): Promise<DocRole> {
     headers: { authorization: `Bearer ${idToken}` },
   });
 
-  if (record.status === 404) return 'VIEWER';
+  if (record.status === 404) return { role: 'VIEWER', uid: account.localId };
   if (record.status === 403) {
     throw new SessionVerificationError('This account is not allowed to read its staff record.', 403);
   }
@@ -88,6 +90,6 @@ export async function resolveServerRole(idToken: string): Promise<DocRole> {
   }
 
   const declared = record.body?.fields?.role?.stringValue;
-  if (declared === 'SUPER_ADMIN') return 'ADMIN';
-  return isDocRole(declared) ? declared : 'VIEWER';
+  if (declared === 'SUPER_ADMIN') return { role: 'ADMIN', uid: account.localId };
+  return { role: isDocRole(declared) ? declared : 'VIEWER', uid: account.localId };
 }

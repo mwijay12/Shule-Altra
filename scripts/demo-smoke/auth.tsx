@@ -261,38 +261,38 @@ async function main() {
 
   await check('a verified owner resolves to ADMIN without a staff record', async () => {
     const calls = stubGoogle({ account: { localId: 'owner', email: 'davidbyanmwijage@gmail.com', emailVerified: true } });
-    assert.equal(await resolveServerRole('t'), 'ADMIN');
+    assert.equal((await resolveServerRole('t')).role, 'ADMIN');
     assert.ok(!calls.some((c) => c.includes('firestore')), 'owner should not need a staff lookup');
     globalThis.fetch = realFetch;
   });
 
   await check('an UNVERIFIED owner address does not grant admin', async () => {
     stubGoogle({ account: { localId: 'x', email: 'davidbyanmwijage@gmail.com', emailVerified: false }, staffStatus: 404 });
-    assert.equal(await resolveServerRole('t'), 'VIEWER');
+    assert.equal((await resolveServerRole('t')).role, 'VIEWER');
     globalThis.fetch = realFetch;
   });
 
   await check('the staff record decides an ordinary role', async () => {
     stubGoogle({ account, staffRole: 'TEACHER' });
-    assert.equal(await resolveServerRole('t'), 'TEACHER');
+    assert.equal((await resolveServerRole('t')).role, 'TEACHER');
     globalThis.fetch = realFetch;
   });
 
   await check('a missing staff record is VIEWER, never ADMIN', async () => {
     stubGoogle({ account, staffStatus: 404 });
-    assert.equal(await resolveServerRole('t'), 'VIEWER');
+    assert.equal((await resolveServerRole('t')).role, 'VIEWER');
     globalThis.fetch = realFetch;
   });
 
   await check('an unknown role string cannot escalate', async () => {
     stubGoogle({ account, staffRole: 'ROOT' });
-    assert.equal(await resolveServerRole('t'), 'VIEWER');
+    assert.equal((await resolveServerRole('t')).role, 'VIEWER');
     globalThis.fetch = realFetch;
   });
 
   await check('a SUPER_ADMIN staff record maps to the ADMIN document role', async () => {
     stubGoogle({ account, staffRole: 'SUPER_ADMIN' });
-    assert.equal(await resolveServerRole('t'), 'ADMIN');
+    assert.equal((await resolveServerRole('t')).role, 'ADMIN');
     globalThis.fetch = realFetch;
   });
 
@@ -326,6 +326,102 @@ async function main() {
     const catchBlock = source.slice(source.indexOf('} catch (error) {'), source.indexOf('// ── offline demo'));
     assert.match(catchBlock, /await clearCookie\(\)/, 'failure must clear the cookie');
     assert.ok(!/store\.set\(/.test(catchBlock), 'failure must never issue a cookie');
+  });
+
+  console.log('\nSIGNED SESSION COOKIE');
+
+  const {
+    issueSessionToken,
+    readSessionToken,
+    renewSessionToken,
+    shouldRenew,
+    SESSION_MAX_AGE,
+    SESSION_ABSOLUTE_MAX_AGE,
+  } = await import('@/lib/session');
+
+  const t0 = 1_800_000_000;
+
+  await check('a hand-written role cookie is refused', () => {
+    // This exact header returned the defaulters register before the fix.
+    for (const forged of ['ADMIN', 'BURSAR', 'SUPER_ADMIN', '', 'ADMIN.ADMIN.ADMIN']) {
+      assert.equal(readSessionToken(forged, t0), null, `accepted: ${forged}`);
+    }
+  });
+
+  await check('a genuine token round-trips with its subject', () => {
+    const claims = readSessionToken(issueSessionToken('ADMIN', 'uid-9', t0), t0);
+    assert.ok(claims);
+    assert.equal(claims!.role, 'ADMIN');
+    assert.equal(claims!.sub, 'uid-9');
+    assert.equal(claims!.exp, t0 + SESSION_MAX_AGE);
+  });
+
+  await check('editing the role breaks the signature', () => {
+    const token = issueSessionToken('VIEWER', 'uid-9', t0);
+    assert.equal(readSessionToken(token.replace('.VIEWER.', '.ADMIN.'), t0), null);
+  });
+
+  await check('a tampered expiry breaks the signature', () => {
+    const token = issueSessionToken('VIEWER', 'uid-9', t0);
+    const parts = token.split('.');
+    parts[4] = String(t0 + 999_999);
+    assert.equal(readSessionToken(parts.join('.'), t0), null);
+  });
+
+  await check('a truncated or padded token is refused', () => {
+    const token = issueSessionToken('ADMIN', 'uid-9', t0);
+    assert.equal(readSessionToken(token.slice(0, -4), t0), null);
+    assert.equal(readSessionToken(token + '.extra', t0), null);
+    assert.equal(readSessionToken(token.split('.').slice(0, 6).join('.'), t0), null);
+    assert.equal(readSessionToken(undefined, t0), null);
+    assert.equal(readSessionToken('x'.repeat(600), t0), null);
+  });
+
+  await check('the idle window is 30 minutes and then closes', () => {
+    assert.equal(SESSION_MAX_AGE, 1800);
+    const token = issueSessionToken('ADMIN', 'uid-9', t0);
+    assert.ok(readSessionToken(token, t0 + SESSION_MAX_AGE - 1), 'should still be valid just before expiry');
+    assert.equal(readSessionToken(token, t0 + SESSION_MAX_AGE), null, 'must be refused at expiry');
+  });
+
+  await check('activity slides the window, and it renews only when worthwhile', () => {
+    const claims = readSessionToken(issueSessionToken('ADMIN', 'uid-9', t0), t0)!;
+    assert.equal(shouldRenew(claims, t0), false, 'fresh session needs no Set-Cookie');
+    const later = t0 + SESSION_MAX_AGE - 300;
+    assert.equal(shouldRenew(claims, later), true);
+    const renewed = readSessionToken(renewSessionToken(claims, later), later)!;
+    assert.equal(renewed.exp, later + SESSION_MAX_AGE);
+    assert.equal(renewed.sub, 'uid-9');
+  });
+
+  await check('renewal can never outlive the absolute cap', () => {
+    const claims = readSessionToken(issueSessionToken('ADMIN', 'uid-9', t0), t0)!;
+    assert.equal(claims.abs, t0 + SESSION_ABSOLUTE_MAX_AGE);
+    const nearEnd = claims.abs - 120;
+    const renewed = readSessionToken(renewSessionToken(claims, nearEnd), nearEnd)!;
+    assert.ok(renewed.exp <= claims.abs, 'sliding window escaped the absolute deadline');
+    assert.equal(readSessionToken(renewSessionToken(claims, nearEnd), claims.abs), null);
+    assert.equal(shouldRenew(claims, claims.abs - 30), false, 'must not renew a dying session');
+  });
+
+  await check('a token from the future is refused', () => {
+    assert.equal(readSessionToken(issueSessionToken('ADMIN', 'uid-9', t0 + 3600), t0), null);
+  });
+
+  await check('every gated route reads the signature, not the raw cookie', () => {
+    const routes = [
+      'src/app/api/documents/[...slug]/route.ts',
+      'src/app/api/media/delete/route.ts',
+      'src/app/api/notifications/email/route.ts',
+    ];
+    for (const file of routes) {
+      const source = readFileSync(path.resolve(file), 'utf8');
+      assert.match(source, /serverRole\(\)/, `${file} must use the shared gate`);
+      assert.ok(!/cookieStore\.get\(SESSION_COOKIE\)/.test(source), `${file} still reads the raw cookie`);
+    }
+    const mail = readFileSync(path.resolve('src/app/api/notifications/email/route.ts'), 'utf8');
+    const get = mail.slice(mail.indexOf('export async function GET'));
+    assert.match(get.slice(0, 700), /if \(!role\)[\s\S]{0,200}status: 401/, 'mail room must require a session');
   });
 
   console.log('\nPAYMENT WEBHOOK INTEGRITY');

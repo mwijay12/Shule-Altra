@@ -325,6 +325,8 @@ html[data-scroll-locked] .app-scroll {
   .hover-lift,
   .animate-float,
   .animate-pulse-soft,
+  /* The clock still parks for the footer, just without the slide. */
+  .sd-clock,
   .sd-page-enter > * > *:not([data-reveal]) {
     animation: none !important;
     transition: none !important;
@@ -1022,6 +1024,17 @@ html[data-scroll-locked] .app-scroll {
   border: 1px solid var(--rule-soft);
   box-shadow: 0 18px 30px -26px rgba(15, 23, 42, 0.8);
   backdrop-filter: blur(14px);
+}
+/* Parked while the footer is on screen: the clock must not sit on top of the
+   copyright or the studio's contact details. */
+.sd-clock--parked {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(8px);
+}
+.sd-clock {
+  transition: opacity 0.35s var(--ease), transform 0.35s var(--ease), visibility 0.35s;
 }
 .sd-clock::before {
   content: "";
@@ -2274,6 +2287,49 @@ html[data-scroll-locked] .app-scroll {
   color: var(--glow-on-dark);
   font-weight: 500;
 }
+/* The studio credit and the legal row. Kept readable rather than decorative:
+   a head teacher must be able to find a phone number. */
+.sd-footer-studio {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sd-footer-studio a,
+.sd-footer-mono a,
+.sd-footer-note a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.sd-footer-studio a:hover,
+.sd-footer-mono a:hover,
+.sd-footer-note a:hover {
+  color: var(--glow-on-dark);
+}
+.sd-footer-note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: rgba(240, 245, 255, 0.5);
+}
+.sd-footer-legal {
+  max-width: 1520px;
+  margin-inline: auto;
+  padding: 4px var(--gutter) 18px;
+}
+.sd-footer-legal nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+}
+.sd-footer-legal a {
+  font-size: 12px;
+  color: rgba(240, 245, 255, 0.66);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.sd-footer-legal a:hover {
+  color: var(--glow-on-dark);
+}
 .sd-footer-base {
   display: flex;
   flex-wrap: wrap;
@@ -2285,10 +2341,10 @@ html[data-scroll-locked] .app-scroll {
   padding: 16px var(--gutter) 22px;
   border-top: 1px solid rgba(240, 245, 255, 0.14);
   font-family: var(--mono);
-  font-size: 8.5px;
-  letter-spacing: 0.14em;
+  font-size: 10px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(240, 245, 255, 0.54);
+  color: rgba(240, 245, 255, 0.6);
 }
 
 /* ── breakpoints ───────────────────────────────────────────────────────── */

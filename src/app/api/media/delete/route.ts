@@ -17,11 +17,9 @@
  */
 
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createHash } from 'node:crypto'
 
-import { SESSION_COOKIE } from '@/lib/session'
-import { isDocRole } from '@/lib/documents/registry'
+import { serverRole } from '@/lib/auth/server-session'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -42,9 +40,8 @@ function sign(params: Record<string, string>, secret: string): string {
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies()
-  const role = cookieStore.get(SESSION_COOKIE)?.value
-  if (!isDocRole(role) || !ALLOWED_ROLES.has(role)) {
+  const role = await serverRole()
+  if (!role || !ALLOWED_ROLES.has(role)) {
     return NextResponse.json(
       { error: 'Only an administrator or bursar can remove a learner photograph.' },
       { status: 403 }

@@ -520,6 +520,34 @@ async function main() {
     assert.deepEqual(offenders.slice(0, 5), [], `${offenders.length} sub-10px labels remain`);
   });
 
+  // The studio credit on the shipped printables. pdf-lib hex-encodes text, so
+  // grep for the literal string finds nothing — decode the Tj operands.
+  await check('shipped printables carry the studio credit and phone number', async () => {
+    const { PDFDocument } = await import('pdf-lib');
+    const zlib = await import('node:zlib');
+    const { COMPANY } = await import('@/lib/company');
+    for (const file of [
+      'private/printables/report-card.pdf',
+      'private/printables/reports/defaulters.pdf',
+    ]) {
+      const doc = await PDFDocument.load(readFileSync(path.resolve(file)));
+      let streams = '';
+      doc.context.enumerateIndirectObjects().forEach(([, obj]: any) => {
+        if (!obj?.contents) return;
+        try { streams += zlib.inflateSync(Buffer.from(obj.contents)).toString('latin1'); }
+        catch { streams += Buffer.from(obj.contents).toString('latin1'); }
+      });
+      const shown = [...streams.matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)].map((m) =>
+        Buffer.from(m[1], 'hex').toString('latin1')
+      );
+      assert.ok(
+        shown.some((t) => t.includes(COMPANY.name) && t.includes('792 867 427')),
+        `${file} is missing the studio credit`
+      );
+    }
+  });
+
+
   console.log(failures === 0 ? '\nBRAND & THEME REGRESSIONS PASSED\n' : `\n${failures} BRAND CHECK(S) FAILED\n`);
   if (failures > 0) process.exit(1);
 }

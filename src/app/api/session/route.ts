@@ -18,7 +18,12 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { isDocRole } from '@/lib/documents/registry'
-import { SESSION_COOKIE, SESSION_MAX_AGE } from '@/lib/session'
+import {
+  SESSION_COOKIE,
+  SESSION_MAX_AGE,
+  issueSessionToken,
+  sessionCookieOptions,
+} from '@/lib/session'
 import { DEMO_MODE } from '@/lib/demo/config'
 import { resolveServerRole, SessionVerificationError } from '@/lib/auth/verify-session'
 
@@ -43,16 +48,13 @@ export async function POST(request: Request) {
   // ── real project: prove it ────────────────────────────────────────────────
   if (!DEMO_MODE) {
     try {
-      const role = await resolveServerRole(typeof body.idToken === 'string' ? body.idToken : '')
+      const { role, uid } = await resolveServerRole(typeof body.idToken === 'string' ? body.idToken : '')
       const store = await cookies()
-      store.set(SESSION_COOKIE, role, {
-        httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
+      store.set(SESSION_COOKIE, issueSessionToken(role, uid), {
+        ...sessionCookieOptions,
         maxAge: SESSION_MAX_AGE,
       })
-      return NextResponse.json({ ok: true, role })
+      return NextResponse.json({ ok: true, role, expiresIn: SESSION_MAX_AGE })
     } catch (error) {
       // Never leave a previously issued cookie behind on a failed check.
       await clearCookie()
@@ -70,14 +72,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unknown role' }, { status: 400 })
   }
   const store = await cookies()
-  store.set(SESSION_COOKIE, body.role, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
+  store.set(SESSION_COOKIE, issueSessionToken(body.role, 'demo'), {
+    ...sessionCookieOptions,
     maxAge: SESSION_MAX_AGE,
   })
-  return NextResponse.json({ ok: true, role: body.role, demo: true })
+  return NextResponse.json({ ok: true, role: body.role, demo: true, expiresIn: SESSION_MAX_AGE })
 }
 
 export async function DELETE() {

@@ -57,6 +57,50 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  /**
+   * Baseline response headers.
+   *
+   * Frame and HSTS headers are production-only: the hosted dev preview is
+   * embedded in an iframe over a proxy, and refusing to be framed would break
+   * it. Cross-Origin-Opener-Policy allows popups because Google sign-in opens
+   * one — `same-origin` alone would break the super-admin's login.
+   */
+  async headers() {
+    const production = process.env.NODE_ENV === 'production';
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'X-DNS-Prefetch-Control', value: 'off' },
+          { key: 'Cross-Origin-Opener-Policy', value: 'same-origin-allow-popups' },
+          {
+            key: 'Permissions-Policy',
+            // The register uses the camera for learner photographs; nothing else.
+            value: 'camera=(self), microphone=(), geolocation=(), interest-cohort=()',
+          },
+          ...(production
+            ? [
+                { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+                {
+                  key: 'Strict-Transport-Security',
+                  value: 'max-age=31536000; includeSubDomains',
+                },
+              ]
+            : []),
+        ],
+      },
+      {
+        // A served document must never be cached on a shared office machine.
+        source: '/api/documents/:path*',
+        headers: [
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       // Landing photography may be hosted by the school (Cloudinary, Firebase

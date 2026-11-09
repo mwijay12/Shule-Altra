@@ -4,6 +4,16 @@
 
 ---
 
+## Selling it
+
+`docs/GO-TO-MARKET.md` is the working plan: what to demo, what to charge in TZS
+and USD, what is genuinely ready for an international client and what is not,
+where to find the first twenty schools, and five posts to run first.
+
+The trust surface a school checks before signing is published in the app:
+`/legal/privacy`, `/legal/terms`, `/legal/security`, `/legal/dpa`. The security
+page lists what is **not** built yet, on purpose.
+
 ## 🎬 SECTION 0: RUN THE DEMO (NO SETUP)
 
 This build ships an **offline demo mode** so the entire hub can be demonstrated in

@@ -19,6 +19,7 @@ import {
   addDoc
 } from 'firebase/firestore';
 import { triggerN8nWebhook } from './n8n';
+import { activeLocale, currencySpec } from '@/lib/money';
 
 /**
  * Validation Schema for Forensic Transactions
@@ -58,10 +59,23 @@ export interface ControlNumberResponse {
 }
 
 /**
- * Standard TZS Currency Formatting
+ * Money, in the school's configured currency.
+ *
+ * The name is kept for the sixteen call sites that already use it; the behaviour
+ * is no longer Tanzania-only. Set NEXT_PUBLIC_CURRENCY to bill in KES, RWF, USD
+ * or anything else — see src/lib/money.ts.
  */
 export function formatTZS(amount: number): string {
-  return `TZS ${Math.round(amount).toLocaleString('en-TZ')}`;
+  const currency = currencySpec();
+  const value = Number.isFinite(amount) ? amount : 0;
+  const rounded =
+    currency.decimals === 0
+      ? Math.round(value)
+      : Number(value.toFixed(currency.decimals));
+  return `${currency.label} ${rounded.toLocaleString(activeLocale(), {
+    minimumFractionDigits: currency.decimals,
+    maximumFractionDigits: currency.decimals,
+  })}`;
 }
 
 const trimZeros = (value: number, digits: number) =>
@@ -81,16 +95,17 @@ const trimZeros = (value: number, digits: number) =>
  *   ≥ 1bn          TZS 1.2B
  */
 export function formatTZSCompact(amount: number): string {
+  const { label } = currencySpec();
   const value = Math.round(Number.isFinite(amount) ? amount : 0);
   const sign = value < 0 ? '-' : '';
   const abs = Math.abs(value);
 
   const scale = (input: number, suffix: string) => {
     const digits = input >= 100 ? 0 : input >= 10 ? 1 : 2;
-    return `TZS ${sign}${trimZeros(input, digits)}${suffix}`;
+    return `${label} ${sign}${trimZeros(input, digits)}${suffix}`;
   };
 
-  if (abs < 1_000) return `TZS ${sign}${abs}`;
+  if (abs < 1_000) return `${label} ${sign}${abs}`;
   if (abs < 1_000_000) return scale(abs / 1_000, 'K');
   if (abs < 1_000_000_000) return scale(abs / 1_000_000, 'M');
   return scale(abs / 1_000_000_000, 'B');
