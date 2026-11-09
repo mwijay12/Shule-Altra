@@ -550,3 +550,43 @@ Two defects found by looking at the rendered pages rather than the code:
 - The GSAP reveal queried `[data-reveal]` once on navigation, before Firestore
   resolved, so every chart that mounts with the data was never revealed. It now
   observes arrivals and reveals each block once.
+
+## One palette, front page and dashboard
+
+The school publishes a palette in **Theme Studio → Publish to school**. That
+writes `config/branding`, and every surface reads it: dashboard, landing page,
+login, PDFs.
+
+The landing page used to declare its own hex palette (`#1f5ba6`, `#7c5ae0`,
+`#111a24` …) inside `.landing`, so publishing a new palette restyled the whole
+dashboard and left the public front page blue. Its tokens now resolve from the
+same source:
+
+| Landing token | Source |
+| --- | --- |
+| `--ink` | `--foreground` |
+| `--paper` | `--background` |
+| `--system` | `--primary` |
+| `--mark`, `--glow` | `--accent` |
+| `--mist` | `--border` |
+| `--brand-gradient` | primary → accent |
+| `--forest`, `--forest-deep`, `--glow-on-dark` | `--brand-hue` |
+
+`--brand-hue` is published per palette by `lib/theme/apply.ts` and now also
+declared in `:root`, so the hue-derived sections resolve even if that script
+never runs.
+
+Because the tokens flip with mode, **the landing page now has a working dark
+mode** — it previously stayed light regardless. Two surfaces needed care: the
+clock chip and the bell marquee sit on the paper and carry `--ink` text, so their
+backgrounds use `--card`, not literal white (which was white-on-white in dark).
+White text on the deep editorial sections stays white in both modes, correctly.
+
+Guards: `npm run demo:smoke:landingtheme` (11 checks, in CI) rejects a fixed
+brand colour reappearing, a token defined from itself, or a white surface on
+paper. `.preview/landing-theme-qa.mjs` drives the real publish path in Chromium
+and asserts all four palettes produce four distinct landing colours.
+
+Note for screenshots: do **not** use Playwright's `animations: 'disabled'` on the
+landing page. The headline reveals through a clip mask, and fast-forwarding
+rewinds the mask so the title photographs as blank.
