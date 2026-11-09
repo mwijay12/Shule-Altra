@@ -5,7 +5,8 @@ rules_version = '2';
  *
  * The shape of the data is `schools/{schoolId}/{collection}/{docId}`, and the
  * only source of authority is the staff record at `schools/{schoolId}/staff/{uid}`
- * whose `role` field is one of ADMIN | TEACHER | ACCOUNTANT | BURSAR | VIEWER.
+ * whose `role` field is one of SUPER_ADMIN | ADMIN | TEACHER | ACCOUNTANT |
+ * BURSAR | VIEWER, plus the install owner identified by a verified Google email.
  * Nothing is trusted from the client: no role in localStorage, no role in a
  * request body, no role from a custom claim that was never set.
  *
@@ -22,18 +23,29 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // The install owner. This is the real gate for branding and identity: the
+    // email list in src/lib/auth/super-admin.ts only decides what the UI shows.
+    // Keep the two in sync. Requires a verified address so an unverified
+    // password account cannot claim it.
+    function isSuperAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'davidbyanmwijage@gmail.com';
+    }
+
     match /schools/{schoolId} {
       function staffPath() {
         return /databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid);
       }
       function isStaff() {
-        return signedIn() && exists(staffPath());
+        return isSuperAdmin() || (signedIn() && exists(staffPath()));
       }
       function role() {
         return isStaff() ? get(staffPath()).data.role : '';
       }
       function inRole(roles) {
-        return isStaff() && role() in roles;
+        // The owner holds every staff capability without needing a staff record.
+        return isSuperAdmin() || (isStaff() && role() in roles);
       }
       function money() {
         return inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
@@ -106,6 +118,28 @@ service cloud.firestore {
       match /mail_log/{entryId} {
         allow read: if inRole(['ADMIN', 'BURSAR', 'ACCOUNTANT']);
         allow write: if false;
+      }
+
+      // Public marketing content for the landing page. It names no learner and
+      // carries no money; only an administrator may publish it.
+      match /config/landing {
+        allow read: if true;
+        allow write: if inRole(['ADMIN']);
+      }
+
+      // Palette and type pairing. Public-readable because the theme is applied
+      // before anyone signs in (login screen included) and it carries no
+      // personal data — only colours and font names.
+      match /config/branding {
+        allow read: if true;
+        allow write: if inRole(['ADMIN']);
+      }
+
+      // Letterhead identity. Every staff member who prints a document needs to
+      // read it; only an administrator or the owner may change it.
+      match /config/identity {
+        allow read: if isStaff();
+        allow write: if inRole(['ADMIN']);
       }
 
       // ── anything else in a school is administrator-only ──────────────────

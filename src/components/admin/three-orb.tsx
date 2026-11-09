@@ -1,25 +1,37 @@
 'use client';
 
 /**
- * @fileOverview Three.js "institutional orb" — a live WebGL centrepiece for the
- * command deck. Wireframe icosahedron + particle halo with pointer parallax.
+ * @fileOverview Three.js brand orb for the command deck.
+ *
+ * The first version drew pale wireframes (62–72% lightness at 0.5 opacity), which
+ * read well on the midnight surface and all but vanished on paper. Colours are
+ * now derived from the active palette AND the active mode: saturated mid-dark
+ * strokes with real opacity on light, luminous strokes on dark.
+ *
  * Degrades to a static gradient when WebGL or motion is unavailable.
  */
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useTheme } from '@/components/admin/theme-provider';
 
 interface ThreeOrbProps {
   className?: string;
-  /** Base hue in degrees, used for the wireframe + particles. */
+  /** Override the palette hue (degrees). Defaults to the school's palette. */
   hue?: number;
   /** Disable pointer interaction (e.g. behind dense content). */
   interactive?: boolean;
 }
 
-export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbProps) {
+export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) {
   const mountRef = React.useRef<HTMLDivElement | null>(null);
+  const reduceMotion = useReducedMotion();
+  const { theme, palette } = useTheme();
   const [ready, setReady] = React.useState(false);
+
+  const baseHue = hue ?? palette.orbHue;
+  const isDark = theme === 'dark';
 
   React.useEffect(() => {
     const mount = mountRef.current;
@@ -33,9 +45,7 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
       return () => {};
     }
 
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    setReady(false);
 
     (async () => {
       try {
@@ -60,31 +70,40 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
         const group = new THREE.Group();
         scene.add(group);
 
-        // Outer wireframe shell
+        // three.js only understands the COMMA form of hsl(). The space-separated
+        // CSS syntax silently parses to white — which is exactly why this orb
+        // used to vanish against the pale hero. Keep the commas here. (The CSS
+        // gradients below are real CSS and correctly use the space form.)
+        // On paper the lines must be darker than the surface and mostly opaque;
+        // on midnight they can be light and additive.
+        const shellColor = isDark ? `hsl(${baseHue}, 88%, 66%)` : `hsl(${baseHue}, 74%, 31%)`;
+        const coreColor = isDark ? `hsl(${baseHue + 34}, 92%, 74%)` : `hsl(${baseHue + 24}, 80%, 26%)`;
+        const haloColor = isDark ? `hsl(${baseHue + 18}, 92%, 76%)` : `hsl(${baseHue + 12}, 70%, 34%)`;
+
         const shell = new THREE.Mesh(
           new THREE.IcosahedronGeometry(1.42, 1),
           new THREE.MeshBasicMaterial({
-            color: new THREE.Color(`hsl(${hue} 85% 62%)`),
+            color: new THREE.Color(shellColor),
             wireframe: true,
             transparent: true,
-            opacity: 0.5,
+            opacity: isDark ? 0.5 : 0.85,
+            depthWrite: false,
           })
         );
         group.add(shell);
 
-        // Inner core with additive glow-ish structure
         const core = new THREE.Mesh(
           new THREE.IcosahedronGeometry(0.72, 2),
           new THREE.MeshBasicMaterial({
-            color: new THREE.Color(`hsl(${hue + 40} 90% 70%)`),
+            color: new THREE.Color(coreColor),
             wireframe: true,
             transparent: true,
-            opacity: 0.85,
+            opacity: isDark ? 0.85 : 1,
+            depthWrite: false,
           })
         );
         group.add(core);
 
-        // Particle halo
         const count = 520;
         const positions = new Float32Array(count * 3);
         for (let i = 0; i < count; i += 1) {
@@ -100,10 +119,10 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
         const halo = new THREE.Points(
           haloGeometry,
           new THREE.PointsMaterial({
-            color: new THREE.Color(`hsl(${hue + 20} 90% 72%)`),
-            size: 0.028,
+            color: new THREE.Color(haloColor),
+            size: isDark ? 0.028 : 0.042,
             transparent: true,
-            opacity: 0.7,
+            opacity: isDark ? 0.7 : 0.7,
             depthWrite: false,
           })
         );
@@ -125,8 +144,8 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
         const clock = new THREE.Clock();
         let frame = 0;
         const render = () => {
-          frame = requestAnimationFrame(render);
-          const elapsed = clock.getElapsedTime();
+          if (!reduceMotion) frame = requestAnimationFrame(render);
+          const elapsed = reduceMotion ? 0 : clock.getElapsedTime();
 
           target.x += (pointer.x - target.x) * 0.045;
           target.y += (pointer.y - target.y) * 0.045;
@@ -153,9 +172,9 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
           renderer.setSize(w, h);
           camera.aspect = w / h;
           camera.updateProjectionMatrix();
+          if (reduceMotion) renderer.render(scene, camera);
         };
-        const observer =
-          typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+        const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
         observer?.observe(mount);
 
         cleanup = () => {
@@ -180,24 +199,29 @@ export function ThreeOrb({ className, hue = 214, interactive = true }: ThreeOrbP
       disposed = true;
       cleanup();
     };
-  }, [hue, interactive]);
+  }, [baseHue, interactive, reduceMotion, isDark]);
 
   return (
-    <div
-      ref={mountRef}
-      aria-hidden
-      className={cn(
-        'relative aspect-square w-full overflow-hidden rounded-full',
-        className
-      )}
-    >
+    <div ref={mountRef} aria-hidden className={cn('relative aspect-square w-full overflow-hidden rounded-full', className)}>
+      {/* A soft disc gives the wireframe something to sit on. On light it is a
+          tint of the palette; on dark it is the old glow. */}
+      <div
+        className="pointer-events-none absolute inset-[8%] rounded-full"
+        style={{
+          background: isDark
+            ? `radial-gradient(circle at 32% 30%, hsl(${baseHue} 90% 62% / 0.30), transparent 68%)`
+            : `radial-gradient(circle at 32% 30%, hsl(${baseHue} 80% 52% / 0.16), hsl(${baseHue + 30} 75% 55% / 0.07) 55%, transparent 74%)`,
+        }}
+      />
       <div
         className={cn(
           'pointer-events-none absolute inset-0 rounded-full transition-opacity duration-700',
           ready ? 'opacity-0' : 'opacity-100'
         )}
         style={{
-          background: `radial-gradient(circle at 30% 30%, hsl(${hue} 90% 70% / 0.75), hsl(${hue + 50} 85% 60% / 0.35) 45%, transparent 70%)`,
+          background: isDark
+            ? `radial-gradient(circle at 30% 30%, hsl(${baseHue} 90% 70% / 0.75), hsl(${baseHue + 50} 85% 60% / 0.35) 45%, transparent 70%)`
+            : `radial-gradient(circle at 30% 30%, hsl(${baseHue} 78% 45% / 0.42), hsl(${baseHue + 40} 70% 48% / 0.18) 45%, transparent 70%)`,
           filter: 'blur(14px)',
         }}
       />

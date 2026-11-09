@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import { useState, useEffect } from "react"
-import { 
-  Building2, 
+import {
+  Building2,
   Save,
   Upload,
   ShieldCheck,
@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { doc, setDoc } from "firebase/firestore"
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { useIntegrations } from "@/hooks/use-integrations"
 import { useAuth } from "@/hooks/use-auth"
@@ -34,6 +34,10 @@ import { cn } from "@/lib/utils"
 import { seedDemoData } from "@/lib/seed/write-demo-data"
 import { clearDemoData } from "@/lib/seed/clear-demo-data"
 import { Progress } from "@/components/ui/progress"
+import { AnimatedNumber } from "@/components/ui/animated-number"
+import { ACADEMIC_LEVEL, ACADEMIC_LEVEL_LABEL, O_LEVEL_CLASSES, classOptions } from "@/lib/academics/config"
+import { DEMO_MODE } from "@/lib/demo/config"
+import { LandingEditor } from "@/components/admin/landing-editor"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,19 +50,23 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-const AVAILABLE_TIERS = [
+const LIVE_TIERS = [
   "Standard 1", "Standard 2", "Standard 3", "Standard 4", "Standard 5", "Standard 6", "Standard 7",
-  "Form 1", "Form 2", "Form 3", "Form 4", "Form 5", "Form 6"
-]
+  "Form 1", "Form 2", "Form 3", "Form 4", "Form 5", "Form 6",
+] as const;
+const AVAILABLE_TIERS = DEMO_MODE ? O_LEVEL_CLASSES : LIVE_TIERS;
 
 export default function SettingsPage() {
   const { toast } = useToast()
   const db = useFirestore()
   const { schoolId } = useAuth()
   const { config, updateConfig, loading: integrationsLoading } = useIntegrations()
-  
+
   const identityRef = useMemoFirebase(() => doc(db, "schools", schoolId || "school-001", "config", "identity"), [db, schoolId])
   const { data: identity, isLoading } = useDoc(identityRef)
+  const [booted, setBooted] = useState(false)
+  const [savingIdentity, setSavingIdentity] = useState(false)
+  useEffect(() => setBooted(true), [])
 
   const [isSeeding, setIsSeeding] = useState(false)
   const [seedProgress, setSeedProgress] = useState(0)
@@ -73,7 +81,7 @@ export default function SettingsPage() {
     address: "",
     contactPhone: "",
     contactEmail: "",
-    tiers: [] as string[],
+    tiers: [...O_LEVEL_CLASSES] as string[],
     logo: "",
     demoMode: false,
   })
@@ -92,7 +100,7 @@ export default function SettingsPage() {
         address: identity.address || "",
         contactPhone: identity.contactPhone || "",
         contactEmail: identity.contactEmail || "",
-        tiers: identity.tiers || ["Standard 7", "Form 2"],
+        tiers: [...classOptions(identity.tiers, { oLevelOnly: DEMO_MODE })],
         logo: identity.logo || "",
         demoMode: identity.demoMode || false,
       })
@@ -106,19 +114,35 @@ export default function SettingsPage() {
     }
   }, [config])
 
-  const handleSaveIdentity = () => {
+  const handleSaveIdentity = async () => {
+    // useDoc starts with isLoading=false before its effect runs, so the form can
+    // render once with empty state. Refuse to write until the snapshot has had a
+    // chance to arrive, or we would merge blanks over the school's real details.
+    if (!booted || isLoading) {
+      toast({ title: "Still loading", description: "Give the current details a moment to load, then save." })
+      return
+    }
+    setSavingIdentity(true)
     try {
-      setDocumentNonBlocking(identityRef, formState, { merge: true })
-      toast({ title: "Identity Hub Synchronized", description: "Global institutional configurations updated permanently." })
+      // Awaited: the previous fire-and-forget call reported success even when
+      // the write was rejected by the security rules.
+      await setDoc(identityRef, formState, { merge: true })
+      toast({ title: "School identity saved", description: "These details appear on reports and letterheads." })
     } catch (e) {
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not save identity." })
+      toast({
+        variant: "destructive",
+        title: "Could not save identity",
+        description: e instanceof Error ? e.message : "Check your permissions and try again.",
+      })
+    } finally {
+      setSavingIdentity(false)
     }
   }
 
   const handleSaveIntegrations = async () => {
     try {
       await updateConfig({ n8nWebhookUrl: n8nUrl, n8nEnabled: n8nEnabled });
-      toast({ title: "Automation Node Secure", description: "Integrations updated in the secure vault." })
+      toast({ title: "Automation saved", description: "Webhook settings updated." })
     } catch (e: any) {
       toast({ variant: "destructive", title: "Vault Error", description: e.message })
     }
@@ -150,11 +174,11 @@ export default function SettingsPage() {
     }
   }
 
-  if (isLoading || integrationsLoading) {
+  if (!booted || isLoading || integrationsLoading) {
     return (
       <div className="p-20 text-center flex flex-col items-center gap-4">
         <Loader2 className="animate-spin h-10 w-10 text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-widest">Synchronizing Configuration Node...</p>
+        <p className="text-[13px] font-semibold">Loading settings…</p>
       </div>
     )
   }
@@ -163,20 +187,22 @@ export default function SettingsPage() {
     <div className="space-y-6 max-w-6xl mx-auto pb-24 px-1 font-body">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[8px] font-black uppercase tracking-widest rounded-full">
-            <Zap className="h-2.5 w-2.5 mr-1.5" /> Institutional Hub 2026
+          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
+            <Zap className="h-2.5 w-2.5 mr-1.5" /> School settings · 2026
           </Badge>
-          <h1 className="text-xl sm:text-2xl font-black text-primary uppercase tracking-tight">System Control Node</h1>
-          <p className="text-muted-foreground font-black text-[9px] uppercase tracking-widest">Manage institutional identity and orchestration mode.</p>
+          <h1 className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Settings</h1>
+          <p className="text-muted-foreground font-semibold text-[12px]">School identity, academic tiers, automation and the public landing page.</p>
+          <Badge variant="secondary" className="rounded-full px-3 py-1 text-[12px] font-semibold">{DEMO_MODE ? `${ACADEMIC_LEVEL_LABEL} secondary school` : "Configured academic tiers"}</Badge>
         </div>
       </div>
 
       <Tabs defaultValue="identity" className="space-y-6">
         <TabsList className="bg-muted/40 p-1 rounded-2xl w-full flex h-auto gap-1 border border-muted/50 px-1 overflow-x-auto shadow-inner">
-          <TabsTrigger value="identity" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Identity Hub</TabsTrigger>
-          <TabsTrigger value="academic" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Tier Config</TabsTrigger>
-          <TabsTrigger value="automation" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest">Automation</TabsTrigger>
-          <TabsTrigger value="dev" className="rounded-xl font-black text-[9px] flex-1 py-3 uppercase tracking-widest border border-orange-200/50 text-orange-600 bg-orange-50/50">Developer Node</TabsTrigger>
+          <TabsTrigger value="identity" className="rounded-xl font-semibold text-[12px] flex-1 py-3">School identity</TabsTrigger>
+          <TabsTrigger value="academic" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Tier Config</TabsTrigger>
+          <TabsTrigger value="automation" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Automation</TabsTrigger>
+          <TabsTrigger value="landing" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Landing Page</TabsTrigger>
+          <TabsTrigger value="dev" className="rounded-xl font-semibold text-[12px] flex-1 py-3 border border-orange-200/50 text-orange-600 bg-orange-50/50">Developer</TabsTrigger>
         </TabsList>
 
         <TabsContent value="identity" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -184,25 +210,73 @@ export default function SettingsPage() {
             <CardHeader className="bg-primary/5 border-b p-8">
               <div className="flex justify-between items-center">
                 <div>
-                  <CardTitle className="text-base font-black uppercase tracking-widest">Legal Profile</CardTitle>
-                  <CardDescription className="text-[10px] font-bold uppercase">Institutional metadata for national assessments</CardDescription>
+                  <CardTitle className="text-base font-semibold">Legal Profile</CardTitle>
+                  <CardDescription className="text-[13px] font-bold">Institutional metadata for national assessments</CardDescription>
                 </div>
-                <Button onClick={handleSaveIdentity} className="rounded-full colorful-gradient h-10 px-6 text-[9px] uppercase font-black shadow-lg">Sync Identity</Button>
+                <Button onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-full colorful-gradient h-10 px-6 text-[12px] font-semibold shadow-lg">{savingIdentity ? "Saving…" : "Save identity"}</Button>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">Official Institution Name</Label>
-                  <Input value={formState.name} onChange={(e) => setFormState({...formState, name: e.target.value.toUpperCase()})} className="rounded-xl h-12 bg-muted/20 border-none font-black shadow-inner px-5 uppercase" />
+                  <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Official Institution Name</Label>
+                  <Input value={formState.name} onChange={(e) => setFormState({...formState, name: e.target.value.toUpperCase()})} className="rounded-xl h-12 bg-muted/20 border-none font-semibold shadow-inner px-5" />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-[9px] font-black uppercase text-muted-foreground ml-1">NECTA Center Number</Label>
-                  <Input value={formState.centerId} onChange={(e) => setFormState({...formState, centerId: e.target.value.toUpperCase()})} className="rounded-xl h-12 bg-muted/20 border-none font-mono font-black text-primary shadow-inner px-5" />
+                  <Label className="text-[12px] font-semibold text-muted-foreground ml-1">NECTA Center Number</Label>
+                  <Input value={formState.centerId} onChange={(e) => setFormState({...formState, centerId: e.target.value.toUpperCase()})} className="rounded-xl h-12 bg-muted/20 border-none font-mono font-semibold text-primary shadow-inner px-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="academic" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+          <Card className="border-none shadow-xl rounded-[2.5rem] bg-card/60 backdrop-blur-md">
+            <CardHeader className="bg-primary/5 border-b p-8">
+              <CardTitle className="text-base font-semibold">{DEMO_MODE ? `${ACADEMIC_LEVEL} academic tiers` : "Academic tiers"}</CardTitle>
+              <CardDescription className="text-[13px] font-bold leading-relaxed">
+                {DEMO_MODE ? "This demo school uses Form 1–4 only. Enrollment, student profiles, assessments and the timetable share these O-level classes." : "Choose the tiers offered by this school. Keep at least one enabled."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-8 space-y-6">
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                {AVAILABLE_TIERS.map((tier) => (
+                  <label key={tier} className="flex items-center gap-3 rounded-2xl border border-border/60 bg-muted/20 p-4">
+                    <Checkbox
+                      checked={formState.tiers.includes(tier)}
+                      onCheckedChange={(checked) => setFormState((current) => ({
+                        ...current,
+                        tiers: checked === true
+                          ? AVAILABLE_TIERS.filter((value) => value === tier || current.tiers.includes(value))
+                          : current.tiers.filter((value) => value !== tier),
+                      }))}
+                    />
+                    <span className="text-xs font-semibold">{tier}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <p className="text-[13px] text-muted-foreground">{DEMO_MODE ? "Keep at least one tier enabled. Primary and A-level classes are not offered by this demo school." : "Keep at least one tier enabled."}</p>
+                <Button
+                  onClick={() => {
+                    if (formState.tiers.length === 0) {
+                      toast({ variant: "destructive", title: "Keep one academic tier", description: DEMO_MODE ? "Select at least one Form before saving." : "Select at least one tier before saving." })
+                      return
+                    }
+                    handleSaveIdentity()
+                  }}
+                  className="rounded-full colorful-gradient h-10 px-6 text-[12px] font-semibold text-white"
+                >
+                  <Save className="mr-2 h-3.5 w-3.5" /> Save academic tiers
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="landing">
+          <LandingEditor />
         </TabsContent>
 
         <TabsContent value="dev" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
@@ -213,8 +287,8 @@ export default function SettingsPage() {
                     <FlaskConical className="h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-base font-black uppercase tracking-widest">Demo Data Management</CardTitle>
-                    <CardDescription className="text-[10px] font-bold uppercase text-orange-600/60">Developer Tools • Institutional Data Seeding</CardDescription>
+                    <CardTitle className="text-base font-semibold">Demo Data Management</CardTitle>
+                    <CardDescription className="text-[13px] font-bold text-orange-600/60">Developer Tools • Institutional Data Seeding</CardDescription>
                   </div>
                 </div>
              </CardHeader>
@@ -222,19 +296,19 @@ export default function SettingsPage() {
                <div className="p-6 rounded-[2rem] bg-orange-100/30 border border-orange-200/50 space-y-4">
                  <div className="flex items-center gap-3">
                    <AlertTriangle className="h-5 w-5 text-orange-600" />
-                   <p className="text-xs font-bold text-orange-800 uppercase tracking-tight">Sandbox Environment Notice</p>
+                   <p className="text-xs font-bold text-orange-800 tracking-tight">Sandbox Environment Notice</p>
                  </div>
-                 <p className="text-[10px] leading-relaxed text-orange-700 font-medium uppercase tracking-tighter">
-                   These tools populate <b>school-001</b> with 150 Tanzanian students, NECTA-aligned grades, a full fee ledger, boarding and fleet records. 
+                 <p className="text-[13px] leading-relaxed text-orange-700 font-medium tracking-tighter">
+                   These tools populate <b>school-001</b> with 150 O-level learners (Form 1–4), NECTA-aligned grades, a full fee ledger, boarding and fleet records.
                    Use for stakeholder presentations or local integration testing.
                  </p>
                </div>
 
                {isSeeding && (
                  <div className="space-y-3 animate-in fade-in duration-500">
-                    <div className="flex justify-between items-center text-[9px] font-black uppercase text-orange-600 px-1">
+                    <div className="flex justify-between items-center text-[12px] font-semibold text-orange-600 px-1">
                       <span className="flex items-center gap-2"><RefreshCw className="h-3 w-3 animate-spin" /> {seedStep}</span>
-                      <span>{seedProgress}%</span>
+                      <span><AnimatedNumber value={seedProgress} suffix="%" duration={0.35} /></span>
                     </div>
                     <Progress value={seedProgress} className="h-2 bg-orange-100 rounded-full" />
                  </div>
@@ -243,41 +317,41 @@ export default function SettingsPage() {
                <div className="flex flex-col sm:flex-row gap-4">
                  <AlertDialog>
                    <AlertDialogTrigger asChild>
-                     <Button disabled={isSeeding} className="flex-1 rounded-2xl h-14 bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-widest shadow-xl">
+                     <Button disabled={isSeeding} className="flex-1 rounded-2xl h-14 bg-orange-600 hover:bg-orange-700 text-white font-semibold text-xs shadow-xl">
                        {isSeeding ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : <Database className="mr-2 h-4 w-4" />}
                        Seed Demo Registry
                      </Button>
                    </AlertDialogTrigger>
                    <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8">
                      <AlertDialogHeader>
-                       <AlertDialogTitle className="text-xl font-black uppercase tracking-tight">Initialize Seed Node?</AlertDialogTitle>
-                       <AlertDialogDescription className="text-xs font-medium uppercase tracking-tighter leading-relaxed">
-                         This will inject 150 Tanzanian students, 16 faculty nodes, 2,700+ NECTA assessment records and the full financial ledger into <b>school-001</b>.
+                       <AlertDialogTitle className="text-xl font-semibold tracking-tight">Seed demo data?</AlertDialogTitle>
+                       <AlertDialogDescription className="text-xs font-medium tracking-tighter leading-relaxed">
+                         This will inject 150 O-level learners (Form 1–4), 16 faculty nodes, 2,932 NECTA assessment records and the full financial ledger into <b>school-001</b>.
                        </AlertDialogDescription>
                      </AlertDialogHeader>
                      <AlertDialogFooter className="gap-2 mt-4">
-                       <AlertDialogCancel className="rounded-full h-11 font-black text-[10px] uppercase">Cancel</AlertDialogCancel>
-                       <AlertDialogAction onClick={handleRunSeed} className="rounded-full h-11 colorful-gradient border-none font-black text-[10px] uppercase px-8 shadow-xl">Confirm Injection</AlertDialogAction>
+                       <AlertDialogCancel className="rounded-full h-11 font-semibold text-[13px]">Cancel</AlertDialogCancel>
+                       <AlertDialogAction onClick={handleRunSeed} className="rounded-full h-11 colorful-gradient border-none font-semibold text-[13px] px-8 shadow-xl">Confirm Injection</AlertDialogAction>
                      </AlertDialogFooter>
                    </AlertDialogContent>
                  </AlertDialog>
 
                  <AlertDialog>
                    <AlertDialogTrigger asChild>
-                     <Button disabled={isSeeding} variant="outline" className="flex-1 rounded-2xl h-14 border-orange-200 text-orange-600 hover:bg-orange-50 font-black text-xs uppercase tracking-widest">
+                     <Button disabled={isSeeding} variant="outline" className="flex-1 rounded-2xl h-14 border-orange-200 text-orange-600 hover:bg-orange-50 font-semibold text-xs">
                        <Trash2 className="mr-2 h-4 w-4" /> Purge Demo Data
                      </Button>
                    </AlertDialogTrigger>
                    <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl p-8">
                      <AlertDialogHeader>
-                       <AlertDialogTitle className="text-xl font-black uppercase tracking-tight text-destructive">Wipe Sandbox Data?</AlertDialogTitle>
-                       <AlertDialogDescription className="text-xs font-medium uppercase tracking-tighter leading-relaxed">
-                         Permanent deletion of all records under the demo school node. This action cannot be reversed.
+                       <AlertDialogTitle className="text-xl font-semibold tracking-tight text-destructive">Wipe Sandbox Data?</AlertDialogTitle>
+                       <AlertDialogDescription className="text-xs font-medium tracking-tighter leading-relaxed">
+                         Permanent deletion of all operational records for the demo school, including uploaded learner photographs and their consent records. Identity and integration settings are kept. This action cannot be reversed.
                        </AlertDialogDescription>
                      </AlertDialogHeader>
                      <AlertDialogFooter className="gap-2 mt-4">
-                       <AlertDialogCancel className="rounded-full h-11 font-black text-[10px] uppercase">Abort</AlertDialogCancel>
-                       <AlertDialogAction onClick={handleClearSeed} className="rounded-full h-11 bg-destructive hover:bg-destructive/90 text-white border-none font-black text-[10px] uppercase px-8 shadow-xl">Purge Document Store</AlertDialogAction>
+                       <AlertDialogCancel className="rounded-full h-11 font-semibold text-[13px]">Abort</AlertDialogCancel>
+                       <AlertDialogAction onClick={handleClearSeed} className="rounded-full h-11 bg-destructive hover:bg-destructive/90 text-white border-none font-semibold text-[13px] px-8 shadow-xl">Purge Document Store</AlertDialogAction>
                      </AlertDialogFooter>
                    </AlertDialogContent>
                  </AlertDialog>

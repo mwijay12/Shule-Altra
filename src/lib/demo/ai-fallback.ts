@@ -24,11 +24,11 @@ const DEFAULT_SUBJECTS = [
 ];
 
 const REMARKS: Record<string, string> = {
-  A: 'demonstrates exceptional command and analytical confidence',
-  B: 'shows solid understanding with room for sharper precision',
+  A: 'shows a strong, consistent grasp of the subject',
+  B: 'shows solid understanding with room for sharper accuracy',
   C: 'is developing steadily and benefits from guided practice',
   D: 'requires structured remedial support this term',
-  F: 'needs urgent intervention and close teacher follow-up',
+  F: 'needs urgent support and close teacher follow-up',
 };
 
 export function buildDemoNarrative(input: ProgressNarrativeInput): string {
@@ -41,10 +41,10 @@ export function buildDemoNarrative(input: ProgressNarrativeInput): string {
   const level = input.classLevel ? ` (${input.classLevel})` : '';
 
   return [
-    `${input.studentName}${level} ${REMARKS[strongest.grade] || REMARKS.B} in ${strongest.subject}, her strongest node this term.`,
+    `${input.studentName}${level} ${REMARKS[strongest.grade] || REMARKS.B} in ${strongest.subject}, the strongest result this term.`,
     `In ${weakest.subject} the learner ${REMARKS[weakest.grade] || REMARKS.C}; a focused remedial plan with weekly checkpoints is recommended.`,
-    `Attendance stands at ${attendance}% with a conduct index of ${conduct}/100, reflecting disciplined engagement with institutional routines.`,
-    `Overall trajectory: steady progress against NECTA CSEE benchmarks. Recommended next step — pair ${weakest.subject} practice sets with peer-led study sessions.`,
+    `Attendance is ${attendance}% and conduct is ${conduct}/100.`,
+    `Next step: pair ${weakest.subject} practice sets with peer-led study sessions and review progress at the next assessment.`,
   ].join(' ');
 }
 

@@ -7,16 +7,17 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
+import { MotionConfig } from 'framer-motion';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { AuroraSidebar } from '@/components/admin/sidebar';
 import { Topbar, type NotificationItem } from '@/components/admin/topbar';
 import { CommandPalette, type PaletteStudent } from '@/components/admin/command-palette';
 import { PageTransition } from '@/components/admin/page-transition';
-import { ThemeProvider } from '@/components/admin/theme-provider';
 import { RangeProvider } from '@/components/admin/range-context';
 import { ALL_NAV_ITEMS } from '@/components/admin/nav-config';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { cn } from '@/lib/utils';
+import { SchoolBrandProvider, useSchoolBrand } from '@/components/admin/brand-provider';
 
 interface AuroraShellProps {
   children: React.ReactNode;
@@ -31,7 +32,15 @@ function prettifyModule(segment?: string) {
   return match?.title ?? segment.replace(/-/g, ' ');
 }
 
-export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellProps) {
+export function AuroraShell(props: AuroraShellProps) {
+  return (
+    <SchoolBrandProvider>
+      <ShellContent {...props} />
+    </SchoolBrandProvider>
+  );
+}
+
+function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) {
   const pathname = usePathname();
   const db = useFirestore();
   const [mobileOpen, setMobileOpen] = React.useState(false);
@@ -78,7 +87,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
       (students ?? []).map((student: any) => ({
         id: student.id,
         name: student.name ?? 'Unnamed learner',
-        className: student.className,
+        className: student.class ?? student.className,
         admissionNumber: student.admissionNumber ?? student.admissionNo,
       })),
     [students]
@@ -129,14 +138,18 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
     return list.slice(0, 5);
   }, [transactions, students]);
 
+  // Publishes the school's identity to the PDF kit for every route below.
+  const { brand } = useSchoolBrand();
+
   const segment = pathname.split('/')[2];
   const title = segment ? prettifyModule(segment) : 'Command deck';
   const eyebrow = segment
-    ? `${ALL_NAV_ITEMS.find((item) => item.url === `/dashboard/${segment}`)?.hint ?? 'Module'} · school-001`
-    : 'Live institutional overview · school-001';
+    ? `${ALL_NAV_ITEMS.find((item) => item.url === `/dashboard/${segment}`)?.hint ?? 'Module'} · ${brand.shortName}`
+    : `Live institutional overview · ${brand.shortName}`;
 
   return (
-    <ThemeProvider>
+    <MotionConfig reducedMotion="user">
+    <>
       <RangeProvider>
         <div className={cn('aurora-shell flex h-[100dvh] w-full overflow-hidden bg-background')}>
           <div className="pointer-events-none fixed inset-0 -z-10 grid-overlay" aria-hidden />
@@ -172,6 +185,7 @@ export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellP
           canAccess={canAccess}
         />
       </RangeProvider>
-    </ThemeProvider>
+    </>
+    </MotionConfig>
   );
 }

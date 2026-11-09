@@ -2,7 +2,7 @@
 'use client';
 
 /**
- * @fileOverview Secure n8n Webhook Dispatch Node.
+ * @fileOverview n8n webhook dispatch.
  * Replaced localStorage usage with secure Firestore-backed configuration.
  */
 
@@ -53,7 +53,7 @@ export async function triggerN8nWebhook(
   const config = await getSecureWebhookConfig(schoolId);
 
   if (!config || !config.webhookUrl || !config.enabled) {
-    console.warn('[N8N] Dispatch skipped — node inactive or not configured in Firestore');
+    console.warn('[N8N] Skipped — automation is disabled or not configured');
     return false;
   }
 
@@ -74,7 +74,7 @@ export async function triggerN8nWebhook(
     });
 
     if (!response.ok) {
-      throw new Error(`Webhook node rejected request: ${response.status}`);
+      throw new Error(`Webhook rejected the request: ${response.status}`);
     }
 
     console.log(`[N8N] Dispatched: ${eventType}`);

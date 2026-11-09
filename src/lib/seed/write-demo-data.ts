@@ -23,7 +23,7 @@ export async function seedDemoData(onProgress?: (step: string, percent: number) 
   for (let index = 0; index < entries.length; index += CHUNK_SIZE) {
     const chunk = entries.slice(index, index + CHUNK_SIZE);
     const percent = Math.min(98, Math.round(((index + chunk.length) / entries.length) * 100));
-    onProgress?.(`Writing registry nodes (${index + chunk.length}/${entries.length})...`, percent);
+    onProgress?.(`Writing register records (${index + chunk.length}/${entries.length})…`, percent);
 
     const batch = writeBatch(db);
     chunk.forEach(([path, data]) => {

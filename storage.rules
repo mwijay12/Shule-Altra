@@ -16,14 +16,20 @@ service firebase.storage {
       function staffPath() {
         return /databases/(default)/documents/schools/$(schoolId)/staff/$(request.auth.uid);
       }
+      // Mirrors isSuperAdmin() in firestore.rules.
+      function isSuperAdmin() {
+        return request.auth != null
+          && request.auth.token.email_verified == true
+          && request.auth.token.email == 'davidbyanmwijage@gmail.com';
+      }
       function isStaff() {
-        return request.auth != null && firestore.exists(staffPath());
+        return isSuperAdmin() || (request.auth != null && firestore.exists(staffPath()));
       }
       function role() {
         return isStaff() ? firestore.get(staffPath()).data.role : '';
       }
       function inRole(roles) {
-        return isStaff() && role() in roles;
+        return isSuperAdmin() || (isStaff() && role() in roles);
       }
 
       match /students/{studentId}/{fileName} {
@@ -31,6 +37,25 @@ service firebase.storage {
         allow write: if inRole(['ADMIN', 'TEACHER'])
           && request.resource.size < 2 * 1024 * 1024
           && request.resource.contentType.matches('image/.*');
+        allow delete: if inRole(['ADMIN']);
+      }
+
+      // Landing-page photography is public once an administrator publishes it.
+      match /landing/{fileName} {
+        allow read: if true;
+        allow write: if inRole(['ADMIN'])
+          && request.resource.size < 5 * 1024 * 1024
+          && request.resource.contentType.matches('image/.*');
+        allow delete: if inRole(['ADMIN']);
+      }
+
+      // The school logo appears on public letters and the sign-in screen, so it
+      // is public once published. PNG/JPEG only: the PDF engine embeds those.
+      match /brand/{fileName} {
+        allow read: if true;
+        allow write: if inRole(['ADMIN'])
+          && request.resource.size < 2 * 1024 * 1024
+          && request.resource.contentType.matches('image/(png|jpeg)');
         allow delete: if inRole(['ADMIN']);
       }
 

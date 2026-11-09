@@ -1,63 +1,158 @@
 'use client';
 
 /**
- * @fileOverview Light / midnight theme control for the admin shell.
- * Persists to localStorage and toggles the `dark` class used by Tailwind.
+ * @fileOverview Brand theme control.
+ *
+ * Two layers, deliberately separate:
+ *   • Palette + type pairing belong to the SCHOOL. They load from
+ *     `schools/<id>/config/branding` and are published from the Theme Studio.
+ *   • Light / dark belongs to the PERSON reading the screen, and defaults to
+ *     light — the dashboard is a daytime office tool, not a media player.
+ *
+ * A pre-paint script (ThemeScript) puts the cached values on <html> before React
+ * hydrates, so there is no flash and no dependency on the network to look right.
  */
 
 import * as React from 'react';
+import { doc } from 'firebase/firestore';
+import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import {
+  DEFAULT_PREFERENCE,
+  applyPreference,
+  readStoredPreference,
+  sanitizePreference,
+  storePreference,
+  type ThemePreference,
+} from '@/lib/theme/apply';
+import {
+  APP_FONTS,
+  DEFAULT_APP_FONT,
+  DEFAULT_MODE,
+  DEFAULT_PALETTE,
+  isAppFontId,
+  isPaletteId,
+  resolvePalette,
+  type AppFontId,
+  type Palette,
+  type PaletteId,
+  type ThemeMode,
+} from '@/lib/theme/palettes';
 
-type Theme = 'light' | 'dark';
+export const BRANDING_DOC_PATH = 'schools/school-001/config/branding';
+
+type Theme = ThemeMode;
 
 interface ThemeContextValue {
+  /** Back-compatible surface for the topbar toggle. */
   theme: Theme;
   setTheme: (theme: Theme) => void;
   toggleTheme: () => void;
+
+  paletteId: PaletteId;
+  palette: Palette;
+  fontId: AppFontId;
+  /** School-published values, before any local preview. */
+  published: { paletteId: PaletteId; fontId: AppFontId };
+  /** True when the local preview differs from what the school published. */
+  isPreviewing: boolean;
+  setPaletteId: (id: PaletteId) => void;
+  setFontId: (id: AppFontId) => void;
+  /** Adopt the school's published palette/font, discarding a local preview. */
+  resetToPublished: () => void;
 }
 
 const ThemeContext = React.createContext<ThemeContextValue | null>(null);
-const STORAGE_KEY = 'altra-admin-theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = React.useState<Theme>('light');
-  const [mounted, setMounted] = React.useState(false);
+  const db = useFirestore();
+  const brandingRef = useMemoFirebase(() => doc(db, BRANDING_DOC_PATH), [db]);
+  const { data: branding } = useDoc(brandingRef);
+
+  const [preference, setPreference] = React.useState<ThemePreference>(DEFAULT_PREFERENCE);
+  const [hydrated, setHydrated] = React.useState(false);
+  // A local preview is explicit: it only exists once the user touches a control.
+  const [localChoice, setLocalChoice] = React.useState(false);
 
   React.useEffect(() => {
-    let stored: Theme | null = null;
-    try {
-      stored = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-    } catch {
-      stored = null;
-    }
-    const preferred: Theme =
-      stored === 'dark' || stored === 'light'
-        ? stored
-        : window.matchMedia?.('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light';
-    setThemeState(preferred);
-    setMounted(true);
+    const stored = readStoredPreference();
+    setPreference(stored);
+    setHydrated(true);
   }, []);
 
-  React.useEffect(() => {
-    if (!mounted) return;
-    const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    root.style.colorScheme = theme;
-    try {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    } catch {
-      /* storage can be unavailable in private mode */
-    }
-  }, [theme, mounted]);
-
-  const setTheme = React.useCallback((next: Theme) => setThemeState(next), []);
-  const toggleTheme = React.useCallback(
-    () => setThemeState((current) => (current === 'dark' ? 'light' : 'dark')),
-    []
+  const published = React.useMemo(
+    () => ({
+      paletteId: isPaletteId(branding?.paletteId) ? (branding!.paletteId as PaletteId) : DEFAULT_PALETTE,
+      fontId: isAppFontId(branding?.fontId) ? (branding!.fontId as AppFontId) : DEFAULT_APP_FONT,
+    }),
+    [branding?.paletteId, branding?.fontId]
   );
 
-  const value = React.useMemo(() => ({ theme, setTheme, toggleTheme }), [theme, setTheme, toggleTheme]);
+  // School branding wins until this browser makes its own explicit choice.
+  const effective = React.useMemo<ThemePreference>(() => {
+    if (localChoice) return preference;
+    return { ...preference, paletteId: published.paletteId, fontId: published.fontId };
+  }, [localChoice, preference, published]);
+
+  React.useEffect(() => {
+    if (!hydrated) return;
+    applyPreference(effective);
+    storePreference(effective);
+  }, [effective, hydrated]);
+
+  const setTheme = React.useCallback((next: Theme) => {
+    setPreference((current) => ({ ...current, mode: next === 'dark' ? 'dark' : 'light' }));
+  }, []);
+
+  const toggleTheme = React.useCallback(() => {
+    setPreference((current) => ({ ...current, mode: current.mode === 'dark' ? 'light' : 'dark' }));
+  }, []);
+
+  const setPaletteId = React.useCallback((id: PaletteId) => {
+    if (!isPaletteId(id)) return;
+    setLocalChoice(true);
+    setPreference((current) => ({ ...current, paletteId: id }));
+  }, []);
+
+  const setFontId = React.useCallback((id: AppFontId) => {
+    if (!isAppFontId(id)) return;
+    setLocalChoice(true);
+    setPreference((current) => ({ ...current, fontId: id }));
+  }, []);
+
+  const resetToPublished = React.useCallback(() => {
+    setLocalChoice(false);
+    setPreference((current) => ({ ...current, ...published }));
+  }, [published]);
+
+  // Publishing updates the doc; drop the preview flag so the school value sticks.
+  const previousPublished = React.useRef(published);
+  React.useEffect(() => {
+    if (
+      previousPublished.current.paletteId !== published.paletteId ||
+      previousPublished.current.fontId !== published.fontId
+    ) {
+      previousPublished.current = published;
+      setLocalChoice(false);
+    }
+  }, [published]);
+
+  const value = React.useMemo<ThemeContextValue>(
+    () => ({
+      theme: effective.mode,
+      setTheme,
+      toggleTheme,
+      paletteId: effective.paletteId,
+      palette: resolvePalette(effective.paletteId),
+      fontId: effective.fontId,
+      published,
+      isPreviewing:
+        effective.paletteId !== published.paletteId || effective.fontId !== published.fontId,
+      setPaletteId,
+      setFontId,
+      resetToPublished,
+    }),
+    [effective, published, setTheme, toggleTheme, setPaletteId, setFontId, resetToPublished]
+  );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
@@ -65,8 +160,22 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   const ctx = React.useContext(ThemeContext);
   if (!ctx) {
-    // Safe fallback so components can render outside the provider (tests, print previews).
-    return { theme: 'light' as Theme, setTheme: () => {}, toggleTheme: () => {} };
+    // Safe fallback for tests, print previews and the public landing page.
+    return {
+      theme: DEFAULT_MODE as Theme,
+      setTheme: () => {},
+      toggleTheme: () => {},
+      paletteId: DEFAULT_PALETTE,
+      palette: resolvePalette(DEFAULT_PALETTE),
+      fontId: DEFAULT_APP_FONT,
+      published: { paletteId: DEFAULT_PALETTE, fontId: DEFAULT_APP_FONT },
+      isPreviewing: false,
+      setPaletteId: () => {},
+      setFontId: () => {},
+      resetToPublished: () => {},
+    } satisfies ThemeContextValue;
   }
   return ctx;
 }
+
+export { APP_FONTS };

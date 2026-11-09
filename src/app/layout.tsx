@@ -1,11 +1,18 @@
 import type {Metadata} from 'next';
 import './globals.css';
+import '@fontsource-variable/inter';
+import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/jetbrains-mono';
+import '@fontsource/instrument-serif/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { ClientGuard } from '@/components/system/client-guard';
+import { ThemeProvider } from '@/components/admin/theme-provider';
+import { ThemeScript } from '@/components/admin/theme-script';
 
 export const metadata: Metadata = {
-  title: 'Shule Altra - Advanced Institutional Hub',
-  description: 'PDPA-compliant high-fidelity institutional ecosystem for the modern Tanzanian landscape. Powered by Altra Node.',
+  title: 'Shule Altra — school management for Tanzanian secondary schools',
+  description: 'One register for learners, fees, NECTA results, attendance and the documents a school signs. Built for O-level secondary schools in Tanzania.',
 };
 
 export default function RootLayout({
@@ -14,19 +21,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap"
-          rel="stylesheet"
-        />
+        <ThemeScript />
       </head>
       <body className="font-body antialiased bg-background text-foreground">
         <ClientGuard />
         <FirebaseClientProvider>
-          {children}
+          <ThemeProvider>{children}</ThemeProvider>
         </FirebaseClientProvider>
       </body>
     </html>

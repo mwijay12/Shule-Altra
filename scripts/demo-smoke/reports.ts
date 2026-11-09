@@ -16,6 +16,12 @@ import { buildDemoDataset } from '@/lib/demo/seed-data';
 import { buildReportPayload, buildPerLearnerScores, buildAttendanceRows } from '@/lib/reports/builders';
 import { buildTabularReport } from '@/lib/pdf/tabular-report';
 import { buildClassRanking, buildAttendanceRegister } from '@/lib/pdf/class-report';
+import { demoIdentity } from '@/lib/demo/seed-data';
+import { resolveBrand, setActiveBrand } from '@/lib/brand/identity';
+
+// Stamp the demo school's own identity on every generated document, so the
+// samples name the same school the dashboard and the seeder do.
+setActiveBrand(resolveBrand(demoIdentity(), {}));
 
 const OUT_DIR = join(process.cwd(), 'private', 'printables', 'reports');
 

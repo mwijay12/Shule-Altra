@@ -16,6 +16,12 @@ import { buildClassRanking, buildAttendanceRegister } from '@/lib/pdf/class-repo
 import { buildIdCards } from '@/lib/pdf/id-card';
 import { buildTimetablePdf } from '@/lib/pdf/timetable';
 import { buildTimetable } from '@/lib/timetable';
+import { demoIdentity } from '@/lib/demo/seed-data';
+import { resolveBrand, setActiveBrand } from '@/lib/brand/identity';
+
+// Stamp the demo school's own identity on every generated document, so the
+// samples name the same school the dashboard and the seeder do.
+setActiveBrand(resolveBrand(demoIdentity(), {}));
 
 const OUT_DIR = join(process.cwd(), 'private', 'printables');
 

@@ -8,6 +8,8 @@
  *   3. teachers never appear twice in the same period across the day.
  */
 
+import { O_LEVEL_CLASSES } from '@/lib/academics/config';
+
 export interface Period {
   id: string;
   label: string;
@@ -60,7 +62,7 @@ export const CURRICULUM = [
   { subject: 'Bookkeeping', teacher: 'Mwl. F. Shayo', room: 'Block C · 02' },
 ];
 
-export const TIMETABLE_CLASSES = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
+export const TIMETABLE_CLASSES = O_LEVEL_CLASSES;
 export const TIMETABLE_STREAMS = ['A', 'B'];
 
 /** Small deterministic PRNG so a class always receives the same timetable. */

@@ -12,6 +12,7 @@
 
 import { DemoTimestamp, isSentinel } from './timestamp';
 import { buildDemoDataset, DEMO_SCHEMA_VERSION } from './seed-data';
+import { clearDemoMedia } from './media-store';
 
 const STORAGE_KEY = 'shule-altra.demo.db.v2';
 const VERSION_KEY = 'shule-altra.demo.schema';
@@ -126,6 +127,8 @@ function hydrate() {
       if (deserialize(stored)) return;
     } else if (stored && !versionMatches) {
       window.localStorage.removeItem(STORAGE_KEY);
+      // Uploaded landing photography belongs to the old dataset.
+      void clearDemoMedia();
     }
   }
 

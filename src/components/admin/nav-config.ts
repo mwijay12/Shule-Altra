@@ -18,6 +18,7 @@ import {
   BedDouble,
   FileBarChart2,
   Settings2,
+  Palette,
   LifeBuoy,
   Mails,
   type LucideIcon,
@@ -67,7 +68,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Campus logistics',
     items: [
       { title: 'Transport', url: '/dashboard/transport', icon: Bus, module: 'transport', hint: 'Routes & fleet' },
-      { title: 'Hostel', url: '/dashboard/hostel', icon: BedDouble, module: 'hostel', hint: 'Boarding nodes' },
+      { title: 'Hostel', url: '/dashboard/hostel', icon: BedDouble, module: 'hostel', hint: 'Wings & occupancy' },
     ],
   },
   {
@@ -75,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { title: 'Reports', url: '/dashboard/reports', icon: FileBarChart2, module: 'reports', hint: 'PDF & printable output' },
       { title: 'Settings', url: '/dashboard/settings', icon: Settings2, module: 'settings', hint: 'Institution profile' },
+      { title: 'Theme Studio', url: '/dashboard/theme-studio', icon: Palette, module: 'themeStudio', hint: 'Colours, type & letterhead' },
       { title: 'Help', url: '/dashboard/help', icon: LifeBuoy, module: 'help', hint: 'Support desk' },
     ],
   },

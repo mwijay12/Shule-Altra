@@ -10,14 +10,16 @@
  */
 
 import * as React from "react"
-import Image from "next/image"
+import { LandingImage as Image } from "./image"
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { DisplayLines } from "@/components/landing/reveal"
 import { useLandingMotion } from "./motion"
+import { useLandingContent } from "./content-provider"
 
 export function Hero({ ready }: { ready: boolean }) {
   const { on } = useLandingMotion()
+  const content = useLandingContent()
   const sectionRef = React.useRef<HTMLElement | null>(null)
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -42,7 +44,7 @@ export function Hero({ ready }: { ready: boolean }) {
         <motion.div className="sd-hero-copy" style={{ y: copyY }}>
           <div className="sd-kicker">
             <span className="sd-kicker-dot" aria-hidden />
-            Tanzania · secondary schools
+            {content.hero.kicker}
           </div>
 
           <h1 className="sd-hero-title">
@@ -50,37 +52,35 @@ export function Hero({ ready }: { ready: boolean }) {
               active={ready}
               stagger={110}
               lines={[
-                <span key="1">One school day.</span>,
-                <span key="2">Every register,</span>,
+                <span key="1">{content.hero.titleLines[0]}</span>,
+                <span key="2">{content.hero.titleLines[1]}</span>,
                 <span key="3" className="sd-serif">
-                  every shilling.
+                  {content.hero.titleLines[2]}
                 </span>,
               ]}
             />
           </h1>
 
           <p className="sd-hero-lede">
-            Shule Altra is the institutional operating system for Tanzanian secondary
-            schools. Learners, fees, NECTA matrices, attendance and the paper a school
-            actually signs — kept on one timetable.
+            {content.hero.lede}
           </p>
 
           <div className="sd-hero-actions">
             <Link href="/login?demo=1" className="sd-cta">
               <span className="sd-cta-fill" aria-hidden />
               <span className="sd-cta-label">
-                Enter the demo school <span aria-hidden>↗</span>
+                {content.hero.primaryCta} <span aria-hidden>↗</span>
               </span>
             </Link>
             <a href="#timetable" className="sd-ghost">
-              <span>Read the timetable</span>
+              <span>{content.hero.secondaryCta}</span>
               <span className="sd-ghost-rule" aria-hidden />
             </a>
           </div>
 
           <ul className="sd-hero-facts">
             <li>
-              <b>150</b>
+              <b>{Math.round(content.stats[0]?.target ?? 150).toLocaleString('en-US')}</b>
               <span>learners on one register</span>
             </li>
             <li>
@@ -97,8 +97,8 @@ export function Hero({ ready }: { ready: boolean }) {
         <motion.figure className="sd-hero-media" style={{ y: mediaY }}>
           <motion.div className="sd-hero-frame" style={{ scale: frameScale }}>
             <Image
-              src="/landing/hero-classroom.jpg"
-              alt="Four learners writing at their desks during morning lessons at a Dar es Salaam secondary school"
+              src={content.images.heroClassroom.src}
+              alt={content.images.heroClassroom.alt}
               fill
               priority
               sizes="(max-width: 980px) 94vw, 46vw"
@@ -109,8 +109,8 @@ export function Hero({ ready }: { ready: boolean }) {
           <figcaption className="sd-hero-tag">
             <span className="sd-hero-tag-time">07:40</span>
             <span className="sd-hero-tag-body">
-              <b>Form 2 · Alpha</b>
-              <i>38 learners · register closed</i>
+              <b>{content.hero.captionTitle}</b>
+              <i>{content.hero.captionNote}</i>
             </span>
             <span className="sd-hero-tag-tick" aria-hidden />
           </figcaption>

@@ -61,7 +61,7 @@ export function calculatePsleGrade(score: number): GradeResult {
 // Alias for consistency
 export const getPSLEGrade = calculatePsleGrade;
 
-// ── FTNA (Form II) Pass/Fail Node ──
+// ── FTNA (Form II) pass/fail ──
 export function calculateFtnaResult(subjects: SubjectGrade[]) {
   const failedCount = subjects.filter(s => s.score < 30).length;
   const avg = subjects.reduce((s, c) => s + c.score, 0) / subjects.length;
@@ -69,7 +69,7 @@ export function calculateFtnaResult(subjects: SubjectGrade[]) {
   return { passed, avg: Math.round(avg), remark: passed ? 'PROCEED' : 'REMEDIAL' };
 }
 
-// ── Division Classification Node (Best 7 Subjects) ──
+// ── Division classification (best 7 subjects) ──
 const COMPULSORY_CSEE = ['Mathematics', 'English', 'Civics'];
 
 export function classifyCseeDivision(subjects: SubjectGrade[]): DivisionResult {

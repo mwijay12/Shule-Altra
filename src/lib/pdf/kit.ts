@@ -7,17 +7,34 @@
  * PDF text search and re-flowed by screen readers.
  */
 
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type PDFImage, type RGB } from 'pdf-lib';
+import { DEFAULT_BRAND, getActiveBrand, hslToRgb, monogram } from '@/lib/brand/identity';
 
 export const A4: [number, number] = [595.28, 841.89];
 export const A4_LANDSCAPE: [number, number] = [841.89, 595.28];
 export const CARD: [number, number] = [242.65, 153.07]; // 85.6mm x 54mm ID-1
 
+/** Scale a token's lightness — used to deepen the primary into a letterhead band. */
+function shade(triple: string, factor: number): RGB {
+  const parts = triple.trim().split(/[\s,]+/);
+  const l = parseFloat((parts[2] ?? '0').replace('%', ''));
+  const next = Math.max(8, Math.min(96, l * factor));
+  return rgb(...hslToRgb(`${parts[0]} ${parts[1]} ${next}%`));
+}
+
 export const COLORS = {
-  // the brand: blue → violet, on a neutral printable stock.
-  navy: rgb(0.118, 0.243, 0.4),
-  primary: rgb(0.122, 0.357, 0.651),
-  accent: rgb(0.486, 0.353, 0.878),
+  // Derived from the school's palette (light mode — paper is white). These are
+  // getters, so a palette change in the Theme Studio reaches the next document
+  // without touching any of the sixteen builders.
+  get navy() {
+    return shade(getActiveBrand().primaryHsl, 0.55);
+  },
+  get primary() {
+    return rgb(...hslToRgb(getActiveBrand().primaryHsl));
+  },
+  get accent() {
+    return rgb(...hslToRgb(getActiveBrand().accentHsl));
+  },
   ink: rgb(0.09, 0.13, 0.19),
   muted: rgb(0.42, 0.47, 0.55),
   line: rgb(0.85, 0.88, 0.92),
@@ -33,12 +50,16 @@ export const CREST = {
   goldSoft: rgb(0.93, 0.85, 0.62),
 };
 
+/**
+ * Fallback identity, used by the seed scripts before a school is configured.
+ * Live documents read getActiveBrand() instead.
+ */
 export const SCHOOL = {
-  name: 'SHULE ALTRA SECONDARY SCHOOL',
-  motto: 'Elimu Bora, Maisha Bora',
-  address: 'Plot 14, Bagamoyo Road · Dar es Salaam, Tanzania',
-  contacts: 'info@shulealtra.ac.tz · +255 22 555 0142',
-  registration: 'Reg. No. S/DSM/2016/0412 · NECTA Centre 0412',
+  name: DEFAULT_BRAND.name,
+  motto: DEFAULT_BRAND.motto,
+  address: DEFAULT_BRAND.address,
+  contacts: DEFAULT_BRAND.contacts,
+  registration: DEFAULT_BRAND.registration,
 };
 
 export interface DocMeta {
@@ -60,6 +81,8 @@ export interface BuildContext {
   margin: number;
   meta: DocMeta;
   pageNumber: number;
+  /** The school's uploaded logo, embedded once at document creation. */
+  logo?: PDFImage;
 }
 
 export function sanitize(value: string): string {
@@ -125,7 +148,8 @@ export function drawCrest(
     monogram?: string;
   }
 ) {
-  const { x, y, size, tone = 'dark', opacity = 1, font, monogram = 'SA' } = options;
+  const { x, y, size, tone = 'dark', opacity = 1, font } = options;
+  const initials = options.monogram ?? monogram(getActiveBrand().name, getActiveBrand().shortName);
   const scale = size / 100;
   const shieldFill = tone === 'dark' ? COLORS.white : COLORS.navy;
   const bookFill = tone === 'dark' ? COLORS.navy : COLORS.white;
@@ -171,8 +195,8 @@ export function drawCrest(
     opacity,
   });
 
-  if (font && monogram) {
-    const label = monogram.slice(0, 3).toUpperCase();
+  if (font && initials) {
+    const label = initials.slice(0, 3).toUpperCase();
     const fontSize = Math.max(4.5, 13 * scale);
     const labelWidth = font.widthOfTextAtSize(label, fontSize);
     page.drawText(label, {
@@ -197,6 +221,50 @@ export function drawCrest(
   return { width: size, height: size * 1.15, outline };
 }
 
+/**
+ * Embed the school's logo. pdf-lib takes PNG or JPEG only, which is why the
+ * uploader rejects SVG rather than silently producing a crest-only letterhead.
+ * A missing or unreadable logo falls back to the vector crest — a document is
+ * never blocked by a broken image.
+ */
+async function embedBrandLogo(doc: PDFDocument): Promise<PDFImage | undefined> {
+  const src = getActiveBrand().logo;
+  if (!src) return undefined;
+
+  try {
+    let bytes: Uint8Array | undefined;
+    let isPng = false;
+
+    if (src.startsWith('data:')) {
+      isPng = src.startsWith('data:image/png');
+      const base64 = src.slice(src.indexOf(',') + 1);
+      const binary = typeof atob === 'function' ? atob(base64) : Buffer.from(base64, 'base64').toString('binary');
+      bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    } else if (src.startsWith('demo-media:') && typeof indexedDB !== 'undefined') {
+      const { getDemoMedia, demoMediaKey } = await import('@/lib/demo/media-store');
+      const blob = await getDemoMedia(demoMediaKey(src));
+      if (blob) {
+        isPng = blob.type.includes('png');
+        bytes = new Uint8Array(await blob.arrayBuffer());
+      }
+    } else if (/^https?:/.test(src)) {
+      const response = await fetch(src);
+      if (response.ok) {
+        isPng = (response.headers.get('content-type') ?? '').includes('png');
+        bytes = new Uint8Array(await response.arrayBuffer());
+      }
+    }
+
+    if (!bytes) return undefined;
+    // Sniff the signature rather than trusting the header.
+    isPng = bytes[0] === 0x89 && bytes[1] === 0x50;
+    return isPng ? await doc.embedPng(bytes) : await doc.embedJpg(bytes);
+  } catch (error) {
+    console.warn('[pdf] school logo could not be embedded; drawing the vector crest instead:', error);
+    return undefined;
+  }
+}
+
 export async function createDocument(
   meta: DocMeta,
   options: { size?: [number, number]; margin?: number } = {}
@@ -205,18 +273,20 @@ export async function createDocument(
   const doc = await PDFDocument.create();
   doc.setTitle(sanitize(meta.title));
   doc.setSubject(sanitize(meta.subject));
-  doc.setAuthor(SCHOOL.name);
+  doc.setAuthor(sanitize(getActiveBrand().name));
   doc.setCreator('Shule Altra Command OS');
   doc.setProducer('Shule Altra · pdf-lib vector engine');
-  doc.setKeywords(['Shule Altra', 'school', 'Tanzania', meta.reference]);
+  doc.setKeywords([sanitize(getActiveBrand().shortName), 'school', 'Tanzania', meta.reference]);
   doc.setCreationDate(new Date());
 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
   const italic = await doc.embedFont(StandardFonts.HelveticaOblique);
+  const logo = await embedBrandLogo(doc);
 
   return {
     doc,
+    logo,
     page: doc.addPage(size),
     font,
     bold,
@@ -307,47 +377,80 @@ export function line(ctx: BuildContext, x1: number, y: number, x2: number, color
 }
 
 /** Institutional letterhead + document title band. */
+/** Name and motto, without a dangling separator when the motto is unset. */
+function footerLine(brand: { name: string; motto: string }): string {
+  return brand.motto ? `${brand.name} · ${brand.motto}` : brand.name;
+}
+
 export function letterhead(ctx: BuildContext, title: string, subtitle?: string) {
   const { page, width, height, margin } = ctx;
+  const brand = getActiveBrand();
 
   page.drawRectangle({ x: 0, y: height - 112, width, height: 112, color: COLORS.navy });
   page.drawRectangle({ x: 0, y: height - 118, width: width * 0.62, height: 6, color: COLORS.primary });
   page.drawRectangle({ x: width * 0.62, y: height - 118, width: width * 0.38, height: 6, color: COLORS.accent });
 
-  // Crest: vector shield drawn on the navy band
-  drawCrest(page, { x: margin, y: height - 12, size: 42, tone: 'dark', font: ctx.bold });
+  // The school's own logo when it has one; otherwise the vector crest with the
+  // school's initials. Both sit in the same 42pt box so the text never moves.
+  if (ctx.logo) {
+    const box = 46;
+    const scale = Math.min(box / ctx.logo.width, box / ctx.logo.height);
+    const w = ctx.logo.width * scale;
+    const h = ctx.logo.height * scale;
+    page.drawImage(ctx.logo, {
+      x: margin + (box - w) / 2,
+      y: height - 16 - (box + h) / 2,
+      width: w,
+      height: h,
+    });
+  } else {
+    drawCrest(page, {
+      x: margin,
+      y: height - 12,
+      size: 42,
+      tone: 'dark',
+      font: ctx.bold,
+      monogram: monogram(brand.name, brand.shortName),
+    });
+  }
 
-  page.drawText(SCHOOL.name, {
+  page.drawText(sanitize(brand.name), {
     x: margin + 58,
     y: height - 44,
     size: 13,
     font: ctx.bold,
     color: COLORS.white,
   });
-  page.drawText(sanitize(SCHOOL.address), {
-    x: margin + 58,
-    y: height - 59,
-    size: 7.5,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.82,
-  });
-  page.drawText(sanitize(SCHOOL.contacts), {
-    x: margin + 58,
-    y: height - 70,
-    size: 7.5,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.82,
-  });
-  page.drawText(sanitize(SCHOOL.registration), {
-    x: margin + 58,
-    y: height - 81,
-    size: 6.8,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.6,
-  });
+  if (brand.address) {
+    page.drawText(sanitize(brand.address), {
+      x: margin + 58,
+      y: height - 59,
+      size: 7.5,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.82,
+    });
+  }
+  if (brand.contacts) {
+    page.drawText(sanitize(brand.contacts), {
+      x: margin + 58,
+      y: height - 70,
+      size: 7.5,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.82,
+    });
+  }
+  if (brand.registration) {
+    page.drawText(sanitize(brand.registration), {
+      x: margin + 58,
+      y: height - 81,
+      size: 6.8,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.6,
+    });
+  }
 
   page.drawText(fit(ctx.bold, title.toUpperCase(), 10, width / 2), {
     x: width - margin - width / 3.4,
@@ -570,7 +673,7 @@ export async function finalize(ctx: BuildContext, note?: string): Promise<Uint8A
       font: ctx.font,
       color: COLORS.muted,
     });
-    page.drawText(sanitize(`${SCHOOL.name} · ${SCHOOL.motto}`), {
+    page.drawText(sanitize(footerLine(getActiveBrand())), {
       x: width - ctx.margin - 190,
       y: 11,
       size: 6.2,

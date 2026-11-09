@@ -11,8 +11,9 @@
 
 import * as React from "react"
 import Link from "next/link"
-import Image from "next/image"
+import { LandingImage as Image } from "./image"
 import { mediaMatches, useLandingMotion } from "./motion"
+import { useLandingContent } from "./content-provider"
 
 type Period = {
   time: string
@@ -32,7 +33,7 @@ const PERIODS: Period[] = [
     end: "08:20",
     title: "Attendance",
     meta: "Daily register · absence streaks · boarding split",
-    stat: "88.2%",
+    stat: "90.1%",
     statLabel: "presence, all streams",
     href: "/dashboard/attendance",
     image: "/landing/teacher-portrait.jpg",
@@ -43,7 +44,7 @@ const PERIODS: Period[] = [
     end: "09:40",
     title: "Academics",
     meta: "NECTA matrices · divisions · class position",
-    stat: "2,788",
+    stat: "2,932",
     statLabel: "scores on record",
     href: "/dashboard/academics",
     image: "/landing/paper-stack.jpg",
@@ -54,7 +55,7 @@ const PERIODS: Period[] = [
     end: "11:00",
     title: "Finance",
     meta: "ClickPesa · Beem · bank · petty cash",
-    stat: "TZS 19.5M",
+    stat: "TZS 61.0M",
     statLabel: "reconciled this term",
     href: "/dashboard/finance",
     image: "/landing/hands-ledger.jpg",
@@ -86,7 +87,7 @@ const PERIODS: Period[] = [
     time: "16:05",
     end: "16:30",
     title: "Compliance",
-    meta: "PDPA 2022 · audit trail · role scopes",
+    meta: "PDPA 2022 · role scopes · records",
     stat: "4",
     statLabel: "role scopes enforced",
     href: "/dashboard/settings",
@@ -97,6 +98,20 @@ const PERIODS: Period[] = [
 
 export function Timetable({ periods = PERIODS }: { periods?: Period[] }) {
   const { on } = useLandingMotion()
+  const content = useLandingContent()
+  const imageFor = (src: string) => {
+    const slot = ({
+      "/landing/teacher-portrait.jpg": "teacherPortrait",
+      "/landing/paper-stack.jpg": "paperStack",
+      "/landing/hands-ledger.jpg": "handsLedger",
+      "/landing/school-facade.jpg": "schoolFacade",
+    } as const)[src as "/landing/teacher-portrait.jpg"]
+    return slot ? content.images[slot] : undefined
+  }
+  const rows = periods.map((period) => {
+    const image = imageFor(period.image)
+    return image ? { ...period, image: image.src, alt: image.alt } : period
+  })
   const [active, setActive] = React.useState<number | null>(null)
   const listRef = React.useRef<HTMLDivElement | null>(null)
   const previewRef = React.useRef<HTMLDivElement | null>(null)
@@ -143,7 +158,7 @@ export function Timetable({ periods = PERIODS }: { periods?: Period[] }) {
       </div>
 
       <div className="sd-table-rows" onPointerLeave={() => setActive(null)}>
-        {periods.map((period, index) => (
+        {rows.map((period, index) => (
           <Link
             key={period.time}
             href={period.href}
@@ -181,8 +196,8 @@ export function Timetable({ periods = PERIODS }: { periods?: Period[] }) {
       <div className="sd-table-preview" ref={previewRef} aria-hidden data-on={active !== null ? "true" : "false"}>
         {active !== null ? (
           <Image
-            key={periods[active].image}
-            src={periods[active].image}
+            key={rows[active].image}
+            src={rows[active].image}
             alt=""
             fill
             sizes="(max-width: 900px) 40vw, 320px"
@@ -190,7 +205,7 @@ export function Timetable({ periods = PERIODS }: { periods?: Period[] }) {
           />
         ) : null}
         <span className="sd-table-preview-tag">
-          {active !== null ? `${periods[active].time} — ${periods[active].title}` : ""}
+          {active !== null ? `${rows[active].time} — ${rows[active].title}` : ""}
         </span>
       </div>
     </div>

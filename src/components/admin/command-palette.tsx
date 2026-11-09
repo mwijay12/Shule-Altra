@@ -149,7 +149,7 @@ export function CommandPalette({ open, onOpenChange, students, canAccess }: Comm
 
             <div className="max-h-[52vh] overflow-y-auto p-2">
               {results.length === 0 && (
-                <p className="px-4 py-10 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                <p className="px-4 py-10 text-center text-[14px] font-bold text-muted-foreground">
                   No modules or learners match “{query}”
                 </p>
               )}
@@ -182,10 +182,10 @@ export function CommandPalette({ open, onOpenChange, students, canAccess }: Comm
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[12px] font-black uppercase tracking-tight text-foreground">
+                    <span className="block truncate text-[15px] font-semibold tracking-tight text-foreground">
                       {result.label}
                     </span>
-                    <span className="block truncate text-[10px] font-medium text-muted-foreground">
+                    <span className="block truncate text-[13px] font-medium text-muted-foreground">
                       {result.hint}
                     </span>
                   </span>
@@ -194,7 +194,7 @@ export function CommandPalette({ open, onOpenChange, students, canAccess }: Comm
               ))}
             </div>
 
-            <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <div className="flex items-center justify-between border-t border-border/60 bg-muted/20 px-4 py-2 text-[11px] font-semibold text-muted-foreground">
               <span>↑↓ navigate · ↵ open · esc dismiss</span>
               <span>{results.length} results</span>
             </div>

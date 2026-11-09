@@ -115,9 +115,9 @@ export async function generateInstitutionalControlNumber(
   // 1. Check for student existence
   const studentSnap = await getDocs(query(collection(db, 'schools', request.schoolId, 'students'), where('id', '==', request.studentId), limit(1)));
   
-  if (studentSnap.empty) throw new Error("Student Node not identified in registry.");
+  if (studentSnap.empty) throw new Error("Student not found in the register.");
 
-  // 2. ClickPesa API Integration Node
+  // 2. ClickPesa API integration
   const billReference = generateControlNumber();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + request.expiresInDays);
@@ -131,7 +131,7 @@ export async function generateInstitutionalControlNumber(
     paymentInstructions: `Lipa TZS ${request.amount.toLocaleString()} kwenda Control No: ${billReference} kupitia M-Pesa au Benki.`
   };
 
-  // 3. Record Pending Transaction in Sovereign Ledger
+  // 3. Record the pending transaction in the ledger
   const transactionId = doc(collection(db, 'schools', request.schoolId, 'transactions')).id;
   const transactionRef = doc(db, 'schools', request.schoolId, 'transactions', transactionId);
 
@@ -148,7 +148,7 @@ export async function generateInstitutionalControlNumber(
       reconciled: false,
       createdAt: serverTimestamp(),
       expiresAt: Timestamp.fromDate(expiresAt),
-      recordedBy: 'Institutional Gateway',
+      recordedBy: 'ClickPesa',
       currency: 'TZS',
       metadata: {
         payerPhone: request.payerPhone,
@@ -184,7 +184,7 @@ export async function processPaymentTransaction(
 
   return runTransaction(db, async (transaction) => {
     const studentDoc = await transaction.get(studentRef);
-    if (!studentDoc.exists()) throw new Error("Student Node not found");
+    if (!studentDoc.exists()) throw new Error("Student not found");
 
     const studentData = studentDoc.data();
     const currentPaid = studentData.totalPaid || 0;

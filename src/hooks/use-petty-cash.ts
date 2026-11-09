@@ -44,7 +44,7 @@ export function usePettyCash(schoolId: string = 'school-001') {
   const addExpense = (input: any) => {
     const data = ExpenseSchema.parse(input);
     
-    // Approval Logic Node
+    // Approval logic
     let status = 'Pending';
     if (data.amount < 50000) status = 'Approved';
 

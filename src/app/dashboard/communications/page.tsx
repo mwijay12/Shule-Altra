@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { AnimatedNumber } from "@/components/ui/animated-number";
 import { useToast } from "@/hooks/use-toast";
 
 type Template = {
@@ -187,14 +188,14 @@ export default function CommunicationsPage() {
     <div className="space-y-8 pb-16 font-body">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.28em] text-muted-foreground">
+          <div className="flex items-center gap-2 text-[12px] font-semibold text-muted-foreground">
             <MailCheck className="h-3.5 w-3.5 text-primary" />
             Institutional communications · {caps?.school ?? "school register"}
           </div>
-          <h1 className="font-headline text-3xl font-black uppercase tracking-tight text-foreground sm:text-4xl">
+          <h1 className="font-headline text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
             Mail room
           </h1>
-          <p className="max-w-2xl text-[11px] font-medium leading-relaxed text-muted-foreground">
+          <p className="max-w-2xl text-[14px] font-medium leading-relaxed text-muted-foreground">
             Branded email to guardians and staff, rendered from the school’s own register. Recipients
             are resolved on the server, so what you send is exactly who the record says.
           </p>
@@ -203,7 +204,7 @@ export default function CommunicationsPage() {
         {caps?.testMode?.enabled ? (
           <Badge
             variant="outline"
-            className="h-7 rounded-full border-sky-500/30 bg-sky-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-sky-700"
+            className="h-7 rounded-full border-sky-500/30 bg-sky-500/10 px-3 text-[11px] font-semibold text-sky-700"
             title={caps.testMode.recipients.join(", ")}
           >
             Test mode · {caps.testMode.recipients.length} inbox{caps.testMode.recipients.length === 1 ? "" : "es"}
@@ -213,8 +214,8 @@ export default function CommunicationsPage() {
           variant="outline"
           className={
             caps && caps.provider !== "dry-run"
-              ? "h-7 rounded-full border-emerald-500/30 bg-emerald-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-emerald-600"
-              : "h-7 rounded-full border-amber-500/30 bg-amber-500/10 px-3 text-[8px] font-black uppercase tracking-widest text-amber-600"
+              ? "h-7 rounded-full border-emerald-500/30 bg-emerald-500/10 px-3 text-[11px] font-black uppercase tracking-widest text-emerald-600"
+              : "h-7 rounded-full border-amber-500/30 bg-amber-500/10 px-3 text-[11px] font-black uppercase tracking-widest text-amber-600"
           }
         >
           {caps?.provider === "smtp"
@@ -237,14 +238,14 @@ export default function CommunicationsPage() {
               )}
             </span>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.2em] text-foreground">
+              <p className="text-[12px] font-semibold text-foreground">
                 Sending as {caps?.from ?? "—"}
               </p>
-              <p className="mt-1 max-w-xl text-[10px] font-medium leading-relaxed text-muted-foreground">
+              <p className="mt-1 max-w-xl text-[13px] font-medium leading-relaxed text-muted-foreground">
                 {caps?.note ?? "Checking the provider…"}
               </p>
               {caps ? (
-                <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[8px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-semibold text-muted-foreground">
                   <span>Max {caps.limits.maxPerSend} per click</span>
                   {caps.limits.dailyRemaining !== undefined ? (
                     <span>
@@ -262,7 +263,7 @@ export default function CommunicationsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 rounded-full px-3 text-[8px] font-black uppercase tracking-[0.18em]"
+                className="h-8 rounded-full px-3 text-[11px] font-semibold"
                 onClick={() => void probe()}
                 disabled={probing}
               >
@@ -270,7 +271,7 @@ export default function CommunicationsPage() {
                 Test mailbox
               </Button>
             ) : null}
-            <p className="text-[8px] font-black uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="text-[11px] font-semibold text-muted-foreground">
               Signed in as {caps?.roleLabel ?? "guest"}
             </p>
           </div>
@@ -278,7 +279,7 @@ export default function CommunicationsPage() {
       </Card>
 
       {loading ? (
-        <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[13px] font-semibold text-muted-foreground">
           <Loader2 className="h-3.5 w-3.5 animate-spin" /> Reading the register…
         </div>
       ) : (
@@ -291,30 +292,30 @@ export default function CommunicationsPage() {
               <CardContent className="space-y-4 p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <h2 className="text-[12px] font-black uppercase tracking-widest text-foreground">
+                    <h2 className="text-[15px] font-semibold text-foreground">
                       {template.title}
                     </h2>
-                    <p className="mt-1 text-[10px] font-medium leading-relaxed text-muted-foreground">
+                    <p className="mt-1 text-[13px] font-medium leading-relaxed text-muted-foreground">
                       {AUDIENCE_LABEL[template.audience] ?? template.audience} ·{" "}
-                      <span className="text-foreground">{template.audienceSize}</span> recipients
+                      <AnimatedNumber value={template.audienceSize} className="text-foreground" /> recipients
                       {template.sendable < template.audienceSize ? (
-                        <span className="text-amber-600"> · {template.sendable} per click</span>
+                        <span className="text-amber-600"> · <AnimatedNumber value={template.sendable} /> per click</span>
                       ) : null}
                     </p>
-                    <p className="mt-1 font-mono text-[9px] text-muted-foreground/80">
+                    <p className="mt-1 font-mono text-[12px] text-muted-foreground/80">
                       {template.sample ?? "no addresses on file"}
                     </p>
                   </div>
                   <Badge
                     variant="outline"
-                    className="shrink-0 rounded-full border-border/70 text-[7px] font-black uppercase tracking-[0.14em]"
+                    className="shrink-0 rounded-full border-border/70 text-[10px] font-semibold"
                   >
                     {template.allowed ? "Permitted" : "Restricted"}
                   </Badge>
                 </div>
 
                 {!template.allowed && (
-                  <p className="flex items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[9px] font-medium leading-relaxed text-muted-foreground">
+                  <p className="flex items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-[12px] font-medium leading-relaxed text-muted-foreground">
                     <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-primary" />
                     {template.reason} — {template.roles.join(", ")} only.
                   </p>
@@ -326,7 +327,7 @@ export default function CommunicationsPage() {
                     variant="outline"
                     disabled={!template.allowed || busy !== null}
                     onClick={() => run(template, "preview")}
-                    className="h-8 rounded-full text-[8px] font-black uppercase tracking-widest"
+                    className="h-8 rounded-full text-[11px] font-semibold"
                   >
                     {busy === `${template.id}:preview` ? (
                       <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -339,7 +340,7 @@ export default function CommunicationsPage() {
                     size="sm"
                     disabled={!template.allowed || busy !== null || template.audienceSize === 0}
                     onClick={() => run(template, "send")}
-                    className="h-8 rounded-full colorful-gradient text-[8px] font-black uppercase tracking-widest text-white"
+                    className="h-8 rounded-full colorful-gradient text-[11px] font-semibold text-white"
                   >
                     {busy === `${template.id}:send` ? (
                       <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
@@ -357,7 +358,7 @@ export default function CommunicationsPage() {
 
       {sent.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-[9px] font-black uppercase tracking-[0.24em] text-muted-foreground">
+          <h2 className="text-[12px] font-semibold text-muted-foreground">
             This session
           </h2>
           <div className="space-y-2">
@@ -367,24 +368,24 @@ export default function CommunicationsPage() {
                 className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3"
               >
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-foreground">
+                  <p className="text-[13px] font-semibold text-foreground">
                     {record.title}
                   </p>
-                  <p className="mt-0.5 text-[9px] font-medium text-muted-foreground">
+                  <p className="mt-0.5 text-[12px] font-medium text-muted-foreground">
                     {AUDIENCE_LABEL[record.audience] ?? record.audience} · {record.attempted} recipients
                     {record.failed > 0 ? ` · ${record.failed} failed` : ""}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-[9px] text-muted-foreground">
+                  <span className="font-mono text-[12px] text-muted-foreground">
                     {record.provider} · {record.auditId.slice(0, 8)}
                   </span>
                   <Badge
                     variant="outline"
                     className={
                       record.provider === "dry-run"
-                        ? "rounded-full border-amber-500/30 bg-amber-500/10 text-[7px] font-black uppercase tracking-widest text-amber-600"
-                        : "rounded-full border-emerald-500/30 bg-emerald-500/10 text-[7px] font-black uppercase tracking-widest text-emerald-600"
+                        ? "rounded-full border-amber-500/30 bg-amber-500/10 text-[10px] font-black uppercase tracking-widest text-amber-600"
+                        : "rounded-full border-emerald-500/30 bg-emerald-500/10 text-[10px] font-black uppercase tracking-widest text-emerald-600"
                     }
                   >
                     {record.provider === "dry-run" ? "Rendered" : `${record.delivered} sent`}
@@ -409,10 +410,10 @@ export default function CommunicationsPage() {
           >
             <div className="flex items-start justify-between gap-4 border-b border-border/60 px-5 py-4">
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground">
+                <p className="text-[12px] font-semibold text-muted-foreground">
                   Preview · {preview.recipients} recipients · to {preview.to}
                 </p>
-                <p className="mt-1 text-[11px] font-black uppercase tracking-widest text-foreground">
+                <p className="mt-1 text-[14px] font-semibold text-foreground">
                   {preview.subject}
                 </p>
               </div>

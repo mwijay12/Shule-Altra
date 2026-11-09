@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { InstitutionalLoader } from "@/components/ui/institutional-loader"
 import { AuroraShell } from "@/components/admin/shell"
 import { useAuth } from "@/hooks/use-auth"
+import { DEMO_MODE } from "@/lib/demo/config"
 
 export default function DashboardLayout({
   children,
@@ -32,14 +33,22 @@ export default function DashboardLayout({
   // answered without trusting the UI. Cleared again on sign-out.
   useEffect(() => {
     if (!role || loading) return
-    fetch("/api/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ role }),
-    }).catch(() => {
+    let cancelled = false
+    void (async () => {
+      // Against a real project the server verifies this token and reads the
+      // staff record itself. The posted role is only used by the offline demo.
+      const idToken = !DEMO_MODE && user ? await user.getIdToken().catch(() => null) : null
+      if (cancelled) return
+      await fetch("/api/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(DEMO_MODE ? { role } : { idToken }),
+      })
+    })().catch(() => {
       /* the gate simply stays closed — no document is exposed by failing open */
     })
-  }, [role, loading])
+    return () => { cancelled = true }
+  }, [role, loading, user])
 
   useEffect(() => {
     if (!loading && !user) {
@@ -69,9 +78,9 @@ export default function DashboardLayout({
     return (
       <div className="flex h-screen items-center justify-center p-8 text-center font-body">
         <div className="space-y-4">
-          <Badge variant="destructive" className="px-4 py-1 rounded-full uppercase font-black tracking-widest">Access Node Denied</Badge>
-          <p className="text-muted-foreground text-sm uppercase font-bold">{error}</p>
-          <Button onClick={() => router.push("/login")} className="rounded-full colorful-gradient font-black text-[10px] uppercase px-8">Retry Entry</Button>
+          <Badge variant="destructive" className="px-4 py-1 rounded-full font-semibold">Access denied</Badge>
+          <p className="text-muted-foreground text-sm font-bold">{error}</p>
+          <Button onClick={() => router.push("/login")} className="rounded-full colorful-gradient font-semibold text-[13px] px-8">Retry Entry</Button>
         </div>
       </div>
     )

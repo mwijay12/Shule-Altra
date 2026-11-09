@@ -92,9 +92,9 @@ export function InstitutionalLoader({ onComplete }: { onComplete?: () => void })
       {/* the same light the landing page opens with */}
       <div className="inst-boot-glow" aria-hidden />
 
-      <div className="flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.34em] text-white/55">
+      <div className="flex items-center justify-between font-mono text-[13px] uppercase tracking-[0.16em] text-white/55">
         <span>Shule Altra</span>
-        <span>Institutional OS · 2026</span>
+        <span>School management · 2026</span>
       </div>
 
       <div className="relative flex flex-1 flex-col items-center justify-center gap-8">
@@ -105,7 +105,7 @@ export function InstitutionalLoader({ onComplete }: { onComplete?: () => void })
         />
         <div className="flex flex-col items-center gap-3">
           <Wordmark size={30} className="text-white" onDark />
-          <p className="font-mono text-[9px] uppercase tracking-[0.42em] text-white/45">
+          <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-white/45">
             Dar es Salaam · school-001
           </p>
         </div>
@@ -118,7 +118,7 @@ export function InstitutionalLoader({ onComplete }: { onComplete?: () => void })
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className="flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.3em] text-white/55">
+        <div className="flex items-baseline justify-between font-mono text-[13px] uppercase tracking-[0.16em] text-white/55">
           <span>{stageFor(progress)}</span>
           <span className="tabular-nums text-white/80">{progress}%</span>
         </div>
