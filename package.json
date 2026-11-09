@@ -35,7 +35,8 @@
     "demo:smoke:auth": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/auth.tsx",
     "demo:smoke:trust": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/trust.tsx",
     "demo:smoke:audit": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/audit.tsx",
-    "demo:smoke:landingtheme": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/landing-theme.ts"
+    "demo:smoke:landingtheme": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/landing-theme.ts",
+    "demo:smoke:perf": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/perf.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

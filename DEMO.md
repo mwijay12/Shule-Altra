@@ -590,3 +590,63 @@ and asserts all four palettes produce four distinct landing colours.
 Note for screenshots: do **not** use Playwright's `animations: 'disabled'` on the
 landing page. The headline reveals through a clip mask, and fast-forwarding
 rewinds the mask so the title photographs as blank.
+
+---
+
+## Why the animations looked missing (and now don't)
+
+Three rounds of "add more animation" did not help, because nothing was missing.
+**The dashboard was rendering at 2–3 frames per second.** Every counter, ring and
+chart was animating — in three frames, which reads as a jump, not motion.
+
+Measured in Chromium by counting `requestAnimationFrame` callbacks, disabling one
+suspect at a time:
+
+| state | fps |
+|---|---|
+| blank page in the same sandbox | 60 |
+| dashboard as shipped | **2–3** |
+| − `backdrop-filter` on every panel | 9 |
+| − `blur(14px)` on the orb's fallback layer | 15 |
+| − the WebGL orb canvas | **59** |
+| after all fixes below | **60** |
+
+### What was costing the frames
+
+- **`backdrop-filter: blur(18px)` on `.glass-panel`.** A dozen per screen, each
+  re-blurring its backdrop on every composited frame. On an opaque page the
+  effect was not even visible — the gradient already reads as glass.
+- **The WebGL orb**, rendering every frame at 2× pixel ratio with MSAA, forever,
+  even scrolled off screen or in a hidden tab. On a software rasteriser (remote
+  desktops, low-end laptops, headless browsers) that alone cost ~45 fps.
+- **A fallback layer with `filter: blur(14px)` that never left the DOM** — it sat
+  at `opacity: 0` once the canvas was ready, still composited every frame.
+- **`backdrop-blur-xl` on the sidebar and topbar.** Nothing scrolls behind a flex
+  sibling, so the sidebar's blur bought nothing at all.
+
+### What changed
+
+- `.glass-panel` / `.glass-panel-strong`: gradient only, no backdrop filter.
+- Sidebar opaque; topbar reduced to a cheap 6px blur.
+- Orb: 30 fps cap (it rotates at 0.28 rad/s — 60 fps bought nothing), 1.25× pixel
+  ratio, no MSAA, pauses when off screen or the tab is hidden, and **declines to
+  initialise at all on a software rasteriser**, falling back to a compositor-only
+  CSS orb that spins and breathes.
+- The blur fallback now unmounts instead of lingering.
+- With headroom restored, the draws were lengthened so they read as motion:
+  charts 1.15s with 190ms between series, bars 90ms apart, counters 1.15s.
+- Chart panels lift on hover — transform and shadow only, never a filter.
+
+### Verified by filming, not by reading attributes
+
+`.preview/motion-truth.mjs` samples computed styles every frame while clicking
+through the real sidebar. Finance went from **11 frames in 4 seconds** to **108**,
+with the revenue figure passing through 28 distinct values
+(`TZS 0 → 2.42M → 3.39M → 3.76M`) and panels through 43 distinct transforms.
+`.preview/chart-truth.mjs` films bar widths and donut `stroke-dashoffset` across
+five pages — every one now animates. `.preview/filmstrip.mjs` captures real frames
+mid-animation so the motion can be looked at.
+
+`npm run demo:smoke:perf` guards the frame budget in CI, so the next
+`backdrop-blur` on a shared surface fails the build. **The old motion suite
+reported PASSED at 2–3 fps** — attributes existing is not motion being visible.

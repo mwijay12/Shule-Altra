@@ -49,14 +49,39 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
 
     (async () => {
       try {
+        // A software rasteriser (SwiftShader, llvmpipe, Remote Desktop, many
+        // low-end Android GPUs) cannot afford a per-frame WebGL draw. Measured
+        // here: the orb alone took the command deck from 60 fps to 4, which made
+        // every counter, ring and chart on the page look like a slideshow. On
+        // those machines keep the CSS orb below, which the compositor animates
+        // for free.
+        try {
+          const probe = document.createElement('canvas');
+          const gl = (probe.getContext('webgl') || probe.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+          if (!gl) return;
+          const info = gl.getExtension('WEBGL_debug_renderer_info');
+          const name = info ? String(gl.getParameter(info.UNMASKED_RENDERER_WEBGL)) : '';
+          gl.getExtension('WEBGL_lose_context')?.loseContext();
+          if (/swiftshader|llvmpipe|software|basic render|mesa offscreen/i.test(name)) return;
+        } catch {
+          return;
+        }
+
         const THREE = await import('three');
         if (disposed || !mountRef.current) return;
 
         const width = mount.clientWidth || 320;
         const height = mount.clientHeight || 320;
 
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        // This is a decorative wireframe, not a product viewer. DPR 2 with MSAA
+        // rendered four times the pixels and starved every other animation on
+        // the page: the dashboard measured 2-3 fps against a 60 fps baseline.
+        const renderer = new THREE.WebGLRenderer({
+          alpha: true,
+          antialias: false,
+          powerPreference: 'low-power',
+        });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
         renderer.setSize(width, height);
         renderer.domElement.style.width = '100%';
         renderer.domElement.style.height = '100%';
@@ -143,8 +168,21 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
 
         const clock = new THREE.Clock();
         let frame = 0;
+        // Pause when the orb is off screen or the tab is hidden. Previously it
+        // span at full rate forever, wherever the reader was on the page.
+        let onScreen = true;
+        let lastDraw = 0;
+        // 30 fps is indistinguishable from 60 for a 0.28 rad/s rotation, and
+        // leaves the main thread free for the charts and counters.
+        const FRAME_MS = 1000 / 30;
         const render = () => {
           if (!reduceMotion) frame = requestAnimationFrame(render);
+          if (!reduceMotion) {
+            if (!onScreen || document.hidden) return;
+            const now = performance.now();
+            if (now - lastDraw < FRAME_MS) return;
+            lastDraw = now;
+          }
           const elapsed = reduceMotion ? 0 : clock.getElapsedTime();
 
           target.x += (pointer.x - target.x) * 0.045;
@@ -177,9 +215,15 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
         const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
         observer?.observe(mount);
 
+        const visibility = typeof IntersectionObserver !== 'undefined'
+          ? new IntersectionObserver((entries) => { onScreen = entries.some((e) => e.isIntersecting); }, { threshold: 0 })
+          : null;
+        visibility?.observe(mount);
+
         cleanup = () => {
           cancelAnimationFrame(frame);
           observer?.disconnect();
+          visibility?.disconnect();
           window.removeEventListener('pointermove', onPointerMove);
           haloGeometry.dispose();
           (halo.material as import('three').Material).dispose();
@@ -213,18 +257,32 @@ export function ThreeOrb({ className, hue, interactive = true }: ThreeOrbProps) 
             : `radial-gradient(circle at 32% 30%, hsl(${baseHue} 80% 52% / 0.16), hsl(${baseHue + 30} 75% 55% / 0.07) 55%, transparent 74%)`,
         }}
       />
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 rounded-full transition-opacity duration-700',
-          ready ? 'opacity-0' : 'opacity-100'
-        )}
-        style={{
-          background: isDark
-            ? `radial-gradient(circle at 30% 30%, hsl(${baseHue} 90% 70% / 0.75), hsl(${baseHue + 50} 85% 60% / 0.35) 45%, transparent 70%)`
-            : `radial-gradient(circle at 30% 30%, hsl(${baseHue} 78% 45% / 0.42), hsl(${baseHue + 40} 70% 48% / 0.18) 45%, transparent 70%)`,
-          filter: 'blur(14px)',
-        }}
-      />
+      {/* Only while WebGL is starting. This used to linger at opacity 0 with a
+          blur(14px) filter, so the compositor kept paying for a blurred 330px
+          layer on every frame even though nothing was visible. The gradient is
+          already soft, so it needs no filter at all. */}
+      {!ready && (
+        <>
+          <div
+            className={cn('pointer-events-none absolute inset-[6%] rounded-full', !reduceMotion && 'sd-orb-spin')}
+            style={{
+              background: isDark
+                ? `conic-gradient(from 0deg, hsl(${baseHue} 90% 66% / 0.55), hsl(${baseHue + 50} 85% 60% / 0.22) 35%, hsl(${baseHue} 90% 70% / 0.5) 70%, hsl(${baseHue + 30} 80% 62% / 0.2) 100%)`
+                : `conic-gradient(from 0deg, hsl(${baseHue} 78% 42% / 0.34), hsl(${baseHue + 40} 70% 48% / 0.12) 35%, hsl(${baseHue} 78% 40% / 0.32) 70%, hsl(${baseHue + 30} 72% 46% / 0.1) 100%)`,
+              maskImage: 'radial-gradient(circle, transparent 38%, black 52%, black 72%, transparent 82%)',
+              WebkitMaskImage: 'radial-gradient(circle, transparent 38%, black 52%, black 72%, transparent 82%)',
+            }}
+          />
+          <div
+            className={cn('pointer-events-none absolute inset-[24%] rounded-full', !reduceMotion && 'sd-orb-breathe')}
+            style={{
+              background: isDark
+                ? `radial-gradient(circle at 34% 30%, hsl(${baseHue + 40} 92% 74% / 0.6), transparent 70%)`
+                : `radial-gradient(circle at 34% 30%, hsl(${baseHue + 24} 80% 40% / 0.34), transparent 70%)`,
+            }}
+          />
+        </>
+      )}
     </div>
   );
 }
