@@ -119,7 +119,7 @@ async function main() {
       `${prefix}/config/identity`,
       {
         name: 'MWALIMU NYERERE SECONDARY SCHOOL',
-        systemName: 'Mwalimu Nyerere',
+        shortName: 'Mwalimu Nyerere',
         motto: 'Elimu Bora, Maisha Bora',
         address: 'Plot 45, Ali Hassan Mwinyi Road',
         district: 'Kinondoni',

@@ -193,6 +193,50 @@ Then in the browser:
 
 ---
 
+## Server-side gates you must know about
+
+Two server endpoints decide things the browser must not be allowed to decide.
+Both were tightened during the audit; both now **fail closed**.
+
+### `/api/session` — the document gate
+
+Report cards, the defaulters register and the fee ledger are served through
+`/api/documents/*`, which reads an httpOnly role cookie. That cookie is only
+worth anything if the server chose its value.
+
+- **Offline demo:** accepts the role posted by the login screen (no real data).
+- **Real project:** the browser posts a Firebase **ID token**. The server verifies
+  it against `identitytoolkit`, then reads `schools/school-001/staff/<uid>` **with
+  the caller's own token**, so Firestore rules apply to that lookup too. Any
+  failure clears the cookie and returns 401/403/503.
+
+No service-account key is needed for this — it is plain REST against your web
+config. Before this change, `POST {"role":"ADMIN"}` with no session at all
+returned the defaulters register.
+
+The cookie lasts 12 hours, so a revoked role can linger that long on an already
+open browser. Shorten `SESSION_MAX_AGE` in `src/lib/session.ts` if that matters
+to you.
+
+### `/api/webhooks/clickpesa` — money
+
+Set **`CLICKPESA_WEBHOOK_SECRET`** in the deployment environment. Deliveries are
+accepted only when `x-clickpesa-signature` is a valid HMAC-SHA256 of the raw body
+using that secret (bare hex or `sha256=…`). With no secret set the endpoint
+returns 503 and accepts nothing.
+
+Replays and concurrent duplicates are acknowledged without crediting: the
+pending row is re-read inside the Firestore transaction and an already-applied
+`transaction_id` is ignored.
+
+**Still required before go-live:** this handler uses the web SDK's Firestore
+instance. Against a live project it needs a server credential whose writes the
+rules accept (an Admin SDK path or a custom claim). It has not been exercised
+against a real ClickPesa account — treat it as verified for integrity, not as a
+certified integration.
+
+---
+
 ## Cost and safety notes
 
 - 4,200 documents is well inside the free tier. The grades collection (2,932) is

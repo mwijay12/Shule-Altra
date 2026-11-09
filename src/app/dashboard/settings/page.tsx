@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useDoc, useMemoFirebase } from "@/firebase"
-import { doc } from "firebase/firestore"
+import { doc, setDoc } from "firebase/firestore"
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates"
 import { useIntegrations } from "@/hooks/use-integrations"
 import { useAuth } from "@/hooks/use-auth"
@@ -64,6 +64,9 @@ export default function SettingsPage() {
 
   const identityRef = useMemoFirebase(() => doc(db, "schools", schoolId || "school-001", "config", "identity"), [db, schoolId])
   const { data: identity, isLoading } = useDoc(identityRef)
+  const [booted, setBooted] = useState(false)
+  const [savingIdentity, setSavingIdentity] = useState(false)
+  useEffect(() => setBooted(true), [])
 
   const [isSeeding, setIsSeeding] = useState(false)
   const [seedProgress, setSeedProgress] = useState(0)
@@ -111,12 +114,28 @@ export default function SettingsPage() {
     }
   }, [config])
 
-  const handleSaveIdentity = () => {
+  const handleSaveIdentity = async () => {
+    // useDoc starts with isLoading=false before its effect runs, so the form can
+    // render once with empty state. Refuse to write until the snapshot has had a
+    // chance to arrive, or we would merge blanks over the school's real details.
+    if (!booted || isLoading) {
+      toast({ title: "Still loading", description: "Give the current details a moment to load, then save." })
+      return
+    }
+    setSavingIdentity(true)
     try {
-      setDocumentNonBlocking(identityRef, formState, { merge: true })
+      // Awaited: the previous fire-and-forget call reported success even when
+      // the write was rejected by the security rules.
+      await setDoc(identityRef, formState, { merge: true })
       toast({ title: "School identity saved", description: "These details appear on reports and letterheads." })
     } catch (e) {
-      toast({ variant: "destructive", title: "Update Failed", description: "Could not save identity." })
+      toast({
+        variant: "destructive",
+        title: "Could not save identity",
+        description: e instanceof Error ? e.message : "Check your permissions and try again.",
+      })
+    } finally {
+      setSavingIdentity(false)
     }
   }
 
@@ -155,7 +174,7 @@ export default function SettingsPage() {
     }
   }
 
-  if (isLoading || integrationsLoading) {
+  if (!booted || isLoading || integrationsLoading) {
     return (
       <div className="p-20 text-center flex flex-col items-center gap-4">
         <Loader2 className="animate-spin h-10 w-10 text-primary" />
@@ -194,7 +213,7 @@ export default function SettingsPage() {
                   <CardTitle className="text-base font-semibold">Legal Profile</CardTitle>
                   <CardDescription className="text-[13px] font-bold">Institutional metadata for national assessments</CardDescription>
                 </div>
-                <Button onClick={handleSaveIdentity} className="rounded-full colorful-gradient h-10 px-6 text-[12px] font-semibold shadow-lg">Sync Identity</Button>
+                <Button onClick={handleSaveIdentity} disabled={savingIdentity} className="rounded-full colorful-gradient h-10 px-6 text-[12px] font-semibold shadow-lg">{savingIdentity ? "Saving…" : "Save identity"}</Button>
               </div>
             </CardHeader>
             <CardContent className="p-8 space-y-8">

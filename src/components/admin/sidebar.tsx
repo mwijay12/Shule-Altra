@@ -11,7 +11,7 @@
 
 import * as React from 'react';
 import { SchoolLogo } from '@/components/brand/school-logo';
-import { useSchoolBrand } from '@/hooks/use-school-brand';
+import { useSchoolBrand } from '@/components/admin/brand-provider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -135,7 +135,7 @@ function SidebarBody({
 }: Omit<AuroraSidebarProps, 'mobileOpen'> & { isMobile: boolean }) {
   const scope = React.useRef<HTMLDivElement | null>(null);
   useQuietEntrance(scope);
-  const { brand } = useSchoolBrand();
+  const { brand, ready } = useSchoolBrand();
 
   return (
     <div ref={scope} className="flex h-full min-h-0 flex-col">
@@ -147,10 +147,10 @@ function SidebarBody({
           </span>
           <span className="flex min-w-0 flex-col leading-none">
             <span className="truncate font-headline text-[16px] font-bold tracking-tight text-foreground">
-              {brand.shortName}
+              {ready ? brand.shortName : <span className="inline-block h-4 w-28 animate-pulse rounded bg-muted" />}
             </span>
             <span className="mt-1 truncate text-[12px] font-medium text-muted-foreground">
-              {brand.motto}
+              {ready ? brand.motto : <span className="inline-block h-3 w-20 animate-pulse rounded bg-muted/70" />}
             </span>
           </span>
         </Link>

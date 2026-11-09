@@ -445,7 +445,7 @@ export default function ReportsPage() {
         )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1">
-          <span className="text-[11px] font-semibold text-muted-foreground">Sample output:</span>
+          <span className="text-[11px] font-semibold text-muted-foreground">Reference samples (pre-generated):</span>
           {[
             { file: "fee-statement.pdf", label: "Fee statement" },
             { file: "report-card.pdf", label: "Report card" },

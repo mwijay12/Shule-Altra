@@ -17,7 +17,7 @@ import { RangeProvider } from '@/components/admin/range-context';
 import { ALL_NAV_ITEMS } from '@/components/admin/nav-config';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { cn } from '@/lib/utils';
-import { useSchoolBrand } from '@/hooks/use-school-brand';
+import { SchoolBrandProvider, useSchoolBrand } from '@/components/admin/brand-provider';
 
 interface AuroraShellProps {
   children: React.ReactNode;
@@ -32,7 +32,15 @@ function prettifyModule(segment?: string) {
   return match?.title ?? segment.replace(/-/g, ' ');
 }
 
-export function AuroraShell({ children, role, canAccess, signOut }: AuroraShellProps) {
+export function AuroraShell(props: AuroraShellProps) {
+  return (
+    <SchoolBrandProvider>
+      <ShellContent {...props} />
+    </SchoolBrandProvider>
+  );
+}
+
+function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) {
   const pathname = usePathname();
   const db = useFirestore();
   const [mobileOpen, setMobileOpen] = React.useState(false);

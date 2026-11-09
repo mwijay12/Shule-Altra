@@ -69,6 +69,31 @@ export function hslToRgb(triple: string): [number, number, number] {
   return [channel(h + 1 / 3), channel(h), channel(h - 1 / 3)];
 }
 
+/**
+ * A readable short name for the sidebar, derived from the printed name.
+ *
+ * `identity.systemName` is deliberately NOT used here: that field holds the
+ * product name ("Shule Altra"), so using it labelled every school's sidebar and
+ * crest with our brand instead of theirs.
+ */
+export function deriveShortName(name: string): string {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return DEFAULT_BRAND.shortName;
+  const stripped = trimmed
+    .replace(/\b(SECONDARY|HIGH|PRIMARY|MIDDLE)\s+SCHOOL\b/gi, '')
+    .replace(/\bSCHOOL\b/gi, '')
+    .replace(/[\s·,]+$/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  const base = stripped || trimmed;
+  // Names are stored shouted for the letterhead; the sidebar should not shout.
+  // Capitalise after a space or hyphen only — an apostrophe is inside a word,
+  // so "MARY'S" must become "Mary's", not "Mary'S".
+  return base === base.toUpperCase()
+    ? base.toLowerCase().replace(/(^|[\s-])([a-z])/g, (_, sep, char) => sep + char.toUpperCase())
+    : base;
+}
+
 /** Initials for the crest monogram when no logo has been uploaded. */
 export function monogram(name: string, shortName?: string): string {
   const source = (shortName || name || '').trim();
@@ -84,8 +109,14 @@ type BrandingDoc = Record<string, any> | null | undefined;
 export function resolveBrand(identity: IdentityDoc, branding: BrandingDoc): SchoolBrand {
   const paletteId = (branding?.paletteId as PaletteId) ?? DEFAULT_PALETTE;
   const palette = resolvePalette(paletteId);
-  const name = (identity?.name as string) || DEFAULT_BRAND.name;
-  const shortName = (identity?.systemName as string) || (identity?.shortName as string) || DEFAULT_BRAND.shortName;
+
+  // A school that has been named is a real school. From that point on we print
+  // only what it actually told us — never Shule Altra's sample address, phone or
+  // registration number. Inventing a NECTA centre number on a school's letterhead
+  // is worse than leaving the line blank.
+  const configured = typeof identity?.name === 'string' && identity.name.trim().length > 0;
+  const name = configured ? (identity!.name as string) : DEFAULT_BRAND.name;
+  const shortName = (identity?.shortName as string) || deriveShortName(name);
 
   const contacts = [identity?.contactEmail, identity?.contactPhone].filter(Boolean).join(' · ');
   // Schools often type the district into the street address already. Drop any
@@ -105,13 +136,14 @@ export function resolveBrand(identity: IdentityDoc, branding: BrandingDoc): Scho
     .filter(Boolean)
     .join(' · ');
 
+  const sample = configured ? '' : null;
   return {
     name,
     shortName,
-    motto: (identity?.motto as string) || DEFAULT_BRAND.motto,
-    address: addressParts.length ? addressParts.join(' · ') : DEFAULT_BRAND.address,
-    contacts: contacts || DEFAULT_BRAND.contacts,
-    registration: registration || DEFAULT_BRAND.registration,
+    motto: (identity?.motto as string) || (configured ? '' : DEFAULT_BRAND.motto),
+    address: addressParts.length ? addressParts.join(' · ') : (sample ?? DEFAULT_BRAND.address),
+    contacts: contacts || (sample ?? DEFAULT_BRAND.contacts),
+    registration: registration || (sample ?? DEFAULT_BRAND.registration),
     logo: (identity?.logo as string) || '',
     paletteId: palette.id as PaletteId,
     fontId: (branding?.fontId as AppFontId) ?? DEFAULT_APP_FONT,

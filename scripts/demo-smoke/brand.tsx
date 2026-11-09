@@ -27,6 +27,7 @@ import {
 } from '@/lib/theme/apply';
 import {
   DEFAULT_BRAND,
+  deriveShortName,
   getActiveBrand,
   hslToRgb,
   monogram,
@@ -297,6 +298,47 @@ async function main() {
     assert.equal((brand.address.match(/Kinondoni/g) ?? []).length, 1);
   });
 
+  await check('the short name is the school, never the product name', () => {
+    // systemName holds "Shule Altra" — using it labelled every school's sidebar
+    // and crest with our brand instead of theirs.
+    const brand = resolveBrand({ name: 'MWALIMU NYERERE SECONDARY SCHOOL', systemName: 'Shule Altra' }, {});
+    assert.equal(brand.shortName, 'Mwalimu Nyerere');
+    assert.equal(monogram(brand.name, brand.shortName), 'MN');
+    assert.equal(deriveShortName('KIBASILA SECONDARY SCHOOL'), 'Kibasila');
+    assert.equal(deriveShortName('ST MARY\'S HIGH SCHOOL'), "St Mary's");
+    assert.equal(deriveShortName('Shule ya Sekondari Mwangaza'), 'Shule ya Sekondari Mwangaza');
+  });
+
+  await check('an explicit short name wins over the derived one', () => {
+    const brand = resolveBrand({ name: 'MWALIMU NYERERE SECONDARY SCHOOL', shortName: 'MNY' }, {});
+    assert.equal(brand.shortName, 'MNY');
+  });
+
+  await check('a real school never inherits invented contact or registration details', () => {
+    // The most dangerous failure this layer could have: printing a fabricated
+    // NECTA centre number and phone on a real school's letterhead.
+    const brand = resolveBrand({ name: 'KIBASILA SECONDARY SCHOOL' }, {});
+    assert.equal(brand.address, '');
+    assert.equal(brand.contacts, '');
+    assert.equal(brand.registration, '');
+    assert.equal(brand.motto, '');
+    assert.ok(!JSON.stringify(brand).includes('shulealtra.ac.tz'));
+    assert.ok(!JSON.stringify(brand).includes('S/DSM/2016/0412'));
+  });
+
+  await check('an unconfigured demo still prints a complete sample letterhead', () => {
+    const brand = resolveBrand(null, null);
+    assert.equal(brand.address, DEFAULT_BRAND.address);
+    assert.equal(brand.contacts, DEFAULT_BRAND.contacts);
+  });
+
+  await check('partly filled identity prints only what was actually entered', () => {
+    const brand = resolveBrand({ name: 'KIBASILA SECONDARY SCHOOL', contactPhone: '+255 22 111 2222' }, {});
+    assert.equal(brand.contacts, '+255 22 111 2222');
+    assert.equal(brand.address, '');
+    assert.equal(brand.registration, '');
+  });
+
   await check('print colours always use the LIGHT palette, even in dark mode', () => {
     const brand = resolveBrand({}, { paletteId: 'emerald' });
     assert.equal(brand.primaryHsl, PALETTES.emerald.light.primary);
@@ -369,6 +411,28 @@ async function main() {
     });
     assert.equal(ctx.logo, undefined);
     letterhead(ctx, 'Still prints');
+  });
+
+  await check('a letterhead with no contacts draws no empty lines and no stray separator', async () => {
+    setActiveBrand(resolveBrand({ name: 'SPARSE SCHOOL' }, {}));
+    const { createDocument, letterhead, finalize } = await import('@/lib/pdf/kit');
+    const ctx = await createDocument({ title: 'Sparse', subject: 't', reference: 'T-3', issuedBy: 'smoke' });
+    letterhead(ctx, 'Sparse letterhead');
+    const bytes = await finalize(ctx);
+    const { PDFDocument } = await import('pdf-lib');
+    const doc = await PDFDocument.load(bytes);
+    assert.equal(doc.getAuthor(), 'SPARSE SCHOOL');
+    assert.ok(bytes.length > 1500);
+  });
+
+  await check('the shipped reference printables name the demo school', async () => {
+    const { PDFDocument } = await import('pdf-lib');
+    const { demoIdentity } = await import('@/lib/demo/seed-data');
+    const expected = demoIdentity().name;
+    for (const file of ['private/printables/report-card.pdf', 'private/printables/reports/defaulters.pdf']) {
+      const doc = await PDFDocument.load(readFileSync(path.resolve(file)));
+      assert.equal(doc.getAuthor(), expected, `${file} names a different school`);
+    }
   });
 
   console.log('\nBRAND ASSETS & ACCESS');

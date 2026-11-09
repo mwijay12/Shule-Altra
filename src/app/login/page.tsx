@@ -207,11 +207,13 @@ export default function LoginPage() {
                   </p>
                 )}
 
-                <div className="flex items-center gap-3" aria-hidden>
-                  <span className="h-px flex-1 bg-border" />
-                  <span className="text-[13px] font-medium text-muted-foreground">or use a school account</span>
-                  <span className="h-px flex-1 bg-border" />
-                </div>
+                {DEMO_MODE && (
+                  <div className="flex items-center gap-3" aria-hidden>
+                    <span className="h-px flex-1 bg-border" />
+                    <span className="text-[13px] font-medium text-muted-foreground">or use a school account</span>
+                    <span className="h-px flex-1 bg-border" />
+                  </div>
+                )}
 
                 <Button
                   type="submit"
@@ -227,9 +229,12 @@ export default function LoginPage() {
                   )}
                 </Button>
 
+                {/* Demo accounts only exist offline. Against a real project these
+                    buttons would invite sign-ins that the rules then reject. */}
+                {DEMO_MODE && (
                 <div className="pt-6 border-t border-dashed space-y-4">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[12px] font-black uppercase tracking-[0.16em] text-muted-foreground">Demo Roles</p>
+                    <p className="text-[12px] font-semibold text-muted-foreground">Demo roles</p>
                     <span className="text-[11px] font-black uppercase tracking-widest text-green-600 bg-green-50 px-2 py-0.5 rounded-full">No setup</span>
                   </div>
 
@@ -271,12 +276,11 @@ export default function LoginPage() {
                     )}
                   </Button>
 
-                  {DEMO_MODE && (
-                    <p className="text-[12px] leading-relaxed text-center font-bold uppercase tracking-tight text-muted-foreground/70">
-                      The demo runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
-                    </p>
-                  )}
+                  <p className="text-[12px] leading-relaxed text-center text-muted-foreground/70">
+                    The demo runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
+                  </p>
                 </div>
+                )}
               </div>
             </form>
 

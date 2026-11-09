@@ -35,7 +35,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useTheme } from '@/components/admin/theme-provider';
-import { useSchoolBrand } from '@/hooks/use-school-brand';
+import { useSchoolBrand } from '@/components/admin/brand-provider';
 import { SchoolLogo } from '@/components/brand/school-logo';
 import { APP_FONTS, PALETTE_LIST, type AppFontId, type Palette } from '@/lib/theme/palettes';
 import { monogram, resolveBrand, setActiveBrand } from '@/lib/brand/identity';
@@ -127,7 +127,7 @@ export default function ThemeStudioPage() {
     isPreviewing,
     resetToPublished,
   } = useTheme();
-  const { brand, logoSrc } = useSchoolBrand(SCHOOL_ID);
+  const { brand, logoSrc } = useSchoolBrand();
 
   const identityRef = useMemoFirebase(
     () => doc(db, 'schools', SCHOOL_ID, 'config', 'identity'),
@@ -145,7 +145,7 @@ export default function ThemeStudioPage() {
   const [proving, setProving] = React.useState(false);
   const [form, setForm] = React.useState({
     name: '',
-    systemName: '',
+    shortName: '',
     motto: '',
     address: '',
     district: '',
@@ -160,7 +160,7 @@ export default function ThemeStudioPage() {
     if (!identity) return;
     setForm({
       name: identity.name ?? '',
-      systemName: identity.systemName ?? '',
+      shortName: identity.shortName ?? '',
       motto: identity.motto ?? '',
       address: identity.address ?? '',
       district: identity.district ?? '',
@@ -172,14 +172,36 @@ export default function ThemeStudioPage() {
     });
   }, [identity]);
 
+  /**
+   * Only fields the operator actually edited are written back.
+   *
+   * The form starts empty and fills from Firestore a moment later. Sending the
+   * whole form meant an early click on "Save identity" — before that snapshot
+   * arrived — merged empty strings over the school's real name and contacts.
+   * A touched-set makes that impossible whatever the connection does.
+   */
+  const [touched, setTouched] = React.useState<Set<keyof typeof form>>(new Set());
+  const [brandingTouched, setBrandingTouched] = React.useState(false);
+
   const field = (key: keyof typeof form) => ({
     value: form[key],
-    onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((current) => ({ ...current, [key]: event.target.value })),
+    onChange: (event: React.ChangeEvent<HTMLInputElement>) => {
+      setTouched((current) => new Set(current).add(key));
+      setForm((current) => ({ ...current, [key]: event.target.value }));
+    },
   });
 
+  const choosePalette = (id: Parameters<typeof setPaletteId>[0]) => {
+    setBrandingTouched(true);
+    setPaletteId(id);
+  };
+  const chooseFont = (id: Parameters<typeof setFontId>[0]) => {
+    setBrandingTouched(true);
+    setFontId(id);
+  };
+
   const publishBranding = async () => {
-    if (!canPublish) return;
+    if (!canPublish || !brandingTouched) return;
     setSaving(true);
     try {
       await setDoc(
@@ -192,6 +214,7 @@ export default function ThemeStudioPage() {
         },
         { merge: true }
       );
+      setBrandingTouched(false);
       toast({
         title: 'Branding published',
         description: 'Every signed-in workstation picks up this palette and type pairing.',
@@ -208,14 +231,16 @@ export default function ThemeStudioPage() {
   };
 
   const saveIdentity = async () => {
-    if (!canPublish) return;
+    if (!canPublish || touched.size === 0) return;
     setSaving(true);
     try {
+      const changes = Object.fromEntries([...touched].map((key) => [key, form[key]]));
       await setDoc(
         identityRef,
-        { ...form, updatedAt: serverTimestamp(), updatedBy: user?.email ?? user?.uid ?? 'unknown' },
+        { ...changes, updatedAt: serverTimestamp(), updatedBy: user?.email ?? user?.uid ?? 'unknown' },
         { merge: true }
       );
+      setTouched(new Set());
       toast({
         title: 'School identity saved',
         description: 'Letterheads, report cards and fee statements now use these details.',
@@ -325,7 +350,7 @@ export default function ThemeStudioPage() {
   }
 
   const previewName = form.name || brand.name;
-  const previewShort = form.systemName || brand.shortName;
+  const previewShort = form.shortName || brand.shortName;
 
   return (
     <div className="space-y-6">
@@ -348,7 +373,7 @@ export default function ThemeStudioPage() {
               Discard preview
             </Button>
           ) : null}
-          <Button onClick={publishBranding} disabled={saving} className="gap-2">
+          <Button onClick={publishBranding} disabled={saving || !brandingTouched} className="gap-2">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
             Publish to school
           </Button>
@@ -381,7 +406,7 @@ export default function ThemeStudioPage() {
                   active={palette.id === paletteId}
                   published={palette.id === published.paletteId}
                   disabled={false}
-                  onSelect={() => setPaletteId(palette.id)}
+                  onSelect={() => choosePalette(palette.id)}
                 />
               ))}
             </CardContent>
@@ -436,7 +461,7 @@ export default function ThemeStudioPage() {
                 <button
                   key={font.id}
                   type="button"
-                  onClick={() => setFontId(font.id as AppFontId)}
+                  onClick={() => chooseFont(font.id as AppFontId)}
                   aria-pressed={fontId === font.id}
                   className={cn(
                     'flex w-full items-center justify-between gap-4 rounded-xl border p-4 text-left transition-colors',
@@ -521,7 +546,7 @@ export default function ThemeStudioPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="brand-short">Short name</Label>
-                  <Input id="brand-short" {...field('systemName')} placeholder="Shule Altra" />
+                  <Input id="brand-short" {...field('shortName')} placeholder="Mwalimu Nyerere" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="brand-motto">Motto</Label>
@@ -558,9 +583,9 @@ export default function ThemeStudioPage() {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={saveIdentity} disabled={saving} className="gap-2">
+                <Button onClick={saveIdentity} disabled={saving || touched.size === 0} className="gap-2">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                  Save identity
+                  {touched.size === 0 ? 'Save identity' : `Save ${touched.size} change${touched.size === 1 ? '' : 's'}`}
                 </Button>
               </div>
             </CardContent>

@@ -192,9 +192,19 @@ const PETTY_CASH = [
 /*  Generators                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The demo school's identity. Exported so the printable generators stamp the
+ * same school the dashboard shows — they used to fall back to the generic
+ * Shule Altra letterhead, which named a different school on every sample.
+ */
+export function demoIdentity(): Record<string, any> {
+  return buildIdentity();
+}
+
 function buildIdentity(): Record<string, any> {
   return {
     name: 'MWALIMU NYERERE SECONDARY SCHOOL',
+    shortName: 'Mwalimu Nyerere',
     systemName: 'Shule Altra',
     centerId: 'SD-2026-0421',
     region: 'Dar es Salaam',

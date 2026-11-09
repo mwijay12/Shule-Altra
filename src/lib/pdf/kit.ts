@@ -377,6 +377,11 @@ export function line(ctx: BuildContext, x1: number, y: number, x2: number, color
 }
 
 /** Institutional letterhead + document title band. */
+/** Name and motto, without a dangling separator when the motto is unset. */
+function footerLine(brand: { name: string; motto: string }): string {
+  return brand.motto ? `${brand.name} · ${brand.motto}` : brand.name;
+}
+
 export function letterhead(ctx: BuildContext, title: string, subtitle?: string) {
   const { page, width, height, margin } = ctx;
   const brand = getActiveBrand();
@@ -416,30 +421,36 @@ export function letterhead(ctx: BuildContext, title: string, subtitle?: string) 
     font: ctx.bold,
     color: COLORS.white,
   });
-  page.drawText(sanitize(brand.address), {
-    x: margin + 58,
-    y: height - 59,
-    size: 7.5,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.82,
-  });
-  page.drawText(sanitize(brand.contacts), {
-    x: margin + 58,
-    y: height - 70,
-    size: 7.5,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.82,
-  });
-  page.drawText(sanitize(brand.registration), {
-    x: margin + 58,
-    y: height - 81,
-    size: 6.8,
-    font: ctx.font,
-    color: COLORS.white,
-    opacity: 0.6,
-  });
+  if (brand.address) {
+    page.drawText(sanitize(brand.address), {
+      x: margin + 58,
+      y: height - 59,
+      size: 7.5,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.82,
+    });
+  }
+  if (brand.contacts) {
+    page.drawText(sanitize(brand.contacts), {
+      x: margin + 58,
+      y: height - 70,
+      size: 7.5,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.82,
+    });
+  }
+  if (brand.registration) {
+    page.drawText(sanitize(brand.registration), {
+      x: margin + 58,
+      y: height - 81,
+      size: 6.8,
+      font: ctx.font,
+      color: COLORS.white,
+      opacity: 0.6,
+    });
+  }
 
   page.drawText(fit(ctx.bold, title.toUpperCase(), 10, width / 2), {
     x: width - margin - width / 3.4,
@@ -662,7 +673,7 @@ export async function finalize(ctx: BuildContext, note?: string): Promise<Uint8A
       font: ctx.font,
       color: COLORS.muted,
     });
-    page.drawText(sanitize(`${getActiveBrand().name} · ${getActiveBrand().motto}`), {
+    page.drawText(sanitize(footerLine(getActiveBrand())), {
       x: width - ctx.margin - 190,
       y: 11,
       size: 6.2,
