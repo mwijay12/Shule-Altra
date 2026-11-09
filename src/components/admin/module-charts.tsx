@@ -60,7 +60,22 @@ export function ChartPanel({
   action?: React.ReactNode;
 } & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn('glass-panel overflow-hidden rounded-[1.75rem]', className)} {...rest}>
+    <div
+      className={cn(
+        'glass-panel group/chart relative overflow-hidden rounded-[1.75rem]',
+        // Compositor-only hover: transform and shadow, never a filter. A blur or
+        // backdrop-filter here would re-tax every frame the pointer rests on it.
+        'transition-[transform,box-shadow,border-color] duration-300 ease-out',
+        'hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_22px_50px_-30px_hsl(var(--primary)/0.4)]',
+        className
+      )}
+      {...rest}
+    >
+      {/* A hairline of brand light along the top edge on hover. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px origin-left scale-x-0 bg-gradient-to-r from-transparent via-primary/60 to-transparent transition-transform duration-500 ease-out group-hover/chart:scale-x-100"
+      />
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 px-5 py-4 sm:px-6">
         <div>
           <h3 className="text-[15px] font-semibold tracking-tight text-foreground">{title}</h3>

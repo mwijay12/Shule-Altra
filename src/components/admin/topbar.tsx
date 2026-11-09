@@ -59,7 +59,7 @@ export function Topbar({ title, eyebrow, onOpenSearch, onOpenMobile, notificatio
   const activeRange = RANGE_OPTIONS.find((option) => option.key === range);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/70 backdrop-blur-xl">
+    <header className="sticky top-0 z-30 border-b border-border/60 bg-background/90 backdrop-blur-[6px]">
       <div className="flex h-[68px] items-center gap-3 px-4 sm:px-6 lg:px-8">
         <MobileMenuButton onClick={onOpenMobile} />
 

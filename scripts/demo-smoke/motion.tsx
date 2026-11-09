@@ -142,6 +142,23 @@ async function main() {
     }
   });
 
+  check('the motion suite is not the only guard — frame budget is checked too', () => {
+    // This suite once reported PASSED while the dashboard ran at 2-3 fps, so
+    // every animation below completed in three frames and looked static.
+    // Attributes existing is not motion being visible.
+    const pkg = JSON.parse(read('package.json'));
+    assert.ok(pkg.scripts['demo:smoke:perf'], 'the frame-budget suite must exist');
+    const ci = read('.github/workflows/demo-ci.yml');
+    assert.match(ci, /demo:smoke:perf/, 'CI must run the frame-budget suite');
+  });
+
+  check('chart draws are long enough to be seen, and series are staggered', () => {
+    const motion = read('src/components/admin/chart-motion.tsx');
+    const duration = motion.match(/duration = (\d+)\)/);
+    assert.ok(duration && Number(duration[1]) >= 1000, 'a sub-second draw reads as a jump');
+    assert.match(motion, /order \* 190/, 'series must not all land at once');
+  });
+
   check('every ResponsiveContainer inside ChartFrame has a definite height', () => {
     // ChartFrame sets minHeight, not height, so height="100%" collapses to zero
     // and the chart renders as blank space. This shipped once; keep it caught.

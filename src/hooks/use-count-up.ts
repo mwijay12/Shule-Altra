@@ -7,7 +7,7 @@ import { useReducedMotion } from './use-reduced-motion';
  * Count from zero on arrival, then from the last displayed value on live updates.
  * A wall-clock finalizer also lands the exact value in throttled/background tabs.
  */
-export function useCountUp(value: number, duration = 0.9) {
+export function useCountUp(value: number, duration = 1.15) {
   const reducedMotion = useReducedMotion();
   const target = Number.isFinite(value) ? value : 0;
   const [display, setDisplay] = React.useState(0);

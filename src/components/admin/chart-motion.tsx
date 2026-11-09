@@ -24,12 +24,12 @@ export const CHART_EASE = [0.22, 1, 0.36, 1] as const;
  * Spread this onto a Recharts series (Bar, Line, Area, Pie).
  * `order` staggers multiple series so they do not all move at once.
  */
-export function useSeriesMotion(order = 0, duration = 900) {
+export function useSeriesMotion(order = 0, duration = 1150) {
   const reducedMotion = useReducedMotion();
   return {
     isAnimationActive: !reducedMotion,
     animationDuration: reducedMotion ? 0 : duration,
-    animationBegin: reducedMotion ? 0 : 120 + order * 140,
+    animationBegin: reducedMotion ? 0 : 150 + order * 190,
     animationEasing: 'ease-out' as const,
   };
 }
@@ -59,9 +59,9 @@ export function ChartFrame({
   return (
     <motion.div
       ref={ref}
-      initial={reducedMotion ? false : { opacity: 0, y: 20 }}
+      initial={reducedMotion ? false : { opacity: 0, y: 26 }}
       animate={ready ? { opacity: 1, y: 0 } : undefined}
-      transition={{ duration: reducedMotion ? 0 : 0.55, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
+      transition={{ duration: reducedMotion ? 0 : 0.7, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
       className={cn('w-full', className)}
       style={{ minHeight: height }}
     >
@@ -94,7 +94,7 @@ export function ShareBar({
   const ref = React.useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.4 });
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
-  const delay = Math.min(index, 10) * 0.07;
+  const delay = Math.min(index, 10) * 0.09;
 
   return (
     <div ref={ref}>
@@ -110,7 +110,7 @@ export function ShareBar({
           style={{ background: colour }}
           initial={reducedMotion ? false : { width: 0 }}
           animate={inView || reducedMotion ? { width: `${pct}%` } : undefined}
-          transition={{ duration: reducedMotion ? 0 : 0.95, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
+          transition={{ duration: reducedMotion ? 0 : 1.05, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
         />
       </div>
     </div>

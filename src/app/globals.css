@@ -312,15 +312,18 @@ html[data-scroll-locked] .app-scroll {
   overflow-y: hidden;
 }
 
+/* The glass look comes from the gradient and the hairline border, not from a
+   backdrop blur. These panels sit on an opaque page, so blurring the backdrop
+   was invisible — but with a dozen panels on screen it cost a full-surface
+   readback each per frame and took the dashboard from 60 fps to 2. The tint is
+   slightly more opaque now so the surface reads the same without the filter. */
 .glass-panel {
-  background: linear-gradient(160deg, hsl(var(--card) / 0.92), hsl(var(--card) / 0.72));
-  backdrop-filter: blur(18px) saturate(140%);
+  background: linear-gradient(160deg, hsl(var(--card) / 0.97), hsl(var(--card) / 0.86));
   border: 1px solid hsl(var(--border) / 0.65);
 }
 
 .glass-panel-strong {
-  background: linear-gradient(150deg, hsl(var(--card) / 0.98), hsl(var(--card) / 0.85));
-  backdrop-filter: blur(24px) saturate(160%);
+  background: linear-gradient(150deg, hsl(var(--card)), hsl(var(--card) / 0.94));
   border: 1px solid hsl(var(--border) / 0.7);
 }
 
@@ -2677,4 +2680,28 @@ html[data-scroll-locked] .app-scroll {
   .inst-boot-mark {
     animation: none;
   }
+}
+
+/* ── command-deck orb, CSS fallback ──────────────────────────────────────────
+   Used while WebGL starts, and permanently on a software rasteriser where a
+   per-frame WebGL draw cost the whole page 56 fps. Transform and opacity only,
+   so the compositor runs these without troubling the main thread. */
+@keyframes sd-orb-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes sd-orb-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+.sd-orb-spin {
+  animation: sd-orb-spin 24s linear infinite;
+  will-change: transform;
+}
+.sd-orb-breathe {
+  animation: sd-orb-breathe 6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sd-orb-spin, .sd-orb-breathe { animation: none !important; }
 }

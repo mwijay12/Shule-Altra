@@ -23,6 +23,8 @@ jobs:
         run: npm run demo:smoke:data
       - name: O-level consistency
         run: npm run demo:smoke:olevel
+      - name: Frame budget (animation must be visible)
+        run: npm run demo:smoke:perf
       - name: Motion and reduced-motion
         run: npm run demo:smoke:motion
       - name: Landing palette (follows the school theme)
