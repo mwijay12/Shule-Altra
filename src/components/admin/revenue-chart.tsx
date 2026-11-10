@@ -20,7 +20,7 @@ import {
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range-context';
 import { cn } from '@/lib/utils';
-import { ChartFrame } from '@/components/admin/chart-motion';
+import { ChartFrame, RECHARTS_EASE } from '@/components/admin/chart-motion';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { GlidingTooltip, useSeriesFocus, useStableSeries } from '@/components/motion/chart-interaction';
@@ -187,7 +187,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
         </div>
       </div>
 
-      <ChartFrame className="mt-5 h-[260px] w-full sm:h-[300px]">
+      <ChartFrame className="chart-series-focus mt-5 h-[260px] w-full sm:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 6, bottom: 0, left: -18 }}>
             <defs>
@@ -212,6 +212,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               width={54}
             />
             <Tooltip
+              position={{ x: 0, y: 0 }}
               content={
                 <GlidingTooltip
                   formatter={(value) => `TZS ${value.toLocaleString('en-US')}`}
@@ -228,7 +229,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               fill="url(#collectedFill)"
               isAnimationActive={!reducedMotion}
               animationDuration={DURATION.chart * 1000}
-              animationEasing="ease-out"
+              animationEasing={RECHARTS_EASE}
               animationBegin={0}
               strokeOpacity={opacityFor('collected')}
               fillOpacity={opacityFor('collected')}
@@ -246,7 +247,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               dot={false}
               isAnimationActive={!reducedMotion}
               animationDuration={DURATION.chart * 1000}
-              animationEasing="ease-out"
+              animationEasing={RECHARTS_EASE}
               animationBegin={STAGGER.series * 1000}
               strokeOpacity={opacityFor('pending')}
               onMouseEnter={() => bind('pending').onMouseEnter()}
@@ -261,7 +262,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               dot={false}
               isAnimationActive={!reducedMotion}
               animationDuration={DURATION.chart * 1000}
-              animationEasing="ease-out"
+              animationEasing={RECHARTS_EASE}
               animationBegin={STAGGER.series * 2000}
               strokeOpacity={opacityFor('target')}
               onMouseEnter={() => bind('target').onMouseEnter()}
@@ -285,7 +286,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
             className={cn(
               'rounded-lg outline-none transition-opacity duration-200 focus-visible:ring-2 focus-visible:ring-ring',
               item.series && 'cursor-default',
-              focused && item.series && focused !== item.series && 'opacity-40'
+              focused && item.series && focused !== item.series && 'opacity-25'
             )}
           >
             <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">

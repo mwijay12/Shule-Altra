@@ -6,13 +6,13 @@
  */
 
 import * as React from 'react';
+import { motion } from 'motion/react';
 import { collection, limit, orderBy, query } from 'firebase/firestore';
 import {
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
   Line,
   LineChart,
   Pie,
@@ -25,6 +25,9 @@ import {
 import { Download, GraduationCap, Loader2, Sparkles, TrendingUp, Users } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { ChartFrame, RECHARTS_EASE } from '@/components/admin/chart-motion';
+import { GlidingTooltip, GrowingBar, useSeriesFocus } from '@/components/motion/chart-interaction';
+import { DURATION, SPRING_TACTILE } from '@/lib/motion/tokens';
 import { KpiCard } from '@/components/admin/kpi-card';
 import { RevenueChart, formatCompactTzs } from '@/components/admin/revenue-chart';
 import { RANGE_OPTIONS, useRange, type RangeKey } from '@/components/admin/range-context';
@@ -46,6 +49,7 @@ function toDate(value: any): Date | null {
 export default function AnalyticsPage() {
   const db = useFirestore();
   const reducedMotion = useReducedMotion();
+  const paymentFocus = useSeriesFocus();
   const { toast } = useToast();
   const { range, setRange, days, label } = useRange();
   const [exporting, setExporting] = React.useState<'ranking' | 'register' | null>(null);
@@ -251,13 +255,14 @@ export default function AnalyticsPage() {
               type="button"
               onClick={() => setRange(option.key as RangeKey)}
               className={cn(
-                'rounded-xl px-2.5 py-1.5 text-[12px] font-semibold transition-colors',
+                'relative rounded-xl px-2.5 py-1.5 text-[12px] font-semibold transition-colors',
                 range === option.key
-                  ? 'bg-gradient-to-r from-primary to-accent text-white shadow-md shadow-primary/30'
+                  ? 'text-white'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {option.short}
+              {range === option.key && <motion.span layoutId="analytics-range-pill" className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary to-accent shadow-md shadow-primary/30" transition={SPRING_TACTILE} />}
+              <span className="relative">{option.short}</span>
             </button>
           ))}
         </div>
@@ -314,7 +319,7 @@ export default function AnalyticsPage() {
             Payment mix
           </p>
           <h3 className="mt-1 text-[13px] text-foreground">Gateway share by value</h3>
-          <div className="h-[240px] w-full">
+          <ChartFrame height={240} className="chart-series-focus h-[240px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -325,23 +330,27 @@ export default function AnalyticsPage() {
                   outerRadius="82%"
                   paddingAngle={3}
                   isAnimationActive={!reducedMotion}
-                  animationDuration={700}
+                  animationDuration={DURATION.chart * 1000}
+                  animationEasing={RECHARTS_EASE}
                 >
                   {paymentMix.map((entry, index) => (
-                    <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke="transparent" />
+                    <Cell key={entry.name} fill={PIE_COLORS[index % PIE_COLORS.length]} stroke="transparent" opacity={paymentFocus.opacityFor(entry.name)} {...paymentFocus.bind(entry.name)} />
                   ))}
                 </Pie>
-                <Tooltip
-                  formatter={(value: number) => `TZS ${Number(value).toLocaleString('en-US')}`}
-                  contentStyle={{ borderRadius: 16, fontSize: 10, fontWeight: 700 }}
-                />
-                <Legend
-                  verticalAlign="bottom"
-                  iconType="circle"
-                  formatter={(value) => <span style={{ fontSize: 9, fontWeight: 800 }}>{value}</span>}
+                <Tooltip position={{ x: 0, y: 0 }} wrapperStyle={{ transition: 'none', zIndex: 20 }}
+                  content={<GlidingTooltip formatter={(value) => `TZS ${value.toLocaleString('en-US')}`} />}
                 />
               </PieChart>
             </ResponsiveContainer>
+          </ChartFrame>
+          <div className="flex flex-wrap justify-center gap-x-3 gap-y-1">
+            {paymentMix.map((entry, index) => (
+              <button key={entry.name} type="button" {...paymentFocus.bind(entry.name)}
+                className="flex items-center gap-1.5 rounded text-[11px] font-semibold text-muted-foreground transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+                style={{ opacity: paymentFocus.opacityFor(entry.name) }}>
+                <span className="h-2 w-2 rounded-full" style={{ background: PIE_COLORS[index % PIE_COLORS.length] }} />{entry.name}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -365,7 +374,7 @@ export default function AnalyticsPage() {
               Ranking PDF
             </button>
           </div>
-          <div className="mt-3 h-[260px] w-full">
+          <ChartFrame height={260} className="mt-3 h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={classPerformance} margin={{ top: 8, right: 8, bottom: 0, left: -22 }}>
                 <defs>
@@ -388,16 +397,15 @@ export default function AnalyticsPage() {
                   tickLine={false}
                   width={44}
                 />
-                <Tooltip
-                  formatter={(value: number, key) => (key === 'average' ? [`${value}%`, 'Average'] : [value, 'Cohort'])}
-                  contentStyle={{ borderRadius: 16, fontSize: 10, fontWeight: 700 }}
+                <Tooltip position={{ x: 0, y: 0 }} wrapperStyle={{ transition: 'none', zIndex: 20 }}
+                  content={<GlidingTooltip formatter={(value) => `${value}%`} />}
                   cursor={{ fill: 'hsl(var(--muted) / 0.4)' }}
                 />
-                <Bar dataKey="average" fill="url(#barFill)" radius={[8, 8, 0, 0]} isAnimationActive={!reducedMotion}
-                  animationDuration={700} />
+                <Bar dataKey="average" fill="url(#barFill)" isAnimationActive={false}
+                  shape={(props: any) => <GrowingBar {...props} radius={8} />} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </div>
 
         <div data-reveal className="glass-panel rounded-3xl p-4 sm:p-5">
@@ -418,7 +426,7 @@ export default function AnalyticsPage() {
               Register PDF
             </button>
           </div>
-          <div className="mt-3 h-[260px] w-full">
+          <ChartFrame height={260} className="mt-3 h-[260px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={presenceTrend} margin={{ top: 8, right: 8, bottom: 0, left: -26 }}>
                 <CartesianGrid strokeDasharray="3 6" stroke="hsl(var(--border))" vertical={false} />
@@ -437,9 +445,8 @@ export default function AnalyticsPage() {
                   tickLine={false}
                   width={44}
                 />
-                <Tooltip
-                  formatter={(value: number) => [`${value}%`, 'Presence']}
-                  contentStyle={{ borderRadius: 16, fontSize: 10, fontWeight: 700 }}
+                <Tooltip position={{ x: 0, y: 0 }} wrapperStyle={{ transition: 'none', zIndex: 20 }}
+                  content={<GlidingTooltip formatter={(value) => `${value}%`} />}
                 />
                 <Line
                   type="monotone"
@@ -448,11 +455,12 @@ export default function AnalyticsPage() {
                   strokeWidth={2.4}
                   dot={false}
                   isAnimationActive={!reducedMotion}
-                  animationDuration={700}
+                  animationDuration={DURATION.chart * 1000}
+                  animationEasing={RECHARTS_EASE}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </div>
+          </ChartFrame>
         </div>
       </section>
     </div>

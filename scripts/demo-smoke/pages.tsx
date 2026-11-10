@@ -33,6 +33,23 @@ import { formatTZSCompact } from '@/lib/finance-engine';
 import LoginPage from '@/app/login/page';
 import LandingPage from '@/app/page';
 
+// JSDOM has no viewport; treat rendered elements as visible for this render suite.
+(globalThis as any).EventTarget = window.EventTarget;
+class VisibleIntersectionObserver {
+  private nodes = new Set<Element>();
+  constructor(private callback: IntersectionObserverCallback) {}
+  observe(node: Element) {
+    this.nodes.add(node);
+    queueMicrotask(() => {
+      if (this.nodes.has(node)) this.callback([{ target: node, isIntersecting: true, intersectionRatio: 1 } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+    });
+  }
+  unobserve(node: Element) { this.nodes.delete(node); }
+  disconnect() { this.nodes.clear(); }
+}
+(globalThis as any).IntersectionObserver = VisibleIntersectionObserver;
+(window as any).IntersectionObserver = VisibleIntersectionObserver;
+
 const services = initializeFirebase();
 
 // Minimal Next.js app-router context so next/navigation hooks resolve in JSDOM

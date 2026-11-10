@@ -8,7 +8,7 @@
  */
 
 import * as React from 'react';
-import { motion } from 'motion/react';
+import { motion, useSpring } from 'motion/react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   DIMMED_OPACITY,
@@ -89,7 +89,7 @@ export function GrowingBar({
       // origin has to go through its own originY prop. Without this the bar
       // scales out of its centre instead of rising off the baseline.
       style={{ transformBox: 'fill-box', originX: 0.5, originY: 1 }}
-      initial={reducedMotion ? false : { scaleY: 0 }}
+      initial={reducedMotion ? false : { scaleY: 0, opacity }}
       animate={{ scaleY: 1, opacity }}
       transition={{
         scaleY: { duration: reducedMotion ? 0 : DURATION.chart, delay: reducedMotion ? 0 : delay, ease: EASE_OUT_QUART },
@@ -116,20 +116,56 @@ export function GlidingTooltip({
   label,
   formatter,
   labelFormatter,
+  coordinate,
+  viewBox,
 }: {
   active?: boolean;
   payload?: TooltipEntry[];
   label?: string | number;
   formatter?: (value: number, name: string) => string;
   labelFormatter?: (label: string | number) => string;
+  coordinate?: { x: number; y: number };
+  viewBox?: { x: number; y: number; width: number; height: number };
 }) {
   const reducedMotion = useReducedMotion();
-  if (!active || !payload?.length) return null;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const wasActive = React.useRef(false);
+  const x = useSpring(0, SPRING_GLIDE);
+  const y = useSpring(0, SPRING_GLIDE);
+  const visible = Boolean(active && payload?.length && coordinate);
+
+  React.useLayoutEffect(() => {
+    if (!visible || !coordinate) {
+      wasActive.current = false;
+      return;
+    }
+    const box = ref.current?.getBoundingClientRect();
+    const width = box?.width ?? 0;
+    const height = box?.height ?? 0;
+    const left = viewBox?.x ?? 0;
+    const top = viewBox?.y ?? 0;
+    const right = left + (viewBox?.width ?? 0);
+    const bottom = top + (viewBox?.height ?? 0);
+    const nextX = Math.max(left, coordinate.x + 12 + width <= right ? coordinate.x + 12 : coordinate.x - width - 12);
+    const nextY = Math.max(top, Math.min(coordinate.y + 12, bottom - height));
+    if (!wasActive.current || reducedMotion) {
+      x.jump(nextX);
+      y.jump(nextY);
+    } else {
+      x.set(nextX);
+      y.set(nextY);
+    }
+    wasActive.current = true;
+  }, [visible, coordinate?.x, coordinate?.y, viewBox?.x, viewBox?.y, viewBox?.width, viewBox?.height, reducedMotion, x, y]);
+
+  if (!visible || !payload?.length) return null;
 
   return (
     <motion.div
-      initial={reducedMotion ? false : { opacity: 0, y: 6, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      ref={ref}
+      style={{ x, y }}
+      initial={reducedMotion ? false : { opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={reducedMotion ? { duration: 0 } : SPRING_GLIDE}
       className="rounded-2xl border border-border/70 bg-popover px-3 py-2 shadow-[0_18px_40px_-22px_hsl(var(--primary)/0.45)]"
     >

@@ -7,6 +7,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
+import { GlidingTooltip, GrowingBar, useSeriesFocus } from '@/components/motion/chart-interaction';
+import { KpiCard } from '@/components/admin/kpi-card';
+import { StatCard } from '@/components/admin/stat-card';
+import { Users } from 'lucide-react';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { Progress, SegmentedProgress } from '@/components/ui/progress';
 
@@ -32,6 +36,25 @@ function setReduced(value: boolean) {
   listeners.forEach((listener) => listener());
 }
 
+// Drive viewport entry explicitly: JSDOM has no layout engine.
+(globalThis as any).EventTarget = window.EventTarget;
+const observed = new Map<Element, IntersectionObserverCallback>();
+class TestIntersectionObserver {
+  constructor(private callback: IntersectionObserverCallback) {}
+  observe(node: Element) { observed.set(node, this.callback); }
+  unobserve(node: Element) { observed.delete(node); }
+  disconnect() {}
+}
+(globalThis as any).IntersectionObserver = TestIntersectionObserver;
+(window as any).IntersectionObserver = TestIntersectionObserver;
+async function enterViewport(node: Element) {
+  await act(async () => {
+    const callback = observed.get(node);
+    assert.ok(callback, 'element should be observed');
+    callback([{ target: node, isIntersecting: true, intersectionRatio: 1 } as IntersectionObserverEntry], {} as IntersectionObserver);
+  });
+}
+
 const container = document.getElementById('root')!;
 const root = createRoot(container);
 const flush = async (ms: number) => {
@@ -47,6 +70,9 @@ async function main() {
   setReduced(false);
   await render(<AnimatedNumber value={150} duration={0.3} />);
   check('counter starts at zero, not the final value', () => assert.equal(numberText(), '0'));
+  await flush(400);
+  check('counter waits while off-screen', () => assert.equal(numberText(), '0'));
+  await enterViewport(container.querySelector('[data-count-value]')!);
   await flush(90);
   check('counter passes through an intermediate value', () => {
     const value = Number(numberText().replaceAll(',', ''));
@@ -64,7 +90,69 @@ async function main() {
   await flush(500);
   check('decimal formatting and suffix survive the animation', () => assert.equal(numberText(), '75.1%'));
 
+  await render(<KpiCard label="Enrolment" value={150} icon={Users} />);
+  await flush(1200);
+  check('dashboard KPI waits for viewport entry', () => assert.equal(numberText(), '0'));
+  await enterViewport(container.querySelector('[data-count-value]')!.closest('.glass-panel')!);
+  await flush(250);
+  check('dashboard KPI visibly counts after entering view', () => {
+    const value = Number(numberText());
+    assert.ok(value > 0 && value < 150, `got ${value}`);
+  });
+  await flush(1200);
+  check('dashboard KPI reaches its exact target', () => assert.equal(numberText(), '150'));
+
+  await render(<StatCard label="Students" value={120} />);
+  await flush(1200);
+  check('module stat waits for viewport entry', () => assert.equal(numberText(), '0'));
+  await enterViewport(container.querySelector('[data-count-value]')!.closest('.glass-panel')!);
+  await flush(250);
+  check('module stat visibly counts after entering view', () => {
+    const value = Number(numberText());
+    assert.ok(value > 0 && value < 120, `got ${value}`);
+  });
+  await flush(1200);
+  check('module stat reaches its exact target', () => assert.equal(numberText(), '120'));
+
+  await render(<svg><GrowingBar index={0} x={0} y={0} width={20} height={100} /><GrowingBar index={5} x={30} y={0} width={20} height={100} /></svg>);
+  await flush(120);
+  check('bars grow in sequence from the baseline', () => {
+    const bars = container.querySelectorAll('rect');
+    assert.equal(bars.length, 2);
+    assert.match(bars[0].style.transformOrigin, /^50% 100%/);
+    assert.notEqual(bars[0].style.transform, bars[1].style.transform);
+  });
+
+  const tooltipPayload = [{ name: 'Verified', value: 100, color: '#123456' }];
+  const tooltip = (x: number) => <GlidingTooltip active payload={tooltipPayload} coordinate={{ x, y: 20 }} viewBox={{ x: 0, y: 0, width: 600, height: 300 }} />;
+  await render(tooltip(50));
+  const tooltipNode = container.firstElementChild as HTMLElement;
+  const initialTransform = tooltipNode.style.transform;
+  await render(tooltip(250));
+  const beforeGlide = tooltipNode.style.transform;
+  await flush(180);
+  const duringGlide = tooltipNode.style.transform;
+  check('tooltip springs between chart coordinates instead of snapping', () => {
+    assert.equal(beforeGlide, initialTransform);
+    assert.notEqual(duringGlide, beforeGlide);
+  });
+
+  function FocusProbe() {
+    const { opacityFor, bind } = useSeriesFocus();
+    return <><button {...bind('a')}>Series A</button><span data-focus-opacity={opacityFor('b')} /></>;
+  }
+  await render(<FocusProbe />);
+  await act(async () => { container.querySelector('button')!.dispatchEvent(new window.MouseEvent('mouseover', { bubbles: true })); });
+  check('hover dims sibling chart series to 0.25', () => assert.equal(container.querySelector('[data-focus-opacity]')?.getAttribute('data-focus-opacity'), '0.25'));
+  await act(async () => { container.querySelector('button')!.dispatchEvent(new window.MouseEvent('mouseout', { bubbles: true })); });
+  check('leaving the legend restores sibling opacity', () => assert.equal(container.querySelector('[data-focus-opacity]')?.getAttribute('data-focus-opacity'), '1'));
+
   await act(async () => { setReduced(true); });
+  await render(tooltip(50));
+  await render(tooltip(250));
+  check('reduced motion places the tooltip immediately', () => {
+    assert.match((container.firstElementChild as HTMLElement).style.transform, /translateX\(262px\)/);
+  });
   await render(<AnimatedNumber value={999} duration={2} />);
   check('reduced motion shows the final number immediately', () => assert.equal(numberText(), '999'));
   await render(<AnimatedNumber value={Number.NaN} />);

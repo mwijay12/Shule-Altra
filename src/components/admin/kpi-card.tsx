@@ -6,7 +6,7 @@
  */
 
 import * as React from 'react';
-import { motion } from 'motion/react';
+import { motion, useInView } from 'motion/react';
 import { ArrowDownRight, ArrowUpRight, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCountUp } from '@/hooks/use-count-up';
@@ -96,8 +96,10 @@ export function KpiCard({
   spark,
   delay = 0,
 }: KpiCardProps) {
-  const display = useCountUp(value);
   const reducedMotion = useReducedMotion();
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  const inView = useInView(ref, { once: true, amount: 0.25 });
+  const display = useCountUp(value, undefined, inView);
   const palette = TONES[tone];
   const ringProgress = Math.max(0, Math.min(100, progress ?? 0));
   const radius = 20;
@@ -105,6 +107,7 @@ export function KpiCard({
 
   return (
     <motion.div
+      ref={ref}
       initial={reducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: EASE_OUT_QUART }}
@@ -118,7 +121,7 @@ export function KpiCard({
           <p className="text-[12px] font-medium leading-snug text-muted-foreground">
             {label}
           </p>
-          <p className="mt-2 font-headline text-[22px] font-bold leading-none tracking-tight text-foreground tabular-nums sm:text-[26px]">
+          <p data-count-value={Number.isFinite(value) ? value : 0} aria-label={format(Number.isFinite(value) ? value : 0)} className="mt-2 font-headline text-[22px] font-bold leading-none tracking-tight text-foreground tabular-nums sm:text-[26px]">
             {format(display)}
           </p>
           <div className="mt-2 flex items-center gap-1.5">

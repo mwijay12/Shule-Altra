@@ -2705,3 +2705,17 @@ html[data-scroll-locked] .app-scroll {
 @media (prefers-reduced-motion: reduce) {
   .sd-orb-spin, .sd-orb-breathe { animation: none !important; }
 }
+
+/* Recharts updates SVG opacity attributes on focus; interpolate those changes. */
+.chart-series-focus .recharts-line-curve,
+.chart-series-focus .recharts-area-area,
+.chart-series-focus .recharts-area-curve,
+.chart-series-focus .recharts-pie-sector .recharts-sector {
+  transition: stroke-opacity 220ms ease-out, fill-opacity 220ms ease-out, opacity 220ms ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-series-focus .recharts-line-curve,
+  .chart-series-focus .recharts-area-area,
+  .chart-series-focus .recharts-area-curve,
+  .chart-series-focus .recharts-pie-sector .recharts-sector { transition: none; }
+}
