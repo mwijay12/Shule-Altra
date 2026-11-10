@@ -39,7 +39,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
+  SheetDescription,
+  SheetClose,
   SheetFooter
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -93,6 +94,7 @@ export default function StudentsPage() {
   const [typeFilter, setTypeFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [sheetStudentId, setSheetStudentId] = useState<string | null>(null)
+  const openedRowRef = React.useRef<HTMLElement | null>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const photoInputRef = React.useRef<HTMLInputElement | null>(null)
   const photoPolicyValue = photoPolicy()
@@ -864,10 +866,11 @@ export default function StudentsPage() {
                 {filteredStudents.map((student) => (
                   <TableRow
                     key={student.id}
-                    onClick={() => openStudentSheet(student)}
+                    onClick={(event) => { openedRowRef.current = event.currentTarget; openStudentSheet(student) }}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
+                      if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
                         event.preventDefault()
+                        openedRowRef.current = event.currentTarget
                         openStudentSheet(student)
                       }
                     }}
@@ -902,20 +905,25 @@ export default function StudentsPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-center font-semibold text-[13px] text-green-700 bg-green-50 px-3 py-1 rounded-full shadow-sm">
-                      {student.conductPoints || 100} PTS
+                      {typeof student.conductPoints === "number" && Number.isFinite(student.conductPoints) ? `${student.conductPoints} PTS` : "Not recorded"}
                     </TableCell>
                     <TableCell className="text-right pr-8">
-                      <Sheet
-                        open={sheetStudentId === student.id}
-                        onOpenChange={(open) => {
-                          setSheetStudentId(open ? student.id : null)
-                          if (!open && selectedStudent?.id === student.id) setSelectedStudent(null)
-                        }}
-                      >
-                        <span className="inline-flex items-center rounded-full px-3 py-2 text-[13px] font-semibold text-primary transition-transform group-hover:translate-x-0.5">
-                          Access Hub <ChevronRight className="ml-1 h-3 w-3" />
-                        </span>
-                        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl">
+                      <span className="inline-flex items-center rounded-full px-3 py-2 text-[13px] font-semibold text-primary transition-transform group-hover:translate-x-0.5">
+                        Access Hub <ChevronRight className="ml-1 h-3 w-3" />
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+      {/* Keep the portal outside the clickable row: events from its controls must not reopen it. */}
+      <Sheet open={sheetStudentId !== null} onOpenChange={(open) => { if (!open) setSheetStudentId(null) }}>
+                        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl" onCloseAutoFocus={(event) => {
+                          if (openedRowRef.current?.isConnected) { event.preventDefault(); openedRowRef.current.focus() }
+                        }}>
                           <div className="bg-primary/5 p-10 border-b relative overflow-hidden">
                             <div className="absolute top-0 right-0 p-8 opacity-5 rotate-12">
                               <Zap className="h-48 w-48" />
@@ -946,7 +954,8 @@ export default function StudentsPage() {
                                 />
                               </div>
                               <div className="space-y-3">
-                                <h3 className="text-2xl font-headline font-semibold text-primary tracking-tighter">{selectedStudent?.name}</h3>
+                                <SheetTitle className="text-2xl font-headline font-semibold text-primary tracking-tighter">{selectedStudent?.name}</SheetTitle>
+                                <SheetDescription className="sr-only">Student profile, conduct and documents</SheetDescription>
                                 <div className="flex flex-wrap gap-2">
                                   <Badge className="rounded-full bg-white text-primary border-none shadow-md px-4 py-1 text-[12px] font-semibold">{selectedStudent?.class}</Badge>
                                   <span className="text-[12px] font-mono font-semibold text-muted-foreground px-3 py-1 bg-white rounded-lg shadow-inner">{selectedStudent?.id}</span>
@@ -1038,6 +1047,22 @@ export default function StudentsPage() {
                                 </Button>
                               </TabsContent>
 
+                              <TabsContent value="conduct" className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                                <Card className="rounded-2xl border-border bg-card">
+                                  <CardHeader>
+                                    <CardTitle className="text-base">Conduct points</CardTitle>
+                                    <CardDescription>Recorded conduct score for this student. This is not an academic merit ranking.</CardDescription>
+                                  </CardHeader>
+                                  <CardContent>
+                                    {typeof selectedStudent?.conductPoints === "number" && Number.isFinite(selectedStudent.conductPoints) ? (
+                                      <p className="text-2xl font-semibold text-primary">{selectedStudent.conductPoints} <span className="text-sm font-medium text-muted-foreground">points</span></p>
+                                    ) : (
+                                      <p className="text-sm text-muted-foreground">No conduct score recorded for this student.</p>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              </TabsContent>
+
                               <TabsContent value="id-card" className="space-y-8 animate-in fade-in slide-in-from-bottom-2 text-center">
                                 <div className="p-10 bg-muted/20 rounded-[3rem] border-2 border-dashed border-primary/10 flex flex-col items-center gap-8">
                                    <div className="w-[320px] h-[480px] bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col border border-muted relative">
@@ -1088,18 +1113,10 @@ export default function StudentsPage() {
                             </Tabs>
                           </div>
                           <SheetFooter className="p-8 border-t bg-muted/10">
-                            <p className="text-[11px] font-bold text-muted-foreground text-center w-full">Issued by the school office · 2026</p>
+                            <SheetClose asChild><Button variant="outline" className="w-full sm:w-auto">Close student details</Button></SheetClose>
                           </SheetFooter>
                         </SheetContent>
-                      </Sheet>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+      </Sheet>
     </div>
   )
 }
