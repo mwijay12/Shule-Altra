@@ -117,6 +117,15 @@
 /* Only opacity and transform: both are GPU-composited. A blur or a height
    transition would repaint the whole subtree every frame, and this product is
    used on the low-end machines and 2G connections the studio builds for. */
+/* Route content stays opaque even when animation frames are delayed or blocked. */
+@keyframes sd-route-in {
+  from { transform: translateY(6px); }
+  to { transform: translateY(0); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .sd-route-enter { animation: sd-route-in 200ms cubic-bezier(0.22, 1, 0.36, 1); }
+}
+
 @keyframes sd-page-in {
   from {
     opacity: 0;

@@ -116,7 +116,7 @@ async function buildQrBytes(text: string): Promise<{ bytes: Uint8Array; size: nu
       margin: 0,
       width: 240,
       errorCorrectionLevel: 'M',
-      color: { dark: '#0f2f52', light: '#ffffff' },
+      color: { dark: '#000000', light: '#ffffff' },
     });
     const base64 = dataUrl.split(',')[1];
     const binary = atob(base64);

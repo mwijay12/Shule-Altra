@@ -21,6 +21,8 @@ jobs:
         run: npm run typecheck
       - name: Data-layer smoke
         run: npm run demo:smoke:data
+      - name: Dashboard route visibility
+        run: npm run demo:smoke:route-visibility
       - name: Student details interaction
         run: npm run demo:smoke:student-details
       - name: Timetable and ID integrity
@@ -41,6 +43,8 @@ jobs:
         run: npm run demo:smoke:landing
       - name: Copy guard
         run: npm run demo:smoke:copy
+      - name: Theme colours on generated printouts
+        run: npm run demo:smoke:print-themes
       - name: Brand, theme and contrast
         run: npm run demo:smoke:brand
       - name: Auth and session lifecycle

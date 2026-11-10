@@ -2,9 +2,8 @@
 
 import * as React from 'react';
 import { usePathname } from 'next/navigation';
-import { AnimatePresence, motion } from 'motion/react';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { DURATION, ENTER_Y, GSAP_EASE, STAGGER, EASE_OUT_QUART } from '@/lib/motion/tokens';
+import { DURATION, ENTER_Y, GSAP_EASE, STAGGER } from '@/lib/motion/tokens';
 
 /** Each route owns its observers, including when AnimatePresence delays its mount. */
 function RouteContent({ children }: { children: React.ReactNode }) {
@@ -32,11 +31,10 @@ function RouteContent({ children }: { children: React.ReactNode }) {
           if (!nodes.length) return;
           animations.push(gsap.from(nodes, {
             y: ENTER_Y,
-            opacity: 0,
             duration: DURATION.enter,
             ease: GSAP_EASE,
             stagger: STAGGER.card,
-            clearProps: 'transform,opacity',
+            clearProps: 'transform',
           }));
         };
 
@@ -61,7 +59,10 @@ function RouteContent({ children }: { children: React.ReactNode }) {
         mutationObserver = new MutationObserver(discover);
         mutationObserver.observe(root, { childList: true, subtree: true });
       }, root);
-    })();
+    })().catch((error) => {
+      // Reveals are decorative: an unavailable animation bundle must not block content.
+      if (!cancelled) console.warn('Page reveal unavailable', error);
+    });
 
     return () => {
       cancelled = true;
@@ -73,24 +74,18 @@ function RouteContent({ children }: { children: React.ReactNode }) {
   }, [reducedMotion]);
 
   return (
-    <motion.div
+    <div
       ref={containerRef}
-      initial={reducedMotion ? false : { opacity: 0, y: 6 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={reducedMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-      transition={{ duration: reducedMotion ? 0 : 0.2, ease: EASE_OUT_QUART }}
-      className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
+      className="sd-route-enter mx-auto w-full max-w-[1500px] px-4 pb-16 pt-6 sm:px-6 lg:px-8"
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      <RouteContent key={pathname}>{children}</RouteContent>
-    </AnimatePresence>
-  );
+  // Never wait for an outgoing animation: a stalled animation clock must not
+  // prevent the next route from mounting or make the whole page transparent.
+  return <RouteContent key={pathname}>{children}</RouteContent>;
 }

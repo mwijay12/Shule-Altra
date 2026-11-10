@@ -108,8 +108,8 @@ export function KpiCard({
   return (
     <motion.div
       ref={ref}
-      initial={reducedMotion ? false : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={reducedMotion ? false : { y: 16 }}
+      animate={{ y: 0 }}
       transition={{ duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: EASE_OUT_QUART }}
       className={cn(
         'glass-panel hover-lift sheen group relative overflow-hidden rounded-3xl p-4 sm:p-5',

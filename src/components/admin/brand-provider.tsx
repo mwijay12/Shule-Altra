@@ -3,11 +3,9 @@
 /**
  * @fileOverview One resolved school brand for the whole dashboard.
  *
- * Reads the two config documents the school actually edits, folds them into a
- * SchoolBrand, and publishes it to the PDF kit. This is a provider rather than a
- * hook because three components used to call the hook independently, six
- * Firestore listeners and three competing writes to the document kit's active
- * brand for a single page.
+ * Combines the school's identity with the active workstation theme and publishes
+ * it to the document kit. A local preview affects exports here; publishing the
+ * theme applies it to other workstations.
  *
  * Mounted once in the shell, so by the time anyone presses "Download report" the
  * letterhead already knows the school's current name, logo and colours.
@@ -17,6 +15,7 @@ import * as React from 'react';
 import { doc } from 'firebase/firestore';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { DEFAULT_BRAND, resolveBrand, setActiveBrand, type SchoolBrand } from '@/lib/brand/identity';
+import { useTheme } from '@/components/admin/theme-provider';
 import { useMediaSrc } from '@/components/landing/use-media-src';
 
 type BrandValue = { brand: SchoolBrand; logoSrc: string; ready: boolean };
@@ -35,12 +34,9 @@ export function SchoolBrandProvider({
     () => doc(db, 'schools', schoolId, 'config', 'identity'),
     [db, schoolId]
   );
-  const brandingRef = useMemoFirebase(
-    () => doc(db, 'schools', schoolId, 'config', 'branding'),
-    [db, schoolId]
-  );
   const { data: identity, isLoading: identityLoading } = useDoc(identityRef);
-  const { data: branding } = useDoc(brandingRef);
+  // Exports from this workstation follow the same live preview as its dashboard.
+  const { paletteId, fontId } = useTheme();
 
   // useDoc reports isLoading=false on its very first render, before its effect
   // runs. Without this flag the chrome would show the fallback sample identity
@@ -49,7 +45,7 @@ export function SchoolBrandProvider({
   React.useEffect(() => setBooted(true), []);
   const ready = booted && !identityLoading;
 
-  const brand = React.useMemo(() => resolveBrand(identity as any, branding as any), [identity, branding]);
+  const brand = React.useMemo(() => resolveBrand(identity as any, { paletteId, fontId }), [identity, paletteId, fontId]);
 
   // Publish on commit, before any export button can be pressed. Kept out of
   // render so subscribers can safely set their own state.

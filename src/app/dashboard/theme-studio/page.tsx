@@ -38,7 +38,7 @@ import { useTheme } from '@/components/admin/theme-provider';
 import { useSchoolBrand } from '@/components/admin/brand-provider';
 import { SchoolLogo } from '@/components/brand/school-logo';
 import { APP_FONTS, PALETTE_LIST, type AppFontId, type Palette } from '@/lib/theme/palettes';
-import { monogram, resolveBrand, setActiveBrand } from '@/lib/brand/identity';
+import { getActiveBrand, monogram, resolveBrand, setActiveBrand } from '@/lib/brand/identity';
 import { uploadSchoolLogo } from '@/lib/storage';
 import { cn } from '@/lib/utils';
 
@@ -291,8 +291,7 @@ export default function ThemeStudioPage() {
 
   /**
    * The studio previews unpublished choices, so the letterhead mock and the PDF
-   * proof must be built from those choices, not from the published doc the rest
-   * of the app is still using. Otherwise "preview" would show the old colours.
+   * proof must include those choices and any unsaved identity edits.
    */
   const previewBrand = React.useMemo(
     () => resolveBrand({ ...(identity ?? {}), ...form }, { paletteId, fontId }),
@@ -303,15 +302,14 @@ export default function ThemeStudioPage() {
     setProving(true);
     try {
       const { downloadBrandSample } = await import('@/lib/pdf/brand-sample');
-      // Point the document kit at the preview before drawing, then restore the
-      // published brand so every other export in the app is unaffected.
+      // The proof may include unsaved identity edits. Restore the current live
+      // workstation brand afterwards, not the school's older published palette.
+      const previousBrand = getActiveBrand();
       setActiveBrand(previewBrand);
       try {
         await downloadBrandSample();
       } finally {
-        setActiveBrand(
-          resolveBrand(identity as any, { paletteId: published.paletteId, fontId: published.fontId })
-        );
+        if (getActiveBrand() === previewBrand) setActiveBrand(previousBrand);
       }
     } catch (error) {
       toast({
@@ -384,7 +382,7 @@ export default function ThemeStudioPage() {
         <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-[13px] text-foreground">
           You are previewing an unpublished change. The school still sees{' '}
           <strong>{PALETTE_LIST.find((p) => p.id === published.paletteId)?.name}</strong> with{' '}
-          <strong>{APP_FONTS[published.fontId]?.name}</strong>.
+          <strong>{APP_FONTS[published.fontId]?.name}</strong>. New documents generated on this workstation use your preview; publish to share it with the school.
         </div>
       ) : null}
 
