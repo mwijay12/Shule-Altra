@@ -36,10 +36,10 @@ export const COLORS = {
   get accent() {
     return rgb(...hslToRgb(getActiveBrand().accentHsl));
   },
-  ink: rgb(0.09, 0.13, 0.19),
-  muted: rgb(0.42, 0.47, 0.55),
-  line: rgb(0.85, 0.88, 0.92),
-  soft: rgb(0.957, 0.969, 0.984),
+  ink: rgb(0.12, 0.12, 0.12),
+  muted: rgb(0.4, 0.4, 0.4),
+  line: rgb(0.87, 0.87, 0.87),
+  soft: rgb(0.97, 0.97, 0.97),
   white: rgb(1, 1, 1),
   success: rgb(0.09, 0.6, 0.4),
   warning: rgb(0.85, 0.55, 0.1),

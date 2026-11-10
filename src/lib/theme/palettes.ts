@@ -323,6 +323,38 @@ PALETTES.plum = {
   },
 };
 
+PALETTES.terracotta = {
+  id: 'terracotta',
+  name: 'Terracotta & Forest',
+  description: 'Warm burnt orange buttons with deep forest green accents.',
+  swatch: ['#963b18', '#17604d', '#faf6f1'],
+  sphere: '#b94c22',
+  orbHue: 18,
+  light: {
+    ...PALETTES.crimson.light,
+    background: '32 30% 97%', foreground: '20 25% 11%', cardForeground: '20 25% 11%',
+    popoverForeground: '20 25% 11%', primary: '18 72% 33%', primaryForeground: '0 0% 100%',
+    secondary: '30 30% 93%', secondaryForeground: '18 72% 28%', muted: '30 20% 93%',
+    mutedForeground: '20 10% 38%', accent: '160 62% 28%', accentForeground: '0 0% 100%',
+    border: '30 16% 86%', input: '30 16% 86%', ring: '18 72% 33%',
+    sidebarForeground: '20 25% 11%', sidebarAccent: '30 30% 94%',
+    sidebarAccentForeground: '18 72% 28%', sidebarBorder: '30 16% 88%',
+    chart: neutralChart('18 72% 38%', '160 62% 32%', '38 85% 40%', '280 55% 45%', '210 65% 45%'),
+  },
+  dark: {
+    ...PALETTES.crimson.dark,
+    background: '20 26% 6%', foreground: '30 18% 96%', card: '20 22% 10%',
+    cardForeground: '30 18% 96%', popover: '20 22% 8%', popoverForeground: '30 18% 96%',
+    primary: '18 85% 68%', primaryForeground: '20 30% 7%', secondary: '20 18% 16%',
+    secondaryForeground: '30 18% 96%', muted: '20 18% 16%', mutedForeground: '30 10% 70%',
+    accent: '160 55% 58%', accentForeground: '20 30% 7%', border: '20 18% 22%',
+    input: '20 18% 22%', ring: '18 85% 68%', sidebarBackground: '20 22% 8%',
+    sidebarForeground: '30 18% 96%', sidebarAccent: '20 18% 16%',
+    sidebarAccentForeground: '18 85% 72%', sidebarBorder: '20 18% 20%',
+    chart: neutralChart('18 85% 68%', '160 55% 58%', '38 85% 60%', '280 65% 70%', '210 80% 70%'),
+  },
+};
+
 export type PaletteId = keyof typeof PALETTES;
 
 /** Light first: the dashboard is a daytime office tool. */

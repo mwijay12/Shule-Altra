@@ -40,7 +40,9 @@
     "demo:smoke:motionspec": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/motion-spec.ts",
     "demo:smoke:loader": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/loader.tsx",
     "demo:smoke:integrity": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/integrity.ts",
-    "demo:smoke:student-details": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/student-details.tsx"
+    "demo:smoke:student-details": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/student-details.tsx",
+    "demo:smoke:route-visibility": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/route-visibility.tsx",
+    "demo:smoke:print-themes": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/print-themes.tsx"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -118,6 +120,7 @@
     "firebase-admin": "^14.5.0",
     "genkit-cli": "^1.28.0",
     "jsdom": "^31.0.0",
+    "jszip": "^3.10.2",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.21.0",

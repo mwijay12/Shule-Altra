@@ -16,6 +16,7 @@ import {
   VerticalAlign,
   ShadingType
 } from 'docx';
+import { getActiveBrand, hslToRgb } from '@/lib/brand/identity';
 import type { ReportCardData } from '@/types/report';
 
 /**
@@ -51,8 +52,12 @@ async function fetchLogoAsBase64(url: string): Promise<string | null> {
  * Official transcript generation
  * Designed for High-Fidelity NECTA Alignment
  */
-export async function exportReportCardToWord(data: ReportCardData) {
-  const sections = [];
+export function wordBrandColour(): string {
+  return hslToRgb(getActiveBrand().primaryHsl).map(channel => Math.round(channel * 255).toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+export async function buildReportCardWordDocument(data: ReportCardData) {
+  const primary = wordBrandColour();
   const headerChildren = [];
 
   // 1. Letterhead
@@ -77,7 +82,7 @@ export async function exportReportCardToWord(data: ReportCardData) {
 
   headerChildren.push(
     new Paragraph({
-      text: data.school.name.toUpperCase(),
+      children: [new TextRun({ text: data.school.name.toUpperCase(), color: primary, bold: true })],
       heading: HeadingLevel.HEADING_1,
       alignment: AlignmentType.CENTER,
       spacing: { before: 200 },
@@ -85,7 +90,7 @@ export async function exportReportCardToWord(data: ReportCardData) {
     new Paragraph({
       alignment: AlignmentType.CENTER,
       children: [
-        new TextRun({ text: "OFFICIAL ACADEMIC REPORT CARD", bold: true, size: 24, color: "1F5BA6" }),
+        new TextRun({ text: "OFFICIAL ACADEMIC REPORT CARD", bold: true, size: 24, color: primary }),
       ],
     }),
     new Paragraph({
@@ -129,11 +134,11 @@ export async function exportReportCardToWord(data: ReportCardData) {
       new TableRow({
         tableHeader: true,
         children: [
-          headerCell("SUBJECT"),
-          headerCell("SCORE"),
-          headerCell("GRADE"),
-          headerCell("POINTS"),
-          headerCell("REMARK"),
+          headerCell("SUBJECT", primary),
+          headerCell("SCORE", primary),
+          headerCell("GRADE", primary),
+          headerCell("POINTS", primary),
+          headerCell("REMARK", primary),
         ],
       }),
       ...data.results.map((res, i) => new TableRow({
@@ -156,14 +161,14 @@ export async function exportReportCardToWord(data: ReportCardData) {
       new TableRow({
         children: [
           new TableCell({
-            shading: { fill: "EEF2FF", type: ShadingType.CLEAR, color: "auto" },
+            shading: { fill: "F5F5F5", type: ShadingType.CLEAR, color: "auto" },
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 200, after: 200 },
                 children: [
                   new TextRun({ text: `Total Points: ${data.summary.totalPoints}  |  `, bold: true, size: 24 }),
-                  new TextRun({ text: `Division: ${data.summary.division}  |  `, bold: true, size: 24, color: "1F5BA6" }),
+                  new TextRun({ text: `Division: ${data.summary.division}  |  `, bold: true, size: 24, color: primary }),
                   new TextRun({ text: `Position: ${data.summary.position} of ${data.summary.totalInClass}`, bold: true, size: 24 }),
                 ],
               }),
@@ -211,14 +216,19 @@ export async function exportReportCardToWord(data: ReportCardData) {
     }],
   });
 
+  return doc;
+}
+
+export async function exportReportCardToWord(data: ReportCardData) {
+  const doc = await buildReportCardWordDocument(data);
   const blob = await Packer.toBlob(doc);
   saveAs(blob, `${data.student.name.replace(/\s/g, '_')}_Report_${data.term}_2025.docx`);
 }
 
 // Helper: Header Cell styling
-function headerCell(text: string) {
+function headerCell(text: string, primary: string) {
   return new TableCell({
-    shading: { fill: "1F5BA6", type: ShadingType.CLEAR, color: "auto" },
+    shading: { fill: primary, type: ShadingType.CLEAR, color: "auto" },
     verticalAlign: VerticalAlign.CENTER,
     children: [new Paragraph({ 
       alignment: AlignmentType.CENTER, 
