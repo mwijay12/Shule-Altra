@@ -21,6 +21,8 @@ jobs:
         run: npm run typecheck
       - name: Data-layer smoke
         run: npm run demo:smoke:data
+      - name: Student details interaction
+        run: npm run demo:smoke:student-details
       - name: Timetable and ID integrity
         run: npm run demo:smoke:integrity
       - name: O-level consistency
