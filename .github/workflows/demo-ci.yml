@@ -27,6 +27,8 @@ jobs:
         run: npm run demo:smoke:perf
       - name: Motion spec (tokens, GPU-only, chart choreography)
         run: npm run demo:smoke:motionspec
+      - name: Dashboard loading screen
+        run: npm run demo:smoke:loader
       - name: Motion and reduced-motion
         run: npm run demo:smoke:motion
       - name: Landing palette (follows the school theme)

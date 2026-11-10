@@ -2624,20 +2624,16 @@ html[data-scroll-locked] .app-scroll {
   }
 }
 
-/* ── Admin boot screen ──────────────────────────────────────────────────────
-   The hub used to open on a white full-bleed panel, so a stalled frame or a
-   dropped hydration looked like a blank site. It now opens on the brand:
-   navy → violet, the mark, and a real progress ramp. */
+/* Admin boot: self-contained colours; landing-only variables are not inherited here. */
 .inst-boot {
-  color: hsl(var(--primary-foreground));
-  background:
-    radial-gradient(60% 50% at 18% 8%, hsl(var(--accent) / 0.55) 0%, transparent 62%),
-    radial-gradient(55% 45% at 88% 92%, hsl(var(--primary) / 0.5) 0%, transparent 60%),
-    linear-gradient(158deg, var(--forest-deep) 0%, var(--forest) 44%, hsl(var(--brand-hue) 50% 22%) 76%, hsl(var(--brand-hue) 52% 28%) 100%);
-  animation: inst-boot-vanish 0.6s cubic-bezier(0.22, 1, 0.36, 1) 3.2s forwards;
+  color: #fff;
+  background-color: #101d35;
+  background-image:
+    radial-gradient(60% 50% at 18% 8%, hsl(var(--accent, 255 68% 62%) / 0.32), transparent 62%),
+    radial-gradient(55% 45% at 88% 92%, hsl(var(--primary, 214 69% 39%) / 0.3), transparent 60%),
+    linear-gradient(158deg, hsl(var(--brand-hue, 217) 48% 8%), hsl(var(--brand-hue, 217) 42% 14%) 44%, hsl(var(--brand-hue, 217) 50% 22%) 76%, hsl(var(--brand-hue, 217) 52% 28%));
 }
 .inst-boot[data-leaving="true"] {
-  animation: none;
   opacity: 0;
   transition: opacity 0.38s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
@@ -2647,8 +2643,7 @@ html[data-scroll-locked] .app-scroll {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
   background-size: 25% 100%;
   mask-image: linear-gradient(to bottom, transparent, #000 30%, #000 70%, transparent);
 }
@@ -2656,30 +2651,27 @@ html[data-scroll-locked] .app-scroll {
   position: absolute;
   inset: -20% -10% auto -10%;
   height: 60%;
-  background: radial-gradient(50% 50% at 50% 50%, hsl(var(--accent) / 0.35), transparent 70%);
-  filter: blur(30px);
+  background: radial-gradient(50% 50% at 50% 50%, hsl(var(--accent, 255 68% 62%) / 0.25), transparent 70%);
   pointer-events: none;
 }
-.inst-boot-mark {
-  animation: inst-boot-breathe 3.4s ease-in-out infinite;
-}
+.inst-boot-mark { animation: inst-boot-breathe 2s ease-in-out infinite; }
 .inst-boot-bar {
-  background: linear-gradient(90deg, hsl(var(--brand-hue) 90% 80%) 0%, hsl(0 0% 100%) 46%, hsl(var(--accent) / 0.6) 100%);
-  transition: width 0.12s linear;
-  box-shadow: 0 0 18px hsl(var(--accent) / 0.7);
+  background: linear-gradient(90deg, hsl(var(--brand-hue, 217) 90% 80%), #fff, hsl(var(--accent, 255 68% 62%)));
+  animation: inst-boot-progress 1.25s ease-in-out infinite;
+  will-change: transform;
 }
 @keyframes inst-boot-breathe {
   0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-6px) scale(1.015); }
+  50% { transform: translateY(-6px) scale(1.025); }
 }
-@keyframes inst-boot-vanish {
-  to { opacity: 0; visibility: hidden; }
+@keyframes inst-boot-progress {
+  from { transform: translateX(-105%); }
+  to { transform: translateX(305%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .inst-boot,
-  .inst-boot-mark {
-    animation: none;
-  }
+  .inst-boot-mark, .inst-boot-bar { animation: none; }
+  .inst-boot-bar { transform: translateX(100%); }
+  .inst-boot[data-leaving="true"] { transition: none; }
 }
 
 /* ── command-deck orb, CSS fallback ──────────────────────────────────────────
