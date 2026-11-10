@@ -125,6 +125,7 @@ export function AttendanceByClass({ students }: { students: any[] }) {
           <XAxis dataKey="form" tick={AXIS} tickLine={false} axisLine={false} />
           <YAxis domain={[0, 100]} tick={AXIS} tickLine={false} axisLine={false} unit="%" />
           <Tooltip
+              position={{ x: 0, y: 0 }}
             content={<GlidingTooltip formatter={(value, _name) => `${value}% present`} />}
             cursor={{ fill: 'hsl(var(--muted) / 0.35)' }}
             wrapperStyle={{ transition: 'none', zIndex: 20 }}
@@ -179,6 +180,7 @@ export function RegisterSplit({ students }: { students: any[] }) {
             ))}
           </Pie>
           <Tooltip
+              position={{ x: 0, y: 0 }}
             content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} learners`} />}
             wrapperStyle={{ transition: 'none', zIndex: 20 }}
           />
@@ -353,6 +355,7 @@ export function AssetCondition({ assets }: { assets: any[] }) {
             ))}
           </Pie>
           <Tooltip
+              position={{ x: 0, y: 0 }}
             content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} assets`} />}
             wrapperStyle={{ transition: 'none', zIndex: 20 }}
           />
@@ -452,6 +455,7 @@ export function StaffMix({ staff }: { staff: any[] }) {
             {rows.map((row) => <Cell key={row.role} fill={row.fill} />)}
           </Pie>
           <Tooltip
+              position={{ x: 0, y: 0 }}
             content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} of ${total}`} />}
             wrapperStyle={{ transition: 'none', zIndex: 20 }}
           />
@@ -595,6 +599,7 @@ export function DivisionSpread({ rankings }: { rankings: any[] }) {
             {rows.map((entry) => <Cell key={entry.division} fill={entry.fill} stroke="transparent" />)}
           </Pie>
           <Tooltip
+              position={{ x: 0, y: 0 }}
             content={<GlidingTooltip formatter={(v) => `${v.toLocaleString('en-US')} of ${total} candidates`} />}
             wrapperStyle={{ transition: 'none', zIndex: 20 }}
           />

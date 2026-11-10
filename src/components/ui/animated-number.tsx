@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useInView } from 'motion/react';
 import { useCountUp } from '@/hooks/use-count-up';
 import { cn } from '@/lib/utils';
 
@@ -24,10 +25,12 @@ export function AnimatedNumber({
   suffix = '',
   className,
 }: AnimatedNumberProps) {
-  const display = useCountUp(value, duration);
+  const ref = React.useRef<HTMLSpanElement | null>(null);
+  const inView = useInView(ref, { once: true });
+  const display = useCountUp(value, duration, inView);
   const target = Number.isFinite(value) ? value : 0;
   return (
-    <span data-count-value={target} className={cn('tabular-nums', className)}>
+    <span ref={ref} data-count-value={target} aria-label={`${prefix}${format(target)}${suffix}`} className={cn('tabular-nums', className)}>
       {prefix}{format(display)}{suffix}
     </span>
   );

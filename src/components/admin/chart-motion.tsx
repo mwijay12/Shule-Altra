@@ -14,12 +14,15 @@
 
 import * as React from 'react';
 import { motion, useInView } from 'motion/react';
+import type { AnimationTiming } from 'recharts/types/util/types';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { cn } from '@/lib/utils';
 import { EASE_OUT_QUART, DURATION, STAGGER } from '@/lib/motion/tokens';
 
 /** One easing curve for the whole product. Kept as an alias for existing callers. */
 export const CHART_EASE = EASE_OUT_QUART;
+// Recharts' type omits cubic-bezier, although react-smooth accepts it.
+export const RECHARTS_EASE = `cubic-bezier(${EASE_OUT_QUART.join(',')})` as AnimationTiming;
 
 /**
  * Spread this onto a Recharts series (Bar, Line, Area, Pie).
@@ -31,7 +34,7 @@ export function useSeriesMotion(order = 0, duration = DURATION.chart * 1000) {
     isAnimationActive: !reducedMotion,
     animationDuration: reducedMotion ? 0 : duration,
     animationBegin: reducedMotion ? 0 : 150 + order * STAGGER.series * 1000,
-    animationEasing: 'ease-out' as const,
+    animationEasing: RECHARTS_EASE,
   };
 }
 
@@ -95,7 +98,7 @@ export function ShareBar({
   const ref = React.useRef<HTMLDivElement | null>(null);
   const inView = useInView(ref, { once: true, amount: 0.4 });
   const pct = max > 0 ? Math.max(0, Math.min(100, (value / max) * 100)) : 0;
-  const delay = Math.min(index, 10) * STAGGER.card;
+  const delay = Math.min(index, 10) * STAGGER.bar;
 
   return (
     <div ref={ref}>
@@ -108,10 +111,10 @@ export function ShareBar({
       <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-muted/50">
         <motion.div
           className="h-full rounded-full"
-          style={{ background: colour }}
-          initial={reducedMotion ? false : { width: 0 }}
-          animate={inView || reducedMotion ? { width: `${pct}%` } : undefined}
-          transition={{ duration: reducedMotion ? 0 : 1.05, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
+          style={{ background: colour, originX: 0 }}
+          initial={reducedMotion ? false : { scaleX: 0 }}
+          animate={inView || reducedMotion ? { scaleX: pct / 100 } : undefined}
+          transition={{ duration: reducedMotion ? 0 : DURATION.chart, delay: reducedMotion ? 0 : delay, ease: CHART_EASE }}
         />
       </div>
     </div>

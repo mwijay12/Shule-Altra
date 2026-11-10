@@ -20,6 +20,13 @@ import StudentsPage from '@/app/dashboard/students/page';
 import AcademicsPage from '@/app/dashboard/academics/page';
 import SettingsPage from '@/app/dashboard/settings/page';
 
+// This suite checks roster content, not motion. JSDOM has no viewport, so use
+// the reduced-motion path to expose the final counts without a visibility event.
+const originalMatchMedia = window.matchMedia.bind(window);
+window.matchMedia = (query) => query === '(prefers-reduced-motion: reduce)'
+  ? { ...originalMatchMedia(query), matches: true }
+  : originalMatchMedia(query);
+
 let failures = 0;
 function check(label: string, run: () => void) {
   try {

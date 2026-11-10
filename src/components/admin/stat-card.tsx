@@ -134,12 +134,12 @@ export function StatCard({
   className,
 }: StatCardProps) {
   const reducedMotion = useReducedMotion();
-  const display = useCountUp(value);
   const palette = TONES[tone];
   const ref = React.useRef<HTMLDivElement | null>(null);
   // Long pages: a tile below the fold animates when it is actually reached.
   const inView = useInView(ref, { once: true, amount: 0.25 });
   const show = reducedMotion || inView;
+  const display = useCountUp(value, undefined, show);
 
   const delay = Math.min(index, 7) * 0.06;
   const ringProgress = Math.max(0, Math.min(100, progress ?? 0));
@@ -184,6 +184,7 @@ export function StatCard({
             // Same hook AnimatedNumber exposes, so a test (or a reader script)
             // can tell the target from whatever is currently displayed.
             data-count-value={Number.isFinite(value) ? value : 0}
+            aria-label={`${prefix}${format ? format(Number.isFinite(value) ? value : 0) : Math.round(Number.isFinite(value) ? value : 0).toLocaleString('en-US')}${suffix}`}
             className={cn(
               'mt-2 font-headline text-[clamp(1.25rem,3.2vw,1.85rem)] font-bold leading-none tracking-tight tabular-nums',
               palette.text
