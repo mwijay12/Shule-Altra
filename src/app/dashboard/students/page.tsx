@@ -429,10 +429,9 @@ export default function StudentsPage() {
             balance: selectedStudent.balance,
             photoUrl: selectedStudent.photoUrl,
           },
-        ],
-        { term: "Term 2 2026" }
+        ]
       )
-      toast({ title: "ID card generated", description: "A4 2-up sheet with crop marks · fully vector." })
+      toast({ title: "ID card generated", description: "A4 sheet with crop marks · fully vector." })
     } catch (err: any) {
       toast({ variant: "destructive", title: "ID export failed", description: err?.message ?? "Unknown error" })
     }
@@ -1081,7 +1080,7 @@ export default function StudentsPage() {
                                          <IdCard className="mr-2 h-4 w-4" /> Export learner ID · PDF
                                       </Button>
                                       <p className="text-[11px] font-bold text-muted-foreground">
-                                        Print-ready A4 sheet · crop marks · QR verification
+                                        Print-ready A4 sheet · crop marks · learner ID QR
                                       </p>
                                    </div>
                                 </div>

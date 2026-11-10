@@ -265,11 +265,11 @@ export default function ReportsPage() {
     {
       id: "ids",
       title: "Learner ID cards",
-      detail: "A4 2-up print sheet with crop marks, crest and QR verification.",
+      detail: "A4 sheet with crop marks, crest and learner ID QR.",
       icon: IdCard,
       run: async () => {
         const { downloadIdCards } = await import("@/lib/pdf/id-card");
-        return downloadIdCards(learners.slice(0, 12), { term: "Term 2 2026" });
+        return downloadIdCards(learners.slice(0, 12));
       },
     },
   ];

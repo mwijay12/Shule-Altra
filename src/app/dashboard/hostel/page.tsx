@@ -77,10 +77,10 @@ export default function HostelPage() {
   }, [db])
   const { data: utilities } = useDoc(utilitiesRef)
 
-  const utilityData = utilities || {
-    luku: "Healthy",
-    water: "Normal Flow",
-    hygiene: "Verified Today"
+  const utilityData = {
+    luku: utilities?.luku || "Not recorded",
+    water: utilities?.water || "Not recorded",
+    hygiene: utilities?.hygiene || "Not recorded"
   }
 
   // Calculate real occupancy nodes

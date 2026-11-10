@@ -38,7 +38,8 @@
     "demo:smoke:landingtheme": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/landing-theme.ts",
     "demo:smoke:perf": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/perf.ts",
     "demo:smoke:motionspec": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/motion-spec.ts",
-    "demo:smoke:loader": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/loader.tsx"
+    "demo:smoke:loader": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/loader.tsx",
+    "demo:smoke:integrity": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/integrity.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

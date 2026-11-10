@@ -1,11 +1,8 @@
 /**
  * @fileOverview Timetable model shared by the on-screen grid and the printable PDF.
  *
- * Allocation is deterministic for a given class + stream, and follows three
- * rules a real deputy would enforce:
- *   1. no subject is taught twice in one day for the same class;
- *   2. subject load is balanced across the week (each subject gets an even share);
- *   3. teachers never appear twice in the same period across the day.
+ * This is generated example data, not a saved school timetable. Classes are
+ * generated independently; no cross-class teacher clash check is performed.
  */
 
 import { O_LEVEL_CLASSES } from '@/lib/academics/config';
@@ -149,4 +146,19 @@ export function buildTimetable(
     grid,
     subjectLoad,
   };
+}
+
+/** Counts teaching slots separately from scheduled breaks. */
+export function summarizeTimetable(timetable: Pick<Timetable, 'periods' | 'days' | 'grid'>) {
+  let teaching = 0;
+  let free = 0;
+  let breaks = 0;
+  timetable.periods.forEach((period, periodIndex) => {
+    timetable.days.forEach((_, dayIndex) => {
+      if (period.isBreak) breaks += 1;
+      else if (timetable.grid[periodIndex]?.[dayIndex]) teaching += 1;
+      else free += 1;
+    });
+  });
+  return { teaching, free, breaks, capacity: teaching + free };
 }

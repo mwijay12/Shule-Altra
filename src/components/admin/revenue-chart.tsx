@@ -55,7 +55,7 @@ interface Bucket {
   count: number;
 }
 
-function buildBuckets(transactions: any[], days: number): Bucket[] {
+function buildBuckets(transactions: any[], days: number, target?: number): Bucket[] {
   const now = new Date();
   now.setHours(23, 59, 59, 999);
   const start = new Date(now.getTime() - days * 86_400_000);
@@ -83,7 +83,7 @@ function buildBuckets(transactions: any[], days: number): Bucket[] {
     bucketEnd.setHours(0, 0, 0, 0);
   }
 
-  const totalTarget = 76_000_000;
+  const totalTarget = target && Number.isFinite(target) && target > 0 ? target : 0;
   const perBucketTarget = totalTarget / bucketCount;
   buckets.forEach((bucket) => {
     bucket.target = perBucketTarget;
@@ -100,7 +100,7 @@ function buildBuckets(transactions: any[], days: number): Bucket[] {
     if (!bucket) return;
     const amount = Number(transaction?.amount ?? 0);
     if (transaction?.status === 'Pending') bucket.pending += amount;
-    else if (transaction?.status !== 'Failed') bucket.collected += amount;
+    else if (transaction?.status === 'Verified') bucket.collected += amount;
     bucket.count += 1;
   });
 
@@ -123,7 +123,7 @@ const SERIES_LABEL: Record<string, string> = {
 export function RevenueChart({ transactions, target, isLoading }: RevenueChartProps) {
   const { range, setRange, days } = useRange();
   const reducedMotion = useReducedMotion();
-  const buckets = React.useMemo(() => buildBuckets(transactions ?? [], days), [transactions, days]);
+  const buckets = React.useMemo(() => buildBuckets(transactions ?? [], days, target), [transactions, days, target]);
   // Hold the last dataset while the next one loads so Recharts interpolates the
   // points in place. Unmounting here made every 7D -> 30D switch redraw from zero.
   const data = useStableSeries(buckets, isLoading);
@@ -138,6 +138,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
   }, [data, target]);
 
   const average = totals.collected / Math.max(1, data.length);
+  const hasTarget = typeof target === 'number' && Number.isFinite(target) && target > 0;
 
   return (
     <div data-reveal className="glass-panel relative overflow-hidden rounded-3xl p-4 sm:p-6">
@@ -150,10 +151,10 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
             <p className="whitespace-nowrap font-headline text-[24px] font-bold leading-none tracking-tight text-foreground tabular-nums sm:text-[28px]">
               <AnimatedNumber value={totals.collected} prefix="TZS " />
             </p>
-            <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[12px] font-semibold text-emerald-600">
+            {hasTarget && <span className="mb-1 flex items-center gap-1 rounded-full bg-emerald-500/12 px-2 py-0.5 text-[12px] font-semibold text-emerald-600">
               <ArrowUpRight className="h-2.5 w-2.5" />
               <AnimatedNumber value={totals.rate} format={(n) => n.toFixed(1)} suffix="% of target" />
-            </span>
+            </span>}
           </div>
           <p className="mt-2 text-[13px] font-bold text-muted-foreground">
             {totals.pending > 0
@@ -253,7 +254,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               onMouseEnter={() => bind('pending').onMouseEnter()}
               onMouseLeave={() => bind('pending').onMouseLeave()}
             />
-            <Line
+            {hasTarget && <Line
               type="monotone"
               dataKey="target"
               stroke={SERIES.target}
@@ -267,7 +268,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
               strokeOpacity={opacityFor('target')}
               onMouseEnter={() => bind('target').onMouseEnter()}
               onMouseLeave={() => bind('target').onMouseLeave()}
-            />
+            />}
           </ComposedChart>
         </ResponsiveContainer>
       </ChartFrame>
@@ -276,7 +277,7 @@ export function RevenueChart({ transactions, target, isLoading }: RevenueChartPr
         {[
           { label: 'Verified', value: totals.collected, dot: 'bg-primary', series: 'collected' },
           { label: 'Pending', value: totals.pending, dot: 'bg-accent', series: 'pending' },
-          { label: 'Target', value: totals.expected, dot: 'bg-amber-500', series: 'target' },
+          ...(hasTarget ? [{ label: 'Target', value: totals.expected, dot: 'bg-amber-500', series: 'target' }] : []),
           { label: 'Avg / bucket', value: Math.round(average), dot: 'bg-emerald-500', series: null },
         ].map((item) => (
           <div

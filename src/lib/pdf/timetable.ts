@@ -11,9 +11,7 @@ import {
   downloadPdf,
   finalize,
   letterhead,
-  line,
   rect,
-  signatureRow,
   text,
   fit,
 } from '@/lib/pdf/kit';
@@ -22,7 +20,7 @@ import type { Timetable } from '@/lib/timetable';
 export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Array> {
   const ctx = await createDocument(
     {
-      title: `Timetable — ${timetable.className} ${timetable.stream}`,
+      title: `Example timetable — ${timetable.className} ${timetable.stream}`,
       subject: 'Master class timetable',
       reference: `TT-${timetable.className.replace(/\s+/g, '')}-${timetable.stream}-${new Date()
         .toISOString()
@@ -34,7 +32,7 @@ export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Arra
   );
 
   const { page, margin, width, font, bold } = ctx;
-  letterhead(ctx, 'Master class timetable', `${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`);
+  letterhead(ctx, 'EXAMPLE timetable - not an official schedule', `${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`);
 
   const gridTop = ctx.cursorY + 10;
   const gridLeft = margin;
@@ -188,15 +186,9 @@ export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Arra
   const legendRows = Math.ceil(timetable.subjectLoad.length / legendColumns);
   ctx.cursorY -= legendRows * 10 + 12;
 
-  if (ctx.cursorY > 92) {
-    line(ctx, margin, ctx.cursorY + 6, width - margin);
-    signatureRow(ctx, [
-      { role: 'Academic master', name: 'S. Kimaro' },
-      { role: 'Head of school', name: 'Dr. A. Mushi' },
-    ]);
-  }
 
-  return finalize(ctx, 'Computer-generated timetable · vector PDF · supersedes any annotated copy');
+
+  return finalize(ctx, 'Generated example only - not saved or checked for cross-class clashes');
 }
 
 export async function downloadTimetablePdf(timetable: Timetable) {

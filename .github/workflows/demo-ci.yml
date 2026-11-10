@@ -21,6 +21,8 @@ jobs:
         run: npm run typecheck
       - name: Data-layer smoke
         run: npm run demo:smoke:data
+      - name: Timetable and ID integrity
+        run: npm run demo:smoke:integrity
       - name: O-level consistency
         run: npm run demo:smoke:olevel
       - name: Frame budget (animation must be visible)

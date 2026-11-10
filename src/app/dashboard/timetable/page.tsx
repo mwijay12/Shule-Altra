@@ -5,11 +5,9 @@ import { useMemo, useState } from "react"
 import {
   CalendarDays,
   User,
-  Plus,
   Download,
   Loader2,
   Clock,
-  Zap,
   FileCheck2,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,6 +22,7 @@ import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import {
   buildTimetable,
+  summarizeTimetable,
   TIMETABLE_CLASSES,
   TIMETABLE_STREAMS,
 } from "@/lib/timetable"
@@ -39,7 +38,8 @@ export default function TimetablePage() {
     [selectedClass, stream]
   )
 
-  const teachingSlots = timetable.grid.flat().filter(Boolean).length
+  const summary = summarizeTimetable(timetable)
+  const teachingSlots = summary.teaching
 
   const handleExportPdf = async () => {
     setIsExporting(true)
@@ -66,11 +66,11 @@ export default function TimetablePage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
         <div className="space-y-1">
           <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
-            <CalendarDays className="h-2.5 w-2.5 mr-1.5" /> Institutional Schedule 2026
+            <CalendarDays className="h-2.5 w-2.5 mr-1.5" /> Example schedule · not saved
           </Badge>
           <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary tracking-tight">Academic Timetable</h1>
           <p className="text-muted-foreground text-[13px] font-bold leading-none">
-            <AnimatedNumber value={teachingSlots} /> teaching periods allocated · no clashes, balanced subject load
+            <AnimatedNumber value={teachingSlots} /> teaching periods in this generated example · not checked for clashes across classes
           </p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
@@ -83,12 +83,6 @@ export default function TimetablePage() {
             {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
             {isExporting ? "Building PDF" : "Download PDF"}
           </Button>
-          <Button
-            onClick={() => toast({ title: "Pick a slot", description: "Select a free slot on the grid to assign a teacher." })}
-            className="flex-1 sm:flex-none rounded-full colorful-gradient h-11 shadow-xl font-semibold text-[12px] px-8 group"
-          >
-            <Plus className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> Assign Period
-          </Button>
         </div>
       </div>
 
@@ -96,7 +90,7 @@ export default function TimetablePage() {
         <StatCard index={0} label="Teaching periods" value={teachingSlots} icon={Clock} tone="primary" sub={`${timetable.className} · Stream ${timetable.stream}`} />
         <StatCard index={1} label="Subjects taught" value={timetable.subjectLoad.filter((s) => s.periods > 0).length} icon={FileCheck2} tone="accent" sub="On this class timetable" />
         <StatCard index={2} label="Teachers assigned" value={new Set(timetable.subjectLoad.map((s) => s.teacher).filter(Boolean)).size} icon={User} tone="emerald" sub="Distinct teachers on the grid" />
-        <StatCard index={3} label="Free periods" value={timetable.grid.flat().filter((cell) => cell === null).length} icon={CalendarDays} tone="slate" sub="Breaks and unallocated slots" />
+        <StatCard index={3} label="Free periods" value={summary.free} icon={CalendarDays} tone="slate" sub={`${summary.breaks} scheduled break slots excluded`} />
       </div>
 
       <ChartPanel
@@ -105,7 +99,7 @@ export default function TimetablePage() {
         className="mx-1"
         data-reveal
       >
-        <WeekUtilisation grid={timetable.grid} subjectCount={timetable.subjectLoad.length} />
+        <WeekUtilisation timetable={timetable} />
       </ChartPanel>
 
       <div className="grid gap-6 lg:grid-cols-12">
@@ -144,13 +138,9 @@ export default function TimetablePage() {
             </div>
 
             <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent/5 text-accent border border-accent/10">
-                <Zap className="h-5 w-5 fill-accent" />
-                <div>
-                  <p className="text-[12px] font-semibold">Clash check</p>
-                  <p className="text-[13px] font-bold">No teacher booked twice</p>
-                </div>
-              </div>
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                Generated example only. Teachers and rooms are not checked against other classes; assignments are not saved.
+              </p>
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 text-emerald-600 border border-emerald-500/10">
                 <FileCheck2 className="h-5 w-5" />
                 <div>
@@ -171,7 +161,7 @@ export default function TimetablePage() {
                 {selectedClass} · Stream {stream}
               </CardTitle>
               <CardDescription className="text-[13px] font-bold text-primary/60">
-                Official NECTA curriculum distribution · clash-free
+                Generated example · not an official or clash-checked timetable
               </CardDescription>
             </div>
             <Badge className="bg-primary text-white border-none px-4 py-1 rounded-full font-semibold text-[12px]">

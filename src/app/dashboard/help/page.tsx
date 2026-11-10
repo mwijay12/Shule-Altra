@@ -32,6 +32,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
+import { COMPANY, SUPPORT } from "@/lib/company"
 
 const articles = [
   {
@@ -184,26 +185,28 @@ export default function HelpPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 pt-4">
-              <div className="flex items-center gap-4 p-3 rounded-xl bg-white border border-accent/5">
+              <a href={`mailto:${SUPPORT.email}`} className="flex items-center gap-4 p-3 rounded-xl bg-card border border-accent/10 hover:border-accent/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                 <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
                   <Mail className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground">Email Ticketing</p>
-                  <p className="text-sm font-bold">support@shulepro.co.tz</p>
+                  <p className="text-xs font-semibold text-muted-foreground">Email support</p>
+                  <p className="break-all text-sm font-bold">{SUPPORT.email}</p>
                 </div>
-              </div>
-              <div className="flex items-center gap-4 p-3 rounded-xl bg-white border border-accent/5">
+              </a>
+              <a href={SUPPORT.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 rounded-xl bg-card border border-accent/10 hover:border-accent/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
                 <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
                   <MessageSquare className="h-5 w-5" />
                 </div>
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground">WhatsApp Help</p>
-                  <p className="text-sm font-bold">+255 700 000 000</p>
+                  <p className="text-sm font-bold">{SUPPORT.phone}</p>
                 </div>
-              </div>
-              <Button variant="outline" className="w-full rounded-full border-accent/20 text-accent font-bold h-11">
-                Open Support Ticket
+              </a>
+              <a href={COMPANY.phoneHref} className="block text-sm font-semibold text-accent underline underline-offset-4">Call {SUPPORT.phone}</a>
+              <p className="text-xs leading-relaxed text-muted-foreground">{SUPPORT.hours} · {SUPPORT.responseAim}</p>
+              <Button asChild variant="outline" className="w-full rounded-full border-accent/20 text-accent font-bold h-11">
+                <a href={`mailto:${SUPPORT.email}`}>Email support</a>
               </Button>
             </CardContent>
           </Card>
