@@ -8,7 +8,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { collection, limit, orderBy, query } from 'firebase/firestore';
+import { collection, orderBy, query } from 'firebase/firestore';
 import { motion } from 'motion/react';
 import {
   ArrowRight,
@@ -65,28 +65,24 @@ export default function CommandDeckPage() {
   const [exportingIds, setExportingIds] = React.useState(false);
 
   const studentsQuery = useMemoFirebase(
-    () => query(collection(db, 'schools', 'school-001', 'students'), orderBy('name', 'asc'), limit(300)),
+    () => query(collection(db, 'schools', 'school-001', 'students'), orderBy('name', 'asc')),
     [db]
   );
   const { data: students, isLoading: studentsLoading } = useCollection<any>(studentsQuery);
 
   const transactionsQuery = useMemoFirebase(
-    () => query(collection(db, 'schools', 'school-001', 'transactions'), orderBy('createdAt', 'desc'), limit(240)),
+    () => query(collection(db, 'schools', 'school-001', 'transactions'), orderBy('createdAt', 'desc')),
     [db]
   );
   const { data: transactions, isLoading: txLoading } = useCollection<any>(transactionsQuery);
 
-  const attendanceQuery = useMemoFirebase(
-    () => query(collection(db, 'schools', 'school-001', 'attendance'), limit(600)),
-    [db]
-  );
-  const { data: attendance } = useCollection<any>(attendanceQuery);
+
 
   const learners = (students ?? []) as any[];
   const ledger = (transactions ?? []) as any[];
 
   const metrics = React.useMemo(() => {
-    const verified = ledger.filter((row) => row.status !== 'Pending' && row.status !== 'Failed');
+    const verified = ledger.filter((row) => row.status === 'Verified');
     const collected = verified.reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
     const pending = ledger
       .filter((row) => row.status === 'Pending')
@@ -95,12 +91,15 @@ export default function CommandDeckPage() {
     // The register carries the authoritative billed/paid totals; the ledger is a sample.
     const registerPaid = learners.reduce((sum, learner) => sum + Number(learner.totalPaid ?? 0), 0);
     const billed = registerPaid + outstanding;
-    const authoritativeCollected = registerPaid > 0 ? registerPaid : collected;
+    const authoritativeCollected = learners.some((learner) => learner.totalPaid != null) ? registerPaid : collected;
     const rate = billed > 0 ? Math.min(100, authoritativeCollected / billed * 100) : 0;
 
-    const present = (attendance ?? []).filter((row: any) => row.status === 'Present').length;
-    const totalAttendance = (attendance ?? []).length;
-    const presence = totalAttendance > 0 ? (present / totalAttendance) * 100 : 96.7;
+    // The attendance screen currently stores the latest status on each learner.
+    // This is not a dated daily register, so do not label it as today's data.
+    const marked = learners.filter((row) => ['Present', 'Late', 'Absent'].includes(row.attendanceStatus));
+    const present = marked.filter((row) => row.attendanceStatus === 'Present' || row.attendanceStatus === 'Late').length;
+    const presence = marked.length > 0 ? (present / marked.length) * 100 : null;
+    const outstandingCount = learners.filter((learner) => Number(learner.balance ?? 0) > 0).length;
 
     const followUps: FollowUpItem[] = learners
       .filter((learner) => Number(learner.balance ?? 0) > 0)
@@ -109,7 +108,7 @@ export default function CommandDeckPage() {
       .map((learner) => ({
         id: learner.id,
         name: learner.name ?? 'Unnamed learner',
-        className: learner.className ?? 'Unassigned',
+        className: learner.className ?? learner.class ?? 'Unassigned',
         balance: Number(learner.balance ?? 0),
         paid: Number(learner.totalPaid ?? 0),
         admissionNumber: learner.admissionNumber ?? learner.id,
@@ -123,7 +122,7 @@ export default function CommandDeckPage() {
       return ledger
         .filter((row) => {
           const created = toDate(row.createdAt);
-          return created && created >= day && created < next && row.status !== 'Failed';
+          return created && created >= day && created < next && row.status === 'Verified';
         })
         .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
     });
@@ -137,11 +136,12 @@ export default function CommandDeckPage() {
       presence,
       enrolment: learners.length,
       followUps,
+      outstandingCount,
       weeklySpark,
       verifiedCount: verified.length,
       disputed: ledger.filter((row) => row.status === 'Disputed').length,
     };
-  }, [ledger, learners, attendance]);
+  }, [ledger, learners]);
 
   const recentLedger = React.useMemo(
     () =>
@@ -182,10 +182,10 @@ export default function CommandDeckPage() {
   const handleIdCards = React.useCallback(async () => {
     setExportingIds(true);
     try {
-      await downloadIdCards(learners.slice(0, 12), { term: 'Term 2 2026' });
+      await downloadIdCards(learners.slice(0, 12));
       toast({
         title: 'ID cards generated',
-        description: '12 cards · A4 2-up with crop marks · fully vector.',
+        description: 'Up to 12 cards · A4 sheet with crop marks.',
       });
     } catch (error) {
       toast({
@@ -228,7 +228,7 @@ export default function CommandDeckPage() {
             {greeting}, {roleLabel}.
           </h2>
           <p className="mt-2 max-w-md text-[14px] font-medium leading-relaxed text-muted-foreground sm:text-xs">
-            <AnimatedNumber value={metrics.enrolment} /> learners on the register · <AnimatedNumber value={metrics.followUps.length} /> balances need chasing ·
+            <AnimatedNumber value={metrics.enrolment} /> learners on the register · <AnimatedNumber value={metrics.outstandingCount} /> balances need chasing ·
             <AnimatedNumber value={metrics.pending} prefix="TZS " /> in gateway queue.
           </p>
 
@@ -272,7 +272,6 @@ export default function CommandDeckPage() {
           label="Collected (all time)"
           value={metrics.collected}
           format={formatTZSCompact}
-          delta={12.4}
           caption={`${metrics.verifiedCount} verified receipts`}
           icon={CircleDollarSign}
           tone="primary"
@@ -284,8 +283,7 @@ export default function CommandDeckPage() {
           label="Outstanding"
           value={metrics.outstanding}
           format={formatTZSCompact}
-          delta={-4.8}
-          caption={`${metrics.followUps.length} learners`}
+          caption={`${metrics.outstandingCount} learners`}
           icon={Wallet}
           tone="amber"
           progress={100 - metrics.rate}
@@ -296,7 +294,6 @@ export default function CommandDeckPage() {
           label="Enrolment"
           value={metrics.enrolment}
           format={(value) => `${Math.round(value)} learners`}
-          delta={3.2}
           caption={studentsLoading ? 'syncing register…' : 'active on register'}
           icon={Users}
           tone="accent"
@@ -304,14 +301,13 @@ export default function CommandDeckPage() {
           delay={0.1}
         />
         <KpiCard
-          label="Attendance today"
-          value={metrics.presence}
-          format={(value) => `${value.toFixed(1)}%`}
-          delta={1.6}
-          caption="presence register"
+          label="Register presence"
+          value={metrics.presence ?? 0}
+          format={(value) => metrics.presence === null ? 'No records' : `${value.toFixed(1)}%`}
+          caption={metrics.presence === null ? "No attendance status recorded" : "Present or late among marked learners"}
           icon={ClipboardCheck}
           tone="emerald"
-          progress={metrics.presence}
+          progress={metrics.presence ?? undefined}
           delay={0.15}
         />
       </section>
@@ -330,7 +326,7 @@ export default function CommandDeckPage() {
               <p className="text-[12px] font-semibold text-muted-foreground">
                 Ledger stream
               </p>
-              <h3 className="mt-1 text-[13px] text-foreground">Latest verified activity</h3>
+              <h3 className="mt-1 text-[13px] text-foreground">Latest ledger activity</h3>
             </div>
             <Link
               href="/dashboard/finance"

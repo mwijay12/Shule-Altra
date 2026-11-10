@@ -1,7 +1,7 @@
 /**
  * @fileOverview Brand palette registry.
  *
- * Four palettes, each carrying BOTH light and dark surface tokens, so a school
+ * Palettes, each carrying BOTH light and dark surface tokens, so a school
  * can change its identity without anyone editing CSS. Adapted from the
  * VoltaRentals theme studio pattern: one registry, applied as CSS variables.
  *
@@ -55,7 +55,7 @@ const neutralChart = (a: string, b: string, c: string, d: string, e: string): [s
 export const PALETTES: Record<string, Palette> = {
   blue_ridge: {
     id: 'blue_ridge',
-    name: 'Blue Ridge',
+    name: 'Blue & Cyan',
     description: 'Cool blue with a cyan accent. The calm, default institutional voice.',
     swatch: ['#1D4ED8', '#22D3EE', '#0B1220'],
     sphere: '#2563EB',
@@ -114,7 +114,7 @@ export const PALETTES: Record<string, Palette> = {
 
   emerald: {
     id: 'emerald',
-    name: 'Emerald',
+    name: 'Green & Gold',
     description: 'Deep green with a gold accent. Reads well on printed reports.',
     swatch: ['#15803D', '#EAB308', '#0A1410'],
     sphere: '#16A34A',
@@ -173,7 +173,7 @@ export const PALETTES: Record<string, Palette> = {
 
   carbon_gold: {
     id: 'carbon_gold',
-    name: 'Carbon Gold',
+    name: 'Gold & Charcoal',
     description: 'Graphite and gold. Formal, high-contrast, board-meeting ready.',
     swatch: ['#CA8A04', '#E5E7EB', '#0A0A0A'],
     sphere: '#3F3F46',
@@ -232,7 +232,7 @@ export const PALETTES: Record<string, Palette> = {
 
   crimson: {
     id: 'crimson',
-    name: 'Crimson',
+    name: 'Maroon & Amber',
     description: 'Maroon with amber. Strong house colours for a school with a crest.',
     swatch: ['#B91C1C', '#F59E0B', '#0B0A0A'],
     sphere: '#DC2626',
@@ -287,6 +287,39 @@ export const PALETTES: Record<string, Palette> = {
       sidebarBorder: '0 18% 20%',
       chart: neutralChart('0 84% 62%', '38 92% 58%', '217 85% 66%', '173 65% 48%', '262 75% 70%'),
     },
+  },
+};
+
+// Build on the same complete surface system while giving purple its own identity.
+PALETTES.plum = {
+  id: 'plum',
+  name: 'Purple & Rose',
+  description: 'Purple buttons and highlights with a warm rose accent.',
+  swatch: ['#6b21a8', '#be185d', '#faf5ff'],
+  sphere: '#7e22ce',
+  orbHue: 280,
+  light: {
+    ...PALETTES.crimson.light,
+    background: '280 30% 97%', foreground: '280 25% 12%', cardForeground: '280 25% 12%',
+    popoverForeground: '280 25% 12%', primary: '280 65% 35%', primaryForeground: '0 0% 100%',
+    secondary: '280 25% 94%', secondaryForeground: '280 65% 30%', muted: '280 18% 94%',
+    mutedForeground: '280 10% 38%', accent: '330 70% 37%', accentForeground: '0 0% 100%',
+    border: '280 16% 87%', input: '280 16% 87%', ring: '280 65% 35%',
+    sidebarForeground: '280 25% 12%', sidebarAccent: '280 25% 95%',
+    sidebarAccentForeground: '280 65% 30%', sidebarBorder: '280 16% 89%',
+    chart: neutralChart('280 65% 40%', '330 70% 40%', '38 85% 40%', '160 65% 34%', '210 70% 45%'),
+  },
+  dark: {
+    ...PALETTES.crimson.dark,
+    background: '280 30% 6%', foreground: '280 14% 96%', card: '280 24% 10%',
+    cardForeground: '280 14% 96%', popover: '280 24% 8%', popoverForeground: '280 14% 96%',
+    primary: '280 75% 70%', primaryForeground: '280 30% 7%', secondary: '280 18% 16%',
+    secondaryForeground: '280 14% 96%', muted: '280 18% 16%', mutedForeground: '280 10% 70%',
+    accent: '330 75% 70%', accentForeground: '280 30% 7%', border: '280 18% 22%',
+    input: '280 18% 22%', ring: '280 75% 70%', sidebarBackground: '280 24% 8%',
+    sidebarForeground: '280 14% 96%', sidebarAccent: '280 18% 16%',
+    sidebarAccentForeground: '280 75% 75%', sidebarBorder: '280 18% 20%',
+    chart: neutralChart('280 75% 70%', '330 75% 70%', '38 85% 60%', '160 65% 55%', '210 80% 70%'),
   },
 };
 

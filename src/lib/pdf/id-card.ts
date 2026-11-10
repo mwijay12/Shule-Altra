@@ -1,19 +1,22 @@
 /**
- * @fileOverview Learner ID cards, printed 2-up on A4 with crop marks.
+ * @fileOverview Learner ID cards, printed 4-up on A4 with crop marks.
  * Text, crest, rules and barcode are vector; the verification QR is embedded
  * from a generated matrix (not a screenshot).
  */
 
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
-import { A4, COLORS, SCHOOL, downloadPdf, drawCrest, money, sanitize } from '@/lib/pdf/kit';
+import { PDFDocument, StandardFonts, rgb, type PDFFont } from 'pdf-lib';
+import { A4, COLORS, downloadPdf, drawCrest, fit, sanitize } from '@/lib/pdf/kit';
+import { getActiveBrand } from '@/lib/brand/identity';
 
 export interface IdCardLearner {
   id: string;
   name: string;
   className?: string;
+  class?: string;
   admissionNumber?: string;
   gender?: string;
   parentPhone?: string;
+  guardianPhone?: string;
   balance?: number;
   house?: string;
   dateOfBirth?: string;
@@ -76,6 +79,36 @@ const CARD_W = 242.65; // 85.6 mm
 const CARD_H = 153.07; // 54 mm
 const PER_PAGE = 4;
 
+/** Fit the complete name in up to three lines without colliding with the ID. */
+export function layoutIdCardName(name: string, font: PDFFont, maxWidth: number) {
+  const clean = sanitize(name.toUpperCase()).replace(/\s+/g, ' ').trim() || 'UNNAMED LEARNER';
+  const wrap = (size: number) => {
+    const lines: string[] = [];
+    let line = '';
+    for (const word of clean.split(' ')) {
+      const candidate = line ? `${line} ${word}` : word;
+      if (font.widthOfTextAtSize(candidate, size) <= maxWidth) { line = candidate; continue; }
+      if (line) { lines.push(line); line = ''; }
+      for (const char of word) {
+        if (line && font.widthOfTextAtSize(line + char, size) > maxWidth) {
+          lines.push(line);
+          line = '';
+        }
+        line += char;
+      }
+    }
+    if (line) lines.push(line);
+    return lines;
+  };
+  let size = 11;
+  let lines = wrap(size);
+  while (lines.length > 3 && size > 1) {
+    size = Math.max(1, size - 0.25);
+    lines = wrap(size);
+  }
+  return { lines, size };
+}
+
 async function buildQrBytes(text: string): Promise<{ bytes: Uint8Array; size: number } | null> {
   try {
     const QRCode = await import('qrcode');
@@ -100,9 +133,10 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
+  const brand = getActiveBrand();
   doc.setTitle('Learner identity cards');
   doc.setSubject('Learner identification documents');
-  doc.setAuthor(SCHOOL.name);
+  doc.setAuthor(brand.name);
   doc.setCreator('Shule Altra Command OS');
   doc.setProducer('Shule Altra · pdf-lib vector engine');
 
@@ -119,7 +153,7 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
     const page = doc.addPage(A4);
     const chunk = slots.slice(index, index + PER_PAGE);
 
-    page.drawText(sanitize(`LEARNER IDENTITY CARDS · ${options.term ?? 'Term 2 2026'} · ${SCHOOL.name}`), {
+    page.drawText(fit(bold, `LEARNER IDENTITY CARDS · ${options.term ?? 'Learner register'} · ${brand.name}`, 8, A4[0] - 88), {
       x: 44,
       y: A4[1] - 40,
       size: 8,
@@ -155,8 +189,8 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         font: bold,
       });
 
-      page.drawText('SHULE ALTRA', { x: x + 42, y: y + CARD_H - 17, size: 9, font: bold, color: COLORS.white });
-      page.drawText(sanitize('SECONDARY SCHOOL · DAR ES SALAAM'), {
+      page.drawText(fit(bold, brand.name.toUpperCase(), 8, CARD_W - 54), { x: x + 42, y: y + CARD_H - 17, size: 8, font: bold, color: COLORS.white });
+      page.drawText(fit(font, brand.address, 4.8, CARD_W - 54), {
         x: x + 42,
         y: y + CARD_H - 27,
         size: 4.8,
@@ -174,14 +208,14 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
       });
 
       const photo = photos.get(index + slot);
-      const textWidth = photo ? CARD_W - 112 : CARD_W - 90;
+      const textWidth = photo ? CARD_W - 134 : CARD_W - 90;
 
       if (photo) {
         // Fit inside the frame without stretching a face.
         const scale = Math.min(PHOTO_W / photo.width, PHOTO_H / photo.height);
         const drawW = photo.width * scale;
         const drawH = photo.height * scale;
-        const frameX = x + CARD_W - PHOTO_W - 12;
+        const frameX = x + CARD_W - 110;
         const frameY = y + CARD_H - PHOTO_H - 54;
         page.drawRectangle({
           x: frameX - 1.5,
@@ -200,78 +234,46 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         });
       }
 
-      page.drawText(sanitize(learner.name.toUpperCase()), {
-        x: x + 12,
-        y: y + 78,
-        size: 11,
-        font: bold,
-        color: COLORS.navy,
-        maxWidth: textWidth,
+      const nameLayout = layoutIdCardName(learner.name, bold, textWidth);
+      nameLayout.lines.forEach((line, lineIndex) => {
+        page.drawText(line, {
+          x: x + 12, y: y + 91 - lineIndex * 10.5, size: nameLayout.size, font: bold, color: COLORS.navy,
+        });
       });
-      page.drawText(sanitize(learner.admissionNumber ?? learner.id), {
-        x: x + 12,
-        y: y + 66,
-        size: 7.4,
-        font: bold,
-        color: COLORS.primary,
-        maxWidth: textWidth,
+      const admission = learner.admissionNumber ?? learner.id;
+      const className = learner.className ?? learner.class ?? 'Unassigned';
+      const guardianPhone = learner.parentPhone ?? learner.guardianPhone;
+      page.drawText(fit(bold, admission, 7.4, textWidth), {
+        x: x + 12, y: y + 62, size: 7.4, font: bold, color: COLORS.primary,
       });
-      page.drawText(sanitize(`${learner.className ?? 'Unassigned'}${learner.house ? ` · ${learner.house} House` : ''}`), {
-        x: x + 12,
-        y: y + 55,
-        size: 6.4,
-        font,
-        color: COLORS.muted,
-        maxWidth: textWidth,
+      page.drawText(fit(font, `${className}${learner.house ? ` · ${learner.house} House` : ''}`, 6.4, textWidth), {
+        x: x + 12, y: y + 51, size: 6.4, font, color: COLORS.muted,
       });
-      page.drawText(sanitize(`Guardian: ${learner.parentPhone ?? 'On file'}`), {
-        x: x + 12,
-        y: y + 45,
-        size: 6,
-        font,
-        color: COLORS.muted,
-        maxWidth: CARD_W - 90,
-      });
-      page.drawText(sanitize(`Status: ${Number(learner.balance ?? 0) > 0 ? 'Active · fees pending' : 'Active · cleared'}`), {
-        x: x + 12,
-        y: y + 35,
-        size: 6,
-        font,
-        color: Number(learner.balance ?? 0) > 0 ? COLORS.warning : COLORS.success,
-        maxWidth: CARD_W - 90,
-      });
-      page.drawText(sanitize(`Term 2 · 2026 · ${money(Number(learner.balance ?? 0))} balance`), {
-        x: x + 12,
-        y: y + 24,
-        size: 5.4,
-        font,
-        color: COLORS.muted,
-        maxWidth: CARD_W - 90,
-      });
+      if (guardianPhone) {
+        page.drawText(fit(font, `Guardian: ${guardianPhone}`, 6, textWidth), {
+          x: x + 12, y: y + 40, size: 6, font, color: COLORS.muted,
+        });
+      }
+      if (options.term) {
+        page.drawText(fit(font, options.term, 5.4, textWidth), {
+          x: x + 12, y: y + 29, size: 5.4, font, color: COLORS.muted,
+        });
+      }
 
-      // QR (verification payload)
+      // QR carries learner identifiers; it does not authenticate a record.
       const qr = await buildQrBytes(
-        `SHULE-ALTRA|${learner.admissionNumber ?? learner.id}|${learner.className ?? ''}`
+        `SHULE-ALTRA|${admission}|${className}`
       );
       if (qr) {
         const image = await doc.embedPng(qr.bytes);
         page.drawImage(image, { x: x + CARD_W - 62, y: y + 34, width: 50, height: 50 });
-        page.drawText('SCAN TO VERIFY', {
+        page.drawText('LEARNER ID DATA', {
           x: x + CARD_W - 62,
           y: y + 25,
           size: 4.4,
           font: bold,
           color: COLORS.muted,
         });
-      } else {
-        // Deterministic vector barcode fallback (no raster dependency)
-        const seed = (learner.admissionNumber ?? learner.id).replace(/\D/g, '').slice(-8).padStart(8, '0');
-        let bx = x + CARD_W - 62;
-        for (let i = 0; i < seed.length; i += 1) {
-          const width = 1 + (Number(seed[i]) % 3);
-          page.drawRectangle({ x: bx, y: y + 40, width, height: 32, color: COLORS.navy });
-          bx += width + 1.6;
-        }
       }
 
       page.drawLine({
@@ -280,7 +282,7 @@ export async function buildIdCards(learners: IdCardLearner[], options: { term?: 
         color: COLORS.line,
         thickness: 0.5,
       });
-      page.drawText(sanitize(`${SCHOOL.contacts} · ${SCHOOL.registration}`), {
+      page.drawText(fit(font, `${brand.contacts} · ${brand.registration}`, 4, CARD_W - 24), {
         x: x + 12,
         y: y + 8,
         size: 4,

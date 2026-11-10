@@ -79,19 +79,19 @@ function PaletteCard({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <span
-          aria-hidden
-          className="h-14 w-14 shrink-0 rounded-full shadow-inner"
-          style={{
-            background: `radial-gradient(circle at 32% 28%, ${palette.swatch[1]}, ${palette.sphere} 52%, ${palette.swatch[2]} 100%)`,
-          }}
-        />
-        {active ? (
-          <Badge className="gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold">
-            <Check className="h-3 w-3" />
-            {published ? 'Live' : 'Preview'}
-          </Badge>
-        ) : null}
+        <div aria-hidden className="flex h-20 w-36 overflow-hidden rounded-lg border" style={{ background: `hsl(${palette.light.background})`, borderColor: `hsl(${palette.light.border})` }}>
+          <div className="w-9 space-y-1 p-1.5" style={{ background: `hsl(${palette.light.card})` }}>
+            <div className="h-2 rounded" style={{ background: `hsl(${palette.light.primary})` }} />
+            <div className="h-1 rounded" style={{ background: `hsl(${palette.light.border})` }} />
+            <div className="h-1 rounded" style={{ background: `hsl(${palette.light.border})` }} />
+          </div>
+          <div className="flex-1 space-y-1.5 p-2">
+            <div className="h-1.5 w-12 rounded" style={{ background: `hsl(${palette.light.foreground})` }} />
+            <div className="h-7 rounded border" style={{ background: `hsl(${palette.light.card})`, borderColor: `hsl(${palette.light.border})` }} />
+            <div className="flex gap-1"><span className="h-2 w-8 rounded" style={{ background: `hsl(${palette.light.primary})` }} /><span className="h-2 w-5 rounded" style={{ background: `hsl(${palette.light.accent})` }} /></div>
+          </div>
+        </div>
+        {(active || published) && <Badge className="gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"><Check className="h-3 w-3" />{active ? (published ? 'Live' : 'Preview') : 'Live'}</Badge>}
       </div>
 
       <div>
@@ -394,8 +394,8 @@ export default function ThemeStudioPage() {
             <CardHeader>
               <CardTitle>Palette</CardTitle>
               <CardDescription>
-                Four complete colour systems. Each carries a light and a dark variant, so the same
-                choice works on a bright office monitor and at night.
+                Choose a colour to preview it on your screen. The miniature shows its light appearance;
+                every option also supports dark mode. Select “Publish to school” to share your choice.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">

@@ -273,7 +273,6 @@ export default function AnalyticsPage() {
           label="Cohort average"
           value={summary.average}
           format={(value) => `${value.toFixed(1)}%`}
-          delta={2.7}
           caption="all subjects"
           icon={GraduationCap}
           tone="primary"
@@ -283,7 +282,6 @@ export default function AnalyticsPage() {
           label="Collection rate"
           value={summary.rate}
           format={(value) => `${value.toFixed(1)}%`}
-          delta={5.1}
           caption="of billed fees"
           icon={TrendingUp}
           tone="emerald"
@@ -293,7 +291,6 @@ export default function AnalyticsPage() {
           label="Mean presence"
           value={summary.presenceRate}
           format={(value) => `${value.toFixed(1)}%`}
-          delta={-0.6}
           caption="register window"
           icon={Users}
           tone="accent"
@@ -303,7 +300,6 @@ export default function AnalyticsPage() {
           label="Fee defaulters"
           value={summary.defaulters}
           format={(value) => `${Math.round(value)} learners`}
-          delta={-3.4}
           caption={`${learners.length} enrolled`}
           icon={Download}
           tone="amber"

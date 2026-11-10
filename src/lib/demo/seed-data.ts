@@ -605,7 +605,7 @@ export function buildDemoDataset(): DemoDataset {
   dataset[`schools/${DEMO_SCHOOL_ID}/config/utilities`] = {
     luku: 'Healthy',
     water: 'Normal Flow',
-    hygiene: 'Verified Today',
+    hygiene: 'Inspection recorded',
     generator: 'Standby',
     updatedAt: daysAgo(1),
   };

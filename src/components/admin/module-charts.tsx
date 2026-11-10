@@ -32,6 +32,7 @@ import {
   YAxis,
 } from 'recharts';
 import { ChartFrame, ShareBar, RatioDonut, useSeriesMotion } from '@/components/admin/chart-motion';
+import { summarizeTimetable } from '@/lib/timetable';
 import { GrowingBar, GlidingTooltip } from '@/components/motion/chart-interaction';
 import { cn } from '@/lib/utils';
 
@@ -617,51 +618,20 @@ export function DivisionSpread({ rankings }: { rankings: any[] }) {
   );
 }
 
-/**
- * How much of the available week is actually timetabled.
- *
- * The generator deliberately gives every subject the same weight, so a ranked
- * "subject load" chart draws ten identical bars and tells a head teacher nothing.
- * Utilisation does vary, by class, stream and any manual edits, so that is
- * what gets drawn, with the balance stated in words.
- */
-export function WeekUtilisation({
-  grid,
-  subjectCount,
-}: {
-  grid: Array<Array<unknown | null>>;
-  subjectCount: number;
-}) {
-  const cells = React.useMemo(() => grid.flat(), [grid]);
-  const filled = cells.filter(Boolean).length;
-  const total = cells.length;
-  if (total === 0) return <Empty message="This timetable has no periods yet." />;
-  const pct = (filled / total) * 100;
+/** Counts only teaching periods when calculating utilisation. */
+export function WeekUtilisation({ timetable }: { timetable: import('@/lib/timetable').Timetable }) {
+  const { teaching, free, breaks, capacity } = summarizeTimetable(timetable);
+  if (capacity === 0) return <Empty message="This timetable has no teaching periods yet." />;
+  const pct = (teaching / capacity) * 100;
 
   return (
     <ChartFrame height={230}>
       <div className="flex flex-col items-center gap-4 py-2 sm:flex-row sm:justify-center sm:gap-10">
-        <RatioDonut
-          value={pct}
-          label="of the week"
-          caption={`${filled} of ${total} slots`}
-          colour="hsl(var(--primary))"
-        />
+        <RatioDonut value={pct} label="teaching slots filled" caption={`${teaching} of ${capacity} teaching slots`} colour="hsl(var(--primary))" />
         <dl className="space-y-3 text-[13px]">
-          <div>
-            <dt className="text-muted-foreground">Teaching periods</dt>
-            <dd className="text-lg font-semibold tabular-nums text-foreground">{filled}</dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">Breaks and free slots</dt>
-            <dd className="text-lg font-semibold tabular-nums text-foreground">{total - filled}</dd>
-          </div>
-          <div className="max-w-[30ch]">
-            <dt className="text-muted-foreground">Subject balance</dt>
-            <dd className="font-medium leading-snug text-foreground">
-              {subjectCount} subjects, weighted evenly by the planner.
-            </dd>
-          </div>
+          <div><dt className="text-muted-foreground">Scheduled lessons</dt><dd className="text-lg font-semibold tabular-nums text-foreground">{teaching}</dd></div>
+          <div><dt className="text-muted-foreground">Unallocated teaching slots</dt><dd className="text-lg font-semibold tabular-nums text-foreground">{free}</dd></div>
+          <div><dt className="text-muted-foreground">Scheduled breaks (excluded)</dt><dd className="text-lg font-semibold tabular-nums text-foreground">{breaks}</dd></div>
         </dl>
       </div>
     </ChartFrame>

@@ -80,8 +80,8 @@ function contrast(a: string, b: string): number {
 async function main() {
   console.log('\nPALETTE REGISTRY');
 
-  await check('four palettes, each with a light and a dark variant', () => {
-    assert.equal(PALETTE_LIST.length, 4);
+  await check('five palettes, each with a light and a dark variant', () => {
+    assert.equal(PALETTE_LIST.length, 5);
     for (const palette of PALETTE_LIST) {
       assert.ok(palette.light && palette.dark, palette.id);
       assert.equal(palette.swatch.length, 3, palette.id);

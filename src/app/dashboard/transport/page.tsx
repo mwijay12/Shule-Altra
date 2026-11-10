@@ -7,7 +7,6 @@ import {
   Bus,
   MapPin,
   Users,
-  ShieldCheck,
   Clock,
   Search,
   Plus,
@@ -16,7 +15,6 @@ import {
   Fuel,
   History,
   AlertTriangle,
-  QrCode,
   Smartphone,
   CheckCircle2,
   Zap,
@@ -111,10 +109,6 @@ export default function TransportPage() {
           <p className="text-muted-foreground text-[13px] font-bold leading-none">Management of Day Student transit and fleet safety.</p>
         </div>
         <div className="flex gap-2 w-full sm:w-auto">
-          <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-semibold text-[13px]">
-            <QrCode className="mr-2 h-4 w-4" /> Verify Student
-          </Button>
-
           <Dialog open={isAddingRoute} onOpenChange={setIsAddingRoute}>
             <DialogTrigger asChild>
               <Button className="flex-1 sm:flex-none rounded-full h-11 px-8 colorful-gradient shadow-lg font-semibold text-[13px] group">
@@ -154,10 +148,10 @@ export default function TransportPage() {
 
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 px-1">
         {[
-          { label: "Fleet Ready", value: routes.filter((r: any) => r.status === "Active" && r.vehicle).length, suffix: " Buses", sub: "Operational", icon: Bus, tone: "primary" as const },
-          { label: "Active Routes", value: routes.filter((r: any) => r.status === "Active").length, sub: "In Transit", icon: Navigation, tone: "accent" as const },
-          { label: "Safety Score", value: 100, suffix: "%", sub: "Audit Passed", icon: ShieldCheck, tone: "emerald" as const },
-          { label: "Day Students", value: fleetPayload, sub: "Fleet Payload", icon: Users, tone: "amber" as const },
+          { label: "Routes with vehicles", value: routes.filter((r: any) => r.status === "Active" && r.vehicle).length, sub: "Active routes with a vehicle recorded", icon: Bus, tone: "primary" as const },
+          { label: "Active Routes", value: routes.filter((r: any) => r.status === "Active").length, sub: "Marked active", icon: Navigation, tone: "accent" as const },
+          { label: "Vehicles listed", value: new Set(routes.map((r: any) => String(r.vehicle ?? "").trim()).filter(Boolean)).size, sub: "Distinct registrations on routes", icon: Bus, tone: "emerald" as const },
+          { label: "Route passengers", value: fleetPayload, sub: "Total recorded on routes", icon: Users, tone: "amber" as const },
         ].map((stat, i) => (
           <StatCard key={stat.label} index={i} {...stat} />
         ))}
