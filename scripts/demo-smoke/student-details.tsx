@@ -5,7 +5,7 @@ import { createRoot } from 'react-dom/client';
 import { FirebaseProvider } from '@/firebase/provider';
 import { initializeFirebase } from '@/firebase';
 import StudentsPage from '@/app/dashboard/students/page';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 (globalThis as any).EventTarget = window.EventTarget;
 const services = initializeFirebase();
@@ -38,6 +38,25 @@ async function main() {
     await click(close);
     assert.equal(openDialog(), null);
   }
+  const editRow = Array.from(document.querySelectorAll('tr[role="button"]')).find(el => el.textContent?.includes('TEST-ZERO'));
+  assert.ok(editRow); await click(editRow);
+  const editButton = button('Edit details'); assert.ok(editButton); await click(editButton);
+  const setInput = async (id: string, value: string) => {
+    const el = document.getElementById(id) as HTMLInputElement; assert.ok(el, id);
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => { setter.call(el, value); el.dispatchEvent(new window.Event('input', { bubbles: true })); });
+  };
+  await setInput('edit-name', 'Asha Salum');
+  await setInput('edit-guardianName', 'Salum');
+  await setInput('edit-guardianPhone', '0712345678');
+  await setInput('edit-guardianEmail', 'salum@example.com');
+  const save = button('Save details'); assert.ok(save); await click(save); await flush(200);
+  const updated = (await getDoc(doc(services.firestore, 'schools', 'school-001', 'students', 'TEST-ZERO'))).data()!;
+  assert.equal(updated.name, 'ASHA SALUM'); assert.equal(updated.searchName, 'ASHA SALUM');
+  assert.equal(updated.guardianName, 'Salum'); assert.equal(updated.guardianEmail, 'salum@example.com');
+  assert.equal(updated.conductPoints, 0, 'unrelated values remain intact');
+  assert.ok(openDialog()?.textContent?.includes('ASHA SALUM'), 'profile updates immediately');
+  await click(button('Close')!);
   const rows = Array.from(document.querySelectorAll('tr[role="button"]')) as HTMLElement[];
   assert.ok(rows.length >= 2, 'demo register has students');
   await click(rows[0]);

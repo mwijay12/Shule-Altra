@@ -16,7 +16,7 @@ export default function AiToolsPage() {
   const [aiAnswer, setAiAnswer] = React.useState<string | null>(null);
   const [asked, setAsked] = React.useState('');
   const [isLoadingAi, setIsLoadingAi] = React.useState(false);
-  const [useOnlineAi, setUseOnlineAi] = React.useState(true);
+  const [useOnlineAi, setUseOnlineAi] = React.useState(false);
   const [aiMeta, setAiMeta] = React.useState<{ model?: string; key?: string } | null>(null);
 
   const ask = async (value: string) => {
@@ -32,7 +32,7 @@ export default function AiToolsPage() {
 
     // If local match was not found or user opted for High-Speed Groq AI:
     const isGenericFallback = localResult.text.startsWith('Sijaelewa hilo');
-    if (useOnlineAi || isGenericFallback) {
+    if (useOnlineAi) {
       setIsLoadingAi(true);
       try {
         const res = await fetch('/api/ai/chat', {
@@ -53,7 +53,7 @@ export default function AiToolsPage() {
         const data = await res.json();
         if (data.success && data.content) {
           setAiAnswer(data.content);
-          setAiMeta({ model: data.model, key: data.key });
+          setAiMeta({ model: data.model });
         } else if (isGenericFallback) {
           setAiAnswer('Unable to generate answer at the moment. Please try again.');
         }
@@ -72,7 +72,7 @@ export default function AiToolsPage() {
           <Bot className="h-7 w-7 text-primary" /> Shule Guide &amp; High-Speed AI
         </h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Ask questions about Shule Altra, Tanzanian school administration, NECTA curriculum, or pedagogical planning. Powered by Groq High-Speed inference with instant failover.
+          Use the local guide for predefined answers. Optional online AI sends your question to Groq and requires a live signed-in school.
         </p>
       </header>
 
@@ -87,7 +87,7 @@ export default function AiToolsPage() {
             </div>
             <div className="flex items-center gap-2 text-xs">
               <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-1 font-medium text-emerald-600 dark:text-emerald-400">
-                <Zap className="h-3 w-3" /> Groq 16-Key Fallback Pool Active
+                <Zap className="h-3 w-3" /> Optional online AI
               </span>
             </div>
           </div>
@@ -133,13 +133,14 @@ export default function AiToolsPage() {
             ))}
           </div>
 
+          <label className="flex items-start gap-2 text-sm text-muted-foreground"><input type="checkbox" checked={useOnlineAi} onChange={event => setUseOnlineAi(event.target.checked)} className="mt-1" /> Use online Groq AI for this question. Do not include student records or sensitive information.</label>
           <div aria-live="polite" aria-atomic="true">
             {(answer || aiAnswer || isLoadingAi) && (
               <div className="space-y-4 rounded-2xl border bg-muted/30 p-5">
                 <p className="text-xs font-semibold text-muted-foreground">You asked: {asked}</p>
 
                 {/* Local guide answer if available and not generic */}
-                {answer && !answer.text.startsWith('Sijaelewa hilo') && (
+                {answer && (
                   <div className="space-y-3">
                     <p className="text-xs font-bold uppercase tracking-wider text-primary">System Guide</p>
                     <p className="text-sm leading-relaxed">{answer.text}</p>
@@ -188,7 +189,7 @@ export default function AiToolsPage() {
                       </span>
                       {aiMeta?.model && (
                         <span className="text-[11px] text-muted-foreground">
-                          Model: {aiMeta.model} · Pool Key: {aiMeta.key}
+                          Model: {aiMeta.model}
                         </span>
                       )}
                     </div>
@@ -202,7 +203,7 @@ export default function AiToolsPage() {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Inference is accelerated by Groq LPU with automatic key-pool rotation and fallback redundancy. Do not input confidential personal security credentials in prompts.
+            Online responses can be incorrect and require a connection. Never share sensitive student data or credentials.
           </p>
         </CardContent>
       </Card>

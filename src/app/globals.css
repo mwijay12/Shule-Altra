@@ -2717,3 +2717,13 @@ html[data-scroll-locked] .app-scroll {
   .chart-series-focus .recharts-area-curve,
   .chart-series-focus .recharts-pie-sector .recharts-sector { transition: none; }
 }
+
+/* Clear hierarchy for the public introduction; preserve school theme tokens. */
+.sd-hero-title { text-wrap: balance; line-height: 1.03; letter-spacing: -0.025em; }
+.sd-kicker { font-family: inherit; font-size: 0.85rem; letter-spacing: normal; text-transform: none; color: hsl(var(--foreground) / 0.78); }
+.sd-hero-lede { text-wrap: pretty; max-width: 55ch; }
+.sd-hero-context { max-width: 48ch; margin: 0; font-size: 0.875rem; line-height: 1.55; color: hsl(var(--foreground) / 0.75); }
+.sd-hero-media { width: min(100%, 68svh); }
+.sd-hero-frame { clip-path: none; transition: none; }
+.sd-hero[data-ready="true"] .sd-hero-frame { clip-path: none; }
+.sd-hero a:focus-visible { outline: 2px solid var(--mark); outline-offset: 4px; }

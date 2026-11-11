@@ -96,8 +96,23 @@ service cloud.firestore {
       // ── learner records ──────────────────────────────────────────────────
       match /students/{studentId} {
         allow read: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT', 'VIEWER']);
-        allow create, update: if learning();
+        allow create: if learning();
+        // Finance roles may update only the fields changed by a payment entry.
+        allow update: if inRole(['ADMIN'])
+          || (learning() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'statusUpdatedAt']))
+          || (money() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalPaid', 'balance', 'lastPaymentDate', 'paymentStatus']));
         allow delete: if inRole(['ADMIN']);
+        match /statusHistory/{entryId} {
+          allow read: if inRole(['ADMIN']);
+          allow create: if inRole(['ADMIN'])
+            && request.resource.data.actorUid == request.auth.uid
+            && request.resource.data.from in ['Active', 'Suspended', 'Archived']
+            && request.resource.data.to in ['Active', 'Suspended', 'Archived']
+            && request.resource.data.reason is string
+            && request.resource.data.reason.size() >= 5
+            && request.resource.data.reason.size() <= 500;
+          allow update, delete: if false;
+        }
       }
 
       // ── learning ─────────────────────────────────────────────────────────

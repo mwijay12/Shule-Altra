@@ -26,10 +26,10 @@ import { activeLocale, currencySpec } from '@/lib/money';
  */
 export const TransactionSchema = z.object({
   amount: z.number().positive("Amount must be greater than zero"),
-  controlNumber: z.string().min(10, "Invalid Control Number format"),
+  controlNumber: z.string().trim().max(100, "Reference must be 100 characters or fewer").default(''),
   feeType: z.enum(['Tuition', 'Transport', 'Boarding', 'Exam Fee', 'Uniform', 'Meals', 'Other']).default('Tuition'),
   paymentMethod: z.enum(['M-Pesa', 'Tigo Pesa', 'Airtel Money', 'Bank Transfer', 'Cash', 'Control Number']),
-  studentId: z.string(),
+  studentId: z.string().trim().min(1, "Select a student"),
   recordedBy: z.string(),
   academicYear: z.number().default(2026),
   deviceInfo: z.string().optional(),
@@ -127,60 +127,9 @@ export async function generateInstitutionalControlNumber(
   db: Firestore,
   request: ControlNumberRequest
 ): Promise<ControlNumberResponse> {
-  // 1. Check for student existence
-  const studentSnap = await getDocs(query(collection(db, 'schools', request.schoolId, 'students'), where('id', '==', request.studentId), limit(1)));
-  
-  if (studentSnap.empty) throw new Error("Student not found in the register.");
-
-  // 2. ClickPesa API integration
-  const billReference = generateControlNumber();
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + request.expiresInDays);
-
-  const response: ControlNumberResponse = {
-    controlNumber: billReference,
-    amount: request.amount,
-    expiresAt: expiresAt,
-    qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${billReference}`,
-    ussdCode: `*150*00*${billReference}#`,
-    paymentInstructions: `Lipa TZS ${request.amount.toLocaleString()} kwenda Control No: ${billReference} kupitia M-Pesa au Benki.`
-  };
-
-  // 3. Record the pending transaction in the ledger
-  const transactionId = doc(collection(db, 'schools', request.schoolId, 'transactions')).id;
-  const transactionRef = doc(db, 'schools', request.schoolId, 'transactions', transactionId);
-
-  await runTransaction(db, async (transaction) => {
-    transaction.set(transactionRef, {
-      id: transactionId,
-      controlNumber: billReference,
-      studentId: request.studentId,
-      studentName: request.payerName,
-      amount: request.amount,
-      feeType: request.feeType,
-      status: 'Pending',
-      paymentMethod: 'Bank Transfer',
-      reconciled: false,
-      createdAt: serverTimestamp(),
-      expiresAt: Timestamp.fromDate(expiresAt),
-      recordedBy: 'ClickPesa',
-      currency: 'TZS',
-      metadata: {
-        payerPhone: request.payerPhone,
-        ussdCode: response.ussdCode
-      }
-    });
-  });
-
-  // 4. Trigger n8n Automation (WhatsApp Instructions)
-  triggerN8nWebhook('control-number-created', {
-    ...response,
-    studentId: request.studentId,
-    payerPhone: request.payerPhone,
-    payerName: request.payerName
-  });
-
-  return response;
+  // There is no provider-backed control-number API configured here. Never
+  // generate a fake payable number or transmit payment instructions.
+  throw new Error("Payable control numbers require a configured payment provider.");
 }
 
 /**
@@ -202,21 +151,24 @@ export async function processPaymentTransaction(
     if (!studentDoc.exists()) throw new Error("Student not found");
 
     const studentData = studentDoc.data();
-    const currentPaid = studentData.totalPaid || 0;
-    const expected = studentData.totalFeesExpected || 0;
-    const arrears = studentData.arrears || 0;
-
-    const newTotalPaid = currentPaid + data.amount;
-    const newBalance = (expected + arrears) - newTotalPaid;
+    const currentPaid = Number(studentData.totalPaid ?? 0);
+    const expected = studentData.totalFeesExpected;
+    const arrears = Number(studentData.arrears ?? 0);
+    if (!Number.isFinite(currentPaid) || !Number.isFinite(arrears)) throw new Error("Student fee records are invalid. Review the balance before recording a payment.");
+    const currentBalance = typeof expected === 'number' && Number.isFinite(expected)
+      ? expected + arrears - currentPaid
+      : typeof studentData.balance === 'number' && Number.isFinite(studentData.balance) ? studentData.balance : null;
+    if (currentBalance === null) throw new Error("This student has no recorded fee balance. Set up their fees before recording a payment.");
+    const newBalance = currentBalance - data.amount;
 
     const transactionPayload = {
       ...data,
+      controlNumber: data.controlNumber || `REC-${transactionId}`,
+      referenceType: data.controlNumber ? 'provider' : 'internal',
       id: transactionId,
       status: 'Verified',
       createdAt: serverTimestamp(),
-      reconciled: true,
-      reconciledAt: serverTimestamp(),
-      reconciledBy: data.recordedBy,
+      reconciled: false,
       studentName: studentData.name,
       class: studentData.class,
       currency: 'TZS',
@@ -234,13 +186,5 @@ export async function processPaymentTransaction(
     });
 
     return { success: true, transactionId, newBalance };
-  }).then(async (res) => {
-    triggerN8nWebhook('payment-verified', {
-      studentId: data.studentId,
-      amount: data.amount,
-      controlNumber: data.controlNumber,
-      parentContact: data.recordedFromIp // placeholder
-    });
-    return res;
   });
 }

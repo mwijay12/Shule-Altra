@@ -22,19 +22,16 @@ import {
   Loader2,
   Receipt,
   ShieldCheck,
-  Sparkles,
   Users,
   Wallet,
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
-import { ThreeOrb } from '@/components/admin/three-orb';
 import { KpiCard } from '@/components/admin/kpi-card';
 import { AnimatedNumber } from '@/components/ui/animated-number';
 import { RevenueChart } from '@/components/admin/revenue-chart';
 import { PriorityBoard, type FollowUpItem } from '@/components/admin/priority-board';
-import { useRange } from '@/components/admin/range-context';
 import { downloadFeeStatement } from '@/lib/pdf/fee-statement';
 import { formatTZSCompact } from '@/lib/finance-engine';
 import { downloadIdCards } from '@/lib/pdf/id-card';
@@ -59,9 +56,8 @@ const STATUS_STYLES: Record<string, string> = {
 
 export default function CommandDeckPage() {
   const db = useFirestore();
-  const { role } = useAuth();
+  const { role, canAccess } = useAuth();
   const { toast } = useToast();
-  const { label: rangeLabel } = useRange();
   const [exportingIds, setExportingIds] = React.useState(false);
 
   const studentsQuery = useMemoFirebase(
@@ -203,66 +199,37 @@ export default function CommandDeckPage() {
 
   return (
     <div className="space-y-6">
-      {/* Hero */}
-      <section
-        data-reveal
-        className="relative overflow-hidden rounded-[28px] border border-border/60 bg-gradient-to-br from-primary/[0.09] via-card/70 to-accent/[0.09] p-5 sm:p-7"
-      >
-        <div className="pointer-events-none absolute -right-10 -top-12 h-[220px] w-[220px] opacity-70 sm:-right-4 sm:-top-8 sm:h-[330px] sm:w-[330px] sm:opacity-100">
-          <ThreeOrb className="h-full w-full" />
-        </div>
-        <div className="relative z-10 max-w-full sm:max-w-[58%]">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-600">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              Live · {rangeLabel}
-            </span>
-            {DEMO_MODE && (
-              <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-semibold text-accent">
-                Demo mode
-              </span>
-            )}
+      {/* A compact overview keeps the real register in focus. */}
+      <section data-reveal className="rounded-3xl bg-card px-5 py-6 sm:px-8 sm:py-8">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(15rem,1fr)] lg:items-end">
+          <div>
+            {DEMO_MODE && <p className="mb-3 text-sm font-medium text-muted-foreground">Demo school · sample records</p>}
+            <h1 className="font-headline text-2xl font-semibold tracking-tight text-foreground sm:text-3xl" style={{ textWrap: 'balance' }}>
+              {greeting}, {roleLabel}.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              Review the register, follow up on balances and prepare school documents from one place.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              {canAccess('finance') && <Link href="/dashboard/finance#record-payment" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none">
+                <Banknote className="h-4 w-4" /> Record payment <ArrowRight className="h-4 w-4" />
+              </Link>}
+              {canAccess('reports') && <Link href="/dashboard/reports" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                <Receipt className="h-4 w-4" /> Open reports
+              </Link>}
+              {canAccess('students') && <button type="button" onClick={handleIdCards} disabled={exportingIds || learners.length === 0} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50">
+                {exportingIds ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />} ID cards
+              </button>}
+            </div>
           </div>
-
-          <h2 className="mt-4 text-[22px] leading-[1.05] tracking-tight text-foreground sm:text-[30px]">
-            {greeting}, {roleLabel}.
-          </h2>
-          <p className="mt-2 max-w-md text-[14px] font-medium leading-relaxed text-muted-foreground sm:text-xs">
-            <AnimatedNumber value={metrics.enrolment} /> learners on the register · <AnimatedNumber value={metrics.outstandingCount} /> balances need chasing ·
-            <AnimatedNumber value={metrics.pending} prefix="TZS " /> in gateway queue.
-          </p>
-
-          <div className="mt-5 flex flex-wrap items-center gap-2">
-            <Link
-              href="/dashboard/finance"
-              className="group flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-3.5 py-2.5 text-[12px] font-semibold text-white shadow-lg shadow-primary/25 transition-transform duration-300 hover:-translate-y-0.5"
-            >
-              <Banknote className="h-3.5 w-3.5" />
-              Record payment
-              <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link
-              href="/dashboard/reports"
-              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-primary/50 hover:text-primary"
-            >
-              <Receipt className="h-3.5 w-3.5" />
-              Printables
-            </Link>
-            <button
-              type="button"
-              onClick={handleIdCards}
-              disabled={exportingIds || learners.length === 0}
-              className="flex items-center gap-2 rounded-xl border border-border/80 bg-card/80 px-3.5 py-2.5 text-[12px] font-semibold text-foreground transition-colors hover:border-accent/50 hover:text-accent disabled:opacity-50"
-            >
-              {exportingIds ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-              ID cards
-            </button>
+          <div className="space-y-3 border-t border-border pt-4 text-sm lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0" aria-label="Register overview">
+            <p className="font-semibold text-foreground">At a glance</p>
+            {studentsLoading || txLoading ? <p className="text-muted-foreground" role="status">Loading register and ledger…</p> : <>
+              <p className="flex justify-between gap-4 text-muted-foreground"><span>Learners on register</span><span className="font-semibold tabular-nums text-foreground"><AnimatedNumber value={metrics.enrolment} /></span></p>
+              <p className="flex justify-between gap-4 text-muted-foreground"><span>Balances to follow up</span><span className="font-semibold tabular-nums text-foreground"><AnimatedNumber value={metrics.outstandingCount} /></span></p>
+              <p className="flex justify-between gap-4 text-muted-foreground"><span>Pending payments</span><span className="font-semibold tabular-nums text-foreground"><AnimatedNumber value={metrics.pending} prefix="TZS " /></span></p>
+            </>}
           </div>
-
-          <p className="mt-4 flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground/70">
-            <Sparkles className="h-3 w-3 text-accent" />
-            Press ⌘K for instant search
-          </p>
         </div>
       </section>
 
@@ -339,7 +306,7 @@ export default function CommandDeckPage() {
           <div className="mt-3 divide-y divide-border/60">
             {recentLedger.length === 0 && (
               <p className="py-8 text-center text-[13px] font-bold text-muted-foreground">
-                Waiting for ledger data…
+                {txLoading ? 'Loading ledger activity…' : 'No ledger activity yet. Record a payment in Finance to see it here.'}
               </p>
             )}
             {recentLedger.map((row, index) => {
@@ -388,38 +355,22 @@ export default function CommandDeckPage() {
             Jump back in
           </p>
           <h3 className="mt-1 text-[13px] text-foreground">Module shortcuts</h3>
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3 divide-y divide-border/60">
             {[
-              { href: '/dashboard/students', label: 'Students', icon: Users, tone: 'from-primary/15 to-primary/5 text-primary' },
-              { href: '/dashboard/analytics', label: 'Analytics', icon: GraduationCap, tone: 'from-accent/15 to-accent/5 text-accent' },
-              { href: '/dashboard/attendance', label: 'Attendance', icon: ClipboardCheck, tone: 'from-emerald-500/15 to-emerald-500/5 text-emerald-600' },
-              { href: '/dashboard/reports', label: 'Reports', icon: CalendarClock, tone: 'from-amber-500/15 to-amber-500/5 text-amber-600' },
-            ].map((shortcut) => (
-              <Link
-                key={shortcut.href}
-                href={shortcut.href}
-                className={cn(
-                  'group flex flex-col gap-2 rounded-2xl border border-border/60 bg-gradient-to-br p-3 transition-transform duration-300 hover:-translate-y-0.5',
-                  shortcut.tone
-                )}
-              >
-                <shortcut.icon className="h-4 w-4" />
-                <span className="text-[13px] font-semibold text-foreground">
-                  {shortcut.label}
-                </span>
+              { href: '/dashboard/students', label: 'Students', module: 'students', icon: Users },
+              { href: '/dashboard/analytics', label: 'Analytics', module: 'analytics', icon: GraduationCap },
+              { href: '/dashboard/attendance', label: 'Attendance', module: 'attendance', icon: ClipboardCheck },
+              { href: '/dashboard/reports', label: 'Reports', module: 'reports', icon: CalendarClock },
+            ].filter(shortcut => canAccess(shortcut.module)).map((shortcut) => (
+              <Link key={shortcut.href} href={shortcut.href} className="flex min-h-11 items-center gap-3 rounded-md py-3 text-sm font-semibold text-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <shortcut.icon className="h-4 w-4 text-muted-foreground" /> {shortcut.label}
+                <ArrowUpRight className="ml-auto h-4 w-4 text-muted-foreground" />
               </Link>
             ))}
           </div>
-
-          <div className="mt-3 rounded-2xl border border-border/60 bg-muted/25 p-3">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
-              <ShieldCheck className="h-3 w-3 text-emerald-500" />
-              Ledger integrity
-            </p>
-            <p className="mt-1 text-[13px] font-medium leading-relaxed text-muted-foreground">
-              {metrics.disputed} disputed entries are quarantined pending bank statements. Everything else is
-              reconciled against the gateway.
-            </p>
+          <div className="mt-4 flex items-start gap-2 text-sm leading-relaxed text-muted-foreground">
+            <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+            <p><span className="font-semibold tabular-nums text-foreground">{metrics.disputed}</span> disputed ledger entries. Review their status in Finance.</p>
           </div>
         </div>
       </section>

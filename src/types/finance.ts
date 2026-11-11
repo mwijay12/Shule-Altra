@@ -11,6 +11,7 @@ export type FeeType = 'Tuition' | 'Transport' | 'Boarding' | 'Exam Fee' | 'Unifo
 export interface Transaction {
   id: string;
   controlNumber: string;
+  referenceType?: 'internal' | 'provider';
   studentId: string;
   studentName: string;
   class: string;

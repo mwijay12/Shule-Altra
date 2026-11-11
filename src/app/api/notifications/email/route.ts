@@ -150,7 +150,10 @@ export async function POST(request: Request) {
     )
   }
 
-  const mode = payload?.mode === 'send' ? 'send' : 'preview'
+  // Audiences and template values currently come from seeded examples, not the
+  // school's live register. Never deliver them as if they were real records.
+  if (payload?.mode === 'send') return NextResponse.json({ error: 'Sending is temporarily disabled: the mail room uses sample records, not your saved register. Preview only until real recipients are connected and verified.' }, { status: 503 })
+  const mode: string = payload?.mode === 'send' ? 'send' : 'preview'
   const status = providerStatus()
   const everyone = buildAudience(policy.audience)
 
