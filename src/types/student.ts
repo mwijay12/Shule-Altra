@@ -8,6 +8,7 @@ export interface Student {
   dateOfBirth: string;
   guardianName: string;
   guardianPhone: string;
+  guardianEmail?: string;
   enrollmentDate: string;
   status: string;
   balance: number;

@@ -144,10 +144,10 @@ export default function HelpPage() {
               </AccordionItem>
               <AccordionItem value="item-2" className="border-none mb-2">
                 <AccordionTrigger className="hover:no-underline p-4 rounded-2xl bg-muted/30 hover:bg-muted/50 font-bold text-sm text-left transition-colors">
-                  How does ClickPesa reconciliation work?
+                  How do payment references work?
                 </AccordionTrigger>
                 <AccordionContent className="p-4 text-sm text-muted-foreground leading-relaxed font-medium">
-                  Each bill carries a control number, which the parent pays through ClickPesa, mobile money or the school bank account. When ClickPesa confirms a payment it calls our webhook and the learner's ledger updates automatically. Payments made outside ClickPesa are matched to the learner by the bursar.
+                  Payable control numbers must come from a bank or payment provider. The system does not currently generate them. Record payments only after confirming them independently; a blank reference creates an internal record ID, not a number a parent can pay. Provider integrations require configuration and testing.
                 </AccordionContent>
               </AccordionItem>
               <AccordionItem value="item-3" className="border-none mb-2">

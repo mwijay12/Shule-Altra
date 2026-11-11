@@ -29,6 +29,7 @@ import { AnimatedNumber } from "@/components/ui/animated-number";
 import { StatCard } from "@/components/admin/stat-card";
 import { ChartPanel, DeliveryRuns } from "@/components/admin/module-charts";
 import { useToast } from "@/hooks/use-toast";
+import { GuardianEmail } from "@/components/students/guardian-email";
 
 type Template = {
   id: string;
@@ -206,8 +207,7 @@ export default function CommunicationsPage() {
             Mail room
           </h1>
           <p className="max-w-2xl text-[14px] font-medium leading-relaxed text-muted-foreground">
-            Branded email to guardians and staff, rendered from the school’s own register. Recipients
-            are resolved on the server, so what you send is exactly who the record says.
+            Send individual finance messages from recorded learner details. The older bulk templates below are sample previews only and cannot be sent.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -237,10 +237,12 @@ export default function CommunicationsPage() {
         </div>
       </header>
 
+      <GuardianEmail />
+      <p className="text-sm text-muted-foreground">Sample bulk previews below use example data, not the live register. Bulk sending remains disabled.</p>
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <StatCard index={0} label="Delivered this session" value={totalDelivered} icon={MailCheck} tone="emerald" sub="Confirmed by the provider" />
+        <StatCard index={0} label="Delivered this session" value={totalDelivered} icon={MailCheck} tone="emerald" sub="Sample bulk sends this session" />
         <StatCard index={1} label="Failed" value={totalFailed} icon={AlertTriangle} tone={totalFailed > 0 ? 'rose' : 'slate'} sub={totalFailed > 0 ? 'Check the addresses on the register' : 'Nothing bounced'} />
-        <StatCard index={2} label="Guardians reachable" value={reachable} icon={Users} tone="primary" sub={`${permitted.length} of ${caps?.templates?.length ?? 0} templates permitted for your role`} />
+        <StatCard index={2} label="Sample audience" value={reachable} icon={Users} tone="primary" sub={`${permitted.length} of ${caps?.templates?.length ?? 0} templates permitted for your role`} />
         <StatCard index={3} label="Per click" value={caps?.limits?.maxPerSend ?? 0} icon={Send} tone="accent" sub={caps?.limits?.dailyRemaining !== undefined ? `${caps.limits.dailyRemaining} left today` : 'Provider send limit'} />
       </div>
 
@@ -361,7 +363,7 @@ export default function CommunicationsPage() {
                   </Button>
                   <Button
                     size="sm"
-                    disabled={!template.allowed || busy !== null || template.audienceSize === 0}
+                    disabled
                     onClick={() => run(template, "send")}
                     className="h-8 rounded-full colorful-gradient text-[11px] font-semibold text-white"
                   >
@@ -370,7 +372,7 @@ export default function CommunicationsPage() {
                     ) : (
                       <Send className="mr-1.5 h-3 w-3" />
                     )}
-                    Send to {Math.min(template.sendable, template.audienceSize)}
+                    Sending unavailable
                   </Button>
                 </div>
               </CardContent>

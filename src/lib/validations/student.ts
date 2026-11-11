@@ -15,6 +15,7 @@ export const studentSchema = z.object({
   guardianPhone: z.string()
     .min(10, 'Phone must be at least 10 digits')
     .regex(/^(\+255|0)\d{9}$/, 'Must be a valid Tanzanian phone number (e.g., 0712345678 or +255712345678)'),
+  guardianEmail: z.string().trim().max(254).refine(value => !value || z.string().email().safeParse(value).success, 'Enter a valid email address or leave it blank').optional(),
   enrollmentDate: z.string().optional(),
 });
 

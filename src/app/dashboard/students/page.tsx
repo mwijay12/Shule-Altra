@@ -72,6 +72,10 @@ import { DEMO_MODE } from "@/lib/demo/config"
 import { ACADEMIC_LEVEL_LABEL, DEFAULT_CLASS, classOptions } from "@/lib/academics/config"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { RegisterSplit, FeesByClass, ChartPanel } from "@/components/admin/module-charts"
+import { StatusManagement } from "@/components/students/status-management"
+import { studentStatus } from "@/lib/student-status"
+import { useAuth } from "@/hooks/use-auth"
+import { EditStudentDetails } from "@/components/students/edit-details"
 import { buildLocalNarrative } from "@/lib/demo/ai-fallback"
 
 /** Colour codes for the bulk-import plan, one per outcome. */
@@ -90,6 +94,8 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [tierFilter, setTierFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("current")
+  const { role } = useAuth()
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [sheetStudentId, setSheetStudentId] = useState<string | null>(null)
   const openedRowRef = React.useRef<HTMLElement | null>(null)
@@ -149,9 +155,11 @@ export default function StudentsPage() {
         s.id.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesTier = tierFilter === "all" || s.class === tierFilter
       const matchesType = typeFilter === "all" || s.type === typeFilter
-      return matchesSearch && matchesTier && matchesType
+      const status = studentStatus(s.status)
+      const matchesStatus = statusFilter === "all" || (statusFilter === "current" ? status !== "Archived" : status === statusFilter)
+      return matchesSearch && matchesTier && matchesType && matchesStatus
     })
-  }, [searchTerm, students, tierFilter, typeFilter])
+  }, [searchTerm, students, tierFilter, typeFilter, statusFilter])
 
   const availableTiers = useMemo(() => classOptions(identity?.tiers, { oLevelOnly: DEMO_MODE }), [identity?.tiers])
 
@@ -751,6 +759,11 @@ export default function StudentsPage() {
                       {errors.guardianPhone && <p className="text-[11px] text-destructive font-semibold mt-1 ml-1">{errors.guardianPhone.message}</p>}
                    </div>
                 </div>
+                <div className="space-y-1">
+                  <label htmlFor="enroll-guardian-email" className="text-[12px] font-semibold text-muted-foreground">Guardian email (optional)</label>
+                  <Input id="enroll-guardian-email" type="email" {...register('guardianEmail')} placeholder="parent@example.com" aria-invalid={!!errors.guardianEmail} />
+                  {errors.guardianEmail && <p className="text-[11px] text-destructive" role="alert">{errors.guardianEmail.message}</p>}
+                </div>
 
                 <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-semibold text-xs shadow-xl mt-4">
                   {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : "Save student"}
@@ -807,6 +820,10 @@ export default function StudentsPage() {
                 <SelectItem value="Day">Day Students</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger aria-label="Filter by student status" className="h-12 w-[160px] rounded-full border-none bg-white shadow-sm font-semibold text-[13px]"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="current">Current register</SelectItem><SelectItem value="Active">Active</SelectItem><SelectItem value="Suspended">Suspended</SelectItem><SelectItem value="Archived">Archived</SelectItem><SelectItem value="all">All statuses</SelectItem></SelectContent>
+            </Select>
             <Badge variant="outline" className="h-12 px-4 rounded-full border-primary/10 bg-white text-primary font-semibold text-[12px]">
               <AnimatedNumber value={filteredStudents.length} /> / {students.length}
             </Badge>
@@ -854,7 +871,7 @@ export default function StudentsPage() {
                         </Avatar>
                         <div className="flex flex-col">
                           <span className="font-semibold text-sm text-foreground/80 group-hover:text-primary transition-colors truncate max-w-[200px]">{student.name}</span>
-                          <span className="text-[12px] text-muted-foreground font-mono font-semibold">{student.id}</span>
+                          <span className="text-[12px] text-muted-foreground font-mono font-semibold">{student.id} · {studentStatus(student.status)}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -958,19 +975,10 @@ export default function StudentsPage() {
                                 <TabsTrigger value="id-card" className="rounded-xl text-[11px] font-semibold">ID card</TabsTrigger>
                               </TabsList>
 
-                              <TabsContent value="logistics" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
-                                <div className="grid grid-cols-2 gap-6">
-                                  <div className="space-y-2">
-                                    <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Parent Contact</Label>
-                                    <Input value={selectedStudent?.guardianPhone || ""} readOnly className="h-12 bg-muted/20 border-none font-bold rounded-xl px-5 shadow-inner" />
-                                  </div>
-                                  <div className="space-y-2">
-                                    <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Hostel wing</Label>
-                                    <Badge className="h-12 w-full flex items-center justify-center bg-white border border-muted text-primary font-semibold text-[13px] rounded-xl">
-                                      {selectedStudent?.type === "Boarder" ? selectedStudent?.hostel : selectedStudent?.route}
-                                    </Badge>
-                                  </div>
-                                </div>
+                              <TabsContent value="logistics" className="space-y-8">
+                                {selectedStudent && <EditStudentDetails key={selectedStudent.id} student={selectedStudent} classOptions={availableTiers} onSaved={patch => setSelectedStudent(current => current && current.id === selectedStudent.id ? { ...current, ...patch, searchName: patch.name } : current)} />}
+                                <p className="text-sm text-muted-foreground">{selectedStudent?.type === 'Boarder' ? 'Hostel wing' : 'Transport route'}: {selectedStudent?.type === 'Boarder' ? selectedStudent?.hostel || 'Not recorded' : selectedStudent?.route || 'Not recorded'}</p>
+                                {selectedStudent && user && (role === 'ADMIN' || role === 'SUPER_ADMIN') && <StatusManagement key={selectedStudent.id} student={selectedStudent} actor={{ uid: user.uid, email: user.email ?? '' }} onSaved={status => setSelectedStudent(current => current && current.id === selectedStudent.id ? { ...current, status } : current)} />}
                               </TabsContent>
 
                               <TabsContent value="academic" className="space-y-8 animate-in fade-in slide-in-from-bottom-2">

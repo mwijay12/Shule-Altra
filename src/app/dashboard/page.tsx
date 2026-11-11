@@ -211,7 +211,7 @@ export default function CommandDeckPage() {
               Review the register, follow up on balances and prepare school documents from one place.
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              {canAccess('finance') && <Link href="/dashboard/finance" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none">
+              {canAccess('finance') && <Link href="/dashboard/finance#record-payment" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-[transform,opacity] duration-150 hover:opacity-90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none">
                 <Banknote className="h-4 w-4" /> Record payment <ArrowRight className="h-4 w-4" />
               </Link>}
               {canAccess('reports') && <Link href="/dashboard/reports" className="inline-flex min-h-11 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
