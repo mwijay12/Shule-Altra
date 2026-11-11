@@ -23,6 +23,8 @@ jobs:
         run: npm run demo:smoke:data
       - name: Dashboard route visibility
         run: npm run demo:smoke:route-visibility
+      - name: Attendance filters and scroll
+        run: npm run demo:smoke:attendance-filters
       - name: Student details interaction
         run: npm run demo:smoke:student-details
       - name: Timetable and ID integrity

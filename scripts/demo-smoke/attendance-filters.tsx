@@ -1,0 +1,82 @@
+import './dom';
+import React, { act } from 'react';
+import assert from 'node:assert/strict';
+import { createRoot } from 'react-dom/client';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { FirebaseProvider } from '@/firebase/provider';
+import { initializeFirebase } from '@/firebase';
+import AttendancePage from '@/app/dashboard/attendance/page';
+import { SmoothScroll } from '@/components/system/smooth-scroll';
+
+(globalThis as any).EventTarget = window.EventTarget;
+const services = initializeFirebase();
+const root = createRoot(document.getElementById('root')!);
+const flush = async (ms = 160) => act(async () => { await new Promise(resolve => setTimeout(resolve, ms)); });
+const choose = async (element: HTMLSelectElement, value: string) => {
+  await act(async () => { element.value = value; element.dispatchEvent(new window.Event('change', { bubbles: true })); });
+  await flush();
+};
+const input = async (element: HTMLInputElement, value: string) => {
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(element, value);
+    element.dispatchEvent(new window.Event('input', { bubbles: true }));
+  });
+  await flush();
+};
+const button = (text: string) => Array.from(document.querySelectorAll('button')).find(el => el.textContent?.includes(text))!;
+const ref = (id: string) => doc(services.firestore, 'schools', 'school-001', 'students', id);
+async function main() {
+  await act(async () => root.render(<FirebaseProvider firebaseApp={services.firebaseApp} auth={services.auth} firestore={services.firestore}><AttendancePage /></FirebaseProvider>));
+  await flush(400);
+  await act(async () => {
+    const common = { class: 'Test Class', type: 'Day', guardianPhone: '', gender: 'Female' };
+    await setDoc(ref('TEST-A'), { ...common, id: 'TEST-A', name: 'TEST ALPHA', stream: 'East', attendanceStatus: 'Absent' });
+    await setDoc(ref('TEST-B'), { ...common, id: 'TEST-B', name: 'TEST BETA', stream: 'West', attendanceStatus: 'Absent' });
+    await setDoc(ref('TEST-C'), { ...common, id: 'TEST-C', name: 'TEST GAMMA', attendanceStatus: 'Late' });
+  });
+  await flush();
+  const classSelect = document.querySelector<HTMLSelectElement>('select[aria-label="Class"]')!;
+  const streamSelect = document.querySelector<HTMLSelectElement>('select[aria-label="Stream"]')!;
+  assert.ok(classSelect && streamSelect);
+  await choose(classSelect, 'Test Class');
+  assert.ok(document.body.textContent?.includes('TEST ALPHA'));
+  assert.ok(document.body.textContent?.includes('TEST BETA'));
+  assert.ok(Array.from(streamSelect.options).some(option => option.value === '__unassigned__'));
+  await choose(streamSelect, 'East');
+  assert.ok(document.body.textContent?.includes('TEST ALPHA'));
+  assert.ok(!document.body.textContent?.includes('TEST BETA'));
+  assert.ok(!document.body.textContent?.includes('TEST GAMMA'));
+  const search = document.querySelector<HTMLInputElement>('input[placeholder="Find student..."]')!;
+  await input(search, 'nothing-matches');
+  assert.ok(document.body.textContent?.includes('No students match these filters.'));
+  assert.ok(button('Mark matching present').disabled, 'empty selection cannot update records');
+  await input(search, 'TEST-A');
+  assert.ok(document.body.textContent?.includes('TEST ALPHA'));
+  let prompt = '';
+  window.confirm = message => { prompt = String(message); return false; };
+  await act(async () => button('Mark matching present').click());
+  await flush();
+  assert.match(prompt, /1 of the 1 matching students/);
+  assert.equal((await getDoc(ref('TEST-A'))).data()?.attendanceStatus, 'Absent', 'cancelling performs no update');
+  window.confirm = () => true;
+  await act(async () => button('Mark matching present').click());
+  await flush();
+  assert.equal((await getDoc(ref('TEST-A'))).data()?.attendanceStatus, 'Present');
+  assert.equal((await getDoc(ref('TEST-B'))).data()?.attendanceStatus, 'Absent', 'other streams remain untouched');
+  assert.equal((await getDoc(ref('TEST-C'))).data()?.attendanceStatus, 'Late', 'unassigned students remain untouched');
+  await input(search, '');
+  await choose(streamSelect, '__unassigned__');
+  assert.ok(document.body.textContent?.includes('TEST GAMMA'));
+  assert.ok(!document.body.textContent?.includes('TEST ALPHA'));
+  await choose(classSelect, 'all');
+  assert.equal(streamSelect.value, 'all', 'changing class resets the stream');
+  await act(async () => root.render(<SmoothScroll><div key="short">Short route</div></SmoothScroll>));
+  const content = document.querySelector('[data-scroll-content]');
+  assert.ok(content);
+  await act(async () => root.render(<SmoothScroll><div key="long">Long route</div></SmoothScroll>));
+  assert.equal(document.querySelector('[data-scroll-content]'), content, 'scroll observer keeps the same content node on route change');
+  await act(async () => root.unmount());
+  console.log('ATTENDANCE FILTER AND SCROLL REGRESSIONS PASSED');
+  process.exit(0);
+}
+main().catch(error => { console.error(error); process.exit(1); });

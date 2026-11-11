@@ -96,11 +96,14 @@ export function AttendanceByClass({ students }: { students: any[] }) {
     for (const student of students ?? []) {
       const form = String(student.class ?? 'Unassigned');
       const entry = groups.get(form) ?? { present: 0, total: 0 };
-      entry.total += 1;
-      if (student.attendanceStatus !== 'Absent') entry.present += 1;
+      if (['Present', 'Late', 'Absent'].includes(student.attendanceStatus)) {
+        entry.total += 1;
+        if (student.attendanceStatus !== 'Absent') entry.present += 1;
+      }
       groups.set(form, entry);
     }
     return [...groups.entries()]
+      .filter(([, entry]) => entry.total > 0)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([form, { present, total }]) => ({
         form,
@@ -110,7 +113,7 @@ export function AttendanceByClass({ students }: { students: any[] }) {
       }));
   }, [students]);
 
-  if (rows.length === 0) return <Empty message="No learners on the register yet." />;
+  if (rows.length === 0) return <Empty message="No attendance statuses recorded yet." />;
 
   return (
     <ChartFrame height={240}>
