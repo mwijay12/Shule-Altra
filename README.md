@@ -1,6 +1,24 @@
-# Shule Altra
+<div align="center">
+
+<img src="docs/readme/hero.svg" alt="Shule Altra — a clearer day for every school, built in Tanzania" width="100%" />
+
+**One school day. One connected workspace.**
+
+[Explore the demo](https://shule-altra-demo.vercel.app) · [Quick start](#run-the-demo) · [Deployment guide](#configure-a-real-school) · [Get support](#contact)
+
+[![Demo CI](https://github.com/mwijay12/ShuleDirect-Pro/actions/workflows/demo-ci.yml/badge.svg)](https://github.com/mwijay12/ShuleDirect-Pro/actions) ![Next.js](https://img.shields.io/badge/Next.js-15-111827?logo=next.js) ![TypeScript](https://img.shields.io/badge/TypeScript-typed-3178c6?logo=typescript&logoColor=white) ![Firebase](https://img.shields.io/badge/Firebase-live%20mode-f5a623?logo=firebase&logoColor=white)
+
+</div>
+
+## The idea
 
 Shule Altra is a school management application by [Altraware Technology](https://altra.tanzaniareach.com/), a Tanzanian software studio in Dar es Salaam. It brings student records, attendance, academics, fees and printable documents into one dashboard. School identity, logo and colours are configurable; the included school is **sample data**, not the only school the software can serve.
+
+## The school toolkit
+
+<img src="docs/readme/modules.svg" alt="Feature chart: four groups of three selected modules — learning, operations, resources and administration." width="100%" />
+
+The chart counts **selected product modules**, not users, deployments or school performance. Timetable is an example schedule; other screens may require configuration.
 
 ## What is included
 
@@ -40,6 +58,21 @@ Set server-only secrets in the deployment platform, not in source control. `NEXT
 The local guide does not need an API key. Online Genkit/Gemini flows exist for selected tasks; `GOOGLE_GENAI_API_KEY` is an optional **server-only** configuration. Demo mode uses local features and does not perform online form OCR. Do not enable external AI for learner information until authentication, authorization, privacy, consent, provider terms, rate limits and costs have been reviewed and tested. AI output can be wrong and must be checked by a human.
 
 Email delivery, payment webhooks, image storage and other integrations require their own configuration and testing; an unconfigured integration should not be assumed to send messages or process payments. See [`.env.example`](.env.example), [`DEMO.md`](DEMO.md) and [`docs/GO-LIVE-TZ.md`](docs/GO-LIVE-TZ.md).
+
+## Project records & people
+
+| Record | Source of truth |
+| :-- | :-- |
+| Product & studio | [Shule Altra](https://github.com/mwijay12/ShuleDirect-Pro) by [Altraware Technology](https://altra.tanzaniareach.com/) |
+| Repository owner | [@mwijay12](https://github.com/mwijay12) |
+| Contributors | [People who contributed](https://github.com/mwijay12/ShuleDirect-Pro/graphs/contributors) |
+| Project activity | [Commit history](https://github.com/mwijay12/ShuleDirect-Pro/commits/main/) · [Releases](https://github.com/mwijay12/ShuleDirect-Pro/releases) · [Issues](https://github.com/mwijay12/ShuleDirect-Pro/issues) |
+| Repository statistics | [Stars](https://github.com/mwijay12/ShuleDirect-Pro/stargazers) · [Forks](https://github.com/mwijay12/ShuleDirect-Pro/forks) · [Insights](https://github.com/mwijay12/ShuleDirect-Pro/pulse) |
+| Terms | [Repository license](LICENSE) |
+
+[![GitHub stars](https://img.shields.io/github/stars/mwijay12/ShuleDirect-Pro?style=flat&color=43bf96)](https://github.com/mwijay12/ShuleDirect-Pro/stargazers) [![GitHub forks](https://img.shields.io/github/forks/mwijay12/ShuleDirect-Pro?style=flat&color=4a94c5)](https://github.com/mwijay12/ShuleDirect-Pro/forks) [![Last commit](https://img.shields.io/github/last-commit/mwijay12/ShuleDirect-Pro?style=flat&color=718096)](https://github.com/mwijay12/ShuleDirect-Pro/commits/main/)
+
+These links and badges point to GitHub's current records rather than invented achievements. Badges need an internet connection and may be cached. SVG animation depends on the viewer; the artwork remains readable without motion.
 
 ## Tests and development
 
