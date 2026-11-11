@@ -1,363 +1,59 @@
-# 🏛️ Shule Altra — The Sovereign Institutional Hub
+# Shule Altra
 
-> **The definitive high-fidelity institutional ecosystem for the modern Tanzanian educational landscape.**
+Shule Altra is a school management application by [Altraware Technology](https://altra.tanzaniareach.com/), a Tanzanian software studio in Dar es Salaam. It brings student records, attendance, academics, fees and printable documents into one dashboard. School identity, logo and colours are configurable; the included school is **sample data**, not the only school the software can serve.
 
----
+## What is included
 
-## Selling it
+- Student and staff records, attendance status, academic marks and NECTA-oriented O-level grading.
+- Fee records, reports, learner ID cards and other generated PDF documents.
+- Hostel, transport, inventory, canteen, communication and administrative screens.
+- Theme Studio and a local **Shule Guide**: predefined English/Kiswahili keyword answers about the system and Altraware, with links to permitted pages and support. It is not a language model and does not change records.
+- A local student comment draft derived from recorded scores, latest attendance status and conduct. It is editable and should be reviewed before use.
 
-`docs/GO-TO-MARKET.md` is the working plan: what to demo, what to charge in TZS
-and USD, what is genuinely ready for an international client and what is not,
-where to find the first twenty schools, and five posts to run first.
+Some capabilities need additional configuration or review. The timetable is a generated example, not a saved clash-checked timetable. Attendance currently stores the latest status rather than a dated history. Integrations, AI, authentication and permissions must be tested for each deployment; do not treat this repository as a guarantee of regulatory compliance or production readiness.
 
-The trust surface a school checks before signing is published in the app:
-`/legal/privacy`, `/legal/terms`, `/legal/security`, `/legal/dpa`. The security
-page lists what is **not** built yet, on purpose.
+## Run the demo
 
-## 🎬 SECTION 0: RUN THE DEMO (NO SETUP)
-
-This build ships an **offline demo mode** so the entire hub can be demonstrated in
-under a minute — no Firebase project, no Gemini key, no network.
+Requires Node.js 22.22.2 or later.
 
 ```bash
-npm install
-npm run dev          # http://localhost:9002
+npm ci
+npm run demo
 ```
 
-Open the landing page → **Launch Live Demo**, or visit `/login?demo=1` for an
-instant administrator session. One-click demo roles:
+Open `http://localhost:9002` and choose **Launch Live Demo**. The demo includes an illustrative O-level school and sample records; edit the school details in Settings. Demo data is stored in the current browser and is **not shared across devices**. It may be lost when browser storage is cleared. Demo roles are for demonstration, not real authentication.
 
-| Role | Email | Scope |
-|------|-------|-------|
-| Administrator | `admin@shule.pro` | Everything + developer tools |
-| Teacher | `teacher@shule.pro` | Students, attendance, academics |
-| Bursar | `bursar@shule.pro` | Finance, canteen, boarding |
+The guide's predefined answers and comment formatting run locally once the page and needed data have loaded. This is **not a fully offline-installed app**: initial page loads, sign-in, live Firebase data, external links and integrations may require internet. There is no offline OCR model; demo form scanning is disabled rather than inventing a student. Online scanning requires an AI provider and produces a draft to review, not an automatic enrolment.
 
-The demo school (**Mwalimu Nyerere Secondary School**, Kinondoni) is **O-level only:
-Form 1–4**, matching the timetable. It is seeded with 150 learners, 2,932 NECTA
-assessment records, 140 fee transactions, 900 attendance records, 5 hostel wings
-(101 boarders), 5 bus routes (49 day learners) and more. All of it lives in `localStorage`
-behind a Firestore-compatible shim. Updates, including the school theme, remain on
-that browser and do **not** synchronise across devices in demo mode. For shared
-theme updates, configure a real Firebase project and security rules as described
-below; palette and type changes then save to the school branding document and
-connected devices receive them. Light/dark remains a per-device preference.
+## Configure a real school
 
-* **Editable landing page:** **Settings → Landing Page** edits the public copy,
-  the four headline figures, the font pairing (three self-hosted pairings) and all
-  14 photographs by upload or hosted URL. The shipped images are placeholders —
-  replace them with your own consented photography before going public.
-* **Full walkthrough:** [`DEMO.md`](./DEMO.md)
-* **Showcase script (15 min, Kiswahili):** [`docs/SHOWCASE.md`](./docs/SHOWCASE.md) — what to open, what to say, what not to promise
-* **Going live in Tanzania:** [`docs/GO-LIVE-TZ.md`](./docs/GO-LIVE-TZ.md) — channels (Resend vs SMS), Cloudinary photos, pricing, pain points, the P0 fix list and an 8-week plan
-* **Admin shell:** GSAP + Three.js command deck, ⌘K palette, animated sidebar,
-  range-filtered collections chart, draggable follow-up queue and midnight theme;
-  shared count-up numbers and animated progress bars across dashboard screens,
-  with live `prefers-reduced-motion` support
-* **Vector printables:** `npm run demo:pdf` + `npm run demo:reports` generate fee
-  statements, report cards, merit rankings, attendance registers, A4 ID cards, the
-  master timetable and all 10 Reports-centre documents with `pdf-lib` (real text,
-  school crest, no screenshots) → samples in `private/printables/`, served through the role gate (`npm run demo:docs`)
-* **Regression suites:** `npm run demo:smoke`, `npm run demo:smoke:data`,
-  `npm run demo:smoke:olevel`, `npm run demo:smoke:motion`,
-  `npm run demo:smoke:landing`, `npm run demo:smoke:copy`, `npm run demo:pdf`
-* **Mail room:** `/dashboard/communications` sends branded, role-scoped email to
-  guardians and staff (fee reminder, absence alert, report card, receipts, staff
-  briefing, timetable change) — preview first, then Nodemailer over SMTP
-  (`SMTP_HOST`/`SMTP_USER`/`SMTP_PASS`), Resend (`RESEND_API_KEY`), or a dry run
-* **Back to real Firebase:** `NEXT_PUBLIC_DEMO_MODE=false`, `NEXT_PUBLIC_FIREBASE_CONFIG`,
-  then `firebase deploy --only firestore:rules,firestore:indexes,storage` (see `.env.example`)
+1. Create a Firebase project, enable the needed authentication providers and Firestore, and add your app domains to Firebase Authentication's authorized domains.
+2. Configure `NEXT_PUBLIC_DEMO_MODE=false`, `NEXT_PUBLIC_FIREBASE_CONFIG` (the Firebase web configuration as one JSON value), and a strong server-only `SESSION_SECRET`; see [`.env.example`](.env.example). Rebuild/redeploy after changing build-time variables.
+3. Review and deploy `firestore.rules`, `firestore.indexes.json` and `storage.rules`; configure real staff roles and test access with representative accounts. Review the install-owner configuration before deployment.
+4. Set up the school identity and branding. In live mode, saved school branding is read from Firestore by connected devices; light/dark is a personal preference. Demo browser data is **not automatically migrated** to Firebase.
+5. Test student data, document access, recovery, backups and integrations before using real learner information. The repository currently uses the `school-001` path in many places; automatic multi-school isolation/onboarding is not implemented.
 
----
+Set server-only secrets in the deployment platform, not in source control. `NEXT_PUBLIC_` values are sent to the browser and must not contain secrets. Do not commit `.env.local`, service-account keys, or API secrets. Changes to environment variables require a new deployment.
 
-## 📑 SECTION 1: PROJECT IDENTITY
+## AI and integrations
 
-### The "Elevator Pitch" (10-Year-Old Version)
-Shule Altra is like a magic school diary that lives in the cloud. It helps teachers see who is in class, makes sure parents know if their kids are safe, and uses a super-smart robot brain to grade tests and create ID cards automatically.
+The local guide does not need an API key. Online Genkit/Gemini flows exist for selected tasks; `GOOGLE_GENAI_API_KEY` is an optional **server-only** configuration. Demo mode uses local features and does not perform online form OCR. Do not enable external AI for learner information until authentication, authorization, privacy, consent, provider terms, rate limits and costs have been reviewed and tested. AI output can be wrong and must be checked by a human.
 
-### The Developer's Architecture
-Shule Altra is a high-density, multi-tenant ERP system built on **Next.js 15 (App Router)** and **Firebase**. It utilizes a "Sovereign Node" architecture where each institution operates within a protected data shard. The system implements an **Optimistic UI pattern** using non-blocking Firebase mutations and leverages **Genkit + Gemini 2.5 Flash** for advanced Vision AI (form scanning) and RAG-augmented academic narrative generation. It is engineered for "Pure Performance" with a flat routing structure to maximize Next.js 15's Turbopack efficiency.
+Email delivery, payment webhooks, image storage and other integrations require their own configuration and testing; an unconfigured integration should not be assumed to send messages or process payments. See [`.env.example`](.env.example), [`DEMO.md`](DEMO.md) and [`docs/GO-LIVE-TZ.md`](docs/GO-LIVE-TZ.md).
 
-### The Business Solution
-Educational institutions in East Africa suffer from "Data Fragmentation"—disconnected Excel sheets, paper registers, and manual financial reconciliation. Shule Altra solves this by providing a **Single Source of Truth** that is strictly compliant with the **Tanzania Personal Data Protection Act (PDPA) 2022**. It automates revenue assurance via ClickPesa integration and aligns every grade with NECTA standards (PSLE, FTNA, CSEE), transitioning schools from manual labor to automated distinction.
+## Tests and development
 
-*   **Current Version**: `2.0.26 (Academic Season Node)`
-*   **Status**: 🟡 **Beta / Active Testing**
-*   **Architect**: Davie Mwijage | Altraware Technology
-*   **Differentiator**: Unlike generic school systems, Shule Altra is **NECTA-Native**. It doesn't just store grades; it calculates Divisions (I-IV, 0) and Points using official national matrices and integrates directly with Tanzanian payment gateways.
-
----
-
-## 📸 SECTION 2: LIVE SYSTEM SNAPSHOT
-
-| Component | Status | What It Does | Tech Used |
-|-----------|--------|--------------|-----------|
-| **Auth Gateway** | ✅ Working | Role-based (Admin/Teacher/Accountant) access control. | Firebase Auth |
-| **Student Hub** | ✅ Working | Registration, ID Card generation, and AI Smart Enroll. | Firestore / Genkit |
-| **Attendance** | ✅ Working | Real-time register with parent SMS notification sync. | n8n / Beem API |
-| **Finance Core** | ✅ Working | Control number generation and forensic ledger tracking. | ClickPesa / Zod |
-| **Academics** | ✅ Working | Division I-IV calculation and NECTA point aggregation. | Custom Logic Node |
-| **Inventory** | ✅ Working | QR-code property tracking and maintenance logs. | html5-qrcode |
-| **Reports** | 🔧 Partial | NECTA Explorer (Mock data active) & AI Content Lab. | Gemini 2.5 Flash |
-| **Timetable** | 🔧 Partial | Visual grid rendered; allocation logic in progress. | React State |
-| **Logistics** | ✅ Working | Route management for day students & hostel occupancy. | Firestore |
-
-### System Maturity
-*   **Fully Working**: Role-based navigation, Student/Staff CRUD, Financial Ledger, Attendance alerts, and Institutional Rebranding.
-*   **Partially Working**: AI Exam OCR (Scanning logic exists but requires specific template calibration), Timetable (Static rendering complete; dynamic allocation logic pending).
-*   **Planned**: Automated PDF Report Card generation (using `docx`), multi-school automated onboarding.
-*   **Abandoned**: Next.js 15 Route Groups `(auth)`/`(dashboard)`. These were tried and removed because they caused parallel route conflicts with root-level pages. The system now uses a **Flat Path Pattern** for maximum stability.
-
----
-
-## 🏗️ SECTION 3: SYSTEM ARCHITECTURE
-
-### High-Level Flow
-```text
-[User / Admin]
-      ↓
-[Next.js 15 Client (Turbopack)] ←─── [Shadcn UI / Framer Motion]
-      ↓                                    ↑
-[Auth Guard (Firebase Auth)] ──────────┐   │
-      ↓                                │   │
-[Business Logic (src/lib)] ◄───────────┼───┘
-      ↓                                │
-[Firestore DB (Sovereign Shard)] ◄─────┘
-      ↓
-[Genkit / Gemini AI] ◄──────── [AI Smart Enroll / Progress Narrative]
-      ↓
-[n8n Webhook / Evolution API] ───────► [Parent WhatsApp / SMS]
+```bash
+npm run typecheck
+npm run demo:smoke
+npm run demo:smoke:guide
+npm run demo:smoke:student-details
+npm run demo:build
 ```
 
-### Common Action Walkthrough: Smart Enrollment
-1.  **User Action**: Administrator uploads a photo of a handwritten registration form.
-2.  **AI Invocation**: `StudentsPage` calls `scanStudentRegistration` server action.
-3.  **Genkit Processing**: The `photoDataUri` is sent to Gemini 2.5 Flash. The prompt instructs the model to extract "Name, ID, Class, Contact" as a structured JSON object.
-4.  **Verification**: The UI displays the extracted data for confirmation.
-5.  **Persistence**: `addDocumentNonBlocking` is called. This initiates a Firestore write that immediately updates the local cache (Optimistic UI) and queues the background sync.
-6.  **Real-time Update**: The `useCollection` hook detects the new document and adds it to the student table without a page refresh.
+The app uses Next.js, React, Firebase or the local demo datastore, and pdf-lib. Tests using the demo datastore do not prove live Firebase connectivity or production deployment behaviour.
 
----
+## Contact
 
-## 📂 SECTION 4: COMPLETE FILE STRUCTURE
-
-```text
-project-root/
-├── docs/
-│   └── backend.json           # Intermediate Representation of DB schema
-├── src/
-│   ├── ai/
-│   │   ├── flows/             # Genkit AI workflows (OCR, Summaries)
-│   │   ├── dev.ts             # AI local development entry
-│   │   └── genkit.ts          # Genkit initialization node
-│   ├── app/
-│   │   ├── dashboard/         # Central Management Hub
-│   │   │   ├── academics/     # NECTA grading & assessment
-│   │   │   ├── finance/       # ClickPesa & forensic accounting
-│   │   │   ├── students/      # Registry & AI Smart Enroll
-│   │   │   └── layout.tsx     # Institutional Shell & Auth Guard
-│   │   ├── login/             # Sovereign Verification Gateway
-│   │   ├── layout.tsx         # Root config (Fonts, Providers)
-│   │   └── page.tsx           # High-performance Landing Hub
-│   ├── components/
-│   │   ├── dashboard/         # Sidebar & Header components
-│   │   └── ui/                # Hardened Shadcn/Animation components
-│   ├── firebase/
-│   │   ├── firestore/         # Real-time data hooks (useCollection)
-│   │   ├── index.ts           # Central SDK Barrel file
-│   │   └── errors.ts          # Contextual Security Rule error handling
-│   ├── hooks/                 # Business logic hooks (useFinance, useSyllabus)
-│   ├── lib/
-│   │   ├── finance-engine.ts  # ClickPesa logic & atomic reconciliation
-│   │   ├── necta-logic.ts     # National Grading Matrix logic
-│   │   └── n8n.ts             # Orchestration node dispatch
-│   └── globals.css            # CSS Variables & Design Tokens
-├── firestore.rules            # Institutional Security Policy
-└── package.json               # Pure Performance dependencies
-```
-
----
-
-## ⚙️ SECTION 5: INSTALLATION & SETUP
-
-**Prerequisites**
-*   **Node.js**: 20.x or higher ([Download](https://nodejs.org/))
-*   **Firebase Account**: Project initialized at [Firebase Console](https://console.firebase.google.com/)
-*   **Google AI Key**: Gemini API key from [Google AI Studio](https://aistudio.google.com/)
-
-**Step-by-Step Configuration**
-
-1.  **Clone & Initialize**:
-    ```bash
-    npm install
-    ```
-
-2.  **Environment Variables**:
-    Create a `.env` file in the root. This is critical for the AI Node and Deployment.
-    ```env
-    GOOGLE_GENAI_API_KEY=your_gemini_key_here
-    NEXT_PUBLIC_FIREBASE_CONFIG={"apiKey": "...", "projectId": "..."}
-    ```
-
-3.  **Firebase Config Sync**:
-    Ensure `src/firebase/config.ts` matches your project keys exactly.
-
-4.  **Start Local Node**:
-    ```bash
-    npm run dev
-    ```
-    *   **Expected Output**: `ready - started server on 0.0.0.0:9002, url: http://localhost:9002`
-
-5.  **Verify Handshake**:
-    Navigate to `http://localhost:9002`. You should see the **Institutional Loader** followed by the Landing Page. If the loader spins forever, check your `NEXT_PUBLIC_FIREBASE_CONFIG`.
-
----
-
-## 📖 SECTION 6: HOW TO USE IT
-
-### Use Case 1: Generating an Institutional Control Number
-*   **Action**: Go to Dashboard > Finance > Control No Tab.
-*   **Payload**: Select "JUMA KHAMISI", Fee Type: "Tuition", Amount: "500,000".
-*   **Result**: The `finance-engine` generates a mock ClickPesa reference `99XXXXXXXXX`, renders a QR code, and triggers an n8n webhook to notify the parent.
-
-### Use Case 2: AI Student Progress Narrative
-*   **Action**: Open a Student profile sheet > Academic Tab > Click "Synthesize".
-*   **Process**: The system sends raw grades and behavioral points to Gemini.
-*   **Output**: "Juma is performing exceptionally in Mathematics (Grade A) but requires remedial focus in Civics. His attendance is optimal at 98.4%."
-
-### Use Case 3: Rebranding the school (super admin)
-*   **Action**: Sign in with Google as the install owner, then open **Dashboard → Theme Studio**.
-*   **Choose**: one of four palettes (Blue Ridge, Emerald, Carbon Gold, Crimson), a type pairing, and light or dark. Light is the default.
-*   **Identity**: upload the school logo (PNG/JPEG), edit the printed name, motto, address, contacts, NECTA centre and registration number.
-*   **Prove it**: "Download a real PDF proof" runs the production document engine, so the letterhead you approve is the one a parent receives.
-*   **Publish**: the palette and type go to `config/branding`; the details go to `config/identity`. The sidebar mark, the WebGL orb, every button and the next report card, fee statement, ID card and letterhead all follow.
-*   **Print colours**: documents always use the palette's *light* variant — a colour tuned for a dark screen washes out on paper.
-
-See **[docs/FIREBASE.md](docs/FIREBASE.md)** for connecting the real Firebase project, deploying the rules and seeding the demo school into Firestore.
-
----
-
-## 🗄️ SECTION 7: DATABASE SCHEMA
-
-### Collection: `schools/{schoolId}/students`
-Stores the unified student registry.
-*   `id`: string (e.g., "ALT-2026-001") — **Primary Index**
-*   `name`: string (Upper Case)
-*   `class`: string (demo: "Form 1"–"Form 4"; live schools use their configured tiers)
-*   `type`: "Boarder" | "Day"
-*   `balance`: number — **Indexed for financial reporting**
-*   `photo`: base64 — Institutional ID photo
-
-### Collection: `schools/{schoolId}/transactions`
-Forensic financial records.
-*   `controlNumber`: string — Unique ClickPesa reference
-*   `status`: "Pending" | "Verified" | "Disputed"
-*   `amount`: number
-*   `reconciled`: boolean — Used for audit trail logic
-
----
-
-## 🤖 SECTION 8: AI INTEGRATION DETAILS
-
-### Model: `googleai/gemini-2.5-flash`
-We use 2.5 Flash for its extreme speed and low latency, essential for real-time form scanning.
-
-### Core Prompt: `scanStudentRegistrationPrompt`
-```text
-You are an institutional administrative assistant for Tanzanian schools.
-Extract student data from the provided image.
-1. Extract Full Name (Capitalize)
-2. Extract ID Number (SXXXX/XXXX format)
-3. Identify Gender
-Return strictly valid JSON.
-```
-
-### Cost Estimate
-*   **Input Tokens**: ~500 per scan.
-*   **Output Tokens**: ~150 per scan.
-*   **Cost**: Negligible on the Google AI free tier (up to 15 RPM). Scaling to Blaze tier costs approx $0.0001 per enrollment.
-
----
-
-## ⚠️ SECTION 9: CURRENT LIMITATIONS & KNOWN BUGS
-
-1.  **n8n Security**: The Webhook URL is stored in `localStorage` via the Settings page. For production, this must be moved to an encrypted Firebase Config document.
-2.  **Search Performance**: Search on the Student Table is currently performed client-side. This will degrade if the student body exceeds 5,000 nodes.
-3.  **PDF Spooling**: Report card printing currently uses `window.print()`. The `docx` export is only partially implemented in the Student profile.
-
----
-
-## 🛠️ SECTION 10: MODIFICATION & ADDON GUIDE
-
-### MOD: Live ClickPesa Integration
-*   **Difficulty**: ⭐⭐⭐⭐
-*   **Time**: 2 Days
-*   **Files**: `src/lib/finance-engine.ts`, `src/app/api/webhooks/clickpesa/route.ts`
-*   **Steps**: Replace the `generateInstitutionalControlNumber` simulation with a `fetch` call to the ClickPesa API. Update the webhook handler to verify the signature header.
-
-### MOD: Multi-Language (Swahili) Hub
-*   **Difficulty**: ⭐⭐
-*   **Time**: 1 Day
-*   **Steps**: Create `src/lib/i18n.ts`. Wrap the `DashboardLayout` in a context provider. Map all "font-headline" strings to the Swahili dictionary.
-
----
-
-## 🚀 SECTION 11: DEPLOYMENT GUIDE
-
-1.  **Build Check**: `npm run build` (Ensures no TypeScript errors).
-2.  **Auth Setup**: Enable "Email/Password" and "Anonymous" in Firebase Console.
-3.  **Rules Deployment**: Copy `firestore.rules` content into the Firebase Console "Rules" tab.
-4.  **Hosting**:
-    ```bash
-    firebase deploy --only hosting
-    ```
-5.  **Domain Node**: Configure custom CNAME in Firebase Console. Shule Altra requires SSL (default on Firebase).
-
----
-
-## 💸 SECTION 12: COST CALCULATOR
-
-| Service | Free Tier (Demo) | Paid Tier (1,000 Users) |
-|---------|------------------|-------------------------|
-| **Firebase Hosting** | $0 (Up to 10GB) | ~$0.02 / GB |
-| **Firestore Read/Write** | 50k Reads / day | ~$0.06 per 100k |
-| **Gemini AI** | $0 (Free Tier) | ~$0.10 / day |
-| **Beem SMS (n8n)** | N/A | TZS 15 / SMS |
-
----
-
-## 🗺️ SECTION 13: ROADMAP
-
-### Short Term (2 Weeks)
-- [ ] Implement dynamic Timetable period allocation logic.
-- [ ] Add "Dormitory Map" visualization to the Hostel Hub.
-- [ ] Complete the `docx` Report Card export for PSLE students.
-
-### Medium Term (3 Months)
-- [ ] **Live ClickPesa Hook**: Real payments updating student balances.
-- [ ] **Biometric Sync**: QR-code based student attendance.
-
-### Long Term (12 Months)
-- [ ] **Sovereign Mobile App**: Native Android app for teachers.
-- [ ] **National Archive Node**: Benchmarking school performance against national NECTA averages.
-
----
-
-## 💡 SECTION 14: LESSONS LEARNED
-
-1.  **Next.js 15 Routing**: Flat routing is significantly more predictable than deeply nested route groups when working with complex ERP sidebars.
-2.  **Non-Blocking Logic**: User perception of speed is higher when Firestore writes aren't `awaited`. Optimistic UI update + background catch-error is the winning pattern.
-3.  **AI Precision**: Gemini 2.5 Flash is excellent at OCR but struggles with Tanzanian cursive handwriting if the image contrast is low. Image preprocessing (CSS filters) before scanning is a future requirement.
-
----
-
-## ⚡ SECTION 15: QUICK REFERENCE CARD
-
-*   **Start Node**: `npm run dev` (Port 9002)
-*   **Admin Access**: `admin@shule.pro` (Standard Hub)
-*   **Core DB Path**: `/schools/school-001/`
-*   **Role Change**: Update `localStorage.setItem('shule_role', 'TEACHER')` for instant UI filter testing.
-*   **AI Dev Hub**: `npm run genkit:dev`
-
----
-**Institutional Authority Verified** | © 2026 Shule Altra Technology Core
+**Altraware Technology** · Dar es Salaam, Tanzania
+[altra.tanzaniareach.com](https://altra.tanzaniareach.com/) · [altrawaretechnology@gmail.com](mailto:altrawaretechnology@gmail.com) · [+255 792 867 427](tel:+255792867427) · [WhatsApp](https://wa.me/255792867427)

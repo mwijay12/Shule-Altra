@@ -22,6 +22,7 @@ import {
   LifeBuoy,
   Mails,
   FileClock,
+  Bot,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -75,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Intelligence & system',
     items: [
+      { title: 'Shule Guide', url: '/dashboard/ai-tools', icon: Bot, module: 'ai-tools', hint: 'Local system help' },
       { title: 'Reports', url: '/dashboard/reports', icon: FileBarChart2, module: 'reports', hint: 'PDF & printable output' },
       { title: 'Audit trail', url: '/dashboard/audit', icon: FileClock, module: 'audit', hint: 'Who changed what, and when' },
       { title: 'Settings', url: '/dashboard/settings', icon: Settings2, module: 'settings', hint: 'Institution profile' },
