@@ -3,7 +3,7 @@
  *
  *   npm run firebase:seed -- --dry-run
  *   GOOGLE_APPLICATION_CREDENTIALS=./service-account.json \
- *     npm run firebase:seed -- --project studio-9420247393-c051b --confirm
+ *     npm run firebase:seed -- --project studio-2181801796-1fa72 --confirm
  *
  * The dataset builder is shared with the offline demo, so what lands in
  * Firestore is exactly what the demo shows — same 150 O-level learners, same
@@ -16,14 +16,17 @@
  */
 
 import { initializeApp, cert, type App } from 'firebase-admin/app';
-import { getFirestore, Timestamp, FieldValue, type WriteBatch } from 'firebase-admin/firestore';
+import { getFirestore, type WriteBatch } from 'firebase-admin/firestore';
+import { Timestamp, FieldValue, Firestore } from '@google-cloud/firestore';
 import { readFileSync, existsSync } from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
 import { buildDemoDataset, DEMO_SCHOOL_ID, DEMO_SCHEMA_VERSION } from '@/lib/demo/seed-data';
 import { DemoTimestamp } from '@/lib/demo/timestamp';
 import { DEFAULT_PALETTE, DEFAULT_APP_FONT } from '@/lib/theme/palettes';
 import { DEFAULT_LANDING_CONTENT } from '@/lib/landing/content';
 
-const DEFAULT_PROJECT = 'studio-9420247393-c051b';
+const DEFAULT_PROJECT = 'studio-2181801796-1fa72';
 const CHUNK = 400; // Firestore caps a batch at 500 writes.
 
 type Args = { dryRun: boolean; confirm: boolean; project: string; school: string };
@@ -187,18 +190,38 @@ async function main() {
   }
 
   const credentialPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  let app: App;
+  let db: any;
   if (credentialPath) {
     if (!existsSync(credentialPath)) {
       throw new Error(`GOOGLE_APPLICATION_CREDENTIALS points at a missing file: ${credentialPath}`);
     }
-    app = initializeApp({ credential: cert(JSON.parse(readFileSync(credentialPath, 'utf8'))), projectId: args.project });
+    const app: App = initializeApp({ credential: cert(JSON.parse(readFileSync(credentialPath, 'utf8'))), projectId: args.project });
+    db = getFirestore(app);
   } else {
-    // Application Default Credentials (gcloud auth application-default login).
-    app = initializeApp({ projectId: args.project });
+    // Try loading Firebase CLI token first
+    const homeConfig = path.join(os.homedir(), '.config', 'configstore', 'firebase-tools.json');
+    if (existsSync(homeConfig)) {
+      try {
+        const configJson = JSON.parse(readFileSync(homeConfig, 'utf8'));
+        const accessToken = configJson?.tokens?.access_token;
+        if (accessToken) {
+          const { OAuth2Client } = await import('google-auth-library');
+          const client = new OAuth2Client();
+          client.setCredentials({ access_token: accessToken });
+          db = new Firestore({ projectId: args.project, authClient: client });
+          console.log(`\n  Authenticated via Firebase CLI session (${configJson.user?.email || 'CLI user'}).`);
+        }
+      } catch (e) {
+        console.warn('Could not read firebase-tools.json:', e);
+      }
+    }
+    if (!db) {
+      // Application Default Credentials (gcloud auth application-default login).
+      const app: App = initializeApp({ projectId: args.project });
+      db = getFirestore(app);
+    }
   }
 
-  const db = getFirestore(app);
   console.log(`\nWriting to ${args.project}…`);
   let written = 0;
   for (let index = 0; index < converted.length; index += CHUNK) {
