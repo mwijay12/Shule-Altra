@@ -55,9 +55,9 @@ Set server-only secrets in the deployment platform, not in source control. `NEXT
 
 ## AI and integrations
 
-The local guide does not need an API key. Online Genkit/Gemini flows exist for selected tasks; `GOOGLE_GENAI_API_KEY` is an optional **server-only** configuration. Demo mode uses local features and does not perform online form OCR. Do not enable external AI for learner information until authentication, authorization, privacy, consent, provider terms, rate limits and costs have been reviewed and tested. AI output can be wrong and must be checked by a human.
+The local guide does not need an API key. Optional Groq chat and Genkit/Gemini flows exist for selected tasks; `GROQ_API_KEYS` and `GOOGLE_GENAI_API_KEY` is an optional **server-only** configuration. Demo mode uses local features and does not perform online form OCR. Do not enable external AI for learner information until authentication, authorization, privacy, consent, provider terms, rate limits and costs have been reviewed and tested. AI output can be wrong and must be checked by a human.
 
-Email delivery, payment webhooks, image storage and other integrations require their own configuration and testing; an unconfigured integration should not be assumed to send messages or process payments. See [`.env.example`](.env.example), [`DEMO.md`](DEMO.md) and [`docs/GO-LIVE-TZ.md`](docs/GO-LIVE-TZ.md).
+Individual finance emails require configured live Firebase and SMTP or Resend; bulk email templates remain sample previews. Email delivery, payment webhooks, image storage and other integrations require their own configuration and testing; an unconfigured integration should not be assumed to send messages or process payments. See [`.env.example`](.env.example), [`DEMO.md`](DEMO.md) and [`docs/GO-LIVE-TZ.md`](docs/GO-LIVE-TZ.md).
 
 ## Project records & people
 

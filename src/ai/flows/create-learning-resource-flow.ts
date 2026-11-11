@@ -1,10 +1,7 @@
 'use server';
 /**
  * @fileOverview A Genkit flow for generating tailored learning resources based on academic criteria.
- *
- * - createLearningResource - A function that handles the learning resource generation process.
- * - CreateLearningResourceInput - The input type for the createLearningResource function.
- * - CreateLearningResourceOutput - The return type for the createLearningResource function.
+ * Includes intelligent multi-key Groq fallback.
  */
 
 import { ai } from '@/ai/genkit';
@@ -54,7 +51,33 @@ const createLearningResourceFlow = ai.defineFlow(
     outputSchema: CreateLearningResourceOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    try {
+      if (process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY) {
+        const { output } = await prompt(input);
+        if (output?.resourceContent) return output;
+      }
+    } catch (err) {
+      console.warn('[LearningResourceFlow] Genkit unavailable, executing Groq pool fallback:', err);
+    }
+
+    // High-speed fallback to Groq pool
+    const { groqChatCompletion } = await import('@/lib/ai/groq-client');
+    const userPrompt = `Generate a "${input.resourceType}" on the topic of "${input.nectaCurriculumTopic}" for "${input.studentAcademicLevel}" students in "${input.subject}". Adhere strictly to Tanzanian NECTA curriculum standards.
+
+Provide:
+- Academically appropriate depth for ${input.studentAcademicLevel}.
+- Clear step-by-step breakdown or questions with instructions.
+- Clean formatting.`;
+
+    const result = await groqChatCompletion([
+      {
+        role: 'system',
+        content:
+          'You are an expert Tanzanian educator and curriculum developer specializing in NECTA standards.',
+      },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    return { resourceContent: result.text };
   }
 );

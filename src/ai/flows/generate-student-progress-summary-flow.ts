@@ -1,14 +1,11 @@
 'use server';
 /**
  * @fileOverview A Genkit flow for generating concise, natural language summaries of student progress.
- *
- * - generateStudentProgressSummary - A function that handles the generation of student progress summaries.
- * - GenerateStudentProgressSummaryInput - The input type for the generateStudentProgressSummary function.
- * - GenerateStudentProgressSummaryOutput - The return type for the generateStudentProgressSummary function.
+ * Includes intelligent multi-key Groq fallback.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { z } from 'genkit';
 
 const AcademicPerformanceEntrySchema = z.object({
   subject: z.string().describe('The name of the academic subject.'),
@@ -35,8 +32,8 @@ export async function generateStudentProgressSummary(input: GenerateStudentProgr
 
 const prompt = ai.definePrompt({
   name: 'generateStudentProgressSummaryPrompt',
-  input: {schema: GenerateStudentProgressSummaryInputSchema},
-  output: {schema: GenerateStudentProgressSummaryOutputSchema},
+  input: { schema: GenerateStudentProgressSummaryInputSchema },
+  output: { schema: GenerateStudentProgressSummaryOutputSchema },
   prompt: `You are an AI assistant designed to generate concise and natural language summaries of student progress for teachers and administrators. Your goal is to combine academic performance, attendance records, and behavioral notes into a single, easy-to-understand summary.
 
 Please generate a summary for the following student:
@@ -63,8 +60,35 @@ const generateStudentProgressSummaryFlow = ai.defineFlow(
     inputSchema: GenerateStudentProgressSummaryInputSchema,
     outputSchema: GenerateStudentProgressSummaryOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    try {
+      if (process.env.GOOGLE_GENAI_API_KEY || process.env.GEMINI_API_KEY) {
+        const { output } = await prompt(input);
+        if (output?.summary) return output;
+      }
+    } catch (err) {
+      console.warn('[ProgressSummaryFlow] Genkit unavailable, executing Groq pool fallback:', err);
+    }
+
+    // High-speed fallback to Groq pool
+    const { groqChatCompletion } = await import('@/lib/ai/groq-client');
+    const userPrompt = `Student Name: ${input.studentName}
+Academic Performance:
+${input.academicPerformance.map((p) => `- ${p.subject}: Grade ${p.grade}${p.comment ? ` (${p.comment})` : ''}`).join('\n')}
+Attendance Summary: ${input.attendanceSummary}
+Behavioral Notes: ${input.behavioralNotes}
+
+Please synthesize a professional, objective progress summary suitable for parents and teachers.`;
+
+    const result = await groqChatCompletion([
+      {
+        role: 'system',
+        content:
+          'You are an expert school evaluator for Tanzanian schools. Synthesize student academic, attendance, and behavioral data into a constructive, articulate progress report.',
+      },
+      { role: 'user', content: userPrompt },
+    ]);
+
+    return { summary: result.text };
   }
 );
