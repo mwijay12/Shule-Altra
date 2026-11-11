@@ -62,6 +62,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { staffSchema, type StaffFormData } from "@/lib/validations/staff"
 import { generateStaffNo } from "@/lib/staff-utils"
 import { Staff } from "@/types/staff"
+import { TeachingAssignments } from "@/components/staff/teaching-assignments"
 import { StatCard } from "@/components/admin/stat-card";
 import { ChartPanel, StaffMix, DepartmentLoad } from "@/components/admin/module-charts";
 
@@ -75,6 +76,7 @@ export default function StaffPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [statusTarget, setStatusTarget] = useState<Staff | null>(null)
+  const [assignmentTarget, setAssignmentTarget] = useState<Staff | null>(null)
 
   const staffQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
@@ -165,7 +167,7 @@ export default function StaffPage() {
 
   if (authLoading) return <div className="p-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary" /></div>
 
-  const isAdmin = currentUserRole === 'ADMIN'
+  const isAdmin = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN'
 
   const roster = (staff ?? []) as Staff[];
 
@@ -342,6 +344,7 @@ export default function StaffPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-2xl w-48 font-body">
                             <DropdownMenuLabel className="text-[12px] font-semibold text-muted-foreground px-4">Manage</DropdownMenuLabel>
+                            {person.role === 'TEACHER' && <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setAssignmentTarget(person)}>Assign teaching subjects</DropdownMenuItem>}
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer group" onClick={() => setStatusTarget(person)}>
                               <Power className={cn("mr-3 h-4 w-4 group-hover:scale-110 transition-transform", person.active ? "text-destructive" : "text-green-600")} />
                               <span className="font-bold text-xs">{person.active ? "Deactivate" : "Reactivate"}</span>
@@ -358,6 +361,10 @@ export default function StaffPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={!!assignmentTarget} onOpenChange={open => { if (!open) setAssignmentTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Teaching assignments</DialogTitle><DialogDescription>{assignmentTarget?.fullName}</DialogDescription></DialogHeader>{assignmentTarget && <TeachingAssignments key={assignmentTarget.id} person={assignmentTarget} />}</DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>
         <AlertDialogContent className="rounded-[2.5rem] p-8 border-none shadow-2xl">
           <AlertDialogHeader className="space-y-4">
@@ -369,8 +376,8 @@ export default function StaffPage() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-xs font-medium text-muted-foreground leading-relaxed">
               {statusTarget?.active
-                ? `Revoking access for ${statusTarget.fullName}. They will no longer be able to authenticate or modify institutional records.`
-                : `Restoring institutional access for ${statusTarget?.fullName}. They will regain their functional permissions.`}
+                ? `Marking ${statusTarget.fullName} inactive. This blocks new teacher marks under the updated rules, but does not disable their login or revoke other access. Disable their Firebase Authentication account separately if needed.`
+                : `Marking ${statusTarget?.fullName} active. This does not create or enable a Firebase Authentication account.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 mt-6">

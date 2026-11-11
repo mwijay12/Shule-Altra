@@ -17,10 +17,10 @@ import {
 } from '@/lib/pdf/kit';
 import type { Timetable } from '@/lib/timetable';
 
-export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Array> {
+export async function buildTimetablePdf(timetable: Timetable, options: { saved?: boolean } = {}): Promise<Uint8Array> {
   const ctx = await createDocument(
     {
-      title: `Example timetable — ${timetable.className} ${timetable.stream}`,
+      title: `${options.saved ? "Saved" : "Example"} timetable — ${timetable.className} ${timetable.stream}`,
       subject: 'Master class timetable',
       reference: `TT-${timetable.className.replace(/\s+/g, '')}-${timetable.stream}-${new Date()
         .toISOString()
@@ -32,7 +32,7 @@ export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Arra
   );
 
   const { page, margin, width, font, bold } = ctx;
-  letterhead(ctx, 'EXAMPLE timetable - not an official schedule', `${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`);
+  letterhead(ctx, options.saved ? 'Saved class timetable' : 'EXAMPLE timetable - not an official schedule', `${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`);
 
   const gridTop = ctx.cursorY + 10;
   const gridLeft = margin;
@@ -188,11 +188,11 @@ export async function buildTimetablePdf(timetable: Timetable): Promise<Uint8Arra
 
 
 
-  return finalize(ctx, 'Generated example only - not saved or checked for cross-class clashes');
+  return finalize(ctx, options.saved ? 'Saved schedule - verify assignments and period times with the school' : 'Generated example only - not saved or checked for cross-class clashes');
 }
 
-export async function downloadTimetablePdf(timetable: Timetable) {
-  const bytes = await buildTimetablePdf(timetable);
+export async function downloadTimetablePdf(timetable: Timetable, options: { saved?: boolean } = {}) {
+  const bytes = await buildTimetablePdf(timetable, options);
   const name = `timetable-${timetable.className.replace(/\s+/g, '-').toLowerCase()}-${timetable.stream}.pdf`;
   downloadPdf(bytes, name);
   return bytes;

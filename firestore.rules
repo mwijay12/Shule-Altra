@@ -91,6 +91,14 @@ service cloud.firestore {
         allow get: if signedIn() && (request.auth.uid == uid || inRole(['ADMIN']));
         allow list: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT']);
         allow create, update, delete: if inRole(['ADMIN']);
+        match /teachingAssignments/{assignmentId} {
+          allow read: if inRole(['ADMIN']) || (signedIn() && request.auth.uid == uid && inRole(['TEACHER']));
+          allow create, update: if inRole(['ADMIN'])
+            && request.resource.data.className is string
+            && request.resource.data.subject is string
+            && assignmentId == request.resource.data.className + '|' + request.resource.data.subject;
+          allow delete: if inRole(['ADMIN']);
+        }
       }
 
       // ── learner records ──────────────────────────────────────────────────
@@ -117,7 +125,26 @@ service cloud.firestore {
 
       // ── learning ─────────────────────────────────────────────────────────
       match /grades/{gradeId} {
-        allow read, write: if learning();
+        allow read: if learning();
+        // Teachers can create marks only for their own class/subject assignment.
+        // Staff document IDs must match Firebase Auth UIDs. Existing marks may
+        // only be edited or deleted by an administrator.
+        allow create: if inRole(['ADMIN']) || (
+          inRole(['TEACHER'])
+          && get(staffPath()).data.get('active', true) == true
+          && request.resource.data.recordedByUid == request.auth.uid
+          && request.resource.data.studentId is string
+          && request.resource.data.subject is string
+          && request.resource.data.class is string
+          && request.resource.data.score is number
+          && request.resource.data.score >= 0 && request.resource.data.score <= 100
+          && request.resource.data.term in ['Term 1', 'Term 2', 'Term 3']
+          && request.resource.data.examType in ['Mid-Term', 'Annual', 'Mock']
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId))
+          && get(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId)).data.class == request.resource.data.class
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid)/teachingAssignments/$(request.resource.data.class + '|' + request.resource.data.subject))
+        );
+        allow update, delete: if inRole(['ADMIN']);
       }
       match /attendance/{entryId} {
         allow read, write: if learning();

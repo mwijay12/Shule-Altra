@@ -54,12 +54,19 @@ import { AnimatedNumber } from "@/components/ui/animated-number"
 import { StatCard } from "@/components/admin/stat-card"
 import { ChartPanel, SubjectAverages, DivisionSpread } from "@/components/admin/module-charts"
 import { SegmentedProgress } from "@/components/ui/progress"
+import { useAuth } from "@/hooks/use-auth"
+import { canTeach, saveAssessment, type TeachingAssignment } from "@/lib/academics/assignments"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 import { WaveSection } from '@/components/motion/wave-section';
 
 export default function AcademicsPage() {
   const { toast } = useToast()
   const db = useFirestore()
+  const { user, role } = useAuth()
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN'
+  const isTeacher = role === 'TEACHER'
+  const assignmentsQuery = useMemoFirebase(() => isTeacher && user ? query(collection(db, 'schools', 'school-001', 'staff', user.uid, 'teachingAssignments')) : null, [db, isTeacher, user])
+  const { data: assignments, isLoading: assignmentsLoading, error: assignmentsError } = useCollection<TeachingAssignment>(assignmentsQuery)
 
   // UI State
   const [searchTerm, setSearchTerm] = useState("")
@@ -84,7 +91,7 @@ export default function AcademicsPage() {
       where("term", "==", activeTerm),
       where("examType", "==", activeExam)
     ), [db, activeTerm, activeExam])
-  const { data: grades, isLoading: gradesLoading } = useCollection<GradeRecord>(gradesQuery)
+  const { data: grades, isLoading: gradesLoading, error: gradesError } = useCollection<GradeRecord>(gradesQuery)
 
   // Filtered Students for the Ledger
   const filteredStudents = useMemo(() => {
@@ -154,26 +161,21 @@ export default function AcademicsPage() {
     const score = parseFloat(formData.get("score") as string)
     const subject = formData.get("subject") as string
 
-    if (score < 0 || score > 100) {
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
       toast({ variant: "destructive", title: "Invalid Score", description: "Score must be between 0 and 100." })
       setIsSaving(false)
       return
     }
 
     try {
-      await addDoc(collection(db, "schools", "school-001", "grades"), {
-        studentId: gradingStudent.id,
-        subject,
-        score,
-        term: activeTerm,
-        examType: activeExam,
-        academicYear: "2026",
-        createdAt: serverTimestamp()
-      })
-      toast({ title: "Assessment Recorded", description: `Grade added for ${gradingStudent.name}.` })
+      if (!user || (!isAdmin && (!isTeacher || assignmentsLoading || assignmentsError || !canTeach(assignments ?? [], gradingStudent.class, subject)))) throw new Error('You are not assigned to this class and subject.')
+      if (gradesLoading || gradesError || !grades) throw new Error('The current marks could not be loaded. Try again before recording a mark.')
+      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && g.academicYear === '2026')) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
+      await saveAssessment(db, { studentId: gradingStudent.id, className: gradingStudent.class, subject, score, term: activeTerm, examType: activeExam, year: '2026', actorUid: user.uid })
+      toast({ title: "Assessment recorded", description: `Mark added for ${gradingStudent.name}.` })
       setGradingStudent(null)
     } catch (err) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to save assessment." })
+      toast({ variant: "destructive", title: "Could not save mark", description: err instanceof Error ? err.message : 'Check your connection and permissions.' })
     } finally {
       setIsSaving(false)
     }
@@ -305,7 +307,7 @@ export default function AcademicsPage() {
   }
 
   const handleCommitMarks = async () => {
-    if (!importResult || importResult.rows.length === 0 || !db) return
+    if (!isAdmin || !importResult || importResult.rows.length === 0 || !db) return
     setImporting(true)
     try {
       // Chunks of 100 so a 1,500-row sheet does not open 1,500 writes at once.
@@ -349,6 +351,7 @@ export default function AcademicsPage() {
 
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
+      {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account; bulk import and editing existing marks are administrator tasks.</p>}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
@@ -369,13 +372,13 @@ export default function AcademicsPage() {
               {O_LEVEL_CLASSES.map((className) => <SelectItem key={className} value={className}>{className}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button
+          {isAdmin && <Button
             variant="outline"
             onClick={() => setImportOpen(true)}
             className="h-10 shrink-0 rounded-full bg-white shadow-sm font-semibold text-[13px] border-primary/20 text-primary"
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" /> Import marks
-          </Button>
+          </Button>}
           <Select value={activeTerm} onValueChange={setActiveTerm}>
             <SelectTrigger className="h-10 rounded-full bg-white shadow-sm font-bold text-[13px] border-primary/10">
               <SelectValue placeholder="Term" />
@@ -464,7 +467,7 @@ export default function AcademicsPage() {
                           <TableCell className="text-center font-semibold text-xs text-primary">{studentGradesCount}</TableCell>
                           <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" className="font-semibold text-primary text-[13px] rounded-full" onClick={() => setGradingStudent(student)}>
+                              <Button variant="ghost" size="sm" disabled={!isAdmin && (!isTeacher || assignmentsLoading || !!assignmentsError || !(assignments ?? []).some(a => a.className === student.class))} className="font-semibold text-primary text-[13px] rounded-full" onClick={() => setGradingStudent(student)}>
                                 Add Assessment <ChevronRight className="ml-1 h-3 w-3" />
                               </Button>
                               <Button
@@ -630,7 +633,7 @@ export default function AcademicsPage() {
                   <SelectValue placeholder="Identify subject..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {SUBJECTS_SECONDARY.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {SUBJECTS_SECONDARY.filter(s => isAdmin || (isTeacher && canTeach(assignments ?? [], gradingStudent?.class ?? '', s))).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -649,7 +652,7 @@ export default function AcademicsPage() {
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10">
               <p className="text-[12px] font-semibold text-primary mb-1">Assessment</p>
               <p className="text-[13px] font-bold text-muted-foreground leading-relaxed tracking-tighter">
-                Registering for {activeTerm} • {activeExam} cycle. Grades are archived with a unique audit identifier.
+                Recording for {activeTerm} · {activeExam} · 2026. Existing marks require administrator review; imports and legacy marks may still contain duplicates.
               </p>
             </div>
             <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-semibold text-xs shadow-2xl group">

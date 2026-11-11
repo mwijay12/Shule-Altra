@@ -27,6 +27,10 @@ jobs:
         run: npm run demo:smoke:attendance-filters
       - name: Student details interaction
         run: npm run demo:smoke:student-details
+      - name: Timetable editing and clash checks
+        run: npm run demo:smoke:timetable-editor
+      - name: Timetable editor interaction
+        run: npm run demo:smoke:timetable-ui
       - name: Timetable and ID integrity
         run: npm run demo:smoke:integrity
       - name: O-level consistency
