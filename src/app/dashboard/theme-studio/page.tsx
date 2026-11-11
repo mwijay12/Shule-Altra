@@ -19,7 +19,6 @@ import {
   Monitor,
   Moon,
   Palette as PaletteIcon,
-  RotateCcw,
   ShieldCheck,
   Sun,
   Type,
@@ -41,6 +40,7 @@ import { APP_FONTS, PALETTE_LIST, type AppFontId, type Palette } from '@/lib/the
 import { getActiveBrand, monogram, resolveBrand, setActiveBrand } from '@/lib/brand/identity';
 import { uploadSchoolLogo } from '@/lib/storage';
 import { cn } from '@/lib/utils';
+import { DEMO_MODE } from '@/lib/demo/config';
 
 const SCHOOL_ID = 'school-001';
 
@@ -91,7 +91,7 @@ function PaletteCard({
             <div className="flex gap-1"><span className="h-2 w-8 rounded" style={{ background: `hsl(${palette.light.primary})` }} /><span className="h-2 w-5 rounded" style={{ background: `hsl(${palette.light.accent})` }} /></div>
           </div>
         </div>
-        {(active || published) && <Badge className="gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"><Check className="h-3 w-3" />{active ? (published ? 'Live' : 'Preview') : 'Live'}</Badge>}
+        {(active || published) && <Badge className="gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold"><Check className="h-3 w-3" />{active ? (published ? (DEMO_MODE ? 'Saved locally' : 'Live') : 'Preview') : (DEMO_MODE ? 'Saved locally' : 'Live')}</Badge>}
       </div>
 
       <div>
@@ -125,6 +125,8 @@ export default function ThemeStudioPage() {
     setFontId,
     published,
     isPreviewing,
+    brandingReady,
+    brandingError,
     resetToPublished,
   } = useTheme();
   const { brand, logoSrc } = useSchoolBrand();
@@ -181,7 +183,8 @@ export default function ThemeStudioPage() {
    * A touched-set makes that impossible whatever the connection does.
    */
   const [touched, setTouched] = React.useState<Set<keyof typeof form>>(new Set());
-  const [brandingTouched, setBrandingTouched] = React.useState(false);
+  const [brandingSaving, setBrandingSaving] = React.useState(false);
+  const brandingWriteInFlight = React.useRef(false);
 
   const field = (key: keyof typeof form) => ({
     value: form[key],
@@ -191,42 +194,39 @@ export default function ThemeStudioPage() {
     },
   });
 
-  const choosePalette = (id: Parameters<typeof setPaletteId>[0]) => {
-    setBrandingTouched(true);
-    setPaletteId(id);
-  };
-  const chooseFont = (id: Parameters<typeof setFontId>[0]) => {
-    setBrandingTouched(true);
-    setFontId(id);
-  };
-
-  const publishBranding = async () => {
-    if (!canPublish || !brandingTouched) return;
-    setSaving(true);
+  // A school-wide colour choice is saved immediately. A write changes only the
+  // chosen field, so concurrent palette/font edits do not silently overwrite one
+  // another. The subscription remains the source of truth on every device.
+  const saveThemeChoice = async (change: { paletteId: typeof paletteId } | { fontId: AppFontId }) => {
+    if (!canPublish || !brandingReady || brandingWriteInFlight.current) return;
+    if ('paletteId' in change && change.paletteId === paletteId) return;
+    if ('fontId' in change && change.fontId === fontId) return;
+    brandingWriteInFlight.current = true;
+    setBrandingSaving(true);
+    if ('paletteId' in change) setPaletteId(change.paletteId);
+    else setFontId(change.fontId);
     try {
-      await setDoc(
-        brandingRef,
-        {
-          paletteId,
-          fontId,
-          updatedAt: serverTimestamp(),
-          updatedBy: user?.email ?? user?.uid ?? 'unknown',
-        },
-        { merge: true }
-      );
-      setBrandingTouched(false);
+      await setDoc(brandingRef, {
+        ...change,
+        updatedAt: serverTimestamp(),
+        updatedBy: user?.email ?? user?.uid ?? 'unknown',
+      }, { merge: true });
       toast({
-        title: 'Branding published',
-        description: 'Every signed-in workstation picks up this palette and type pairing.',
+        title: DEMO_MODE ? 'Theme saved on this browser' : 'School theme saved',
+        description: DEMO_MODE
+          ? 'Demo data is local to this browser and cannot sync to other devices.'
+          : 'Other connected devices will receive the update.',
       });
     } catch (error) {
+      resetToPublished();
       toast({
         variant: 'destructive',
-        title: 'Could not publish branding',
-        description: error instanceof Error ? error.message : 'Check your permissions and try again.',
+        title: 'Could not save the theme',
+        description: error instanceof Error ? error.message : 'Check your connection and permissions, then retry.',
       });
     } finally {
-      setSaving(false);
+      brandingWriteInFlight.current = false;
+      setBrandingSaving(false);
     }
   };
 
@@ -359,32 +359,32 @@ export default function ThemeStudioPage() {
             Theme Studio
           </h1>
           <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-            Set the school&apos;s colours, type pairing and letterhead. Changes preview here
-            immediately; publishing applies them to every workstation and to every document the
-            school prints.
+            Choose a colour or type pairing to save it immediately. {DEMO_MODE
+              ? 'Demo changes stay on this browser.'
+              : 'Connected devices receive the school theme automatically.'}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {isPreviewing ? (
-            <Button variant="outline" onClick={resetToPublished} className="gap-2">
-              <RotateCcw className="h-4 w-4" />
-              Discard preview
-            </Button>
-          ) : null}
-          <Button onClick={publishBranding} disabled={saving || !brandingTouched} className="gap-2">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-            Publish to school
-          </Button>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground" role="status" aria-live="polite">
+          {brandingSaving ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving theme…</> : brandingError ? 'Theme could not be loaded' : !brandingReady ? 'Loading theme…' : DEMO_MODE ? 'Demo · local only' : isPreviewing ? 'Unsaved theme preview' : 'School theme loaded'}
         </div>
       </header>
 
-      {isPreviewing ? (
-        <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-[13px] text-foreground">
-          You are previewing an unpublished change. The school still sees{' '}
-          <strong>{PALETTE_LIST.find((p) => p.id === published.paletteId)?.name}</strong> with{' '}
-          <strong>{APP_FONTS[published.fontId]?.name}</strong>. New documents generated on this workstation use your preview; publish to share it with the school.
+      {DEMO_MODE && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-[13px] text-foreground">
+          Demo mode stores changes on this browser only. Cross-device sync requires a configured live Firebase school and administrator sign-in.
         </div>
-      ) : null}
+      )}
+      {brandingError && (
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-[13px] text-foreground">
+          Could not load school branding. Changes are disabled until the connection and permissions are restored.
+        </div>
+      )}
+      {isPreviewing && !brandingError && (
+        <div className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3 text-[13px] text-foreground">
+          {brandingSaving ? (DEMO_MODE ? 'Saving this change on this browser.' : 'Saving this change. Other devices update once it is saved.') : 'This browser has an unsaved theme preview.'}
+          {' '}<button type="button" onClick={resetToPublished} disabled={brandingSaving} className="font-semibold underline underline-offset-2 disabled:opacity-50">Use saved theme</button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]" data-reveal>
         <div className="space-y-6">
@@ -392,8 +392,7 @@ export default function ThemeStudioPage() {
             <CardHeader>
               <CardTitle>Palette</CardTitle>
               <CardDescription>
-                Choose a colour to preview it on your screen. The miniature shows its light appearance;
-                every option also supports dark mode. Select “Publish to school” to share your choice.
+                Select a colour to save it. The miniature shows its light appearance; every option also supports dark mode.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -403,8 +402,8 @@ export default function ThemeStudioPage() {
                   palette={palette}
                   active={palette.id === paletteId}
                   published={palette.id === published.paletteId}
-                  disabled={false}
-                  onSelect={() => choosePalette(palette.id)}
+                  disabled={brandingSaving || !brandingReady}
+                  onSelect={() => void saveThemeChoice({ paletteId: palette.id })}
                 />
               ))}
             </CardContent>
@@ -459,10 +458,11 @@ export default function ThemeStudioPage() {
                 <button
                   key={font.id}
                   type="button"
-                  onClick={() => chooseFont(font.id as AppFontId)}
+                  onClick={() => void saveThemeChoice({ fontId: font.id as AppFontId })}
+                  disabled={brandingSaving || !brandingReady}
                   aria-pressed={fontId === font.id}
                   className={cn(
-                    'flex w-full items-center justify-between gap-4 rounded-xl border p-4 text-left transition-colors',
+                    'flex w-full items-center justify-between gap-4 rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60',
                     fontId === font.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'
                   )}
                 >

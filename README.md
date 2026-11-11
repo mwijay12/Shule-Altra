@@ -37,8 +37,11 @@ The demo school (**Mwalimu Nyerere Secondary School**, Kinondoni) is **O-level o
 Form 1–4**, matching the timetable. It is seeded with 150 learners, 2,932 NECTA
 assessment records, 140 fee transactions, 900 attendance records, 5 hostel wings
 (101 boarders), 5 bus routes (49 day learners) and more. All of it lives in `localStorage`
-behind a Firestore-compatible shim, so real-time updates, batches and transactions
-all behave normally.
+behind a Firestore-compatible shim. Updates, including the school theme, remain on
+that browser and do **not** synchronise across devices in demo mode. For shared
+theme updates, configure a real Firebase project and security rules as described
+below; palette and type changes then save to the school branding document and
+connected devices receive them. Light/dark remains a per-device preference.
 
 * **Editable landing page:** **Settings → Landing Page** edits the public copy,
   the four headline figures, the font pairing (three self-hosted pairings) and all

@@ -20,7 +20,6 @@ import {
   DEFAULT_PREFERENCE,
   applyPreference,
   readStoredPreference,
-  sanitizePreference,
   storePreference,
   type ThemePreference,
 } from '@/lib/theme/apply';
@@ -55,6 +54,9 @@ interface ThemeContextValue {
   published: { paletteId: PaletteId; fontId: AppFontId };
   /** True when the local preview differs from what the school published. */
   isPreviewing: boolean;
+  /** Whether the shared branding subscription has completed successfully. */
+  brandingReady: boolean;
+  brandingError: boolean;
   setPaletteId: (id: PaletteId) => void;
   setFontId: (id: AppFontId) => void;
   /** Adopt the school's published palette/font, discarding a local preview. */
@@ -66,7 +68,9 @@ const ThemeContext = React.createContext<ThemeContextValue | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const db = useFirestore();
   const brandingRef = useMemoFirebase(() => doc(db, BRANDING_DOC_PATH), [db]);
-  const { data: branding } = useDoc(brandingRef);
+  const { data: branding, isLoading: brandingLoading, error: brandingError } = useDoc(brandingRef);
+  const [subscriptionStarted, setSubscriptionStarted] = React.useState(false);
+  React.useEffect(() => setSubscriptionStarted(true), []);
 
   const [preference, setPreference] = React.useState<ThemePreference>(DEFAULT_PREFERENCE);
   const [hydrated, setHydrated] = React.useState(false);
@@ -89,9 +93,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // School branding wins until this browser makes its own explicit choice.
   const effective = React.useMemo<ThemePreference>(() => {
-    if (localChoice) return preference;
+    if (localChoice || !subscriptionStarted || brandingLoading || brandingError) return preference;
     return { ...preference, paletteId: published.paletteId, fontId: published.fontId };
-  }, [localChoice, preference, published]);
+  }, [localChoice, preference, published, subscriptionStarted, brandingLoading, brandingError]);
 
   React.useEffect(() => {
     if (!hydrated) return;
@@ -110,14 +114,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setPaletteId = React.useCallback((id: PaletteId) => {
     if (!isPaletteId(id)) return;
     setLocalChoice(true);
-    setPreference((current) => ({ ...current, paletteId: id }));
-  }, []);
+    setPreference((current) => ({ ...current, ...(!localChoice ? published : {}), paletteId: id }));
+  }, [localChoice, published]);
 
   const setFontId = React.useCallback((id: AppFontId) => {
     if (!isAppFontId(id)) return;
     setLocalChoice(true);
-    setPreference((current) => ({ ...current, fontId: id }));
-  }, []);
+    setPreference((current) => ({ ...current, ...(!localChoice ? published : {}), fontId: id }));
+  }, [localChoice, published]);
 
   const resetToPublished = React.useCallback(() => {
     setLocalChoice(false);
@@ -147,11 +151,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       published,
       isPreviewing:
         effective.paletteId !== published.paletteId || effective.fontId !== published.fontId,
+      brandingReady: subscriptionStarted && !brandingLoading && !brandingError,
+      brandingError: Boolean(brandingError),
       setPaletteId,
       setFontId,
       resetToPublished,
     }),
-    [effective, published, setTheme, toggleTheme, setPaletteId, setFontId, resetToPublished]
+    [effective, published, subscriptionStarted, brandingLoading, brandingError, setTheme, toggleTheme, setPaletteId, setFontId, resetToPublished]
   );
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
@@ -170,6 +176,8 @@ export function useTheme() {
       fontId: DEFAULT_APP_FONT,
       published: { paletteId: DEFAULT_PALETTE, fontId: DEFAULT_APP_FONT },
       isPreviewing: false,
+      brandingReady: false,
+      brandingError: false,
       setPaletteId: () => {},
       setFontId: () => {},
       resetToPublished: () => {},
