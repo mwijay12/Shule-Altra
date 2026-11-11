@@ -45,6 +45,8 @@ jobs:
         run: npm run demo:smoke:landing
       - name: Copy guard
         run: npm run demo:smoke:copy
+      - name: Theme sync and local demo safety
+        run: npm run demo:smoke:theme-sync
       - name: Theme colours on generated printouts
         run: npm run demo:smoke:print-themes
       - name: Brand, theme and contrast
