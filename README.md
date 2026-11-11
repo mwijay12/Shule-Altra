@@ -90,3 +90,7 @@ The app uses Next.js, React, Firebase or the local demo datastore, and pdf-lib. 
 
 **Altraware Technology** · Dar es Salaam, Tanzania
 [altra.tanzaniareach.com](https://altra.tanzaniareach.com/) · [altrawaretechnology@gmail.com](mailto:altrawaretechnology@gmail.com) · [+255 792 867 427](tel:+255792867427) · [WhatsApp](https://wa.me/255792867427)
+
+### Staff test accounts
+
+See [test account setup and role limitations](docs/test-accounts.md) before adding users. Use a separate Firebase test project; the public browser demo accounts are not real Firebase credentials.

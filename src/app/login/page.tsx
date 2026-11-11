@@ -99,7 +99,7 @@ export default function LoginPage() {
   useEffect(() => {
     if (typeof window === "undefined") return
     const wantsDemo = new URLSearchParams(window.location.search).get("demo")
-    if (wantsDemo) {
+    if (DEMO_MODE && wantsDemo) {
       void handleRoleLogin("admin@shule.pro")
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
