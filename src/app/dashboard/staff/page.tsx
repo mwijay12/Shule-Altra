@@ -57,7 +57,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, doc, query, orderBy, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
+import { collection, doc, query, orderBy, serverTimestamp, runTransaction, updateDoc } from "firebase/firestore"
 import { useAuth } from "@/hooks/use-auth"
 import { staffSchema, type StaffFormData } from "@/lib/validations/staff"
 import { generateStaffNo } from "@/lib/staff-utils"
@@ -122,7 +122,9 @@ export default function StaffPage() {
 
     try {
       const staffNo = await generateStaffNo(db, schoolId)
-      const docId = doc(collection(db, "unused")).id // generate unique ID
+      const uid = String(formData.get("authUid") || "").trim()
+      if (uid && (uid.length > 128 || uid.includes('/') || uid === '.' || uid === '..')) throw new Error('Enter a valid Firebase Authentication UID.')
+      const docId = uid || doc(collection(db, "unused")).id
 
       const newStaff: Omit<Staff, 'id'> = {
         staffNo,
@@ -136,10 +138,15 @@ export default function StaffPage() {
         createdAt: serverTimestamp(),
       }
 
-      await setDoc(doc(db, "schools", schoolId, "staff", docId), newStaff)
+      const staffRef = doc(db, "schools", schoolId, "staff", docId)
+      await runTransaction(db, async tx => {
+        const existing = await tx.get(staffRef)
+        if (existing.exists()) throw new Error('A staff record already exists for this ID. No changes were made.')
+        tx.set(staffRef, newStaff)
+      })
 
       setIsAddingStaff(false)
-      toast({ title: "Personnel Enrolled", description: `${newStaff.fullName} is now active as ${staffNo}.` })
+      toast({ title: "Personnel Enrolled", description: `${newStaff.fullName} was added as ${staffNo}. Account access requires a verified Firebase UID.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Enrollment Failed", description: err.message })
     } finally {
@@ -194,7 +201,7 @@ export default function StaffPage() {
                   <DialogTitle className="text-xl font-headline font-semibold text-primary">Faculty Enrollment</DialogTitle>
                   <DialogDescription className="text-[13px] font-bold">Add new member to the 2026 personnel registry</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleEnrollStaff} className="p-8 space-y-5">
+                <form onSubmit={handleEnrollStaff} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
                   <div className="space-y-1">
                     <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Full Legal Name</Label>
                     <Input name="fullName" placeholder="e.g. NEEMA PAUL" className={cn("h-12 rounded-xl bg-muted/20 border-none font-bold uppercase px-5 shadow-inner", errors.fullName && "ring-1 ring-destructive")} />
@@ -230,6 +237,11 @@ export default function StaffPage() {
                       <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Department</Label>
                       <Input name="department" placeholder="e.g. Science" className="h-12 rounded-xl bg-muted/20 border-none font-bold px-5 shadow-inner" />
                     </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="authUid" className="text-[12px] font-semibold text-muted-foreground ml-1">Firebase Authentication UID (optional)</Label>
+                    <Input id="authUid" name="authUid" placeholder="Existing account UID" autoComplete="off" />
+                    <p className="text-xs text-muted-foreground">For login access, an administrator must verify this UID belongs to this person in Firebase Authentication. This form does not create or verify an account. Leave blank for a registry-only record; existing records are not migrated.</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Join Date</Label>

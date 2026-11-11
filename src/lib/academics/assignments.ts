@@ -13,7 +13,8 @@ export function validAssignment(className: string, subject: string) {
 
 export async function saveAssessment(db: Firestore, input: { studentId: string; className: string; subject: string; score: number; term: string; examType: string; year: string; actorUid: string }) {
   if (!input.studentId || !input.actorUid || !validAssignment(input.className, input.subject) || !Number.isFinite(input.score) || input.score < 0 || input.score > 100 || !['Term 1', 'Term 2', 'Term 3'].includes(input.term) || !['Mid-Term', 'Annual', 'Mock'].includes(input.examType) || !/^\d{4}$/.test(input.year)) throw new Error('Check the student, subject, score and exam details.')
-  const encoded = [input.studentId, input.term, input.examType, input.subject, input.year].map(encodeURIComponent).join('|')
+  const encoded = [input.studentId, input.term, input.examType, input.subject, input.year].join('|')
+  if (encoded.includes('/') || encoded.includes('%') || input.studentId.includes('|')) throw new Error('Invalid assessment identifier.')
   const gradeRef = doc(collection(db, 'schools', 'school-001', 'grades'), `entry|${encoded}`)
   return runTransaction(db, async tx => {
     const previous = await tx.get(gradeRef)

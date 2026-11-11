@@ -93,6 +93,19 @@ export default function AcademicsPage() {
     ), [db, activeTerm, activeExam])
   const { data: grades, isLoading: gradesLoading, error: gradesError } = useCollection<GradeRecord>(gradesQuery)
 
+  const scopedGrades = useMemo(() => (grades ?? []).filter(g => g.academicYear === '2026'), [grades])
+  const hasDuplicateMarks = useMemo(() => {
+    const ids = new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id))
+    const seen = new Set<string>()
+    return scopedGrades.some(g => {
+      if (!ids.has(g.studentId)) return false
+      const key = JSON.stringify([g.studentId, g.subject])
+      if (seen.has(key)) return true
+      seen.add(key)
+      return false
+    })
+  }, [scopedGrades, students, activeClass])
+
   // Filtered Students for the Ledger
   const filteredStudents = useMemo(() => {
     if (!students) return []
@@ -106,11 +119,11 @@ export default function AcademicsPage() {
 
   // Process Rankings
   const rankings = useMemo(() => {
-    if (!students || !grades) return []
+    if (!students || !grades || hasDuplicateMarks) return []
 
     const studentsInClass = students.filter(s => s.class === activeClass)
     const rankingInput = studentsInClass.map(s => {
-      const studentGrades = grades.filter(g => g.studentId === s.id)
+      const studentGrades = scopedGrades.filter(g => g.studentId === s.id)
       const subjects: SubjectGrade[] = studentGrades.map(g => {
         const necta = getCSEEGrade(g.score)
         return { subject: g.subject, score: g.score, grade: necta.grade, points: necta.points }
@@ -119,14 +132,14 @@ export default function AcademicsPage() {
     }).filter(r => r.subjects.length > 0)
 
     return calculateClassRankings(rankingInput)
-  }, [students, grades, activeClass])
+  }, [students, grades, scopedGrades, activeClass, hasDuplicateMarks])
 
   // Process Subject Performance
   const subjectPerformance = useMemo(() => {
-    if (!grades || !students) return []
+    if (!grades || !students || hasDuplicateMarks) return []
 
     const studentsInClassIds = students.filter(s => s.class === activeClass).map(s => s.id)
-    const classGrades = grades.filter(g => studentsInClassIds.includes(g.studentId))
+    const classGrades = scopedGrades.filter(g => studentsInClassIds.includes(g.studentId))
 
     return SUBJECTS_SECONDARY.map(subject => {
       const subGrades = classGrades.filter(g => g.subject === subject).map(g => {
@@ -138,7 +151,7 @@ export default function AcademicsPage() {
       const stats = analyzeSubjectPerformance(subGrades)
       return { subject, ...stats }
     }).filter(Boolean)
-  }, [grades, students, activeClass])
+  }, [grades, scopedGrades, students, activeClass, hasDuplicateMarks])
 
   const classPerformance = (subjectPerformance ?? []) as Array<{
     subject: string; averageScore: number; passRate: number; totalStudents: number;
@@ -170,7 +183,7 @@ export default function AcademicsPage() {
     try {
       if (!user || (!isAdmin && (!isTeacher || assignmentsLoading || assignmentsError || !canTeach(assignments ?? [], gradingStudent.class, subject)))) throw new Error('You are not assigned to this class and subject.')
       if (gradesLoading || gradesError || !grades) throw new Error('The current marks could not be loaded. Try again before recording a mark.')
-      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && g.academicYear === '2026')) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
+      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && (!g.academicYear || g.academicYear === '2026'))) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
       await saveAssessment(db, { studentId: gradingStudent.id, className: gradingStudent.class, subject, score, term: activeTerm, examType: activeExam, year: '2026', actorUid: user.uid })
       toast({ title: "Assessment recorded", description: `Mark added for ${gradingStudent.name}.` })
       setGradingStudent(null)
@@ -184,22 +197,14 @@ export default function AcademicsPage() {
   const handleExportReport = async (student: Student) => {
     setIsExporting(student.id)
     try {
-      // Pull every recorded assessment for the learner so the PDF is never empty,
-      // even when the selected exam window has no rows yet.
-      const snap = await getDocs(
-        query(
-          collection(db, "schools", "school-001", "grades"),
-          where("studentId", "==", student.id)
-        )
-      )
+      if (gradesLoading || gradesError || !grades) throw new Error('Marks are not available. Try again.')
+      if (grades.some(g => g.studentId === student.id && !g.academicYear)) throw new Error('Some marks have no academic year. Ask an administrator to review them before exporting.')
+      const rows = grades.filter(g => g.studentId === student.id && g.academicYear === '2026')
       const bySubject = new Map<string, number>()
-      snap.docs.forEach((docSnap) => {
-        const row = docSnap.data() as any
-        const subject = row.subject ?? "Subject"
-        const score = Number(row.score ?? 0)
-        const current = bySubject.get(subject)
-        if (current === undefined || score > current) bySubject.set(subject, score)
-      })
+      for (const row of rows) {
+        if (bySubject.has(row.subject)) throw new Error('Duplicate marks found for this exam. Resolve them before exporting a report.')
+        bySubject.set(row.subject, row.score)
+      }
 
       if (bySubject.size === 0) {
         toast({
@@ -220,7 +225,7 @@ export default function AcademicsPage() {
           gender: student.gender,
         },
         grades: Array.from(bySubject.entries()).map(([subject, score]) => ({ subject, score })),
-        term: activeTerm,
+        term: `${activeTerm} · ${activeExam}`,
         academicYear: "2026",
         teacherRemark: `Conduct grade: ${student.conductPoints ?? 100} points.`,
       })
@@ -351,7 +356,9 @@ export default function AcademicsPage() {
 
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
-      {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account; bulk import and editing existing marks are administrator tasks.</p>}
+      {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
+      {hasDuplicateMarks && <p role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">Duplicate subject marks exist in this class and exam. Class rankings and summaries are suppressed until an administrator reviews them. Other reports may still need review.</p>}
+      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed.</p>}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
@@ -374,7 +381,8 @@ export default function AcademicsPage() {
           </Select>
           {isAdmin && <Button
             variant="outline"
-            onClick={() => setImportOpen(true)}
+            disabled
+            title="Unavailable while duplicate handling is reviewed"
             className="h-10 shrink-0 rounded-full bg-white shadow-sm font-semibold text-[13px] border-primary/20 text-primary"
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" /> Import marks
@@ -454,7 +462,7 @@ export default function AcademicsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredStudents.map((student) => {
-                      const studentGradesCount = grades?.filter(g => g.studentId === student.id).length || 0;
+                      const studentGradesCount = scopedGrades.filter(g => g.studentId === student.id).length;
                       return (
                         <TableRow key={student.id} className="group hover:bg-primary/[0.02] border-b last:border-none">
                           <TableCell className="pl-8 py-5">
@@ -483,9 +491,8 @@ export default function AcademicsPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="font-semibold text-[12px] rounded-full h-8 px-3 text-muted-foreground"
-                                onClick={() => handleExportWord(student)}
-                                disabled={isExporting === student.id}
-                                title="Editable Word copy"
+                                disabled
+                                title="Unavailable while report calculations are reviewed"
                               >
                                 DOCX
                               </Button>

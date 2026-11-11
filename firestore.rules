@@ -107,7 +107,7 @@ service cloud.firestore {
         allow create: if learning();
         // Finance roles may update only the fields changed by a payment entry.
         allow update: if inRole(['ADMIN'])
-          || (learning() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'statusUpdatedAt']))
+          || (learning() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'statusUpdatedAt', 'class']))
           || (money() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalPaid', 'balance', 'lastPaymentDate', 'paymentStatus']));
         allow delete: if inRole(['ADMIN']);
         match /statusHistory/{entryId} {
@@ -134,12 +134,17 @@ service cloud.firestore {
           && get(staffPath()).data.get('active', true) == true
           && request.resource.data.recordedByUid == request.auth.uid
           && request.resource.data.studentId is string
+          && !request.resource.data.studentId.matches('.*[|%/].*')
+          && request.resource.data.academicYear is string
+          && request.resource.data.academicYear.matches('^[0-9]{4}$')
           && request.resource.data.subject is string
+          && !request.resource.data.subject.matches('.*[|%/].*')
           && request.resource.data.class is string
           && request.resource.data.score is number
           && request.resource.data.score >= 0 && request.resource.data.score <= 100
           && request.resource.data.term in ['Term 1', 'Term 2', 'Term 3']
           && request.resource.data.examType in ['Mid-Term', 'Annual', 'Mock']
+          && gradeId == 'entry|' + request.resource.data.studentId + '|' + request.resource.data.term + '|' + request.resource.data.examType + '|' + request.resource.data.subject + '|' + request.resource.data.academicYear
           && exists(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId))
           && get(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId)).data.class == request.resource.data.class
           && exists(/databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid)/teachingAssignments/$(request.resource.data.class + '|' + request.resource.data.subject))
