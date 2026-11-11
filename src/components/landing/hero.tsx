@@ -38,12 +38,10 @@ export function Hero({ ready }: { ready: boolean }) {
       data-ready={ready ? "true" : "false"}
       data-period="06:50 · Before the bell"
     >
-      <div className="sd-hero-wash" aria-hidden />
 
       <div className="sd-hero-inner">
         <motion.div className="sd-hero-copy" style={{ y: copyY }}>
           <div className="sd-kicker">
-            <span className="sd-kicker-dot" aria-hidden />
             {content.hero.kicker}
           </div>
 
@@ -54,7 +52,7 @@ export function Hero({ ready }: { ready: boolean }) {
               lines={[
                 <span key="1">{content.hero.titleLines[0]}</span>,
                 <span key="2">{content.hero.titleLines[1]}</span>,
-                <span key="3" className="sd-serif">
+                <span key="3">
                   {content.hero.titleLines[2]}
                 </span>,
               ]}
@@ -78,20 +76,7 @@ export function Hero({ ready }: { ready: boolean }) {
             </a>
           </div>
 
-          <ul className="sd-hero-facts">
-            <li>
-              <b>{Math.round(content.stats[0]?.target ?? 150).toLocaleString('en-US')}</b>
-              <span>learners on one register</span>
-            </li>
-            <li>
-              <b>10</b>
-              <span>documents, generated not photographed</span>
-            </li>
-            <li>
-              <b>PDPA</b>
-              <span>2022 alignment, role-scoped</span>
-            </li>
-          </ul>
+          <p className="sd-hero-context">Explore sample school records in the demo. Your school can configure its own identity and data.</p>
         </motion.div>
 
         <motion.figure className="sd-hero-media" style={{ y: mediaY }}>
@@ -115,19 +100,16 @@ export function Hero({ ready }: { ready: boolean }) {
             <span className="sd-hero-tag-tick" aria-hidden />
           </figcaption>
 
-          <span className="sd-hero-stamp" aria-hidden>
-            <em>Dar es Salaam</em>
-            <b>06°48′S 39°17′E</b>
-          </span>
+
         </motion.figure>
       </div>
 
       <div className="sd-hero-base">
         <a className="sd-cue" href="#bell">
           <span className="sd-cue-line" aria-hidden />
-          <span>Scroll — the bell rings at 07:40</span>
+          <span>Explore the school day</span>
         </a>
-        <span className="sd-hero-meta">Institutional record · school-001 · 2026</span>
+
       </div>
     </section>
   )
