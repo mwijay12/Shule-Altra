@@ -107,5 +107,8 @@ export function SmoothScroll({
     };
   }, [reducedMotion, enabled]);
 
-  return children ? <>{children}</> : null;
+  // Keep Lenis' observed content node stable across keyed route transitions.
+  // If the first child is replaced, ResizeObserver otherwise tracks a detached
+  // page and retains its old scroll limit on longer pages such as attendance.
+  return children ? <div data-scroll-content>{children}</div> : null;
 }
