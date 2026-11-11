@@ -155,7 +155,7 @@ export default function HelpPage() {
                   Can we use the system without Internet?
                 </AccordionTrigger>
                 <AccordionContent className="p-4 text-sm text-muted-foreground leading-relaxed font-medium">
-                  The Daily Register and Grade Entry modules are "Offline-First". Data is cached in your browser or phone and synchronizes automatically once a stable connection is detected.
+                  Demo data stays in this browser and does not sync across devices. Live Firebase, sign-in, loading pages and external services may need a connection; offline operation is not guaranteed.
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

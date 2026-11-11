@@ -50,9 +50,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase, useDoc, useUser } from "@/firebase"
-import { collection, doc, query, orderBy, setDoc, serverTimestamp, where, getDocs } from "firebase/firestore"
-import { addDocumentNonBlocking } from "@/firebase/non-blocking-updates"
-import { generateStudentProgressSummary } from "@/ai/flows/generate-student-progress-summary-flow"
+import { collection, doc, query, orderBy, setDoc, serverTimestamp, where, getDocs, getDoc } from "firebase/firestore"
 import { scanStudentRegistration } from "@/ai/flows/scan-student-registration-flow"
 import { exportReportCardToWord, exportToExcel } from "@/lib/export-utils"
 import { buildReportCardData } from "@/lib/report-card-builder"
@@ -71,10 +69,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import type { Student } from "@/types/student"
 import { DEMO_MODE } from "@/lib/demo/config"
-import { ACADEMIC_LEVEL_LABEL, DEFAULT_CLASS, classOptions, isOLevelClass } from "@/lib/academics/config"
+import { ACADEMIC_LEVEL_LABEL, DEFAULT_CLASS, classOptions } from "@/lib/academics/config"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { RegisterSplit, FeesByClass, ChartPanel } from "@/components/admin/module-charts"
-import { buildDemoNarrative, buildDemoScanResult } from "@/lib/demo/ai-fallback"
+import { buildLocalNarrative } from "@/lib/demo/ai-fallback"
 
 /** Colour codes for the bulk-import plan, one per outcome. */
 const PHOTO_STATUS_STYLE: Record<BulkPhotoStatus, string> = {
@@ -95,12 +93,14 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null)
   const [sheetStudentId, setSheetStudentId] = useState<string | null>(null)
   const openedRowRef = React.useRef<HTMLElement | null>(null)
+  const selectedSheetRef = React.useRef<string | null>(null)
   const [photoBusy, setPhotoBusy] = useState(false)
   const photoInputRef = React.useRef<HTMLInputElement | null>(null)
   const photoPolicyValue = photoPolicy()
   const canCapturePhoto = photoCaptureAllowed()
   const [isGeneratingAi, setIsGeneratingAi] = useState(false)
   const [isScanning, setIsScanning] = useState(false)
+  const [isScanOpen, setIsScanOpen] = useState(false)
   const [isManualEnrolling, setIsManualEnrolling] = useState(false)
   const [isExportingReport, setIsExportingReport] = useState(false)
   const [aiSummary, setAiSummary] = useState<string | null>(null)
@@ -175,6 +175,9 @@ export default function StudentsPage() {
   const handleManualEnroll = async (data: StudentFormData) => {
     setIsSaving(true)
     try {
+      if ((await getDoc(doc(db, "schools", "school-001", "students", data.id))).exists()) {
+        throw new Error("That student ID already exists. Choose a different ID.")
+      }
       let photoUrl = ""
       if (photoFile) {
         photoUrl = await uploadStudentPhoto("school-001", data.id, photoFile)
@@ -207,41 +210,23 @@ export default function StudentsPage() {
 
   const handleSmartEnroll = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
-
+    e.target.value = ""
+    if (!file || DEMO_MODE) return
     setIsScanning(true)
     const reader = new FileReader()
+    reader.onerror = () => { setIsScanning(false); toast({ variant: "destructive", title: "Could not read the file" }) }
     reader.onloadend = async () => {
-      const base64 = reader.result as string
+      if (reader.error || typeof reader.result !== "string") return
       try {
-        const result = DEMO_MODE
-          ? await new Promise<ReturnType<typeof buildDemoScanResult>>((resolve) =>
-              setTimeout(() => resolve(buildDemoScanResult()), 1200)
-            )
-          : await scanStudentRegistration({ photoDataUri: base64 })
-        if (DEMO_MODE && !isOLevelClass(result.academicLevel)) {
-          toast({ variant: "destructive", title: "O-Level admission only", description: "This school admits Form 1–4. Check the academic level on the registration form." })
-          return
-        }
-        const newStudent = {
-          id: result.id,
-          name: result.name.toUpperCase(),
-          searchName: result.name.toUpperCase(),
-          class: result.academicLevel,
-          status: "Active",
-          type: "Day",
-          guardianPhone: result.parentContact || "+255",
-          conductPoints: 100,
-          balance: 0,
-          photoUrl: "" // Smart enroll legacy still uses no photo for now or we could upload
-        }
-        addDocumentNonBlocking(collection(db, "schools", "school-001", "students"), newStudent)
-        toast({ title: "Student enrolled", description: `${result.name} added to the register.` })
-      } catch (err) {
-        toast({ variant: "destructive", title: "Scan failed", description: "Could not read the details from that form." })
-      } finally {
-        setIsScanning(false)
-      }
+        const result = await scanStudentRegistration({ photoDataUri: reader.result })
+        reset({ name: result.name, id: result.id, class: availableTiers.includes(result.academicLevel) ? result.academicLevel : DEFAULT_CLASS,
+          type: 'Day', gender: result.gender === 'F' ? 'Female' : 'Male', guardianPhone: result.parentContact || '', dateOfBirth: '', guardianName: '' })
+        setIsScanOpen(false)
+        setIsManualEnrolling(true)
+        toast({ title: "Review extracted details", description: "Check every field, including class and gender, before saving. Nothing has been enrolled yet." })
+      } catch {
+        toast({ variant: "destructive", title: "Scan failed", description: "The online AI scan could not read that form. You can enrol the student manually." })
+      } finally { setIsScanning(false) }
     }
     reader.readAsDataURL(file)
   }
@@ -250,36 +235,17 @@ export default function StudentsPage() {
     if (!selectedStudent) return
     setIsGeneratingAi(true)
     try {
-      if (DEMO_MODE) {
-        await new Promise((resolve) => setTimeout(resolve, 1400))
-        setAiSummary(
-          buildDemoNarrative({
-            studentName: selectedStudent.name,
-            classLevel: selectedStudent.class,
-            conductPoints: selectedStudent.conductPoints || 100,
-            attendanceRate: 96.4,
-          })
-        )
-        toast({ title: "Comment drafted", description: "Demo text — write the real remark before printing." })
-        return
-      }
-
-      const result = await generateStudentProgressSummary({
-        studentName: selectedStudent.name,
-        academicPerformance: [
-          { subject: "Mathematics", grade: "A", comment: "Exceptional analytical skills." },
-          { subject: "English", grade: "B", comment: "Fluent communication." }
-        ],
-        attendanceSummary: "Consistent attendance at 98.4%.",
-        behavioralNotes: `Conduct Score: ${selectedStudent.conductPoints || 100} PTS.`
-      })
-      setAiSummary(result.summary)
-      toast({ title: "Comment drafted", description: "Review it before the report card is printed." })
-    } catch (err) {
-      toast({ variant: "destructive", title: "Could not draft the comment", description: "Try again, or write the remark manually." })
-    } finally {
-      setIsGeneratingAi(false)
-    }
+      const snapshot = await getDocs(query(collection(db, "schools", "school-001", "grades"), where("studentId", "==", selectedStudent.id)))
+      if (selectedSheetRef.current !== selectedStudent.id) return
+      setAiSummary(buildLocalNarrative({
+        studentName: selectedStudent.name, classLevel: selectedStudent.class,
+        conductPoints: selectedStudent.conductPoints, attendanceStatus: selectedStudent.attendanceStatus,
+        scores: snapshot.docs.map(row => ({ subject: row.data().subject, score: row.data().score })),
+      }))
+      toast({ title: "Local comment drafted", description: "Based on recorded data across available assessments. Review before use." })
+    } catch {
+      toast({ variant: "destructive", title: "Could not load assessment records", description: "Check your connection or permissions and try again." })
+    } finally { setIsGeneratingAi(false) }
   }
 
   const handleDownloadReportCardPdf = async () => {
@@ -316,7 +282,7 @@ export default function StudentsPage() {
         grades,
         term: "Term 2",
         academicYear: "2026",
-        teacherRemark: `Conduct grade: ${selectedStudent.conductPoints ?? 100} points. ${aiSummary ? aiSummary.replace(/<[^>]*>/g, " ").slice(0, 300) : ""}`.trim(),
+        teacherRemark: `${typeof selectedStudent.conductPoints === "number" ? `Conduct score: ${selectedStudent.conductPoints} points.` : "Conduct score not recorded."} ${aiSummary ? aiSummary.replace(/<[^>]*>/g, " ").slice(0, 300) : ""}`.trim(),
       })
       toast({
         title: "Report card PDF ready",
@@ -339,6 +305,7 @@ export default function StudentsPage() {
    * three clicks deep (row → button → sheet) is how a register stops being used.
    */
   const openStudentSheet = (student: Student) => {
+    selectedSheetRef.current = student.id
     setSelectedStudent(student)
     setAiSummary(null)
     setSheetStudentId(student.id)
@@ -662,7 +629,7 @@ export default function StudentsPage() {
             </DialogContent>
           </Dialog>
 
-          <Dialog>
+          <Dialog open={isScanOpen} onOpenChange={setIsScanOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-white shadow-sm font-semibold text-[12px] group">
                 <ScanLine className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" /> AI Smart Enroll
@@ -671,15 +638,15 @@ export default function StudentsPage() {
             <DialogContent className="rounded-[2.5rem] p-8 max-w-md border-none shadow-2xl">
               <DialogHeader className="mb-6 text-center">
                 <DialogTitle className="text-xl font-semibold">Enroll from a scanned form</DialogTitle>
-                <DialogDescription className="text-[13px] font-bold">Reads the details from an uploaded form — check them before saving</DialogDescription>
+                <DialogDescription className="text-[13px] font-bold">{DEMO_MODE ? "Scanning is unavailable in the offline demo. Use manual enrolment instead." : "Online AI extracts draft details; check every field before saving. The image is sent to the AI provider."}</DialogDescription>
               </DialogHeader>
               <div className="space-y-6 text-center">
                 <div className="p-10 rounded-[2.5rem] border-2 border-dashed border-primary/20 bg-primary/5 flex flex-col items-center gap-4 group hover:border-primary/40 transition-colors shadow-inner">
                   {isScanning ? <Loader2 className="h-12 w-12 animate-spin text-primary" /> : <Camera className="h-12 w-12 text-primary/40 group-hover:scale-110 transition-transform" />}
                   <p className="text-[13px] font-semibold text-muted-foreground">{isScanning ? "AI Analyzing Form..." : "Scan Registration Form"}</p>
-                  <label className="cursor-pointer">
-                    <Button variant="default" className="rounded-full colorful-gradient h-12 px-8 font-semibold text-[13px] shadow-xl pointer-events-none">Select Document</Button>
-                    <input type="file" className="hidden" accept="image/*" onChange={handleSmartEnroll} disabled={isScanning} />
+                  <label className={cn("cursor-pointer", DEMO_MODE && "cursor-not-allowed opacity-50")}>
+                    <Button variant="default" disabled={isScanning || DEMO_MODE} className="rounded-full colorful-gradient h-12 px-8 font-semibold text-[13px] shadow-xl pointer-events-none">Select Document</Button>
+                    <input type="file" className="hidden" accept="image/*" onChange={handleSmartEnroll} disabled={isScanning || DEMO_MODE} />
                   </label>
                 </div>
               </div>
@@ -920,7 +887,7 @@ export default function StudentsPage() {
         </CardContent>
       </Card>
       {/* Keep the portal outside the clickable row: events from its controls must not reopen it. */}
-      <Sheet open={sheetStudentId !== null} onOpenChange={(open) => { if (!open) setSheetStudentId(null) }}>
+      <Sheet open={sheetStudentId !== null} onOpenChange={(open) => { if (!open) { selectedSheetRef.current = null; setSheetStudentId(null) } }}>
                         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0 border-l-0 shadow-2xl" onCloseAutoFocus={(event) => {
                           if (openedRowRef.current?.isConnected) { event.preventDefault(); openedRowRef.current.focus() }
                         }}>
@@ -1011,15 +978,15 @@ export default function StudentsPage() {
                                   <CardHeader className="bg-primary/5 p-8 flex flex-row items-center justify-between">
                                     <div className="space-y-1">
                                       <CardTitle className="text-base font-semibold text-primary">Report comment</CardTitle>
-                                      <CardDescription className="text-[12px] font-bold text-primary/60">Drafted from this learner's grades</CardDescription>
+                                      <CardDescription className="text-[12px] font-bold text-primary/60">Local draft from recorded assessments and status</CardDescription>
                                     </div>
                                     <Button onClick={handleGenerateAiSummary} disabled={isGeneratingAi} className="rounded-full colorful-gradient h-10 px-6 font-semibold text-[12px] shadow-lg">
-                                      {isGeneratingAi ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Sparkles className="h-3 w-3 mr-2" />} Synthesize
+                                      {isGeneratingAi ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Sparkles className="h-3 w-3 mr-2" />} Draft comment
                                     </Button>
                                   </CardHeader>
                                   <CardContent className="p-8 min-h-[200px]">
                                     {aiSummary ? (
-                                      <div className="prose prose-sm font-medium text-foreground/80 leading-relaxed text-xs">{aiSummary}</div>
+                                      <label className="block space-y-2 text-xs font-semibold text-muted-foreground">Review and edit the draft<textarea aria-label="Report comment" value={aiSummary} onChange={event => setAiSummary(event.target.value)} rows={7} className="w-full rounded-xl border border-input bg-background p-3 text-sm font-normal text-foreground" /></label>
                                     ) : (
                                       <div className="flex flex-col items-center justify-center h-[150px] text-center space-y-4 opacity-30">
                                         <Sparkles className="h-10 w-10 text-primary" />

@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import { answerGuide, GUIDE_PROMPTS } from '../../src/lib/assistant/guide';
+import { buildLocalNarrative } from '../../src/lib/demo/ai-fallback';
+
+const allow = () => true;
+for (const prompt of GUIDE_PROMPTS) assert.ok(answerGuide(prompt, allow).actions.length, prompt);
+assert.match(answerGuide('mahudhurio', allow).text, /attendance/i);
+assert.equal(answerGuide('attendance', () => false).actions.length, 0);
+assert.match(answerGuide('attendance', () => false).text, /different role/);
+assert.equal(answerGuide('unknown xyz', allow).actions.length, 0);
+assert.match(answerGuide('offline', allow).text, /not guaranteed/);
+const empty = buildLocalNarrative({ studentName: 'A', scores: [] });
+assert.match(empty, /No assessment scores/);
+assert.match(empty, /Attendance status is not recorded/);
+assert.match(empty, /Conduct score is not recorded/);
+const result = buildLocalNarrative({ studentName: 'B', attendanceStatus: 'Late', conductPoints: 42, scores: [{score: 60}, {score: 80}, {score: 999}, {score: '70'}] });
+assert.match(result, /2 recorded assessment scores.*70\.0%/);
+assert.match(result, /Late/);
+assert.match(result, /42 points/);
+console.log('Guide and local comment checks passed');

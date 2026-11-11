@@ -1,58 +1,30 @@
-/**
- * @fileOverview Deterministic "AI" fallbacks for offline demos.
- *
- * The production hub calls Genkit + Gemini 2.5 Flash. In demo mode (no API key
- * and no network) we generate a realistic narrative locally so stakeholder
- * demos never hit a dead end.
- */
-
-export interface ProgressNarrativeInput {
+/** Deterministic student comment from recorded data; no model or invented values. */
+export interface LocalProgressInput {
   studentName: string;
   classLevel?: string;
   conductPoints?: number;
-  attendanceRate?: number;
-  subjects?: Array<{ subject: string; grade: string; comment?: string }>;
+  attendanceStatus?: string;
+  scores: Array<{ subject?: unknown; score?: unknown }>;
 }
 
-const DEFAULT_SUBJECTS = [
-  { subject: 'Mathematics', grade: 'A' },
-  { subject: 'English', grade: 'B' },
-  { subject: 'Kiswahili', grade: 'A' },
-  { subject: 'Civics', grade: 'B' },
-  { subject: 'Physics', grade: 'C' },
-  { subject: 'Chemistry', grade: 'B' },
-];
-
-const REMARKS: Record<string, string> = {
-  A: 'shows a strong, consistent grasp of the subject',
-  B: 'shows solid understanding with room for sharper accuracy',
-  C: 'is developing steadily and benefits from guided practice',
-  D: 'requires structured remedial support this term',
-  F: 'needs urgent support and close teacher follow-up',
-};
-
-export function buildDemoNarrative(input: ProgressNarrativeInput): string {
-  const subjects = input.subjects && input.subjects.length > 0 ? input.subjects : DEFAULT_SUBJECTS;
-  const ranked = [...subjects].sort((a, b) => a.grade.localeCompare(b.grade));
-  const strongest = ranked[0];
-  const weakest = ranked[ranked.length - 1];
-  const attendance = (input.attendanceRate ?? 96.4).toFixed(1);
-  const conduct = input.conductPoints ?? 94;
+export function buildLocalNarrative(input: LocalProgressInput): string {
+  const scores = input.scores.flatMap(row => {
+    if (typeof row.score !== 'number' || !Number.isFinite(row.score) || row.score < 0 || row.score > 100) return [];
+    return [{ subject: typeof row.subject === 'string' && row.subject.trim() ? row.subject.trim() : 'Unspecified subject', score: row.score }];
+  });
+  const name = input.studentName.trim() || 'Student';
   const level = input.classLevel ? ` (${input.classLevel})` : '';
-
-  return [
-    `${input.studentName}${level} ${REMARKS[strongest.grade] || REMARKS.B} in ${strongest.subject}, the strongest result this term.`,
-    `In ${weakest.subject} the learner ${REMARKS[weakest.grade] || REMARKS.C}; a focused remedial plan with weekly checkpoints is recommended.`,
-    `Attendance is ${attendance}% and conduct is ${conduct}/100.`,
-    `Next step: pair ${weakest.subject} practice sets with peer-led study sessions and review progress at the next assessment.`,
-  ].join(' ');
-}
-
-export function buildDemoScanResult() {
-  const samples = [
-    { name: 'Hamisi Salum Kivuyo', id: 'S2026/0417', academicLevel: 'Form 1', gender: 'M' as const, parentContact: '+255 754 220 118' },
-    { name: 'Zainab Ally Msuya', id: 'S2026/0418', academicLevel: 'Form 2', gender: 'F' as const, parentContact: '+255 713 908 442' },
-    { name: 'Baraka Peter Mushi', id: 'S2026/0419', academicLevel: 'Form 3', gender: 'M' as const, parentContact: '+255 784 551 090' },
-  ];
-  return samples[Math.floor(Math.random() * samples.length)];
+  const lines = [`${name}${level}.`];
+  if (scores.length) {
+    const mean = scores.reduce((sum, row) => sum + row.score, 0) / scores.length;
+    lines.push(`${scores.length} recorded assessment scores across available terms and exams average ${mean.toFixed(1)}%.`);
+  } else {
+    lines.push('No assessment scores are recorded.');
+  }
+  const status = ['Present', 'Late', 'Absent'].includes(input.attendanceStatus ?? '') ? input.attendanceStatus : null;
+  lines.push(status ? `Latest recorded attendance status: ${status}.` : 'Attendance status is not recorded.');
+  lines.push(typeof input.conductPoints === 'number' && Number.isFinite(input.conductPoints)
+    ? `Recorded conduct score: ${input.conductPoints} points.` : 'Conduct score is not recorded.');
+  lines.push('Review the source records and edit the comment before use.');
+  return lines.join(' ');
 }
