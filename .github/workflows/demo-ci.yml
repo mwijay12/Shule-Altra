@@ -72,3 +72,21 @@ jobs:
         run: npm run demo:smoke
       - name: Production build
         run: npm run build
+
+  firestore-teaching-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - name: Teaching assignment validation
+        run: npm run demo:smoke:teaching-assignments
+      - name: Firestore emulator security tests
+        run: npx --yes firebase-tools@13.35.1 emulators:exec --project demo-shule-rules --only firestore "npm run test:rules:teaching"
