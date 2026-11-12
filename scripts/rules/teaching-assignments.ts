@@ -65,6 +65,14 @@ async function main() {
     await assertFails(updateDoc(doc(admin, expensePath), { amount: 1 }))
     await assertFails(deleteDoc(doc(admin, expensePath)))
     await assertFails(getDoc(doc(teacher, expensePath)))
+    const voidPath = `${root}/expense_voids/expense1`
+    const voidRecord = { reason: 'Duplicate entry', actorUid: 'admin', createdAt: serverTimestamp() }
+    await assertFails(setDoc(doc(teacher, voidPath), { ...voidRecord, actorUid: 'teacher' }))
+    await assertFails(setDoc(doc(admin, `${root}/expense_voids/missing`), voidRecord))
+    await assertSucceeds(setDoc(doc(admin, voidPath), voidRecord))
+    await assertFails(updateDoc(doc(admin, voidPath), { reason: 'Changed' }))
+    await assertFails(deleteDoc(doc(admin, voidPath)))
+    await assertFails(getDoc(doc(teacher, voidPath)))
     const roleHistoryPath = `${root}/staffRoleChanges/change1`
     const roleHistory = { staffId: 'teacher', from: 'TEACHER', to: 'BURSAR', reason: 'Changed duties', actorUid: 'admin', createdAt: serverTimestamp() }
     await assertFails(setDoc(doc(teacher, roleHistoryPath), { ...roleHistory, actorUid: 'teacher' }))

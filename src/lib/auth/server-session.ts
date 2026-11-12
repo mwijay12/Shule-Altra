@@ -7,9 +7,12 @@
  */
 
 import { cookies } from 'next/headers'
+import { DEMO_MODE } from '@/lib/demo/config'
+import { revalidateLiveSession } from '@/lib/auth/revalidate-session'
 import type { DocRole } from '@/lib/documents/registry'
 import {
   SESSION_COOKIE,
+  FIREBASE_SESSION_COOKIE,
   SESSION_MAX_AGE,
   readSessionToken,
   renewSessionToken,
@@ -26,6 +29,13 @@ export async function serverSession(): Promise<SessionClaims | null> {
   const store = await cookies()
   const claims = readSessionToken(store.get(SESSION_COOKIE)?.value)
   if (!claims) return null
+
+  // A signed role cookie is not a current authorization decision. Against real
+  // Firebase, re-check identity and role on every gated request. A mismatch,
+  // expired token or unavailable identity service fails closed. Demo is local.
+  if (!DEMO_MODE) {
+    if (!(await revalidateLiveSession(claims, store.get(FIREBASE_SESSION_COOKIE)?.value))) return null
+  }
 
   if (shouldRenew(claims)) {
     store.set(SESSION_COOKIE, renewSessionToken(claims), {

@@ -20,6 +20,8 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto'
 import { isDocRole, type DocRole } from '@/lib/documents/registry'
 
 export const SESSION_COOKIE = 'altra.role'
+/** Firebase bearer token used only by server-side role revalidation. */
+export const FIREBASE_SESSION_COOKIE = 'altra.firebase'
 
 /** Idle window: a session with no requests for this long is refused. */
 export const SESSION_MAX_AGE = 60 * 30

@@ -334,6 +334,11 @@ export async function getDocs(target: DemoCollectionReference | DemoQuery): Prom
   return evaluate(target);
 }
 
+// Demo data is browser-local; this mirrors the API but does not contact a server.
+export async function getDocsFromServer(target: DemoCollectionReference | DemoQuery): Promise<DemoQuerySnapshot> {
+  return evaluate(target);
+}
+
 export async function getDoc(reference: DemoDocumentReference): Promise<DemoDocumentSnapshot> {
   return new DemoDocumentSnapshot(reference, readDocument(reference.path));
 }

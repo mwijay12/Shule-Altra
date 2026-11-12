@@ -76,6 +76,13 @@ export default function AcademicsPage() {
   const [activeClass, setActiveClass] = useState("Form 4")
   const [activeTerm, setActiveTerm] = useState("Term 2")
   const [activeExam, setActiveExam] = useState("Annual")
+  // A stable initial value avoids server/client hydration differences; after
+  // mounting, use the browser year until the user selects another year.
+  const [activeYear, setActiveYear] = useState("2026")
+  useEffect(() => {
+    const year = new Date().getFullYear()
+    if (year >= 2000 && year <= 2100) setActiveYear(String(year))
+  }, [])
   const [gradingStudent, setGradingStudent] = useState<Student | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isExporting, setIsExporting] = useState<string | null>(null)
@@ -96,8 +103,8 @@ export default function AcademicsPage() {
     ), [db, activeTerm, activeExam])
   const { data: grades, isLoading: gradesLoading, error: gradesError } = useCollection<GradeRecord>(gradesQuery)
 
-  const scopedGrades = useMemo(() => (grades ?? []).filter(g => g.academicYear === '2026'), [grades])
-  const gradeReview = useMemo(() => reviewGradeRecords(grades ?? [], new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id)), '2026'), [grades, students, activeClass])
+  const scopedGrades = useMemo(() => (grades ?? []).filter(g => g.academicYear === activeYear), [grades, activeYear])
+  const gradeReview = useMemo(() => reviewGradeRecords(grades ?? [], new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id)), activeYear), [grades, students, activeClass, activeYear])
   const hasDuplicateMarks = gradeReview.duplicates.length > 0 || gradeReview.missingYear.length > 0
 
 
@@ -178,8 +185,8 @@ export default function AcademicsPage() {
     try {
       if (!user || (!isAdmin && (!isTeacher || assignmentsLoading || assignmentsError || !canTeach(assignments ?? [], gradingStudent.class, subject)))) throw new Error('You are not assigned to this class and subject.')
       if (gradesLoading || gradesError || !grades) throw new Error('The current marks could not be loaded. Try again before recording a mark.')
-      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && (!g.academicYear || g.academicYear === '2026'))) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
-      await saveAssessment(db, { studentId: gradingStudent.id, className: gradingStudent.class, subject, score, term: activeTerm, examType: activeExam, year: '2026', actorUid: user.uid })
+      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && (!g.academicYear || g.academicYear === activeYear))) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
+      await saveAssessment(db, { studentId: gradingStudent.id, className: gradingStudent.class, subject, score, term: activeTerm, examType: activeExam, year: activeYear, actorUid: user.uid })
       toast({ title: "Assessment recorded", description: `Mark added for ${gradingStudent.name}.` })
       setGradingStudent(null)
     } catch (err) {
@@ -194,7 +201,7 @@ export default function AcademicsPage() {
     try {
       if (gradesLoading || gradesError || !grades) throw new Error('Marks are not available. Try again.')
       if (grades.some(g => g.studentId === student.id && !g.academicYear)) throw new Error('Some marks have no academic year. Ask an administrator to review them before exporting.')
-      const rows = grades.filter(g => g.studentId === student.id && g.academicYear === '2026')
+      const rows = grades.filter(g => g.studentId === student.id && g.academicYear === activeYear)
       const bySubject = new Map<string, number>()
       for (const row of rows) {
         if (bySubject.has(row.subject)) throw new Error('Duplicate marks found for this exam. Resolve them before exporting a report.')
@@ -221,7 +228,7 @@ export default function AcademicsPage() {
         },
         grades: Array.from(bySubject.entries()).map(([subject, score]) => ({ subject, score })),
         term: `${activeTerm} · ${activeExam}`,
-        academicYear: "2026",
+        academicYear: activeYear,
 
       })
       toast({
@@ -324,7 +331,7 @@ export default function AcademicsPage() {
               score: row.score,
               term: row.term,
               examType: row.examType,
-              academicYear: "2026",
+              academicYear: activeYear,
               recordedBy: "Marks import",
               createdAt: serverTimestamp(),
             })
@@ -352,7 +359,7 @@ export default function AcademicsPage() {
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
       {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
-      {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
+      {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}, {activeYear}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
         {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2 mb-3">Compare records with the original marks before making changes. Missing-year records are shown for review only.</p><div className="max-h-96 overflow-y-auto space-y-3"><DuplicateGradeReview groups={gradeReview.duplicates} students={students ?? []} /><ul className="space-y-2">{gradeReview.missingYear.map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year missing · record: {g.id}</li>)}</ul></div></details>}</section>}
       {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed. PDF assessment reports do not calculate division.</p>}
       {isAdmin && <CorrectionHistory students={students ?? []} />}
@@ -360,7 +367,7 @@ export default function AcademicsPage() {
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <Badge data-wave="badge" variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
-            <Database className="h-2.5 w-2.5 mr-1.5" /> NECTA assessment · 2026
+            <Database className="h-2.5 w-2.5 mr-1.5" /> NECTA assessment · {activeYear}
           </Badge>
           <h1 data-wave="heading" className="text-xl sm:text-2xl font-semibold text-primary tracking-tight">Academics</h1>
           <p data-wave="subcopy" className="text-muted-foreground text-[13px] font-bold leading-none">
@@ -384,6 +391,14 @@ export default function AcademicsPage() {
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" /> Import marks
           </Button>}
+          <Select value={activeYear} onValueChange={setActiveYear}>
+            <SelectTrigger aria-label="Academic year" className="h-10 shrink-0 rounded-full bg-white shadow-sm font-bold text-[13px] border-primary/10">
+              <SelectValue placeholder="Academic year" />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 101 }, (_, i) => String(2100 - i)).map(year => <SelectItem key={year} value={year}>{year}</SelectItem>)}
+            </SelectContent>
+          </Select>
           <Select value={activeTerm} onValueChange={setActiveTerm}>
             <SelectTrigger className="h-10 rounded-full bg-white shadow-sm font-bold text-[13px] border-primary/10">
               <SelectValue placeholder="Term" />
@@ -658,7 +673,7 @@ export default function AcademicsPage() {
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10">
               <p className="text-[12px] font-semibold text-primary mb-1">Assessment</p>
               <p className="text-[13px] font-bold text-muted-foreground leading-relaxed tracking-tighter">
-                Recording for {activeTerm} · {activeExam} · 2026. Existing marks require administrator review; imports and legacy marks may still contain duplicates.
+                Recording for {activeTerm} · {activeExam} · {activeYear}. Existing marks require administrator review; imports and legacy marks may still contain duplicates.
               </p>
             </div>
             <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-semibold text-xs shadow-2xl group">

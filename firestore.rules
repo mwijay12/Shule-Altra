@@ -232,6 +232,17 @@ service cloud.firestore {
           && request.resource.data.createdAt == request.time;
         allow update, delete: if false;
       }
+      // One irreversible void marker per expense; original entry remains intact.
+      match /expense_voids/{entryId} {
+        allow read: if money();
+        allow create: if inRole(['ADMIN'])
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/expense_entries/$(entryId))
+          && request.resource.data.keys().hasOnly(['reason', 'actorUid', 'createdAt'])
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.reason is string && request.resource.data.reason.size() >= 5 && request.resource.data.reason.size() <= 500
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
       match /petty_cash/{entryId} {
         allow read, write: if money();
       }
@@ -292,7 +303,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && collection != 'suppliers' && collection != 'staffRoleChanges' && inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && collection != 'suppliers' && collection != 'staffRoleChanges' && collection != 'expense_voids' && inRole(['ADMIN']);
       }
     }
 

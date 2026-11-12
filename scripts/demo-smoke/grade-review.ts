@@ -6,6 +6,7 @@ const rows = [mark('a', 's1', 'Math', '2026'), mark('b', 's1', 'Math', '2026'), 
 const review = reviewGradeRecords(rows, new Set(['s1']), '2026')
 assert.deepEqual(review.duplicates.map(g => g.map(r => r.id)), [['a', 'b']])
 assert.deepEqual(review.missingYear.map(g => g.id), ['d'])
+assert.equal(reviewGradeRecords(rows, new Set(['s1']), '2025').duplicates.length, 0, 'records from different years are not duplicates')
 assert.equal(rows.length, 5, 'review is non-destructive')
 assert.equal(reviewGradeRecords(rows, new Set(['other']), '2026').duplicates.length, 0)
 console.log('GRADE REVIEW CHECKS PASSED')

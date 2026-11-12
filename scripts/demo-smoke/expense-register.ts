@@ -1,8 +1,8 @@
 import './dom'
 import assert from 'node:assert/strict'
 import { initializeFirebase } from '@/firebase'
-import { collection, getDocs } from 'firebase/firestore'
-import { recordExpense, filterExpenses, expensesCsv } from '@/lib/finance/expenses'
+import { collection, doc, getDoc, getDocs } from 'firebase/firestore'
+import { recordExpense, voidExpense, filterExpenses, expensesCsv } from '@/lib/finance/expenses'
 async function main() {
   const { firestore: db } = initializeFirebase()
   const input = { date: '2026-11-12', category: 'Supplies', description: '  Paper  ', amount: 12000, payee: ' Shop ', reference: ' R-1 ', actorUid: 'finance-user', actorEmail: 'finance@example.com' }
@@ -17,6 +17,12 @@ async function main() {
   assert.deepEqual(filterExpenses(rows, { from: '2026-11-01', to: '', category: 'Supplies', search: 'SHOP' }).map(r => r.id), ['a'])
   assert.deepEqual(filterExpenses(rows, { from: '', to: '2026-10-01', category: '', search: '' }).map(r => r.id), ['b'])
   const csv = expensesCsv(rows); assert(csv.includes("'=HYPERLINK(")); assert(csv.includes('\"\"test\"\"')); assert(!csv.includes('Food,Lunch'))
+  await assert.rejects(() => voidExpense(db, ref.id, 'no', 'admin'), /reason/i)
+  await voidExpense(db, ref.id, 'Duplicate entry', 'admin')
+  assert((await getDoc(doc(db, 'schools', 'school-001', 'expense_entries', ref.id))).exists(), 'original remains')
+  assert.equal((await getDoc(doc(db, 'schools', 'school-001', 'expense_voids', ref.id))).data()?.reason, 'Duplicate entry')
+  await assert.rejects(() => voidExpense(db, ref.id, 'Duplicate entry', 'admin'), /already voided/i)
+  await assert.rejects(() => voidExpense(db, 'not-present', 'Incorrect record', 'admin'), /no longer exists/i)
   console.log('EXPENSE REGISTER TESTS PASSED (demo store)')
 }
 main().catch(e => { console.error(e); process.exitCode = 1 })

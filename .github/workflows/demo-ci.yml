@@ -35,6 +35,8 @@ jobs:
         run: npm run demo:smoke:sidebar-preferences
       - name: Supplier register
         run: npm run demo:smoke:suppliers
+      - name: Expense report
+        run: npm run demo:smoke:expense-report
       - name: Expense register
         run: npm run demo:smoke:expense-register
       - name: Staff access changes
@@ -73,6 +75,8 @@ jobs:
         run: npm run demo:smoke:print-themes
       - name: Brand, theme and contrast
         run: npm run demo:smoke:brand
+      - name: Session role revalidation
+        run: npm run demo:smoke:session-revalidation
       - name: Auth and session lifecycle
         run: npm run demo:smoke:auth
       - name: Audit trail (append-only chain)
