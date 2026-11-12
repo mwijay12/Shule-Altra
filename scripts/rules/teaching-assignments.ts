@@ -65,6 +65,13 @@ async function main() {
     await assertFails(updateDoc(doc(admin, expensePath), { amount: 1 }))
     await assertFails(deleteDoc(doc(admin, expensePath)))
     await assertFails(getDoc(doc(teacher, expensePath)))
+    const roleHistoryPath = `${root}/staffRoleChanges/change1`
+    const roleHistory = { staffId: 'teacher', from: 'TEACHER', to: 'BURSAR', reason: 'Changed duties', actorUid: 'admin', createdAt: serverTimestamp() }
+    await assertFails(setDoc(doc(teacher, roleHistoryPath), { ...roleHistory, actorUid: 'teacher' }))
+    await assertSucceeds(setDoc(doc(admin, roleHistoryPath), roleHistory))
+    await assertFails(updateDoc(doc(admin, roleHistoryPath), { reason: 'Changed' }))
+    await assertFails(deleteDoc(doc(admin, roleHistoryPath)))
+    await assertFails(getDoc(doc(teacher, roleHistoryPath)))
     const sidebarPath = `${root}/config/sidebar`
     await assertFails(setDoc(doc(teacher, sidebarPath), { hidden: ['finance'], revision: 1 }))
     await assertSucceeds(setDoc(doc(admin, sidebarPath), { hidden: ['finance'], revision: 1 }))

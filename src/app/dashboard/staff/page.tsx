@@ -64,6 +64,8 @@ import { generateStaffNo } from "@/lib/staff-utils"
 import { Staff } from "@/types/staff"
 import { TeachingAssignments } from "@/components/staff/teaching-assignments"
 import { StaffDuties } from "@/components/staff/staff-duties"
+import { StaffAccessEditor } from "@/components/staff/staff-access"
+import { StaffRoleHistory } from "@/components/staff/staff-role-history"
 import { StatCard } from "@/components/admin/stat-card";
 import { ChartPanel, StaffMix, DepartmentLoad } from "@/components/admin/module-charts";
 
@@ -79,6 +81,7 @@ export default function StaffPage() {
   const [statusTarget, setStatusTarget] = useState<Staff | null>(null)
   const [assignmentTarget, setAssignmentTarget] = useState<Staff | null>(null)
   const [dutyTarget, setDutyTarget] = useState<Staff | null>(null)
+  const [accessTarget, setAccessTarget] = useState<Staff | null>(null)
 
   const staffQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
@@ -361,6 +364,7 @@ export default function StaffPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-2xl w-48 font-body">
                             <DropdownMenuLabel className="text-[12px] font-semibold text-muted-foreground px-4">Manage</DropdownMenuLabel>
+                            <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setAccessTarget(person)}>Change access role</DropdownMenuItem>
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setDutyTarget(person)}>Manage staff duties</DropdownMenuItem>
                             {person.role === 'TEACHER' && <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setAssignmentTarget(person)}>Assign teaching subjects</DropdownMenuItem>}
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer group" onClick={() => setStatusTarget(person)}>
@@ -379,8 +383,14 @@ export default function StaffPage() {
         </CardContent>
       </Card>
 
+      {isAdmin && schoolId && <StaffRoleHistory schoolId={schoolId} staff={roster} />}
+
       <Dialog open={!!assignmentTarget} onOpenChange={open => { if (!open) setAssignmentTarget(null) }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Teaching assignments</DialogTitle><DialogDescription>{assignmentTarget?.fullName}</DialogDescription></DialogHeader>{assignmentTarget && <TeachingAssignments key={assignmentTarget.id} person={assignmentTarget} />}</DialogContent>
+      </Dialog>
+
+      <Dialog open={!!accessTarget} onOpenChange={open => { if (!open) setAccessTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Staff access role</DialogTitle><DialogDescription>{accessTarget?.fullName}</DialogDescription></DialogHeader>{accessTarget && schoolId && <StaffAccessEditor key={accessTarget.id} person={accessTarget} schoolId={schoolId} onSaved={() => { setAccessTarget(null); toast({ title: 'Access role saved', description: 'The Firebase Authentication account was not changed.' }) }} />}</DialogContent>
       </Dialog>
 
       <Dialog open={!!dutyTarget} onOpenChange={open => { if (!open) setDutyTarget(null) }}>

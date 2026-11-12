@@ -101,6 +101,19 @@ service cloud.firestore {
         }
       }
 
+      // Role changes made through the staff tool leave an append-only note.
+      // This does not capture writes made through privileged backend tools.
+      match /staffRoleChanges/{changeId} {
+        allow read: if inRole(['ADMIN']);
+        allow create: if inRole(['ADMIN']) && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.staffId is string
+          && request.resource.data.from in ['VIEWER', 'TEACHER', 'ACCOUNTANT', 'BURSAR', 'ADMIN']
+          && request.resource.data.to in ['VIEWER', 'TEACHER', 'ACCOUNTANT', 'BURSAR', 'ADMIN']
+          && request.resource.data.reason is string && request.resource.data.reason.size() >= 5 && request.resource.data.reason.size() <= 500
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
+
       // ── learner records ──────────────────────────────────────────────────
       match /students/{studentId} {
         allow read: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT', 'VIEWER']);
@@ -279,7 +292,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && collection != 'suppliers' && inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && collection != 'suppliers' && collection != 'staffRoleChanges' && inRole(['ADMIN']);
       }
     }
 

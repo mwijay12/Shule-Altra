@@ -37,6 +37,8 @@ jobs:
         run: npm run demo:smoke:suppliers
       - name: Expense register
         run: npm run demo:smoke:expense-register
+      - name: Staff access changes
+        run: npm run demo:smoke:staff-access
       - name: Staff duties
         run: npm run demo:smoke:staff-duties
       - name: Correct duplicate grades
