@@ -37,6 +37,7 @@ import { Progress } from "@/components/ui/progress"
 import { AnimatedNumber } from "@/components/ui/animated-number"
 import { ACADEMIC_LEVEL, ACADEMIC_LEVEL_LABEL, O_LEVEL_CLASSES, classOptions } from "@/lib/academics/config"
 import { DEMO_MODE } from "@/lib/demo/config"
+import { SidebarPreferencesEditor } from "@/components/admin/sidebar-preferences"
 import { LandingEditor } from "@/components/admin/landing-editor"
 import {
   AlertDialog,
@@ -202,9 +203,11 @@ export default function SettingsPage() {
           <TabsTrigger value="academic" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Tier Config</TabsTrigger>
           <TabsTrigger value="automation" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Automation</TabsTrigger>
           <TabsTrigger value="landing" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Landing Page</TabsTrigger>
+          <TabsTrigger value="sidebar" className="rounded-xl font-semibold text-[12px] flex-1 py-3">Sidebar</TabsTrigger>
           <TabsTrigger value="dev" className="rounded-xl font-semibold text-[12px] flex-1 py-3 border border-orange-200/50 text-orange-600 bg-orange-50/50">Developer</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="sidebar"><SidebarPreferencesEditor /></TabsContent>
         <TabsContent value="identity" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
           <Card className="border-none shadow-2xl rounded-[2.5rem] bg-card">
             <CardHeader className="bg-primary/5 border-b p-8">
