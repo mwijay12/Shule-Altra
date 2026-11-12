@@ -69,6 +69,10 @@ export async function resolveServerRole(
     throw new SessionVerificationError('The sign-in token did not identify an account.', 401);
   }
 
+  if (account.disabled === true) {
+    throw new SessionVerificationError('This Firebase account is disabled.', 403);
+  }
+
   // 2. The install owner. Same verified-email rule as firestore.rules.
   if (account.emailVerified === true && isSuperAdminEmail(account.email)) {
     return { role: 'ADMIN', uid: account.localId };

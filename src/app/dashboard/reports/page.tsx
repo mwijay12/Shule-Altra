@@ -43,12 +43,15 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, orderBy, query, limit } from "firebase/firestore";
+import { collection, orderBy, query, limit, getDocsFromServer } from "firebase/firestore";
 import {
   buildAttendanceRows,
   buildPerLearnerScores,
   buildReportPayload,
 } from "@/lib/reports/builders";
+import { DEMO_MODE } from '@/lib/demo/config';
+import { buildExpenseRegisterReport } from '@/lib/finance/expense-report';
+import type { ExpenseRow } from '@/lib/finance/expenses';
 import { WaveSection } from '@/components/motion/wave-section';
 
 interface ReportItem {
@@ -61,7 +64,8 @@ interface ReportItem {
 
 const financialReports: ReportItem[] = [
   { id: "fee-ledger", title: "Fee Collection Ledger", description: "Every captured payment with gateway reference, method and reconciliation status.", icon: DollarSign },
-  { id: "expenditure", title: "Expenditure Summary", description: "Petty cash requests by department, approval state and value.", icon: TrendingUp },
+  { id: "recorded-expenses", title: "Recorded expense register", description: "New paid-expense entries and voids; excludes legacy petty-cash requests.", icon: TrendingUp },
+  { id: "expenditure", title: "Legacy petty-cash requests", description: "Older petty-cash requests only; up to 200 records, separate from the new register.", icon: TrendingUp },
   { id: "defaulters", title: "Fee Defaulters Register", description: "Outstanding balances in merit order, ready for the bursar's recovery list.", icon: AlertTriangle },
 ];
 
@@ -180,7 +184,18 @@ export default function ReportsPage() {
   const generate = async (report: ReportItem) => {
     setLoadingId(report.id);
     try {
-      if (report.id === "class-rank") {
+      if (report.id === "recorded-expenses") {
+        // Fetch both collections at export time. In live mode server reads fail
+        // rather than silently exporting incomplete cached data.
+        const [expensesSnap, voidsSnap] = await Promise.all([
+          getDocsFromServer(collection(db, "schools", "school-001", "expense_entries")),
+          getDocsFromServer(collection(db, "schools", "school-001", "expense_voids")),
+        ])
+        const expenses = expensesSnap.docs.map(d => ({ ...d.data(), id: d.id })) as ExpenseRow[]
+        const payload = buildExpenseRegisterReport(expenses, new Set(voidsSnap.docs.map(d => d.id)), new Date(), DEMO_MODE)
+        const { downloadTabularReport } = await import("@/lib/pdf/tabular-report")
+        await downloadTabularReport(payload, `recorded-expenses-${new Date().toISOString().slice(0, 10)}.pdf`)
+      } else if (report.id === "class-rank") {
         const { downloadClassRanking } = await import("@/lib/pdf/class-report");
         const rows = buildRankingRows();
         if (rows.length === 0) throw new Error("No assessment records found for this term.");

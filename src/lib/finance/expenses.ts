@@ -1,4 +1,4 @@
-import { addDoc, collection, serverTimestamp, type Firestore } from 'firebase/firestore'
+import { addDoc, collection, doc, runTransaction, serverTimestamp, type Firestore } from 'firebase/firestore'
 
 export const EXPENSE_CATEGORIES = ['Supplies', 'Food', 'Transport', 'Utilities', 'Maintenance', 'Salaries', 'Other'] as const
 export type ExpenseInput = { date: string; category: string; description: string; amount: number; payee: string; reference: string; actorUid: string; actorEmail: string }
@@ -37,4 +37,18 @@ function csvCell(value: unknown): string {
 export function expensesCsv(rows: ExpenseRow[]): string {
   const headers = ['Date paid', 'Category', 'Description', 'Amount TZS', 'Paid to', 'Reference', 'Recorded by UID', 'Record ID']
   return '\ufeff' + [headers, ...rows.map(row => [row.date, row.category, row.description, row.amount, row.payee ?? '', row.reference ?? '', row.recordedByUid ?? '', row.id])].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
+}
+
+/** Mark one incorrect entry void; keep its original details and the reason. */
+export async function voidExpense(db: Firestore, expenseId: string, reason: string, actorUid: string) {
+  const why = reason.trim()
+  if (!expenseId || !actorUid || why.length < 5 || why.length > 500) throw new Error('Enter a reason between 5 and 500 characters.')
+  const expenseRef = doc(db, 'schools', 'school-001', 'expense_entries', expenseId)
+  const voidRef = doc(db, 'schools', 'school-001', 'expense_voids', expenseId)
+  await runTransaction(db, async tx => {
+    const [expense, existing] = await Promise.all([tx.get(expenseRef), tx.get(voidRef)])
+    if (!expense.exists()) throw new Error('This expense no longer exists.')
+    if (existing.exists()) throw new Error('This expense was already voided.')
+    tx.set(voidRef, { reason: why, actorUid, createdAt: serverTimestamp() })
+  })
 }

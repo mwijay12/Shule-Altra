@@ -180,8 +180,8 @@ export function buildReportPayload(id: string, data: ReportData): TabularReportI
         .filter((row) => row.status === "Pending")
         .reduce((sum, row) => sum + Number(row.amount ?? 0), 0);
       return {
-        title: "Expenditure & petty cash summary",
-        subtitle: "Approved and pending operational spend",
+        title: "Legacy petty-cash requests",
+        subtitle: "Up to 200 older requests · separate from recorded expenses",
         reference,
         meta,
         summary: [
@@ -204,10 +204,10 @@ export function buildReportPayload(id: string, data: ReportData): TabularReportI
             rows,
           },
         ],
-        declaration: ["Only approved requests are posted against the term budget."],
+        declaration: ["Legacy requests only; not a cash balance or proof of payment. New recorded expenses are in a separate report."],
         signatures: [
-          { role: "Accountant", name: "CPA. A. Mtenga" },
-          { role: "Bursar", name: "J. Mwakalinga" },
+          { role: "Prepared by", name: "________________" },
+          { role: "Reviewed by", name: "________________" },
         ],
       };
     }

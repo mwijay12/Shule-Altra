@@ -20,6 +20,7 @@ import { cookies } from 'next/headers'
 import { isDocRole } from '@/lib/documents/registry'
 import {
   SESSION_COOKIE,
+  FIREBASE_SESSION_COOKIE,
   SESSION_MAX_AGE,
   issueSessionToken,
   sessionCookieOptions,
@@ -33,6 +34,7 @@ export const runtime = 'nodejs'
 async function clearCookie() {
   const store = await cookies()
   store.delete(SESSION_COOKIE)
+  store.delete(FIREBASE_SESSION_COOKIE)
 }
 
 export async function POST(request: Request) {
@@ -50,6 +52,12 @@ export async function POST(request: Request) {
     try {
       const { role, uid } = await resolveServerRole(typeof body.idToken === 'string' ? body.idToken : '')
       const store = await cookies()
+      // HttpOnly, secure in production, same-site: server endpoints use this
+      // token to re-check current Firebase identity and role on every request.
+      store.set(FIREBASE_SESSION_COOKIE, body.idToken as string, {
+        ...sessionCookieOptions,
+        maxAge: 60 * 60,
+      })
       store.set(SESSION_COOKIE, issueSessionToken(role, uid), {
         ...sessionCookieOptions,
         maxAge: SESSION_MAX_AGE,
