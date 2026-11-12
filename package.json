@@ -57,7 +57,10 @@
     "demo:smoke:assessment-report": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/assessment-report.ts",
     "demo:smoke:resolve-duplicate": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/resolve-duplicate.ts",
     "demo:smoke:staff-duties": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/staff-duties.ts",
-    "demo:smoke:expense-register": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/expense-register.ts"
+    "demo:smoke:expense-register": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/expense-register.ts",
+    "demo:smoke:suppliers": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/suppliers.ts",
+    "demo:smoke:sidebar-preferences": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/sidebar-preferences.ts",
+    "demo:smoke:supplier-sidebar-ui": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/supplier-sidebar-ui.tsx"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",

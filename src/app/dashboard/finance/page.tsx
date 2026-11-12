@@ -43,6 +43,7 @@ import { exportToExcel } from "@/lib/export-utils"
 import { processPaymentTransaction, formatTZS, formatTZSCompact } from "@/lib/finance-engine"
 import { useInstitutionalReconciliation } from "@/hooks/use-finance"
 import { ExpenseRegister } from "@/components/finance/expense-register"
+import { SupplierRegister } from "@/components/suppliers/supplier-register"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, doc, Timestamp } from "firebase/firestore"
 import { Progress } from "@/components/ui/progress"
@@ -191,10 +192,12 @@ export default function FinancePage() {
           <TabsTrigger value="reconciliation" className="rounded-xl font-semibold px-8 text-[12px]">Global Balances</TabsTrigger>
           <TabsTrigger value="forensic-ledger" className="rounded-xl font-semibold px-8 text-[12px]">Payment Ledger</TabsTrigger>
           <TabsTrigger value="control-number" className="rounded-xl font-semibold px-8 text-[12px]">Payment references</TabsTrigger>
+          <TabsTrigger value="suppliers" className="rounded-xl font-semibold px-8 text-[12px]">Suppliers</TabsTrigger>
           <TabsTrigger value="expenses" className="rounded-xl font-semibold px-8 text-[12px]">Expenses</TabsTrigger>
           <TabsTrigger value="record-payment" className="rounded-xl font-semibold px-8 text-[12px]">Record Payment</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="suppliers"><SupplierRegister /></TabsContent>
         <TabsContent value="expenses"><ExpenseRegister /></TabsContent>
         <TabsContent value="reconciliation" className="space-y-6">
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/60">

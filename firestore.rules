@@ -180,6 +180,28 @@ service cloud.firestore {
       match /transactions/{transactionId} {
         allow read, write: if money();
       }
+      // Supplier contacts are restricted to finance staff and administrators.
+      function validSupplier(data) {
+        return data.keys().hasOnly(['name', 'contactName', 'phone', 'email', 'category', 'notes', 'revision', 'createdAt', 'updatedAt', 'updatedByUid'])
+          && data.name is string && data.name.size() >= 2 && data.name.size() <= 120
+          && data.contactName is string && data.contactName.size() <= 120
+          && data.phone is string && (data.phone == '' || data.phone.matches('^(\\+255|0)[0-9]{9}$'))
+          && data.email is string && data.email.size() <= 254
+          && (data.phone != '' || data.email != '')
+          && data.category is string && data.category.size() <= 120
+          && data.notes is string && data.notes.size() <= 500
+          && data.revision is int && data.updatedByUid == request.auth.uid
+          && data.updatedAt == request.time;
+      }
+      match /suppliers/{supplierId} {
+        allow read: if money();
+        allow create: if money() && validSupplier(request.resource.data)
+          && request.resource.data.revision == 1 && request.resource.data.createdAt == request.time;
+        allow update: if money() && validSupplier(request.resource.data)
+          && request.resource.data.revision == resource.data.revision + 1
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if false;
+      }
       // Paid expenses are a separate append-only register, not fee transactions
       // or the older petty-cash approval requests.
       match /expense_entries/{entryId} {
@@ -242,6 +264,12 @@ service cloud.firestore {
         allow write: if inRole(['ADMIN']);
       }
 
+      // Sidebar visibility is a presentation preference, not an access rule.
+      match /config/sidebar {
+        allow read: if isStaff();
+        allow write: if inRole(['ADMIN']);
+      }
+
       // Letterhead identity. Every staff member who prints a document needs to
       // read it; only an administrator or the owner may change it.
       match /config/identity {
@@ -251,7 +279,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && collection != 'suppliers' && inRole(['ADMIN']);
       }
     }
 

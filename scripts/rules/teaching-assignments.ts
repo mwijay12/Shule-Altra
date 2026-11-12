@@ -65,7 +65,21 @@ async function main() {
     await assertFails(updateDoc(doc(admin, expensePath), { amount: 1 }))
     await assertFails(deleteDoc(doc(admin, expensePath)))
     await assertFails(getDoc(doc(teacher, expensePath)))
-    console.log('FIRESTORE TEACHING RULES TESTS PASSED')
+    const sidebarPath = `${root}/config/sidebar`
+    await assertFails(setDoc(doc(teacher, sidebarPath), { hidden: ['finance'], revision: 1 }))
+    await assertSucceeds(setDoc(doc(admin, sidebarPath), { hidden: ['finance'], revision: 1 }))
+    await assertSucceeds(getDoc(doc(teacher, sidebarPath)))
+    await assertFails(getDoc(doc(anonymous, sidebarPath)))
+    const supplierPath = `${root}/suppliers/supplier1`
+    const supplier = { name: 'Test supplier', contactName: '', phone: '0712345678', email: '', category: 'Supplies', notes: '', revision: 1, createdAt: serverTimestamp(), updatedAt: serverTimestamp(), updatedByUid: 'admin' }
+    await assertFails(setDoc(doc(teacher, supplierPath), { ...supplier, updatedByUid: 'teacher' }))
+    await assertFails(setDoc(doc(admin, supplierPath), { ...supplier, phone: 'invalid' }))
+    await assertSucceeds(setDoc(doc(admin, supplierPath), supplier))
+    await assertFails(getDoc(doc(teacher, supplierPath)))
+    await assertFails(updateDoc(doc(admin, supplierPath), { name: 'Changed', updatedAt: serverTimestamp(), revision: 1 }))
+    await assertSucceeds(updateDoc(doc(admin, supplierPath), { name: 'Changed', updatedAt: serverTimestamp(), revision: 2 }))
+    await assertFails(deleteDoc(doc(admin, supplierPath)))
+    console.log('FIRESTORE TEACHING AND FINANCE RULES TESTS PASSED')
   } finally { await env.cleanup() }
 }
 main().catch(error => { console.error(error); process.exitCode = 1 })

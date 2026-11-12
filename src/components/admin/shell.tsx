@@ -9,6 +9,7 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { MotionConfig } from 'motion/react';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { useSidebarPreferences } from '@/components/admin/sidebar-preferences';
 import { AuroraSidebar } from '@/components/admin/sidebar';
 import { Topbar, type NotificationItem } from '@/components/admin/topbar';
 import { CommandPalette, type PaletteStudent } from '@/components/admin/command-palette';
@@ -45,6 +46,8 @@ function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) 
   const pathname = usePathname();
   const db = useFirestore();
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const sidebarPrefs = useSidebarPreferences();
+  const sidebarAccess = React.useCallback((module: string) => canAccess(module) && !sidebarPrefs.hidden.includes(module as any), [canAccess, sidebarPrefs.hidden]);
   const [paletteOpen, setPaletteOpen] = React.useState(false);
   const scrollRef = React.useRef<HTMLElement | null>(null);
 
@@ -159,7 +162,7 @@ function ShellContent({ children, role, canAccess, signOut }: AuroraShellProps) 
             mobileOpen={mobileOpen}
             onCloseMobile={() => setMobileOpen(false)}
             role={role}
-            canAccess={canAccess}
+            canAccess={sidebarAccess}
             signOut={signOut}
           />
           <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
