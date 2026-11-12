@@ -19,3 +19,22 @@ export async function recordExpense(db: Firestore, input: ExpenseInput) {
     recordedByEmail: input.actorEmail, createdAt: serverTimestamp(),
   })
 }
+
+export type ExpenseRow = { id: string; date: string; category: string; description: string; amount: number; payee?: string; reference?: string; recordedByUid?: string }
+export type ExpenseFilter = { from: string; to: string; category: string; search: string }
+export function filterExpenses(rows: ExpenseRow[], filter: ExpenseFilter): ExpenseRow[] {
+  const search = filter.search.trim().toLocaleLowerCase()
+  return rows.filter(row => (!filter.from || row.date >= filter.from) && (!filter.to || row.date <= filter.to)
+    && (!filter.category || row.category === filter.category)
+    && (!search || [row.description, row.payee, row.reference].some(value => (value ?? '').toLocaleLowerCase().includes(search))))
+}
+function csvCell(value: unknown): string {
+  let text = String(value ?? '')
+  // Neutralise formula-leading text before quoting; spreadsheets may ignore whitespace.
+  if (/^[\s\x00-\x1f]*[=+\-@]/.test(text)) text = `'${text}`
+  return `"${text.replace(/"/g, '""')}"`
+}
+export function expensesCsv(rows: ExpenseRow[]): string {
+  const headers = ['Date paid', 'Category', 'Description', 'Amount TZS', 'Paid to', 'Reference', 'Recorded by UID', 'Record ID']
+  return '\ufeff' + [headers, ...rows.map(row => [row.date, row.category, row.description, row.amount, row.payee ?? '', row.reference ?? '', row.recordedByUid ?? '', row.id])].map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
+}
