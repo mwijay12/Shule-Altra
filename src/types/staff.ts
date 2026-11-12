@@ -1,4 +1,6 @@
-export type StaffRole = 'ADMIN' | 'TEACHER' | 'ACCOUNTANT';
+import type { StaffDuty } from '@/lib/staff-duties';
+
+export type StaffRole = 'ADMIN' | 'TEACHER' | 'ACCOUNTANT' | 'BURSAR' | 'VIEWER';
 
 export interface Staff {
   id: string;
@@ -8,6 +10,8 @@ export interface Staff {
   phone: string;
   role: StaffRole;
   department?: string;
+  duties?: StaffDuty[];
+  classTeacherClasses?: string[];
   active: boolean;
   joinedDate: string;
   createdAt: any;

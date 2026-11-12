@@ -13,7 +13,7 @@ These are examples, not accounts created by the app. Replace `example.com` with 
 | `sports@example.com` — sports teacher | `TEACHER` | Not yet a separate sports permission. |
 | `math@example.com` — mathematics teacher | `TEACHER` | Assign Mathematics to each appropriate class. |
 | `master@example.com` — head teacher | `ADMIN` | Broad access. Use a test-only account, not for every teacher. |
-| `bursar@example.com` — bursar | `ACCOUNTANT` | Finance role offered by the staff form. `BURSAR` exists in access rules, but the enrollment form does not yet offer it. |
+| `bursar@example.com` — bursar | `BURSAR` | Finance access role; available in the draft staff form. |
 | `class-teacher@example.com` — class teacher | `TEACHER` | Class-teacher duties are not yet a separate permission. |
 | `driver@example.com` — transport staff | No supported dedicated role yet | Do not grant admin or teacher access just to represent a job. |
 | `hostel@example.com` — hostel staff | No supported dedicated role yet | Pending staff duties and permissions (phases 7 and 10). |
@@ -29,4 +29,4 @@ Names such as `academic@shule.altra` are only usable for mail if your organisati
 
 The underlying Firestore shape for a staff profile is `schools/school-001/staff/<Firebase Auth UID>`, with `role` such as `TEACHER` or `ACCOUNTANT`; UID, not email or staff number, connects the login to the role. The UID entry feature is currently in the open draft, not necessarily deployed. The app's demo-mode accounts (`admin@shule.pro`, `teacher@shule.pro`, `bursar@shule.pro` with the public demo password) are browser-local simulation accounts, **not** real Firebase users; do not reuse that public password for Firebase.
 
-**Important limitations:** The current `active` flag is not a complete account revocation mechanism. Disable a user's Firebase Authentication account separately when necessary. Staff duties such as discipline, sports, driver and hostel are not independent access policies yet. Existing legacy grades and reports still need duplicate handling, and Firestore rule tests are pending. Never deploy draft rules to production as if these gaps were resolved.
+**Important limitations:** The current `active` flag is not a complete account revocation mechanism. Disable a user's Firebase Authentication account separately when necessary. Staff duties such as discipline, sports, driver and hostel are registry labels, not independent access policies yet. Existing legacy grades and reports still need duplicate handling, and Firestore rule tests are pending. Never deploy draft rules to production as if these gaps were resolved.

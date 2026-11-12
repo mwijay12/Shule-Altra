@@ -29,6 +29,8 @@ jobs:
         run: npm run demo:smoke:student-details
       - name: Assessment report safeguards
         run: npm run demo:smoke:assessment-report
+      - name: Staff duties
+        run: npm run demo:smoke:staff-duties
       - name: Correct duplicate grades
         run: npm run demo:smoke:resolve-duplicate
       - name: Review duplicate grades

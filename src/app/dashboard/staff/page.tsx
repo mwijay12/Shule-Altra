@@ -63,6 +63,7 @@ import { staffSchema, type StaffFormData } from "@/lib/validations/staff"
 import { generateStaffNo } from "@/lib/staff-utils"
 import { Staff } from "@/types/staff"
 import { TeachingAssignments } from "@/components/staff/teaching-assignments"
+import { StaffDuties } from "@/components/staff/staff-duties"
 import { StatCard } from "@/components/admin/stat-card";
 import { ChartPanel, StaffMix, DepartmentLoad } from "@/components/admin/module-charts";
 
@@ -77,6 +78,7 @@ export default function StaffPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [statusTarget, setStatusTarget] = useState<Staff | null>(null)
   const [assignmentTarget, setAssignmentTarget] = useState<Staff | null>(null)
+  const [dutyTarget, setDutyTarget] = useState<Staff | null>(null)
 
   const staffQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
@@ -229,7 +231,9 @@ export default function StaffPage() {
                         <SelectContent className="rounded-xl">
                           <SelectItem value="ADMIN">Administrator</SelectItem>
                           <SelectItem value="TEACHER">Teaching Staff</SelectItem>
-                          <SelectItem value="ACCOUNTANT">Bursar / Accountant</SelectItem>
+                          <SelectItem value="ACCOUNTANT">Accountant</SelectItem>
+                          <SelectItem value="BURSAR">Bursar</SelectItem>
+                          <SelectItem value="VIEWER">Viewer (limited)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -334,6 +338,7 @@ export default function StaffPage() {
                     </TableCell>
                     <TableCell className="text-[13px] font-bold text-foreground/70">
                       {person.department || "General"}
+                      {!!person.duties?.length && <p className="mt-1 text-xs font-normal text-muted-foreground">{person.duties.join(' · ')}{person.classTeacherClasses?.length ? ` (${person.classTeacherClasses.join(', ')})` : ''}</p>}
                     </TableCell>
                     <TableCell className="text-[13px] font-bold text-foreground/70">
                       {person.phone}
@@ -356,6 +361,7 @@ export default function StaffPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-2xl w-48 font-body">
                             <DropdownMenuLabel className="text-[12px] font-semibold text-muted-foreground px-4">Manage</DropdownMenuLabel>
+                            <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setDutyTarget(person)}>Manage staff duties</DropdownMenuItem>
                             {person.role === 'TEACHER' && <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setAssignmentTarget(person)}>Assign teaching subjects</DropdownMenuItem>}
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer group" onClick={() => setStatusTarget(person)}>
                               <Power className={cn("mr-3 h-4 w-4 group-hover:scale-110 transition-transform", person.active ? "text-destructive" : "text-green-600")} />
@@ -375,6 +381,10 @@ export default function StaffPage() {
 
       <Dialog open={!!assignmentTarget} onOpenChange={open => { if (!open) setAssignmentTarget(null) }}>
         <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Teaching assignments</DialogTitle><DialogDescription>{assignmentTarget?.fullName}</DialogDescription></DialogHeader>{assignmentTarget && <TeachingAssignments key={assignmentTarget.id} person={assignmentTarget} />}</DialogContent>
+      </Dialog>
+
+      <Dialog open={!!dutyTarget} onOpenChange={open => { if (!open) setDutyTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Staff duties</DialogTitle><DialogDescription>{dutyTarget?.fullName}</DialogDescription></DialogHeader>{dutyTarget && schoolId && <StaffDuties key={dutyTarget.id} person={dutyTarget} schoolId={schoolId} onSaved={() => { setDutyTarget(null); toast({ title: 'Duties saved', description: 'Access permissions were not changed.' }) }} />}</DialogContent>
       </Dialog>
 
       <AlertDialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>

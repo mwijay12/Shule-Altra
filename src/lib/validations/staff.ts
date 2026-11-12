@@ -8,7 +8,7 @@ export const staffSchema = z.object({
   email: z.string().email('Enter a valid email address'),
   phone: z.string()
     .regex(/^(\+255|0)\d{9}$/, 'Must be a valid Tanzanian phone number (e.g., 0712345678)'),
-  role: z.enum(['ADMIN', 'TEACHER', 'ACCOUNTANT'], {
+  role: z.enum(['ADMIN', 'TEACHER', 'ACCOUNTANT', 'BURSAR', 'VIEWER'], {
     errorMap: () => ({ message: 'Select a valid role' })
   }),
   department: z.string().optional(),

@@ -42,6 +42,8 @@ async function main() {
     await assertFails(setDoc(doc(teacher, gradePath), { ...record, recordedByUid: 'other' }))
     await assertFails(setDoc(doc(teacher, `${root}/grades/entry|s2|Term 1|Annual|Mathematics|2026`), { ...record, studentId: 's2', class: 'Form 1' }))
     await assertFails(updateDoc(doc(teacher, `${root}/students/s2`), { class: 'Form 1' }))
+    await assertFails(updateDoc(doc(teacher, `${root}/staff/teacher`), { duties: ['Driver'] }))
+    await assertSucceeds(updateDoc(doc(admin, `${root}/staff/teacher`), { duties: ['Sports teacher'] }))
     await assertSucceeds(setDoc(doc(teacher, gradePath), record))
     await assertFails(updateDoc(doc(teacher, gradePath), { score: 80 }))
     await assertFails(deleteDoc(doc(teacher, gradePath)))
