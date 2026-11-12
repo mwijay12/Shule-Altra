@@ -91,6 +91,14 @@ service cloud.firestore {
         allow get: if signedIn() && (request.auth.uid == uid || inRole(['ADMIN']));
         allow list: if inRole(['ADMIN', 'TEACHER', 'BURSAR', 'ACCOUNTANT']);
         allow create, update, delete: if inRole(['ADMIN']);
+        match /teachingAssignments/{assignmentId} {
+          allow read: if inRole(['ADMIN']) || (signedIn() && request.auth.uid == uid && inRole(['TEACHER']));
+          allow create, update: if inRole(['ADMIN'])
+            && request.resource.data.className is string
+            && request.resource.data.subject is string
+            && assignmentId == request.resource.data.className + '|' + request.resource.data.subject;
+          allow delete: if inRole(['ADMIN']);
+        }
       }
 
       // ── learner records ──────────────────────────────────────────────────
@@ -99,7 +107,7 @@ service cloud.firestore {
         allow create: if learning();
         // Finance roles may update only the fields changed by a payment entry.
         allow update: if inRole(['ADMIN'])
-          || (learning() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'statusUpdatedAt']))
+          || (learning() && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'statusUpdatedAt', 'class']))
           || (money() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['totalPaid', 'balance', 'lastPaymentDate', 'paymentStatus']));
         allow delete: if inRole(['ADMIN']);
         match /statusHistory/{entryId} {
@@ -117,7 +125,44 @@ service cloud.firestore {
 
       // ── learning ─────────────────────────────────────────────────────────
       match /grades/{gradeId} {
-        allow read, write: if learning();
+        allow read: if learning();
+        // Teachers can create marks only for their own class/subject assignment.
+        // Staff document IDs must match Firebase Auth UIDs. Existing marks may
+        // only be edited or deleted by an administrator.
+        allow create: if inRole(['ADMIN']) || (
+          inRole(['TEACHER'])
+          && get(staffPath()).data.get('active', true) == true
+          && request.resource.data.recordedByUid == request.auth.uid
+          && request.resource.data.studentId is string
+          && !request.resource.data.studentId.matches('.*[|%/].*')
+          && request.resource.data.academicYear is string
+          && request.resource.data.academicYear.matches('^[0-9]{4}$')
+          && request.resource.data.subject is string
+          && !request.resource.data.subject.matches('.*[|%/].*')
+          && request.resource.data.class is string
+          && request.resource.data.score is number
+          && request.resource.data.score >= 0 && request.resource.data.score <= 100
+          && request.resource.data.term in ['Term 1', 'Term 2', 'Term 3']
+          && request.resource.data.examType in ['Mid-Term', 'Annual', 'Mock']
+          && gradeId == 'entry|' + request.resource.data.studentId + '|' + request.resource.data.term + '|' + request.resource.data.examType + '|' + request.resource.data.subject + '|' + request.resource.data.academicYear
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId))
+          && get(/databases/$(database)/documents/schools/$(schoolId)/students/$(request.resource.data.studentId)).data.class == request.resource.data.class
+          && exists(/databases/$(database)/documents/schools/$(schoolId)/staff/$(request.auth.uid)/teachingAssignments/$(request.resource.data.class + '|' + request.resource.data.subject))
+        );
+        allow update, delete: if inRole(['ADMIN']);
+      }
+      // Evidence of a reviewed correction is append-only for administrators.
+      match /gradeCorrections/{correctionId} {
+        allow read: if inRole(['ADMIN']);
+        allow create: if inRole(['ADMIN'])
+          && request.resource.data.action == 'remove_duplicate'
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.keptId is string
+          && request.resource.data.removedId is string
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() >= 5
+          && request.resource.data.reason.size() <= 500;
+        allow update, delete: if false;
       }
       match /attendance/{entryId} {
         allow read, write: if learning();
@@ -134,6 +179,23 @@ service cloud.firestore {
       // ── money ────────────────────────────────────────────────────────────
       match /transactions/{transactionId} {
         allow read, write: if money();
+      }
+      // Paid expenses are a separate append-only register, not fee transactions
+      // or the older petty-cash approval requests.
+      match /expense_entries/{entryId} {
+        allow read: if money();
+        allow create: if money()
+          && request.resource.data.keys().hasOnly(['date', 'category', 'description', 'amount', 'payee', 'reference', 'recordedByUid', 'recordedByEmail', 'createdAt'])
+          && request.resource.data.recordedByUid == request.auth.uid
+          && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.category in ['Supplies', 'Food', 'Transport', 'Utilities', 'Maintenance', 'Salaries', 'Other']
+          && request.resource.data.description is string && request.resource.data.description.size() >= 3 && request.resource.data.description.size() <= 300
+          && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 1000000000000
+          && request.resource.data.payee is string && request.resource.data.payee.size() <= 120
+          && request.resource.data.reference is string && request.resource.data.reference.size() <= 120
+          && request.resource.data.recordedByEmail is string && request.resource.data.recordedByEmail.size() <= 320
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
       }
       match /petty_cash/{entryId} {
         allow read, write: if money();
@@ -189,7 +251,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && inRole(['ADMIN']);
       }
     }
 

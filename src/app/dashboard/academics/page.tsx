@@ -54,12 +54,22 @@ import { AnimatedNumber } from "@/components/ui/animated-number"
 import { StatCard } from "@/components/admin/stat-card"
 import { ChartPanel, SubjectAverages, DivisionSpread } from "@/components/admin/module-charts"
 import { SegmentedProgress } from "@/components/ui/progress"
+import { useAuth } from "@/hooks/use-auth"
+import { canTeach, saveAssessment, type TeachingAssignment } from "@/lib/academics/assignments"
+import { reviewGradeRecords } from "@/lib/academics/grade-review"
+import { DuplicateGradeReview } from "@/components/staff/duplicate-grade-review"
+import { CorrectionHistory } from "@/components/academics/correction-history"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 import { WaveSection } from '@/components/motion/wave-section';
 
 export default function AcademicsPage() {
   const { toast } = useToast()
   const db = useFirestore()
+  const { user, role } = useAuth()
+  const isAdmin = role === 'ADMIN' || role === 'SUPER_ADMIN'
+  const isTeacher = role === 'TEACHER'
+  const assignmentsQuery = useMemoFirebase(() => isTeacher && user ? query(collection(db, 'schools', 'school-001', 'staff', user.uid, 'teachingAssignments')) : null, [db, isTeacher, user])
+  const { data: assignments, isLoading: assignmentsLoading, error: assignmentsError } = useCollection<TeachingAssignment>(assignmentsQuery)
 
   // UI State
   const [searchTerm, setSearchTerm] = useState("")
@@ -84,7 +94,12 @@ export default function AcademicsPage() {
       where("term", "==", activeTerm),
       where("examType", "==", activeExam)
     ), [db, activeTerm, activeExam])
-  const { data: grades, isLoading: gradesLoading } = useCollection<GradeRecord>(gradesQuery)
+  const { data: grades, isLoading: gradesLoading, error: gradesError } = useCollection<GradeRecord>(gradesQuery)
+
+  const scopedGrades = useMemo(() => (grades ?? []).filter(g => g.academicYear === '2026'), [grades])
+  const gradeReview = useMemo(() => reviewGradeRecords(grades ?? [], new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id)), '2026'), [grades, students, activeClass])
+  const hasDuplicateMarks = gradeReview.duplicates.length > 0 || gradeReview.missingYear.length > 0
+
 
   // Filtered Students for the Ledger
   const filteredStudents = useMemo(() => {
@@ -99,11 +114,11 @@ export default function AcademicsPage() {
 
   // Process Rankings
   const rankings = useMemo(() => {
-    if (!students || !grades) return []
+    if (!students || !grades || hasDuplicateMarks) return []
 
     const studentsInClass = students.filter(s => s.class === activeClass)
     const rankingInput = studentsInClass.map(s => {
-      const studentGrades = grades.filter(g => g.studentId === s.id)
+      const studentGrades = scopedGrades.filter(g => g.studentId === s.id)
       const subjects: SubjectGrade[] = studentGrades.map(g => {
         const necta = getCSEEGrade(g.score)
         return { subject: g.subject, score: g.score, grade: necta.grade, points: necta.points }
@@ -112,14 +127,14 @@ export default function AcademicsPage() {
     }).filter(r => r.subjects.length > 0)
 
     return calculateClassRankings(rankingInput)
-  }, [students, grades, activeClass])
+  }, [students, grades, scopedGrades, activeClass, hasDuplicateMarks])
 
   // Process Subject Performance
   const subjectPerformance = useMemo(() => {
-    if (!grades || !students) return []
+    if (!grades || !students || hasDuplicateMarks) return []
 
     const studentsInClassIds = students.filter(s => s.class === activeClass).map(s => s.id)
-    const classGrades = grades.filter(g => studentsInClassIds.includes(g.studentId))
+    const classGrades = scopedGrades.filter(g => studentsInClassIds.includes(g.studentId))
 
     return SUBJECTS_SECONDARY.map(subject => {
       const subGrades = classGrades.filter(g => g.subject === subject).map(g => {
@@ -131,7 +146,7 @@ export default function AcademicsPage() {
       const stats = analyzeSubjectPerformance(subGrades)
       return { subject, ...stats }
     }).filter(Boolean)
-  }, [grades, students, activeClass])
+  }, [grades, scopedGrades, students, activeClass, hasDuplicateMarks])
 
   const classPerformance = (subjectPerformance ?? []) as Array<{
     subject: string; averageScore: number; passRate: number; totalStudents: number;
@@ -154,26 +169,21 @@ export default function AcademicsPage() {
     const score = parseFloat(formData.get("score") as string)
     const subject = formData.get("subject") as string
 
-    if (score < 0 || score > 100) {
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
       toast({ variant: "destructive", title: "Invalid Score", description: "Score must be between 0 and 100." })
       setIsSaving(false)
       return
     }
 
     try {
-      await addDoc(collection(db, "schools", "school-001", "grades"), {
-        studentId: gradingStudent.id,
-        subject,
-        score,
-        term: activeTerm,
-        examType: activeExam,
-        academicYear: "2026",
-        createdAt: serverTimestamp()
-      })
-      toast({ title: "Assessment Recorded", description: `Grade added for ${gradingStudent.name}.` })
+      if (!user || (!isAdmin && (!isTeacher || assignmentsLoading || assignmentsError || !canTeach(assignments ?? [], gradingStudent.class, subject)))) throw new Error('You are not assigned to this class and subject.')
+      if (gradesLoading || gradesError || !grades) throw new Error('The current marks could not be loaded. Try again before recording a mark.')
+      if (grades.some(g => g.studentId === gradingStudent.id && g.subject === subject && (!g.academicYear || g.academicYear === '2026'))) throw new Error('A mark for this subject and exam already exists. Ask an administrator to review it.')
+      await saveAssessment(db, { studentId: gradingStudent.id, className: gradingStudent.class, subject, score, term: activeTerm, examType: activeExam, year: '2026', actorUid: user.uid })
+      toast({ title: "Assessment recorded", description: `Mark added for ${gradingStudent.name}.` })
       setGradingStudent(null)
     } catch (err) {
-      toast({ variant: "destructive", title: "Error", description: "Failed to save assessment." })
+      toast({ variant: "destructive", title: "Could not save mark", description: err instanceof Error ? err.message : 'Check your connection and permissions.' })
     } finally {
       setIsSaving(false)
     }
@@ -182,22 +192,14 @@ export default function AcademicsPage() {
   const handleExportReport = async (student: Student) => {
     setIsExporting(student.id)
     try {
-      // Pull every recorded assessment for the learner so the PDF is never empty,
-      // even when the selected exam window has no rows yet.
-      const snap = await getDocs(
-        query(
-          collection(db, "schools", "school-001", "grades"),
-          where("studentId", "==", student.id)
-        )
-      )
+      if (gradesLoading || gradesError || !grades) throw new Error('Marks are not available. Try again.')
+      if (grades.some(g => g.studentId === student.id && !g.academicYear)) throw new Error('Some marks have no academic year. Ask an administrator to review them before exporting.')
+      const rows = grades.filter(g => g.studentId === student.id && g.academicYear === '2026')
       const bySubject = new Map<string, number>()
-      snap.docs.forEach((docSnap) => {
-        const row = docSnap.data() as any
-        const subject = row.subject ?? "Subject"
-        const score = Number(row.score ?? 0)
-        const current = bySubject.get(subject)
-        if (current === undefined || score > current) bySubject.set(subject, score)
-      })
+      for (const row of rows) {
+        if (bySubject.has(row.subject)) throw new Error('Duplicate marks found for this exam. Resolve them before exporting a report.')
+        bySubject.set(row.subject, row.score)
+      }
 
       if (bySubject.size === 0) {
         toast({
@@ -218,13 +220,13 @@ export default function AcademicsPage() {
           gender: student.gender,
         },
         grades: Array.from(bySubject.entries()).map(([subject, score]) => ({ subject, score })),
-        term: activeTerm,
+        term: `${activeTerm} · ${activeExam}`,
         academicYear: "2026",
-        teacherRemark: `Conduct grade: ${student.conductPoints ?? 100} points.`,
+
       })
       toast({
         title: "Report card PDF ready",
-        description: `${student.name} · letterhead, crest and NECTA grading.`,
+        description: `${student.name} · selected exam only. Division is not calculated.`,
       })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Export Failed", description: err.message || "No assessment data found." })
@@ -305,7 +307,7 @@ export default function AcademicsPage() {
   }
 
   const handleCommitMarks = async () => {
-    if (!importResult || importResult.rows.length === 0 || !db) return
+    if (!isAdmin || !importResult || importResult.rows.length === 0 || !db) return
     setImporting(true)
     try {
       // Chunks of 100 so a 1,500-row sheet does not open 1,500 writes at once.
@@ -349,6 +351,11 @@ export default function AcademicsPage() {
 
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
+      {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
+      {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
+        {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2 mb-3">Compare records with the original marks before making changes. Missing-year records are shown for review only.</p><div className="max-h-96 overflow-y-auto space-y-3"><DuplicateGradeReview groups={gradeReview.duplicates} students={students ?? []} /><ul className="space-y-2">{gradeReview.missingYear.map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year missing · record: {g.id}</li>)}</ul></div></details>}</section>}
+      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed. PDF assessment reports do not calculate division.</p>}
+      {isAdmin && <CorrectionHistory students={students ?? []} />}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
@@ -369,13 +376,14 @@ export default function AcademicsPage() {
               {O_LEVEL_CLASSES.map((className) => <SelectItem key={className} value={className}>{className}</SelectItem>)}
             </SelectContent>
           </Select>
-          <Button
+          {isAdmin && <Button
             variant="outline"
-            onClick={() => setImportOpen(true)}
+            disabled
+            title="Unavailable while duplicate handling is reviewed"
             className="h-10 shrink-0 rounded-full bg-white shadow-sm font-semibold text-[13px] border-primary/20 text-primary"
           >
             <Upload className="mr-1.5 h-3.5 w-3.5" /> Import marks
-          </Button>
+          </Button>}
           <Select value={activeTerm} onValueChange={setActiveTerm}>
             <SelectTrigger className="h-10 rounded-full bg-white shadow-sm font-bold text-[13px] border-primary/10">
               <SelectValue placeholder="Term" />
@@ -399,7 +407,7 @@ export default function AcademicsPage() {
         </div>
       </WaveSection>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      {!hasDuplicateMarks && <><div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard index={0} label="Candidates" value={filteredStudents.length} icon={Users} tone="primary" sub={`${activeClass} · ${activeTerm}`} />
         <StatCard index={1} label="Class mean" value={classAverage} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={Target} tone="accent" progress={classAverage} sub={`${classPerformance.length} subjects marked`} />
         <StatCard index={2} label="Pass rate" value={classPassRate} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={ClipboardCheck} tone="emerald" progress={classPassRate} sub="Grade D or better, per subject" />
@@ -415,6 +423,7 @@ export default function AcademicsPage() {
         </ChartPanel>
       </div>
 
+      </>}
       <Tabs defaultValue="ledger" className="space-y-6">
         <TabsList className="bg-muted/40 p-1 rounded-2xl h-12 w-full sm:w-fit flex shadow-inner border border-muted/50 px-1 overflow-x-auto">
           <TabsTrigger value="ledger" className="rounded-xl font-semibold px-6 text-[12px]">Grading Ledger</TabsTrigger>
@@ -451,7 +460,7 @@ export default function AcademicsPage() {
                   </TableHeader>
                   <TableBody>
                     {filteredStudents.map((student) => {
-                      const studentGradesCount = grades?.filter(g => g.studentId === student.id).length || 0;
+                      const studentGradesCount = scopedGrades.filter(g => g.studentId === student.id).length;
                       return (
                         <TableRow key={student.id} className="group hover:bg-primary/[0.02] border-b last:border-none">
                           <TableCell className="pl-8 py-5">
@@ -464,14 +473,15 @@ export default function AcademicsPage() {
                           <TableCell className="text-center font-semibold text-xs text-primary">{studentGradesCount}</TableCell>
                           <TableCell className="text-right pr-8">
                             <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="sm" className="font-semibold text-primary text-[13px] rounded-full" onClick={() => setGradingStudent(student)}>
+                              <Button variant="ghost" size="sm" disabled={!isAdmin && (!isTeacher || assignmentsLoading || !!assignmentsError || !(assignments ?? []).some(a => a.className === student.class))} className="font-semibold text-primary text-[13px] rounded-full" onClick={() => setGradingStudent(student)}>
                                 Add Assessment <ChevronRight className="ml-1 h-3 w-3" />
                               </Button>
                               <Button
                                 size="sm"
                                 className="font-semibold text-[13px] rounded-full h-8 px-4 colorful-gradient text-white shadow-md shadow-primary/20"
                                 onClick={() => handleExportReport(student)}
-                                disabled={isExporting === student.id}
+                                disabled={isExporting === student.id || gradesLoading || !!gradesError}
+                                title="Selected exam and year; division not calculated"
                               >
                                 {isExporting === student.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
                                 Report Card PDF
@@ -480,9 +490,8 @@ export default function AcademicsPage() {
                                 variant="ghost"
                                 size="sm"
                                 className="font-semibold text-[12px] rounded-full h-8 px-3 text-muted-foreground"
-                                onClick={() => handleExportWord(student)}
-                                disabled={isExporting === student.id}
-                                title="Editable Word copy"
+                                disabled
+                                title="Unavailable while report calculations are reviewed"
                               >
                                 DOCX
                               </Button>
@@ -521,7 +530,7 @@ export default function AcademicsPage() {
               {rankings.length === 0 ? (
                 <div className="p-20 text-center opacity-30 flex flex-col items-center gap-4">
                   <FileText className="h-12 w-12" />
-                  <p className="text-[13px] font-semibold">No Assessment Data Detected</p>
+                  <p className="text-[13px] font-semibold">{hasDuplicateMarks ? 'Rankings unavailable until records are reviewed.' : 'No assessment data detected.'}</p>
                 </div>
               ) : (
                 <Table className="min-w-[800px]">
@@ -630,7 +639,7 @@ export default function AcademicsPage() {
                   <SelectValue placeholder="Identify subject..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                  {SUBJECTS_SECONDARY.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  {SUBJECTS_SECONDARY.filter(s => isAdmin || (isTeacher && canTeach(assignments ?? [], gradingStudent?.class ?? '', s))).map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -649,7 +658,7 @@ export default function AcademicsPage() {
             <div className="p-6 rounded-2xl bg-primary/5 border border-primary/10">
               <p className="text-[12px] font-semibold text-primary mb-1">Assessment</p>
               <p className="text-[13px] font-bold text-muted-foreground leading-relaxed tracking-tighter">
-                Registering for {activeTerm} • {activeExam} cycle. Grades are archived with a unique audit identifier.
+                Recording for {activeTerm} · {activeExam} · 2026. Existing marks require administrator review; imports and legacy marks may still contain duplicates.
               </p>
             </div>
             <Button type="submit" disabled={isSaving} className="w-full h-14 rounded-2xl colorful-gradient font-semibold text-xs shadow-2xl group">

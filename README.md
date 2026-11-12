@@ -18,7 +18,7 @@ Shule Altra is a school management application by [Altraware Technology](https:/
 
 <img src="docs/readme/modules.svg" alt="Feature chart: four groups of three selected modules — learning, operations, resources and administration." width="100%" />
 
-The chart counts **selected product modules**, not users, deployments or school performance. Timetable is an example schedule; other screens may require configuration.
+The chart counts **selected product modules**, not users, deployments or school performance. The timetable supports saved lessons within the fixed Form 1–4, A/B layout; other screens may require configuration.
 
 ## What is included
 
@@ -28,7 +28,7 @@ The chart counts **selected product modules**, not users, deployments or school 
 - Theme Studio and a local **Shule Guide**: predefined English/Kiswahili keyword answers about the system and Altraware, with links to permitted pages and support. It is not a language model and does not change records.
 - A local student comment draft derived from recorded scores, latest attendance status and conduct. It is editable and should be reviewed before use.
 
-Some capabilities need additional configuration or review. The timetable is a generated example, not a saved clash-checked timetable. Attendance currently stores the latest status rather than a dated history. Integrations, AI, authentication and permissions must be tested for each deployment; do not treat this repository as a guarantee of regulatory compliance or production readiness.
+Some capabilities need additional configuration or review. Timetable lessons can be saved for the fixed Form 1–4, A/B layout. When using the editor, it checks matching teacher and room names at the same period in those schedules; variations in spelling and schedules outside that scope require manual review. Live clash-checked saves require a connection; demo schedules stay in the current browser. Attendance currently stores the latest status rather than a dated history. Integrations, AI, authentication and permissions must be tested for each deployment; do not treat this repository as a guarantee of regulatory compliance or production readiness.
 
 ## Run the demo
 
@@ -90,3 +90,7 @@ The app uses Next.js, React, Firebase or the local demo datastore, and pdf-lib. 
 
 **Altraware Technology** · Dar es Salaam, Tanzania
 [altra.tanzaniareach.com](https://altra.tanzaniareach.com/) · [altrawaretechnology@gmail.com](mailto:altrawaretechnology@gmail.com) · [+255 792 867 427](tel:+255792867427) · [WhatsApp](https://wa.me/255792867427)
+
+### Staff test accounts
+
+See [test account setup and role limitations](docs/test-accounts.md) before adding users. Use a separate Firebase test project; the public browser demo accounts are not real Firebase credentials.

@@ -1,224 +1,94 @@
 "use client"
 
-import * as React from "react"
-import { useMemo, useState } from "react"
-import {
-  CalendarDays,
-  User,
-  Download,
-  Loader2,
-  Clock,
-  FileCheck2,
-} from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { AnimatedNumber } from "@/components/ui/animated-number"
-import { StatCard } from "@/components/admin/stat-card";
-import { ChartPanel, WeekUtilisation } from "@/components/admin/module-charts";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useToast } from "@/hooks/use-toast"
-import { cn } from "@/lib/utils"
-import {
-  buildTimetable,
-  summarizeTimetable,
-  TIMETABLE_CLASSES,
-  TIMETABLE_STREAMS,
-} from "@/lib/timetable"
+import * as React from 'react'
+import { doc } from 'firebase/firestore'
+import { CalendarDays, Clock, Download, Loader2, Pencil, User } from 'lucide-react'
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase'
+import { useAuth } from '@/hooks/use-auth'
+import { useToast } from '@/hooks/use-toast'
+import { DEMO_MODE } from '@/lib/demo/config'
+import { TIMETABLE_CLASSES, TIMETABLE_STREAMS, summarizeTimetable, type Slot } from '@/lib/timetable'
+import { scheduleId, scheduleTimetable, readSchedule, saveTimetableSlot } from '@/lib/timetable-store'
+import { ChartPanel, WeekUtilisation } from '@/components/admin/module-charts'
+import { StatCard } from '@/components/admin/stat-card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
+type Editing = { day: string; periodId: string; periodLabel: string; expected: Slot | null }
 export default function TimetablePage() {
-  const { toast } = useToast()
-  const [selectedClass, setSelectedClass] = useState("Form 2")
-  const [stream, setStream] = useState("A")
-  const [isExporting, setIsExporting] = useState(false)
-
-  const timetable = useMemo(
-    () => buildTimetable(selectedClass, stream, { term: "Term 2 · 2026" }),
-    [selectedClass, stream]
-  )
-
+  const db = useFirestore(); const { role } = useAuth(); const { toast } = useToast()
+  const [className, setClassName] = React.useState('Form 2'); const [stream, setStream] = React.useState('A')
+  const [editing, setEditing] = React.useState<Editing | null>(null)
+  const [subject, setSubject] = React.useState(''); const [teacher, setTeacher] = React.useState(''); const [room, setRoom] = React.useState('')
+  const [busy, setBusy] = React.useState(false); const [error, setError] = React.useState(''); const [exporting, setExporting] = React.useState(false)
+  const id = scheduleId(className, stream)
+  const ref = useMemoFirebase(() => doc(db, 'schools', 'school-001', 'timetable', id), [db, id])
+  const { data, isLoading, error: loadError } = useDoc(ref)
+  const currentData = data?.id === id ? data : null
+  const parsed = React.useMemo(() => { try { return { schedule: readSchedule(currentData), error: '' } } catch (err) { return { schedule: null, error: err instanceof Error ? err.message : 'Unable to read timetable.' } } }, [currentData])
+  const timetable = React.useMemo(() => scheduleTimetable(className, stream, parsed.schedule), [className, stream, parsed.schedule])
   const summary = summarizeTimetable(timetable)
-  const teachingSlots = summary.teaching
-
-  const handleExportPdf = async () => {
-    setIsExporting(true)
-    try {
-      const { downloadTimetablePdf } = await import("@/lib/pdf/timetable")
-      await downloadTimetablePdf(timetable)
-      toast({
-        title: "Timetable PDF generated",
-        description: `${selectedClass} · Stream ${stream} · landscape A4, vector text.`,
-      })
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Export failed",
-        description: error instanceof Error ? error.message : "Could not build the timetable PDF.",
-      })
-    } finally {
-      setIsExporting(false)
-    }
+  const canEdit = role === 'ADMIN' || role === 'SUPER_ADMIN' || role === 'TEACHER'
+  function openCell(day: string, periodId: string, periodLabel: string, slot: Slot | null) {
+    setEditing({ day, periodId, periodLabel, expected: slot ? { ...slot } : null })
+    setSubject(slot?.subject ?? ''); setTeacher(slot?.teacher ?? ''); setRoom(slot?.room ?? ''); setError('')
   }
-
-  return (
-    <div className="space-y-6 max-w-full mx-auto pb-24 px-1 font-body">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-1">
-        <div className="space-y-1">
-          <Badge variant="outline" className="border-primary/20 bg-primary/5 text-primary px-3 py-0.5 text-[11px] font-semibold rounded-full">
-            <CalendarDays className="h-2.5 w-2.5 mr-1.5" /> Example schedule · not saved
-          </Badge>
-          <h1 className="text-xl sm:text-2xl font-headline font-semibold text-primary tracking-tight">Academic Timetable</h1>
-          <p className="text-muted-foreground text-[13px] font-bold leading-none">
-            <AnimatedNumber value={teachingSlots} /> teaching periods in this generated example · not checked for clashes across classes
-          </p>
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button
-            variant="outline"
-            onClick={handleExportPdf}
-            disabled={isExporting}
-            className="flex-1 sm:flex-none rounded-full h-11 border-primary/20 text-primary bg-card shadow-sm font-semibold text-[12px]"
-          >
-            {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-            {isExporting ? "Building PDF" : "Download PDF"}
-          </Button>
-        </div>
-      </div>
-
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 px-1">
-        <StatCard index={0} label="Teaching periods" value={teachingSlots} icon={Clock} tone="primary" sub={`${timetable.className} · Stream ${timetable.stream}`} />
-        <StatCard index={1} label="Subjects taught" value={timetable.subjectLoad.filter((s) => s.periods > 0).length} icon={FileCheck2} tone="accent" sub="On this class timetable" />
-        <StatCard index={2} label="Teachers assigned" value={new Set(timetable.subjectLoad.map((s) => s.teacher).filter(Boolean)).size} icon={User} tone="emerald" sub="Distinct teachers on the grid" />
-        <StatCard index={3} label="Free periods" value={summary.free} icon={CalendarDays} tone="slate" sub={`${summary.breaks} scheduled break slots excluded`} />
-      </div>
-
-      <ChartPanel
-        title="How full is the week"
-        hint={`${timetable.className} · Stream ${timetable.stream} · ${timetable.term}`}
-        className="mx-1"
-        data-reveal
-      >
-        <WeekUtilisation timetable={timetable} />
-      </ChartPanel>
-
-      <div className="grid gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-3 border border-border/60 shadow-xl bg-card/70 rounded-[2.5rem] h-fit">
-          <CardHeader className="bg-primary/5 border-b border-border/60 p-8">
-            <CardTitle className="text-sm font-semibold">Global Filters</CardTitle>
-          </CardHeader>
-          <CardContent className="p-8 space-y-6">
-            <div className="space-y-2">
-              <label className="text-[12px] font-semibold text-muted-foreground ml-1">Target Class</label>
-              <Select value={selectedClass} onValueChange={setSelectedClass}>
-                <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {TIMETABLE_CLASSES.map((option) => (
-                    <SelectItem key={option} value={option}>{option}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-[12px] font-semibold text-muted-foreground ml-1">Stream</label>
-              <Select value={stream} onValueChange={setStream}>
-                <SelectTrigger className="h-12 rounded-xl bg-muted/20 border-none font-bold">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {TIMETABLE_STREAMS.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      Stream {option} ({option === "A" ? "Alpha" : "Beta"})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-4 border-t border-dashed border-border/60 space-y-3">
-              <p className="text-[12px] leading-relaxed text-muted-foreground">
-                Generated example only. Teachers and rooms are not checked against other classes; assignments are not saved.
-              </p>
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-emerald-500/5 text-emerald-600 border border-emerald-500/10">
-                <FileCheck2 className="h-5 w-5" />
-                <div>
-                  <p className="text-[12px] font-semibold">Print engine</p>
-                  <p className="text-[13px] font-bold">Vector PDF · landscape A4</p>
-                </div>
-              </div>
-            </div>
-
-
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-9 border border-border/60 shadow-2xl overflow-hidden bg-card/70 rounded-[2.5rem]">
-          <CardHeader className="bg-muted/30 p-8 border-b border-border/60 flex flex-row justify-between items-center">
-            <div className="space-y-1">
-              <CardTitle className="text-xl font-semibold tracking-tight">
-                {selectedClass} · Stream {stream}
-              </CardTitle>
-              <CardDescription className="text-[13px] font-bold text-primary/60">
-                Generated example · not an official or clash-checked timetable
-              </CardDescription>
-            </div>
-            <Badge className="bg-primary text-white border-none px-4 py-1 rounded-full font-semibold text-[12px]">
-              {timetable.term}
-            </Badge>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
-            <Table className="min-w-[1000px]">
-              <TableHeader className="bg-muted/10">
-                <TableRow className="border-none h-14">
-                  <TableHead className="pl-8 text-[12px] font-semibold">Time slot</TableHead>
-                  {timetable.days.map((day) => (
-                    <TableHead key={day} className="text-[12px] font-semibold text-center">{day}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {timetable.periods.map((period, periodIndex) => (
-                  <TableRow
-                    key={period.id}
-                    className={cn("group border-b border-border/50 last:border-none", period.isBreak ? "bg-primary/5" : "hover:bg-primary/[0.02]")}
-                  >
-                    <TableCell className="pl-8 py-5">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-xs text-primary">{period.label}</span>
-                        <span className="text-[12px] font-mono font-bold text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-2.5 w-2.5" /> {period.time}
-                        </span>
-                      </div>
-                    </TableCell>
-                    {timetable.days.map((day, dayIndex) => {
-                      const slot = timetable.grid[periodIndex]?.[dayIndex]
-                      return (
-                        <TableCell key={day} className="text-center p-2">
-                          {period.isBreak ? (
-                            <span className="text-[11px] font-semibold text-primary/40">{period.label}</span>
-                          ) : slot ? (
-                            <div className="p-3 rounded-xl bg-card border border-border/70 shadow-sm transition-[transform,box-shadow,border-color] duration-200 ease-out hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-                              <p className="text-[13px] font-semibold text-foreground">{slot.subject}</p>
-                              <p className="text-[11px] font-bold text-muted-foreground flex items-center justify-center gap-1 mt-1">
-                                <User className="h-2 w-2" /> {slot.teacher}
-                              </p>
-                              <p className="text-[11px] font-bold text-primary/70 mt-0.5">{slot.room}</p>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+  async function save(slot: Slot | null) {
+    if (!editing || busy) return
+    setBusy(true); setError('')
+    try {
+      await saveTimetableSlot(db, { className, stream, day: editing.day, periodId: editing.periodId, slot, expected: editing.expected })
+      setEditing(null)
+      toast({ title: slot ? 'Period saved' : 'Period cleared', description: DEMO_MODE ? 'Stored in this browser only.' : 'Saved to the school timetable.' })
+    } catch (err) { setError(err instanceof Error ? err.message : 'Could not save. Check your connection and try again.') }
+    finally { setBusy(false) }
+  }
+  async function exportPdf() {
+    setExporting(true)
+    try { const { downloadTimetablePdf } = await import('@/lib/pdf/timetable'); await downloadTimetablePdf(timetable, { saved: true }) }
+    catch (err) { toast({ variant: 'destructive', title: 'Could not create PDF', description: err instanceof Error ? err.message : 'Try again.' }) }
+    finally { setExporting(false) }
+  }
+  return <div className="mx-auto max-w-full space-y-6 px-1 pb-24">
+    <header className="flex flex-wrap items-start justify-between gap-4">
+      <div className="space-y-2"><h1 className="font-headline text-2xl font-semibold">School timetable</h1><p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">Select a class and stream, then choose a teaching period to add or edit a lesson.</p></div>
+      <Button variant="outline" onClick={exportPdf} disabled={exporting || isLoading || !!loadError || !!parsed.error || !currentData}><Download className="mr-2 h-4 w-4" />{exporting ? 'Building PDF…' : 'Download saved timetable'}</Button>
+    </header>
+    <div className="rounded-xl bg-muted/40 p-4 text-sm leading-relaxed text-muted-foreground">
+      {DEMO_MODE ? 'Demo schedules are saved only in this browser and do not sync to other devices.' : 'Schedules are saved in Firebase. Saving needs a connection; offline queuing is not available for this clash check.'} The fixed school day covers Form 1–4, streams A and B. Teacher and room clashes are checked by exact name at the same period across these schedules only; spelling variations and other timetables need manual review.
     </div>
-  )
+    <div className="flex flex-wrap gap-4">
+      <label className="space-y-1 text-sm font-medium"><span className="block">Class</span><select aria-label="Class" value={className} onChange={e => { setClassName(e.target.value); setEditing(null) }} className="h-11 min-w-40 rounded-md border border-input bg-background px-3">{TIMETABLE_CLASSES.map(c => <option key={c}>{c}</option>)}</select></label>
+      <label className="space-y-1 text-sm font-medium"><span className="block">Stream</span><select aria-label="Stream" value={stream} onChange={e => { setStream(e.target.value); setEditing(null) }} className="h-11 min-w-32 rounded-md border border-input bg-background px-3">{TIMETABLE_STREAMS.map(s => <option key={s}>{s}</option>)}</select></label>
+    </div>
+    {isLoading ? <p role="status" className="py-8 text-sm text-muted-foreground">Loading timetable…</p> : loadError || parsed.error ? <p role="alert" className="py-8 text-sm text-destructive">{parsed.error || 'Could not load timetable. Check your connection or permissions.'}</p> : <>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard index={0} label="Teaching periods" value={summary.teaching} icon={Clock} tone="primary" sub={`${className} · ${stream}`} />
+        <StatCard index={1} label="Subjects" value={new Set(timetable.subjectLoad.map(s => s.subject.toLowerCase())).size} icon={CalendarDays} tone="accent" sub="On this timetable" />
+        <StatCard index={2} label="Teachers" value={new Set(timetable.subjectLoad.map(s => s.teacher.toLowerCase())).size} icon={User} tone="emerald" sub="Names on this timetable" />
+        <StatCard index={3} label="Free periods" value={summary.free} icon={CalendarDays} tone="slate" sub={`${summary.breaks} break slots excluded`} />
+      </div>
+      <ChartPanel title="Week at a glance" hint={`${className} · Stream ${stream}`}><WeekUtilisation timetable={timetable} /></ChartPanel>
+      <section className="overflow-hidden rounded-2xl bg-card">
+        <div className="space-y-1 p-5"><h2 className="text-lg font-semibold">{className} · Stream {stream}</h2><p className="text-sm text-muted-foreground">{currentData ? 'Saved timetable' : 'No saved lessons yet. Select a free period to begin.'}{!canEdit ? ' You have read-only access.' : ''}</p></div>
+        <div className="overflow-x-auto"><Table className="min-w-[850px]"><TableHeader><TableRow><TableHead>Time</TableHead>{timetable.days.map(day => <TableHead key={day} className="text-center">{day}</TableHead>)}</TableRow></TableHeader><TableBody>
+          {timetable.periods.map((period, pi) => <TableRow key={period.id}><TableCell className="min-w-32"><span className="block text-sm font-semibold">{period.label}</span><span className="text-xs tabular-nums text-muted-foreground">{period.time}</span></TableCell>{timetable.days.map((day, di) => {
+            const slot = timetable.grid[pi][di]
+            return <TableCell key={day} className="p-2 text-center">{period.isBreak ? <span className="text-xs text-muted-foreground">{period.label}</span> : canEdit ? <button type="button" onClick={() => openCell(day, period.id, period.label, slot)} aria-label={`${slot ? 'Edit' : 'Add'} ${day} ${period.label}`} className="min-h-16 w-full rounded-lg p-2 text-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{slot ? <><span className="block font-semibold">{slot.subject}</span><span className="block text-xs text-muted-foreground">{slot.teacher}{slot.room ? ` · ${slot.room}` : ''}</span></> : <span className="text-xs text-muted-foreground">+ Add lesson</span>}</button> : slot ? <span className="text-sm">{slot.subject}<span className="block text-xs text-muted-foreground">{slot.teacher} · {slot.room}</span></span> : <span className="text-xs text-muted-foreground">Free</span>}</TableCell>
+          })}</TableRow>)}
+        </TableBody></Table></div>
+      </section>
+    </>}
+    <Dialog open={!!editing} onOpenChange={open => { if (!open && !busy) setEditing(null) }}><DialogContent className="max-w-md"><DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4" />{editing?.day} · {editing?.periodLabel}</DialogTitle><DialogDescription>{className} · Stream {stream}. Enter a consistent teacher and room name so clashes can be checked.</DialogDescription></DialogHeader>
+      <form className="space-y-4" onSubmit={e => { e.preventDefault(); void save({ subject, teacher, room }) }}>
+        <label htmlFor="tt-subject" className="block space-y-1 text-sm font-medium"><span>Subject</span><Input id="tt-subject" value={subject} onChange={e => setSubject(e.target.value)} maxLength={80} required /></label>
+        <label htmlFor="tt-teacher" className="block space-y-1 text-sm font-medium"><span>Teacher</span><Input id="tt-teacher" value={teacher} onChange={e => setTeacher(e.target.value)} maxLength={80} required /></label>
+        <label htmlFor="tt-room" className="block space-y-1 text-sm font-medium"><span>Room (optional)</span><Input id="tt-room" value={room} onChange={e => setRoom(e.target.value)} maxLength={80} /></label>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+        <div className="flex flex-wrap gap-2"><Button type="submit" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{busy ? 'Saving…' : 'Save lesson'}</Button>{editing?.expected && <Button type="button" variant="outline" disabled={busy} onClick={() => { if (window.confirm('Clear this lesson?')) void save(null) }}>Clear lesson</Button>}<Button type="button" variant="ghost" disabled={busy} onClick={() => setEditing(null)}>Cancel</Button></div>
+      </form>
+    </DialogContent></Dialog>
+  </div>
 }

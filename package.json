@@ -48,7 +48,16 @@
     "demo:smoke:guide": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/guide.ts",
     "demo:smoke:finance-payment": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/finance-payment.ts",
     "demo:smoke:student-status": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/student-status.ts",
-    "demo:smoke:guardian-email": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/guardian-email.ts"
+    "demo:smoke:guardian-email": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/guardian-email.ts",
+    "demo:smoke:timetable-editor": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/timetable-editor.ts",
+    "demo:smoke:timetable-ui": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/timetable-ui.tsx",
+    "test:rules:teaching": "tsx --tsconfig tsconfig.json scripts/rules/teaching-assignments.ts",
+    "demo:smoke:teaching-assignments": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/teaching-assignments.ts",
+    "demo:smoke:grade-review": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/grade-review.ts",
+    "demo:smoke:assessment-report": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/assessment-report.ts",
+    "demo:smoke:resolve-duplicate": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/resolve-duplicate.ts",
+    "demo:smoke:staff-duties": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/staff-duties.ts",
+    "demo:smoke:expense-register": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/expense-register.ts"
   },
   "dependencies": {
     "@fontsource-variable/inter": "^5.3.0",
@@ -115,6 +124,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@types/file-saver": "^2.0.7",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20",

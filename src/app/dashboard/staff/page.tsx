@@ -57,11 +57,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore, useCollection, useMemoFirebase } from "@/firebase"
-import { collection, doc, query, orderBy, serverTimestamp, setDoc, updateDoc } from "firebase/firestore"
+import { collection, doc, query, orderBy, serverTimestamp, runTransaction, updateDoc } from "firebase/firestore"
 import { useAuth } from "@/hooks/use-auth"
 import { staffSchema, type StaffFormData } from "@/lib/validations/staff"
 import { generateStaffNo } from "@/lib/staff-utils"
 import { Staff } from "@/types/staff"
+import { TeachingAssignments } from "@/components/staff/teaching-assignments"
+import { StaffDuties } from "@/components/staff/staff-duties"
 import { StatCard } from "@/components/admin/stat-card";
 import { ChartPanel, StaffMix, DepartmentLoad } from "@/components/admin/module-charts";
 
@@ -75,6 +77,8 @@ export default function StaffPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [statusTarget, setStatusTarget] = useState<Staff | null>(null)
+  const [assignmentTarget, setAssignmentTarget] = useState<Staff | null>(null)
+  const [dutyTarget, setDutyTarget] = useState<Staff | null>(null)
 
   const staffQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
@@ -120,7 +124,9 @@ export default function StaffPage() {
 
     try {
       const staffNo = await generateStaffNo(db, schoolId)
-      const docId = doc(collection(db, "unused")).id // generate unique ID
+      const uid = String(formData.get("authUid") || "").trim()
+      if (uid && (uid.length > 128 || uid.includes('/') || uid === '.' || uid === '..')) throw new Error('Enter a valid Firebase Authentication UID.')
+      const docId = uid || doc(collection(db, "unused")).id
 
       const newStaff: Omit<Staff, 'id'> = {
         staffNo,
@@ -134,10 +140,15 @@ export default function StaffPage() {
         createdAt: serverTimestamp(),
       }
 
-      await setDoc(doc(db, "schools", schoolId, "staff", docId), newStaff)
+      const staffRef = doc(db, "schools", schoolId, "staff", docId)
+      await runTransaction(db, async tx => {
+        const existing = await tx.get(staffRef)
+        if (existing.exists()) throw new Error('A staff record already exists for this ID. No changes were made.')
+        tx.set(staffRef, newStaff)
+      })
 
       setIsAddingStaff(false)
-      toast({ title: "Personnel Enrolled", description: `${newStaff.fullName} is now active as ${staffNo}.` })
+      toast({ title: "Personnel Enrolled", description: `${newStaff.fullName} was added as ${staffNo}. Account access requires a verified Firebase UID.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Enrollment Failed", description: err.message })
     } finally {
@@ -165,7 +176,7 @@ export default function StaffPage() {
 
   if (authLoading) return <div className="p-20 text-center"><Loader2 className="animate-spin h-10 w-10 mx-auto text-primary" /></div>
 
-  const isAdmin = currentUserRole === 'ADMIN'
+  const isAdmin = currentUserRole === 'ADMIN' || currentUserRole === 'SUPER_ADMIN'
 
   const roster = (staff ?? []) as Staff[];
 
@@ -192,7 +203,7 @@ export default function StaffPage() {
                   <DialogTitle className="text-xl font-headline font-semibold text-primary">Faculty Enrollment</DialogTitle>
                   <DialogDescription className="text-[13px] font-bold">Add new member to the 2026 personnel registry</DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleEnrollStaff} className="p-8 space-y-5">
+                <form onSubmit={handleEnrollStaff} className="p-8 space-y-5 max-h-[70vh] overflow-y-auto">
                   <div className="space-y-1">
                     <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Full Legal Name</Label>
                     <Input name="fullName" placeholder="e.g. NEEMA PAUL" className={cn("h-12 rounded-xl bg-muted/20 border-none font-bold uppercase px-5 shadow-inner", errors.fullName && "ring-1 ring-destructive")} />
@@ -220,7 +231,9 @@ export default function StaffPage() {
                         <SelectContent className="rounded-xl">
                           <SelectItem value="ADMIN">Administrator</SelectItem>
                           <SelectItem value="TEACHER">Teaching Staff</SelectItem>
-                          <SelectItem value="ACCOUNTANT">Bursar / Accountant</SelectItem>
+                          <SelectItem value="ACCOUNTANT">Accountant</SelectItem>
+                          <SelectItem value="BURSAR">Bursar</SelectItem>
+                          <SelectItem value="VIEWER">Viewer (limited)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -228,6 +241,11 @@ export default function StaffPage() {
                       <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Department</Label>
                       <Input name="department" placeholder="e.g. Science" className="h-12 rounded-xl bg-muted/20 border-none font-bold px-5 shadow-inner" />
                     </div>
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="authUid" className="text-[12px] font-semibold text-muted-foreground ml-1">Firebase Authentication UID (optional)</Label>
+                    <Input id="authUid" name="authUid" placeholder="Existing account UID" autoComplete="off" />
+                    <p className="text-xs text-muted-foreground">For login access, an administrator must verify this UID belongs to this person in Firebase Authentication. This form does not create or verify an account. Leave blank for a registry-only record; existing records are not migrated.</p>
                   </div>
                   <div className="space-y-1">
                     <Label className="text-[12px] font-semibold text-muted-foreground ml-1">Join Date</Label>
@@ -320,6 +338,7 @@ export default function StaffPage() {
                     </TableCell>
                     <TableCell className="text-[13px] font-bold text-foreground/70">
                       {person.department || "General"}
+                      {!!person.duties?.length && <p className="mt-1 text-xs font-normal text-muted-foreground">{person.duties.join(' · ')}{person.classTeacherClasses?.length ? ` (${person.classTeacherClasses.join(', ')})` : ''}</p>}
                     </TableCell>
                     <TableCell className="text-[13px] font-bold text-foreground/70">
                       {person.phone}
@@ -342,6 +361,8 @@ export default function StaffPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="rounded-2xl w-48 font-body">
                             <DropdownMenuLabel className="text-[12px] font-semibold text-muted-foreground px-4">Manage</DropdownMenuLabel>
+                            <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setDutyTarget(person)}>Manage staff duties</DropdownMenuItem>
+                            {person.role === 'TEACHER' && <DropdownMenuItem className="px-4 py-3 cursor-pointer" onClick={() => setAssignmentTarget(person)}>Assign teaching subjects</DropdownMenuItem>}
                             <DropdownMenuItem className="px-4 py-3 cursor-pointer group" onClick={() => setStatusTarget(person)}>
                               <Power className={cn("mr-3 h-4 w-4 group-hover:scale-110 transition-transform", person.active ? "text-destructive" : "text-green-600")} />
                               <span className="font-bold text-xs">{person.active ? "Deactivate" : "Reactivate"}</span>
@@ -358,6 +379,14 @@ export default function StaffPage() {
         </CardContent>
       </Card>
 
+      <Dialog open={!!assignmentTarget} onOpenChange={open => { if (!open) setAssignmentTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Teaching assignments</DialogTitle><DialogDescription>{assignmentTarget?.fullName}</DialogDescription></DialogHeader>{assignmentTarget && <TeachingAssignments key={assignmentTarget.id} person={assignmentTarget} />}</DialogContent>
+      </Dialog>
+
+      <Dialog open={!!dutyTarget} onOpenChange={open => { if (!open) setDutyTarget(null) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto"><DialogHeader><DialogTitle>Staff duties</DialogTitle><DialogDescription>{dutyTarget?.fullName}</DialogDescription></DialogHeader>{dutyTarget && schoolId && <StaffDuties key={dutyTarget.id} person={dutyTarget} schoolId={schoolId} onSaved={() => { setDutyTarget(null); toast({ title: 'Duties saved', description: 'Access permissions were not changed.' }) }} />}</DialogContent>
+      </Dialog>
+
       <AlertDialog open={!!statusTarget} onOpenChange={(open) => !open && setStatusTarget(null)}>
         <AlertDialogContent className="rounded-[2.5rem] p-8 border-none shadow-2xl">
           <AlertDialogHeader className="space-y-4">
@@ -369,8 +398,8 @@ export default function StaffPage() {
             </AlertDialogTitle>
             <AlertDialogDescription className="text-center text-xs font-medium text-muted-foreground leading-relaxed">
               {statusTarget?.active
-                ? `Revoking access for ${statusTarget.fullName}. They will no longer be able to authenticate or modify institutional records.`
-                : `Restoring institutional access for ${statusTarget?.fullName}. They will regain their functional permissions.`}
+                ? `Marking ${statusTarget.fullName} inactive. This blocks new teacher marks under the updated rules, but does not disable their login or revoke other access. Disable their Firebase Authentication account separately if needed.`
+                : `Marking ${statusTarget?.fullName} active. This does not create or enable a Firebase Authentication account.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 mt-6">

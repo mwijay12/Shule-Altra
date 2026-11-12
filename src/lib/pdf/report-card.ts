@@ -1,6 +1,8 @@
 /**
- * @fileOverview Termly report card, vector PDF with computed grades, division and remarks.
+ * @fileOverview Assessment report, using recorded marks without invented attendance or remarks.
  */
+
+import { getCSEEGrade } from '@/lib/necta-logic';
 
 import {
   COLORS,
@@ -41,32 +43,24 @@ export interface ReportCardInput {
   attendanceRate?: number;
 }
 
-function gradeOf(score: number) {
-  if (score >= 75) return { grade: 'A', points: 1, remark: 'Excellent' };
-  if (score >= 65) return { grade: 'B', points: 2, remark: 'Very good' };
-  if (score >= 55) return { grade: 'C', points: 3, remark: 'Good' };
-  if (score >= 45) return { grade: 'D', points: 4, remark: 'Satisfactory' };
-  if (score >= 35) return { grade: 'E', points: 5, remark: 'Needs support' };
-  return { grade: 'F', points: 6, remark: 'Critical' };
-}
-
-function divisionOf(points: number, subjects: number) {
-  const averagePoints = subjects > 0 ? points / subjects : 6;
-  if (averagePoints <= 1.6) return 'I';
-  if (averagePoints <= 2.4) return 'II';
-  if (averagePoints <= 3.2) return 'III';
-  if (averagePoints <= 4.2) return 'IV';
-  return 'FAIL';
+export function prepareReportCard(grades: GradeRow[]) {
+  if (!grades.length) throw new Error('No assessments were supplied.')
+  const seen = new Set<string>()
+  for (const row of grades) {
+    const key = row.subject?.trim().toLowerCase()
+    if (!key || seen.has(key)) throw new Error('Missing or duplicate subject; review marks before export.')
+    if (!Number.isFinite(row.score) || row.score < 0 || row.score > 100) throw new Error('Invalid score; review marks before export.')
+    seen.add(key)
+  }
+  return [...grades].sort((a, b) => b.score - a.score)
 }
 
 export async function buildReportCard(input: ReportCardInput): Promise<Uint8Array> {
   const term = input.term ?? 'Term 2';
   const year = input.academicYear ?? '2026';
-  const grades = [...input.grades].sort((a, b) => b.score - a.score);
+  const grades = prepareReportCard(input.grades);
   const total = grades.reduce((sum, grade) => sum + grade.score, 0);
   const average = grades.length > 0 ? total / grades.length : 0;
-  const points = grades.reduce((sum, grade) => sum + gradeOf(grade.score).points, 0);
-  const division = divisionOf(points, grades.length);
   const best = grades[0];
   const weakest = grades[grades.length - 1];
 
@@ -77,7 +71,7 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
     issuedBy: 'Academic office',
   });
 
-  letterhead(ctx, 'Termly report card', `${term} · Academic year ${year} · NECTA grading scale`);
+  letterhead(ctx, 'Assessment report', `${term} · Academic year ${year} · School grade scale`);
 
   sectionTitle(ctx, 'Learner particulars');
   keyValueGrid(ctx, [
@@ -86,7 +80,7 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
     { label: 'Class / stream', value: input.student.className ?? 'Unassigned' },
     { label: 'Term', value: term },
     { label: 'Subjects assessed', value: `${grades.length}` },
-    { label: 'Attendance', value: `${(input.attendanceRate ?? 96.7).toFixed(1)}%` },
+    { label: 'Attendance', value: input.attendanceRate == null ? 'Not supplied' : `${input.attendanceRate.toFixed(1)}%` },
   ]);
 
   sectionTitle(ctx, 'Academic performance');
@@ -100,7 +94,7 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
       { key: 'remark', header: 'Remark', width: 90 },
     ],
     grades.map((grade) => {
-      const detail = gradeOf(grade.score);
+      const detail = getCSEEGrade(grade.score);
       return {
         subject: grade.subject,
         score: `${grade.score.toFixed(0)}%`,
@@ -116,7 +110,7 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
   const cardWidth = (ctx.width - ctx.margin * 2 - 24) / 3;
   const summary = [
     { label: 'Average score', value: `${average.toFixed(1)}%`, color: COLORS.primary },
-    { label: 'Division', value: division, color: division === 'FAIL' ? COLORS.danger : COLORS.success },
+    { label: 'Division', value: 'Not calculated', color: COLORS.muted },
     {
       label: 'Class position',
       value: input.position ? `${input.position}${input.classSize ? ` / ${input.classSize}` : ''}` : 'Pending',
@@ -145,14 +139,8 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
 
   sectionTitle(ctx, 'Conduct & remarks');
   const remarks: Array<[string, string]> = [
-    ['Class teacher', input.teacherRemark ?? 'A committed learner who participates actively in class activities.'],
-    [
-      'Head of school',
-      input.headRemark ??
-        (average >= 65
-          ? 'Commendable performance. Keep the momentum in the coming term.'
-          : 'Performance requires closer supervision at home and in school.'),
-    ],
+    ['Class teacher', input.teacherRemark || 'Not supplied'],
+    ['Head of school', input.headRemark || 'Not supplied'],
   ];
   remarks.forEach(([role, remark]) => {
     text(ctx, role.toUpperCase(), ctx.margin, ctx.cursorY, { size: 6.8, font: ctx.bold, color: COLORS.muted });
@@ -167,11 +155,11 @@ export async function buildReportCard(input: ReportCardInput): Promise<Uint8Arra
 
   signatureRow(ctx, [
     { role: 'Class teacher', name: '________________' },
-    { role: 'Head of school', name: 'Dr. A. Mushi' },
+    { role: 'Head of school', name: '________________' },
     { role: 'Guardian', name: '________________' },
   ]);
 
-  return finalize(ctx, 'Computer-generated report card · vector PDF · valid without a rubber stamp');
+  return finalize(ctx, 'Assessment report · verify marks and school grading policy before use');
 }
 
 export async function downloadReportCard(input: ReportCardInput) {

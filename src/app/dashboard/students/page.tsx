@@ -1006,19 +1006,19 @@ export default function StudentsPage() {
                                 <Button
                                   variant="outline"
                                   className="w-full h-14 rounded-2xl border-primary/10 text-primary font-semibold text-xs hover:bg-primary/5 group"
-                                  onClick={handleDownloadReport}
-                                  disabled={isExportingReport}
+                                  disabled
+                                  title="Unavailable while report calculations are reviewed"
                                 >
                                   {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <FileText className="mr-2 h-5 w-5" />}
                                   Official Performance Transcript (DOCX)
                                 </Button>
                                 <Button
                                   className="w-full h-14 rounded-2xl colorful-gradient text-white font-semibold text-xs shadow-lg shadow-primary/20"
-                                  onClick={handleDownloadReportCardPdf}
-                                  disabled={isExportingReport}
+                                  disabled
+                                  title="Use Academics to select the exam before exporting a PDF"
                                 >
                                   {isExportingReport ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Download className="mr-2 h-5 w-5" />}
-                                  Report card · vector PDF
+                                  Report card · use Academics
                                 </Button>
                               </TabsContent>
 
