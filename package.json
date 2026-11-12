@@ -51,7 +51,7 @@
     "demo:smoke:guardian-email": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/guardian-email.ts",
     "demo:smoke:timetable-editor": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/timetable-editor.ts",
     "demo:smoke:timetable-ui": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/timetable-ui.tsx",
-    "test:rules:teaching": "tsx --tsconfig tsconfig.smoke.json scripts/rules/teaching-assignments.ts",
+    "test:rules:teaching": "tsx --tsconfig tsconfig.json scripts/rules/teaching-assignments.ts",
     "demo:smoke:teaching-assignments": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/teaching-assignments.ts",
     "demo:smoke:grade-review": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/grade-review.ts",
     "demo:smoke:assessment-report": "tsx --tsconfig tsconfig.smoke.json scripts/demo-smoke/assessment-report.ts"
