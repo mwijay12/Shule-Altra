@@ -56,6 +56,7 @@ import { ChartPanel, SubjectAverages, DivisionSpread } from "@/components/admin/
 import { SegmentedProgress } from "@/components/ui/progress"
 import { useAuth } from "@/hooks/use-auth"
 import { canTeach, saveAssessment, type TeachingAssignment } from "@/lib/academics/assignments"
+import { reviewGradeRecords } from "@/lib/academics/grade-review"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 import { WaveSection } from '@/components/motion/wave-section';
 
@@ -94,17 +95,9 @@ export default function AcademicsPage() {
   const { data: grades, isLoading: gradesLoading, error: gradesError } = useCollection<GradeRecord>(gradesQuery)
 
   const scopedGrades = useMemo(() => (grades ?? []).filter(g => g.academicYear === '2026'), [grades])
-  const hasDuplicateMarks = useMemo(() => {
-    const ids = new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id))
-    const seen = new Set<string>()
-    return scopedGrades.some(g => {
-      if (!ids.has(g.studentId)) return false
-      const key = JSON.stringify([g.studentId, g.subject])
-      if (seen.has(key)) return true
-      seen.add(key)
-      return false
-    })
-  }, [scopedGrades, students, activeClass])
+  const gradeReview = useMemo(() => reviewGradeRecords(grades ?? [], new Set((students ?? []).filter(s => s.class === activeClass).map(s => s.id)), '2026'), [grades, students, activeClass])
+  const hasDuplicateMarks = gradeReview.duplicates.length > 0 || gradeReview.missingYear.length > 0
+
 
   // Filtered Students for the Ledger
   const filteredStudents = useMemo(() => {
@@ -357,8 +350,9 @@ export default function AcademicsPage() {
   return (
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
       {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
-      {hasDuplicateMarks && <p role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive">Duplicate subject marks exist in this class and exam. Class rankings and summaries are suppressed until an administrator reviews them. Other reports may still need review.</p>}
-      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed.</p>}
+      {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
+        {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2">Compare these records with the original marks before correcting them. This list is read-only; it does not select or delete a mark.</p><ul className="mt-2 space-y-2 max-h-64 overflow-y-auto">{[...gradeReview.duplicates.flat(), ...gradeReview.missingYear].map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year: {g.academicYear || 'missing'} · record: {g.id}</li>)}</ul></details>}</section>}
+      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and report-card exports are temporarily unavailable while duplicate handling and report calculations are reviewed.</p>}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
@@ -410,7 +404,7 @@ export default function AcademicsPage() {
         </div>
       </WaveSection>
 
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      {!hasDuplicateMarks && <><div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <StatCard index={0} label="Candidates" value={filteredStudents.length} icon={Users} tone="primary" sub={`${activeClass} · ${activeTerm}`} />
         <StatCard index={1} label="Class mean" value={classAverage} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={Target} tone="accent" progress={classAverage} sub={`${classPerformance.length} subjects marked`} />
         <StatCard index={2} label="Pass rate" value={classPassRate} format={(n) => (classPerformance.length ? n.toFixed(1) : '—')} suffix={classPerformance.length ? '%' : ''} icon={ClipboardCheck} tone="emerald" progress={classPassRate} sub="Grade D or better, per subject" />
@@ -426,6 +420,7 @@ export default function AcademicsPage() {
         </ChartPanel>
       </div>
 
+      </>}
       <Tabs defaultValue="ledger" className="space-y-6">
         <TabsList className="bg-muted/40 p-1 rounded-2xl h-12 w-full sm:w-fit flex shadow-inner border border-muted/50 px-1 overflow-x-auto">
           <TabsTrigger value="ledger" className="rounded-xl font-semibold px-6 text-[12px]">Grading Ledger</TabsTrigger>
@@ -481,8 +476,8 @@ export default function AcademicsPage() {
                               <Button
                                 size="sm"
                                 className="font-semibold text-[13px] rounded-full h-8 px-4 colorful-gradient text-white shadow-md shadow-primary/20"
-                                onClick={() => handleExportReport(student)}
-                                disabled={isExporting === student.id}
+                                disabled
+                                title="Unavailable while report calculations are reviewed"
                               >
                                 {isExporting === student.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
                                 Report Card PDF
@@ -531,7 +526,7 @@ export default function AcademicsPage() {
               {rankings.length === 0 ? (
                 <div className="p-20 text-center opacity-30 flex flex-col items-center gap-4">
                   <FileText className="h-12 w-12" />
-                  <p className="text-[13px] font-semibold">No Assessment Data Detected</p>
+                  <p className="text-[13px] font-semibold">{hasDuplicateMarks ? 'Rankings unavailable until records are reviewed.' : 'No assessment data detected.'}</p>
                 </div>
               ) : (
                 <Table className="min-w-[800px]">
