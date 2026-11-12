@@ -47,6 +47,13 @@ async function main() {
     await assertFails(deleteDoc(doc(teacher, gradePath)))
     await assertSucceeds(updateDoc(doc(admin, gradePath), { score: 80 }))
     await assertSucceeds(deleteDoc(doc(admin, gradePath)))
+    const correction = `${root}/gradeCorrections/correction1`
+    const audit = { action: 'remove_duplicate', actorUid: 'admin', keptId: 'a', removedId: 'b', reason: 'Reviewed original marks' }
+    await assertFails(setDoc(doc(teacher, correction), { ...audit, actorUid: 'teacher' }))
+    await assertSucceeds(setDoc(doc(admin, correction), audit))
+    await assertFails(updateDoc(doc(admin, correction), { reason: 'changed' }))
+    await assertFails(deleteDoc(doc(admin, correction)))
+    await assertFails(getDoc(doc(teacher, correction)))
     console.log('FIRESTORE TEACHING RULES TESTS PASSED')
   } finally { await env.cleanup() }
 }

@@ -57,6 +57,7 @@ import { SegmentedProgress } from "@/components/ui/progress"
 import { useAuth } from "@/hooks/use-auth"
 import { canTeach, saveAssessment, type TeachingAssignment } from "@/lib/academics/assignments"
 import { reviewGradeRecords } from "@/lib/academics/grade-review"
+import { DuplicateGradeReview } from "@/components/staff/duplicate-grade-review"
 import { marksTemplateRows, parseMarks, type MarkParseResult } from "@/lib/academics/marks-import"
 import { WaveSection } from '@/components/motion/wave-section';
 
@@ -351,7 +352,7 @@ export default function AcademicsPage() {
     <div className="space-y-6 max-w-full mx-auto pb-20 px-1 font-body">
       {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
       {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
-        {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2">Compare these records with the original marks before correcting them. This list is read-only; it does not select or delete a mark.</p><ul className="mt-2 space-y-2 max-h-64 overflow-y-auto">{[...gradeReview.duplicates.flat(), ...gradeReview.missingYear].map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year: {g.academicYear || 'missing'} · record: {g.id}</li>)}</ul></details>}</section>}
+        {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2 mb-3">Compare records with the original marks before making changes. Missing-year records are shown for review only.</p><div className="max-h-96 overflow-y-auto space-y-3"><DuplicateGradeReview groups={gradeReview.duplicates} students={students ?? []} /><ul className="space-y-2">{gradeReview.missingYear.map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year missing · record: {g.id}</li>)}</ul></div></details>}</section>}
       {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed. PDF assessment reports do not calculate division.</p>}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

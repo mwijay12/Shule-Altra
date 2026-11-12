@@ -151,6 +151,19 @@ service cloud.firestore {
         );
         allow update, delete: if inRole(['ADMIN']);
       }
+      // Evidence of a reviewed correction is append-only for administrators.
+      match /gradeCorrections/{correctionId} {
+        allow read: if inRole(['ADMIN']);
+        allow create: if inRole(['ADMIN'])
+          && request.resource.data.action == 'remove_duplicate'
+          && request.resource.data.actorUid == request.auth.uid
+          && request.resource.data.keptId is string
+          && request.resource.data.removedId is string
+          && request.resource.data.reason is string
+          && request.resource.data.reason.size() >= 5
+          && request.resource.data.reason.size() <= 500;
+        allow update, delete: if false;
+      }
       match /attendance/{entryId} {
         allow read, write: if learning();
       }
@@ -221,7 +234,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && inRole(['ADMIN']);
       }
     }
 
