@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { doc, setDoc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore'
+import { doc, setDoc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 
 // Run ONLY against the Firestore emulator. Never point this at a real project.
 async function main() {
@@ -56,6 +56,15 @@ async function main() {
     await assertFails(updateDoc(doc(admin, correction), { reason: 'changed' }))
     await assertFails(deleteDoc(doc(admin, correction)))
     await assertFails(getDoc(doc(teacher, correction)))
+    const expensePath = `${root}/expense_entries/expense1`
+    const expense = { date: '2026-11-12', category: 'Supplies', description: 'Paper purchase', amount: 5000, payee: '', reference: '', recordedByUid: 'admin', recordedByEmail: '', createdAt: serverTimestamp() }
+    await assertFails(setDoc(doc(teacher, expensePath), { ...expense, recordedByUid: 'teacher' }))
+    await assertFails(setDoc(doc(admin, expensePath), { ...expense, amount: -1 }))
+    await assertFails(setDoc(doc(admin, expensePath), { ...expense, recordedByUid: 'other' }))
+    await assertSucceeds(setDoc(doc(admin, expensePath), expense))
+    await assertFails(updateDoc(doc(admin, expensePath), { amount: 1 }))
+    await assertFails(deleteDoc(doc(admin, expensePath)))
+    await assertFails(getDoc(doc(teacher, expensePath)))
     console.log('FIRESTORE TEACHING RULES TESTS PASSED')
   } finally { await env.cleanup() }
 }

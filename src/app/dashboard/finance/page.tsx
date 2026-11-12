@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils"
 import { exportToExcel } from "@/lib/export-utils"
 import { processPaymentTransaction, formatTZS, formatTZSCompact } from "@/lib/finance-engine"
 import { useInstitutionalReconciliation } from "@/hooks/use-finance"
-import { usePettyCash } from "@/hooks/use-petty-cash"
+import { ExpenseRegister } from "@/components/finance/expense-register"
 import { useFirestore, useUser, useCollection, useMemoFirebase } from "@/firebase"
 import { collection, query, orderBy, doc, Timestamp } from "firebase/firestore"
 import { Progress } from "@/components/ui/progress"
@@ -66,7 +66,6 @@ export default function FinancePage() {
   const db = useFirestore()
   const { user } = useUser()
   const { collected, outstanding, target, collectionRate, isLoading, transactions, pending, disputed, weeklyTotal } = useInstitutionalReconciliation()
-  const { expenses, addExpense, updateStatus, stats, isLoading: pettyLoading } = usePettyCash()
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [activeTab, setActiveTab] = useState("forensic-ledger")
@@ -192,9 +191,11 @@ export default function FinancePage() {
           <TabsTrigger value="reconciliation" className="rounded-xl font-semibold px-8 text-[12px]">Global Balances</TabsTrigger>
           <TabsTrigger value="forensic-ledger" className="rounded-xl font-semibold px-8 text-[12px]">Payment Ledger</TabsTrigger>
           <TabsTrigger value="control-number" className="rounded-xl font-semibold px-8 text-[12px]">Payment references</TabsTrigger>
+          <TabsTrigger value="expenses" className="rounded-xl font-semibold px-8 text-[12px]">Expenses</TabsTrigger>
           <TabsTrigger value="record-payment" className="rounded-xl font-semibold px-8 text-[12px]">Record Payment</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="expenses"><ExpenseRegister /></TabsContent>
         <TabsContent value="reconciliation" className="space-y-6">
           <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-card/60">
             <CardHeader className="bg-muted/30 p-6 sm:p-10 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">

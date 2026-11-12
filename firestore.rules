@@ -180,6 +180,23 @@ service cloud.firestore {
       match /transactions/{transactionId} {
         allow read, write: if money();
       }
+      // Paid expenses are a separate append-only register, not fee transactions
+      // or the older petty-cash approval requests.
+      match /expense_entries/{entryId} {
+        allow read: if money();
+        allow create: if money()
+          && request.resource.data.keys().hasOnly(['date', 'category', 'description', 'amount', 'payee', 'reference', 'recordedByUid', 'recordedByEmail', 'createdAt'])
+          && request.resource.data.recordedByUid == request.auth.uid
+          && request.resource.data.date is string && request.resource.data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.category in ['Supplies', 'Food', 'Transport', 'Utilities', 'Maintenance', 'Salaries', 'Other']
+          && request.resource.data.description is string && request.resource.data.description.size() >= 3 && request.resource.data.description.size() <= 300
+          && request.resource.data.amount is int && request.resource.data.amount > 0 && request.resource.data.amount <= 1000000000000
+          && request.resource.data.payee is string && request.resource.data.payee.size() <= 120
+          && request.resource.data.reference is string && request.resource.data.reference.size() <= 120
+          && request.resource.data.recordedByEmail is string && request.resource.data.recordedByEmail.size() <= 320
+          && request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
       match /petty_cash/{entryId} {
         allow read, write: if money();
       }
@@ -234,7 +251,7 @@ service cloud.firestore {
 
       // ── anything else in a school is administrator-only ──────────────────
       match /{collection}/{docId} {
-        allow read, write: if collection != 'gradeCorrections' && inRole(['ADMIN']);
+        allow read, write: if collection != 'gradeCorrections' && collection != 'expense_entries' && inRole(['ADMIN']);
       }
     }
 
