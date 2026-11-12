@@ -27,6 +27,8 @@ jobs:
         run: npm run demo:smoke:attendance-filters
       - name: Student details interaction
         run: npm run demo:smoke:student-details
+      - name: Assessment report safeguards
+        run: npm run demo:smoke:assessment-report
       - name: Review duplicate grades
         run: npm run demo:smoke:grade-review
       - name: Timetable editing and clash checks
@@ -91,4 +93,12 @@ jobs:
       - name: Teaching assignment validation
         run: npm run demo:smoke:teaching-assignments
       - name: Firestore emulator security tests
-        run: npx --yes firebase-tools@13.35.1 emulators:exec --project demo-shule-rules --only firestore "npm run test:rules:teaching"
+        shell: bash
+        run: |
+          set +e
+          npx --yes firebase-tools@13.35.1 emulators:exec --project demo-shule-rules --only firestore "npm run test:rules:teaching" 2>&1 | tee /tmp/firestore-test.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            python3 -c "from pathlib import Path; s=Path('/tmp/firestore-test.log').read_text(errors='replace')[-6000:]; print('::error title=Firestore emulator test failed::'+s.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))"
+          fi
+          exit "$status"

@@ -220,11 +220,11 @@ export default function AcademicsPage() {
         grades: Array.from(bySubject.entries()).map(([subject, score]) => ({ subject, score })),
         term: `${activeTerm} · ${activeExam}`,
         academicYear: "2026",
-        teacherRemark: `Conduct grade: ${student.conductPoints ?? 100} points.`,
+
       })
       toast({
         title: "Report card PDF ready",
-        description: `${student.name} · letterhead, crest and NECTA grading.`,
+        description: `${student.name} · selected exam only. Division is not calculated.`,
       })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Export Failed", description: err.message || "No assessment data found." })
@@ -352,7 +352,7 @@ export default function AcademicsPage() {
       {isTeacher && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">You can add marks only for subjects assigned to your class. Ask an administrator to assign your account. Bulk import is temporarily unavailable.</p>}
       {hasDuplicateMarks && <section role="alert" className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive space-y-3"><p>Duplicate marks or marks without an academic year need review for {activeClass}, {activeTerm}, {activeExam}. Class rankings and summaries are suppressed. Other reports may still need review.</p>
         {isAdmin && <details><summary className="cursor-pointer font-semibold">View records to review ({gradeReview.duplicates.length} duplicate groups, {gradeReview.missingYear.length} missing year)</summary><p className="mt-2">Compare these records with the original marks before correcting them. This list is read-only; it does not select or delete a mark.</p><ul className="mt-2 space-y-2 max-h-64 overflow-y-auto">{[...gradeReview.duplicates.flat(), ...gradeReview.missingYear].map(g => <li key={g.id} className="break-all rounded border border-destructive/20 p-2">{students?.find(s => s.id === g.studentId)?.name ?? g.studentId} · {g.subject} · {g.score} · year: {g.academicYear || 'missing'} · record: {g.id}</li>)}</ul></details>}</section>}
-      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and report-card exports are temporarily unavailable while duplicate handling and report calculations are reviewed.</p>}
+      {isAdmin && <p className="rounded-xl bg-muted/40 p-4 text-sm text-muted-foreground">Marks import and Word reports are temporarily unavailable while duplicate handling is reviewed. PDF assessment reports do not calculate division.</p>}
       {/* HEADER Node */}
       <WaveSection as="div" className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
@@ -476,8 +476,9 @@ export default function AcademicsPage() {
                               <Button
                                 size="sm"
                                 className="font-semibold text-[13px] rounded-full h-8 px-4 colorful-gradient text-white shadow-md shadow-primary/20"
-                                disabled
-                                title="Unavailable while report calculations are reviewed"
+                                onClick={() => handleExportReport(student)}
+                                disabled={isExporting === student.id || gradesLoading || !!gradesError}
+                                title="Selected exam and year; division not calculated"
                               >
                                 {isExporting === student.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3 mr-1" />}
                                 Report Card PDF
