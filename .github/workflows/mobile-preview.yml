@@ -51,7 +51,12 @@ jobs:
             exit 1
           fi
       - name: Build debug APK (prototype only)
-        run: flutter build apk --debug
+        run: |
+          if ! flutter build apk --debug > "$RUNNER_TEMP/flutter-build.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-build.log"
+            python3 -c 'import os; p=os.path.join(os.environ["RUNNER_TEMP"], "flutter-build.log"); s=open(p).read(); s=s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"); print("::error::" + s[-25000:])'
+            exit 1
+          fi
       - name: Upload debug prototype
         uses: actions/upload-artifact@v4
         with:
