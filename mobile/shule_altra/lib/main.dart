@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'sample_day.dart';
+import 'live_school.dart';
 
 void main() => runApp(const ShuleMobileApp());
 
@@ -26,7 +27,7 @@ class ShuleMobileApp extends StatelessWidget {
       );
 }
 
-/// A self-contained design prototype: no authentication, persistence or sync.
+/// Onboarding and explicitly labelled sample preview; the live path is separate.
 class Prototype extends StatefulWidget {
   const Prototype({super.key});
   @override
@@ -90,9 +91,10 @@ class _PrototypeState extends State<Prototype> {
             const SizedBox(height: 25),
             Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffccd8ca), borderRadius: BorderRadius.circular(8))))),
             const SizedBox(height: 25),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { entered = true; } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Explore the prototype' : 'Continue'))),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
+            if (step == pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => entered = true), child: const Text('Explore sample preview instead'))),
             const SizedBox(height: 12),
-            const Center(child: Text('DESIGN PREVIEW  ·  NO REAL DATA', style: TextStyle(fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w700, color: muted))),
+            const Center(child: Text('EARLY ACCESS  ·  READ-ONLY PILOT', style: TextStyle(fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w700, color: muted))),
           ]),
         )),
       ))),

@@ -10,8 +10,8 @@ void main() {
     await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Continue'));
     await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Explore the prototype'));
-    await tester.tap(find.text('Explore the prototype')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Explore sample preview instead'));
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
     expect(find.text('for what matters.'), findsOneWidget);
     await tester.ensureVisible(find.text('Explore learners  →'));
     await tester.tap(find.text('Explore learners  →')); await tester.pumpAndSettle();

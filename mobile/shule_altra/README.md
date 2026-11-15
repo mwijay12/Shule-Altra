@@ -1,6 +1,6 @@
 # Shule Altra mobile · prototype 01
 
-A Flutter **design prototype**, not a production school app or APK. It contains a three-step onboarding flow, a sample home screen, searchable fictional learner list, sample detail, in-memory sample attendance practice and a transparent status screen. Practice marks are never stored or sent and disappear when the session ends. It does not authenticate, connect to Firebase, persist data, collect payments or synchronise offline. Onboarding resets when the app restarts. Do not enter real learner information.
+A Flutter **early pilot**, not a production school app. It has an experimental online, read-only Firebase connection path (configuration required), and a separately labelled sample preview with fictional learners and attendance practice. Practice marks are never stored or sent. No payments, offline data or synchronisation are implemented. Onboarding resets when the app restarts. Do not enter real learner data into the sample preview.
 
 ## Review the direction
 
@@ -30,10 +30,27 @@ flutter run
 flutter build apk --debug
 ```
 
-`flutter create` generates Android scaffolding in the temporary folder; only copy it into this project if `android/` does not already exist. check that it has not replaced prototype files, and set a deliberate, unique application ID and signing strategy before any release. Do not commit keystores, service-account credentials or release secrets. A release APK needs a separately reviewed configuration and signing process.
+`flutter create` generates Android scaffolding in the temporary folder; only copy it into this project if `android/` does not already exist. Check that it has not replaced prototype files, and set a deliberate, unique application ID and signing strategy before any release. Do not commit keystores, service-account credentials or release secrets. A release APK needs a separately reviewed configuration and signing process.
 
 A GitHub Actions workflow at `.github/workflows/mobile-preview.yml` can generate a temporary Android scaffold, analyze and test the app, and upload a **debug-only prototype** APK if it succeeds. It runs after the branch is pushed; a workflow file alone is not evidence of a successful build.
 
 Flutter and Android SDK were unavailable in the authoring environment, so the Dart code, widget test and build commands above have **not** been executed here. Treat this as a starting point requiring validation on a real device, including small screens, larger text, screen readers and reduced motion.
 
 See [mobile delivery plan](../../docs/mobile-apk-plan.md) and [creative web reference library](../../docs/creative-web-references.md).
+
+## Early Firebase read-only pilot
+
+The app now includes an **experimental online connection path**, in addition to the explicitly labelled sample preview. It does not assume the web Firebase config applies to Android. Register/confirm the Android app with the intended existing Firebase project and package name, configure Google sign-in and the signing key SHA fingerprints, then build with public Firebase Android client values as Dart defines:
+
+```bash
+flutter run \
+  --dart-define=FIREBASE_PROJECT_ID=YOUR_PROJECT_ID \
+  --dart-define=FIREBASE_EXPECTED_PROJECT_ID=YOUR_PROJECT_ID \
+  --dart-define=FIREBASE_ANDROID_APP_ID=YOUR_ANDROID_APP_ID \
+  --dart-define=FIREBASE_MESSAGING_SENDER_ID=YOUR_SENDER_ID \
+  --dart-define=FIREBASE_API_KEY=YOUR_ANDROID_API_KEY
+```
+
+These are client identifiers, not service-account credentials. Never put secrets or passwords in Dart defines. The two project ID values must match; this catches accidental inconsistent configuration, but does not prove that the selected project is the right school. Verify the project and registered Android app independently before using real data. This repository's `.firebaserc` project and web fallback differ. The temporary CI scaffold uses `com.shulealtra.shule_altra_mobile`; decide the final package ID and register it before relying on Google sign-in. Debug signing keys on hosted CI runners are ephemeral and will not automatically match your Android OAuth fingerprint; use a controlled debug signing key locally for integration testing and never commit it. A debug build without defines deliberately displays configuration required.
+
+The pilot uses Google Firebase Auth and requests a fresh identity token and a Firestore **server-only** read from `schools/school-001/students`, ordered by name and limited to 200. It displays only names/classes but the Firestore client retrieves the whole student documents; existing rules decide access. Documents without `name` are excluded by the order query. Search is only within those 200. Firestore persistent cache is disabled in this pilot; authentication state may persist on the device until sign-out. Account revocation and local session security require real-device verification. No writes, offline access or background sync are implemented. Do not use real learner information on shared or untrusted phones. Google sign-in and live Firebase have not yet been verified here.
