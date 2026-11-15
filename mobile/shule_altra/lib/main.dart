@@ -111,7 +111,7 @@ class _PrototypeState extends State<Prototype> {
       const SizedBox(height: 19),
       const Text('Everything in\none place.', style: TextStyle(color: Colors.white, fontSize: 27, height: 1.08, fontWeight: FontWeight.w700, letterSpacing: -.8)),
       const SizedBox(height: 10),
-      Text('A thoughtful starting point for your team.', style: TextStyle(color: Colors.white.withOpacity(.7), height: 1.45)),
+      Text('A thoughtful starting point for your team.', style: TextStyle(color: Colors.white.withValues(alpha: .7), height: 1.45)),
       const SizedBox(height: 18),
       FilledButton.tonal(onPressed: () => setState(() => tab = 1), style: FilledButton.styleFrom(backgroundColor: lime, foregroundColor: ink), child: const Text('Explore learners  →')),
     ])),
