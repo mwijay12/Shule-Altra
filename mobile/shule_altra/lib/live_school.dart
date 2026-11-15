@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-import 'main.dart' show ink, muted, Brand, Notice;
+import 'main.dart' show muted, Brand, Notice;
 
 /// Firebase Android client configuration is deliberately supplied at build time.
 /// There is no implicit fallback to a different school or Firebase project.
