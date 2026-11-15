@@ -82,6 +82,11 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
   });
 }
 
+class _LearnerResult {
+  final List<LiveLearner>? rows;
+  const _LearnerResult(this.rows);
+}
+
 class LiveSchoolPage extends StatefulWidget {
   final SchoolGateway gateway;
   const LiveSchoolPage({super.key, required this.gateway});
@@ -90,11 +95,15 @@ class LiveSchoolPage extends StatefulWidget {
 class _LiveSchoolPageState extends State<LiveSchoolPage> {
   late final Stream<String?> session = widget.gateway.sessionUid;
   String? lastUid;
-  Future<List<LiveLearner>>? learners;
+  Future<_LearnerResult>? learners;
   bool busy = false;
   String? message;
   String query = '';
-  void refresh() => setState(() { message = null; learners = widget.gateway.loadLearners(); });
+  Future<_LearnerResult> _loadSafely() async {
+    try { return _LearnerResult(await widget.gateway.loadLearners()); }
+    catch (_) { return const _LearnerResult(null); }
+  }
+  void refresh() => setState(() { message = null; learners = _loadSafely(); });
   Future<void> signIn() async {
     setState(() { busy = true; message = null; });
     try { await widget.gateway.signInWithGoogle(); }
@@ -130,10 +139,10 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         const SizedBox(height: 14),
         Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh), label: const Text('Load learners')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
-        if (learners != null) FutureBuilder<List<LiveLearner>>(future: learners, builder: (context, data) {
+        if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-          if (data.hasError) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
-          final rows = (data.data ?? []).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
+          if (data.hasError || data.data?.rows == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
+          final rows = (data.data!.rows!).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SizedBox(height: 18), TextField(onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
             const SizedBox(height: 14), Text('${rows.length} shown', style: const TextStyle(color: muted)),
