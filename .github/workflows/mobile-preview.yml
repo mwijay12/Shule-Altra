@@ -1,0 +1,51 @@
+name: Mobile prototype
+
+on:
+  pull_request:
+    paths: ['mobile/shule_altra/**', '.github/workflows/mobile-preview.yml']
+  push:
+    paths: ['mobile/shule_altra/**', '.github/workflows/mobile-preview.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: mobile/shule_altra
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+      # Generate into a temporary directory first so Flutter cannot overwrite
+      # our authored Dart, pubspec, README or test files.
+      - name: Generate temporary Android scaffold
+        run: |
+          flutter create --platforms android --project-name shule_altra_mobile --org com.shulealtra "$RUNNER_TEMP/shule_mobile"
+          cp -R "$RUNNER_TEMP/shule_mobile/android" ./android
+      - name: Resolve packages
+        run: flutter pub get
+      - name: Analyze
+        run: flutter analyze
+      - name: Test
+        run: flutter test
+      - name: Build debug APK (prototype only)
+        run: flutter build apk --debug
+      - name: Upload debug prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: shule-altra-prototype-debug-apk
+          path: mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
