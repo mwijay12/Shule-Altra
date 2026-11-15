@@ -8,3 +8,6 @@ build/
 android/
 ios/
 *.iml
+
+# Python byte-code from the tool tests.
+__pycache__/
