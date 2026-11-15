@@ -20,7 +20,7 @@ void main() {
     expect(find.text('Baraka John'), findsNothing);
     await tester.tap(find.text('Amina Juma')); await tester.pumpAndSettle();
     expect(find.textContaining('fictional sample data'), findsOneWidget);
-    await tester.pageBack(); await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute(); await tester.pumpAndSettle();
     await tester.tap(find.text('Day')); await tester.pumpAndSettle();
     expect(find.text('Practice only · not saved'), findsOneWidget);
     final present = find.widgetWithText(ChoiceChip, 'Present').first;
