@@ -47,7 +47,7 @@ jobs:
         run: |
           if ! flutter test --no-pub > "$RUNNER_TEMP/flutter-test.log" 2>&1; then
             cat "$RUNNER_TEMP/flutter-test.log"
-            tail -40 "$RUNNER_TEMP/flutter-test.log" | while IFS= read -r line; do echo "::error::$line"; done
+            python3 -c 'import os; p=os.path.join(os.environ["RUNNER_TEMP"], "flutter-test.log"); s=open(p).read(); s=s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"); print("::error::" + s[-25000:])' 
             exit 1
           fi
       - name: Build debug APK (prototype only)
