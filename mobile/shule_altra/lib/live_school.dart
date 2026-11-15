@@ -26,12 +26,18 @@ class LiveLearner {
   const LiveLearner(this.name, this.className);
 }
 
+class LearnerPage {
+  final List<LiveLearner> rows;
+  final Object? nextCursor;
+  const LearnerPage(this.rows, this.nextCursor);
+}
+
 /// Abstracted for widget tests. Authorization remains in Firebase rules.
 abstract class SchoolGateway {
   Stream<String?> get sessionUid;
   Future<void> signInWithGoogle();
   Future<void> signOut();
-  Future<List<LiveLearner>> loadLearners();
+  Future<LearnerPage> loadLearners({Object? after});
 }
 
 class FirebaseSchoolGateway implements SchoolGateway {
@@ -41,7 +47,7 @@ class FirebaseSchoolGateway implements SchoolGateway {
   @override Stream<String?> get sessionUid => auth.authStateChanges().map((user) => user?.uid);
   @override Future<void> signInWithGoogle() async { await auth.signInWithProvider(GoogleAuthProvider()); }
   @override Future<void> signOut() => auth.signOut();
-  @override Future<List<LiveLearner>> loadLearners() async {
+  @override Future<LearnerPage> loadLearners({Object? after}) async {
     // Force a fresh identity and server read. No offline data is shown in this
     // pilot; rules, not a UI role, authorize the collection query.
     final user = auth.currentUser;
@@ -49,12 +55,20 @@ class FirebaseSchoolGateway implements SchoolGateway {
     await user.reload();
     if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
     await user.getIdToken(true);
-    final result = await firestore.collection('schools').doc('school-001').collection('students').orderBy('name').limit(200).get(const GetOptions(source: Source.server));
+    Query<Map<String, dynamic>> query = firestore.collection('schools').doc('school-001').collection('students').orderBy('name');
+    if (after != null) {
+      if (after is! DocumentSnapshot<Map<String, dynamic>>) throw StateError('Invalid page cursor.');
+      query = query.startAfterDocument(after);
+    }
+    // Fetch one extra document to tell whether another page exists.
+    final result = await query.limit(41).get(const GetOptions(source: Source.server));
     if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
-    return result.docs.map((doc) {
+    final visible = result.docs.take(40).toList();
+    final rows = visible.map((doc) {
       final data = doc.data();
       return LiveLearner(data['name'] is String ? data['name'] as String : 'Unnamed learner', data['class'] is String ? data['class'] as String : 'Class not set');
     }).toList();
+    return LearnerPage(rows, result.docs.length > 40 ? visible.last : null);
   }
 }
 
@@ -83,8 +97,8 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
 }
 
 class _LearnerResult {
-  final List<LiveLearner>? rows;
-  const _LearnerResult(this.rows);
+  final LearnerPage? page;
+  const _LearnerResult(this.page);
 }
 
 class LiveSchoolPage extends StatefulWidget {
@@ -99,11 +113,16 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   bool busy = false;
   String? message;
   String query = '';
-  Future<_LearnerResult> _loadSafely() async {
-    try { return _LearnerResult(await widget.gateway.loadLearners()); }
+  int searchVersion = 0;
+  Object? currentCursor;
+  final List<Object?> previousCursors = [];
+  Future<_LearnerResult> _loadSafely(Object? after) async {
+    try { return _LearnerResult(await widget.gateway.loadLearners(after: after)); }
     catch (_) { return const _LearnerResult(null); }
   }
-  void refresh() => setState(() { message = null; learners = _loadSafely(); });
+  void refresh() => setState(() { message = null; previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
+  void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; searchVersion++; learners = _loadSafely(cursor); });
+  void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
   Future<void> signIn() async {
     setState(() { busy = true; message = null; });
     try { await widget.gateway.signInWithGoogle(); }
@@ -111,7 +130,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
-    setState(() { busy = true; learners = null; query = ''; message = null; });
+    setState(() { busy = true; learners = null; query = ''; searchVersion++; currentCursor = null; previousCursors.clear(); message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
@@ -121,7 +140,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
       if (snapshot.hasError) return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.'));
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-      if (lastUid != snapshot.data) { learners = null; query = ''; lastUid = snapshot.data; }
+      if (lastUid != snapshot.data) { learners = null; query = ''; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -133,21 +152,25 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
       ]);
       return ListView(padding: const EdgeInsets.all(24), children: [
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 7), const Text('Online · read-only · first 200 ordered by name', style: TextStyle(color: muted)),
+        const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
         const SizedBox(height: 18),
-        const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. Search applies to the loaded 200 records, not the whole school.'),
+        const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. Search applies only to this page. Results can change between reads.'),
         const SizedBox(height: 14),
         Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh), label: const Text('Load learners')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-          if (data.hasError || data.data?.rows == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
-          final rows = (data.data!.rows!).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
+          if (data.hasError || data.data?.page == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
+          final rows = (data.data!.page!.rows).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SizedBox(height: 18), TextField(onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
+            const SizedBox(height: 18), TextField(key: ValueKey(searchVersion), onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
             const SizedBox(height: 14), Text('${rows.length} shown', style: const TextStyle(color: muted)),
             if (rows.isEmpty) const Padding(padding: EdgeInsets.only(top: 14), child: Text('No matching learners in this page.')),
             ...rows.map((row) => Card(child: ListTile(title: Text(row.name), subtitle: Text(row.className)))),
+            Wrap(spacing: 8, children: [
+              OutlinedButton(onPressed: previousCursors.isEmpty ? null : previousPage, child: const Text('Previous page')),
+              FilledButton(onPressed: data.data!.page!.nextCursor == null ? null : () => nextPage(data.data!.page!.nextCursor!), child: const Text('Next page')),
+            ]),
           ]);
         }),
       ]);

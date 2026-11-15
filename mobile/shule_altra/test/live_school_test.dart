@@ -9,9 +9,9 @@ class FakeSchoolGateway implements SchoolGateway {
   @override Stream<String?> get sessionUid => controller.stream;
   @override Future<void> signInWithGoogle() async { controller.add('staff-1'); }
   @override Future<void> signOut() async { controller.add(null); }
-  @override Future<List<LiveLearner>> loadLearners() async {
+  @override Future<LearnerPage> loadLearners({Object? after}) async {
     if (fail) throw StateError('offline');
-    return [const LiveLearner('Example Learner', 'Form 1')];
+    return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
 }
 
@@ -31,10 +31,14 @@ void main() {
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
     await tester.tap(find.text('Load learners')); await tester.pumpAndSettle();
     expect(find.text('Example Learner'), findsOneWidget);
+    await tester.ensureVisible(find.text('Next page')); await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
+    expect(find.text('Second Learner'), findsOneWidget);
+    await tester.ensureVisible(find.text('Previous page')); await tester.tap(find.text('Previous page')); await tester.pumpAndSettle();
+    expect(find.text('Example Learner'), findsOneWidget);
     fake.controller.add('staff-2'); await tester.pumpAndSettle();
     expect(find.text('Example Learner'), findsNothing);
     fake.fail = true;
-    await tester.tap(find.text('Load learners')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Load learners')); await tester.tap(find.text('Load learners')); await tester.pumpAndSettle();
     expect(find.text('Could not load learners'), findsOneWidget);
     await tester.tap(find.text('Sign out')); await tester.pumpAndSettle();
     expect(find.text('Continue with Google'), findsOneWidget);
