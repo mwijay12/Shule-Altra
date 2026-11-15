@@ -63,3 +63,7 @@ mobile/shule_altra/.flutter-plugins*
 mobile/shule_altra/build/
 mobile/shule_altra/android/local.properties
 mobile/shule_altra/android/.gradle/
+
+# Python test cache
+__pycache__/
+*.py[cod]
