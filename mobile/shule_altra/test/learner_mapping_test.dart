@@ -38,7 +38,7 @@ void main() {
       expect(learner.name, 'Unnamed learner');
       expect(learner.className, 'Class not recorded');
       expect(learner.status, 'Status not recorded');
-      expect(learner.initials, 'U');
+      expect(learner.initials, '?');
       // Nothing is claimed about fees that were not stored.
       expect(formatTzs(learner.balance), 'No fee figures recorded');
     });

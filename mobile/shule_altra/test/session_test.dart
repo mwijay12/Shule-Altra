@@ -30,7 +30,9 @@ void main() {
     expect(session.rows.length, 1);
     expect(session.canGoForward, isFalse);
     expect(session.canGoBack, isTrue);
+    expect(session.rows.first.name, 'Neema Peter');
 
+    // Back to the first page. This is a fresh read, so it costs a load.
     await session.loadPreviousPage();
     expect(session.rows.first.name, 'Amina Juma');
     await gateway.close();

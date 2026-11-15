@@ -72,12 +72,14 @@ jobs:
 
       - name: Test
         run: |
-          if ! flutter test --no-pub --reporter expanded > "$RUNNER_TEMP/flutter-test.log" 2>&1; then
-            cat "$RUNNER_TEMP/flutter-test.log"
-            python3 -c 'import os; p=os.path.join(os.environ["RUNNER_TEMP"], "flutter-test.log"); s=open(p).read(); s=s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"); print("::error::" + s[-25000:])'
+          set +e
+          flutter test --no-pub --reporter expanded > "$RUNNER_TEMP/flutter-test.log" 2>&1
+          status=$?
+          tail -n 30 "$RUNNER_TEMP/flutter-test.log"
+          if [ "$status" -ne 0 ]; then
+            RUNNER_TEMP="$RUNNER_TEMP" python3 tool/report_test_failure.py
             exit 1
           fi
-          tail -n 20 "$RUNNER_TEMP/flutter-test.log"
 
       - name: Build debug APK (prototype only)
         run: |

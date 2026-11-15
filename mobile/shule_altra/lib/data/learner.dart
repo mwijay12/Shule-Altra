@@ -57,7 +57,7 @@ class Learner {
     final className = text('class');
     return Learner(
       id: id,
-      name: rawName.isEmpty ? 'Unnamed learner' : rawName,
+      name: rawName.isEmpty ? missingName : rawName,
       className: className.isEmpty ? 'Class not recorded' : className,
       status: text('status').isEmpty ? 'Status not recorded' : text('status'),
       guardianName: text('guardianName'),
@@ -75,12 +75,18 @@ class Learner {
   }
 
   /// Initials for the avatar, without inventing a surname that is not there.
+  ///
+  /// A record with no name gets a question mark, not the initials of the words
+  /// this app uses to say the name is missing.
   String get initials {
     final parts = name.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
+    if (parts.isEmpty || name == missingName) return '?';
     if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
     return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
   }
+
+  /// The words shown when a stored record has no name.
+  static const String missingName = 'Unnamed learner';
 
   /// True when the row matches a search query across name and class only.
   bool matches(String query) {
