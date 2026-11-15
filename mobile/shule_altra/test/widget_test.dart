@@ -12,7 +12,7 @@ void main() {
     await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Explore the prototype'));
     await tester.tap(find.text('Explore the prototype')); await tester.pumpAndSettle();
-    expect(find.text('Prototype mode'), findsOneWidget);
+    expect(find.text('for what matters.'), findsOneWidget);
     await tester.ensureVisible(find.text('Explore learners  →'));
     await tester.tap(find.text('Explore learners  →')); await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Amina'); await tester.pumpAndSettle();
