@@ -22,6 +22,7 @@ Requires a recent stable Flutter SDK with Dart 3.3 or newer, Android SDK / Andro
 TMP_PROJECT="$(mktemp -d)"
 flutter create --platforms=android --project-name shule_altra_mobile --org com.shulealtra "$TMP_PROJECT/shule_mobile"
 test ! -e android && cp -R "$TMP_PROJECT/shule_mobile/android" ./android
+python3 tool/configure_android.py
 flutter pub get
 flutter analyze
 flutter test
@@ -30,7 +31,7 @@ flutter run
 flutter build apk --debug
 ```
 
-`flutter create` generates Android scaffolding in the temporary folder; only copy it into this project if `android/` does not already exist. Check that it has not replaced prototype files, and set a deliberate, unique application ID and signing strategy before any release. Do not commit keystores, service-account credentials or release secrets. A release APK needs a separately reviewed configuration and signing process.
+`flutter create` generates Android scaffolding in the temporary folder; only copy it into this project if `android/` does not already exist. The configuration script sets minimum Android API 23, NDK 27, internet access and disables Android application backup for the generated scaffold; review its changes. Set a deliberate, unique application ID and signing strategy before any release. Do not commit keystores, service-account credentials or release secrets. A release APK needs a separately reviewed configuration and signing process.
 
 A GitHub Actions workflow at `.github/workflows/mobile-preview.yml` can generate a temporary Android scaffold, analyze and test the app, and upload a **debug-only prototype** APK if it succeeds. It runs after the branch is pushed; a workflow file alone is not evidence of a successful build.
 

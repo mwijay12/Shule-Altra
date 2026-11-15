@@ -34,6 +34,8 @@ jobs:
         run: |
           flutter create --platforms android --project-name shule_altra_mobile --org com.shulealtra "$RUNNER_TEMP/shule_mobile"
           cp -R "$RUNNER_TEMP/shule_mobile/android" ./android
+          python3 -m unittest discover -s tool -p "test_*.py"
+          python3 tool/configure_android.py
       - name: Resolve packages
         run: flutter pub get
       - name: Analyze
