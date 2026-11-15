@@ -12,6 +12,7 @@ import '../data/school_gateway.dart';
 import '../design/motion.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
+import '../design/widgets.dart';
 import '../screens/home.dart';
 import '../screens/learner_detail.dart';
 import '../screens/more.dart';

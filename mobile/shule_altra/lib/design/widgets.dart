@@ -5,8 +5,6 @@
 /// themes and stops moving when the OS asks it to.
 library;
 
-import 'dart:ui' show FontFeature;
-
 import 'package:flutter/material.dart';
 
 import 'doodles.dart';

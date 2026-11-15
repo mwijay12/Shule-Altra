@@ -142,7 +142,6 @@ class HomeScreen extends StatelessWidget {
 
 class _Metrics extends StatelessWidget {
   const _Metrics({
-    super.key,
     required this.rows,
     required this.classes,
     required this.withFees,

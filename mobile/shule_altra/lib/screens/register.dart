@@ -176,7 +176,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Text(
         _query.isEmpty
             ? '${countLabel(session.rows.length)} on this page'
-            : '${shown.length} of ${countLabel(session.rows.length)} match "${_query}"',
+            : '${shown.length} of ${countLabel(session.rows.length)} match "$_query"',
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: Space.lg),
@@ -241,7 +241,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 }
 
 class _SignedOut extends StatelessWidget {
-  const _SignedOut({super.key, required this.session, required this.onSignIn});
+  const _SignedOut({required this.session, required this.onSignIn});
 
   final AppSession session;
   final VoidCallback onSignIn;
@@ -303,7 +303,7 @@ class _SignedOut extends StatelessWidget {
 }
 
 class _LearnerRow extends StatelessWidget {
-  const _LearnerRow({super.key, required this.learner, required this.onTap});
+  const _LearnerRow({required this.learner, required this.onTap});
 
   final Learner learner;
   final VoidCallback onTap;
@@ -362,7 +362,7 @@ class _LearnerRow extends StatelessWidget {
 }
 
 class _Busy extends StatelessWidget {
-  const _Busy({super.key, required this.label});
+  const _Busy({required this.label});
 
   final String label;
 
