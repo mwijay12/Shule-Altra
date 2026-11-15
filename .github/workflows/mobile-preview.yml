@@ -1,0 +1,96 @@
+name: Mobile pilot
+
+# What this workflow is: the only place the Flutter app is actually compiled.
+# The authoring environment had no Flutter or Android SDK, so nothing here is a
+# claim — each step either passes or fails in this run.
+#
+# Gates, in order:
+#   1. analyze  — any warning is a failure (`analysis_options.yaml` promotes the
+#                 lint set that would otherwise ship a broken screen).
+#   2. test     — contrast, mapping, session and widget tests.
+#   3. build    — a debug APK, unsigned and not for release.
+
+on:
+  pull_request:
+    paths:
+      - 'mobile/shule_altra/**'
+      - '.github/workflows/mobile-preview.yml'
+  push:
+    paths:
+      - 'mobile/shule_altra/**'
+      - '.github/workflows/mobile-preview.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-pilot-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: mobile/shule_altra
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.29.3'
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      # Generate the platform project into a temporary directory first, so
+      # Flutter cannot overwrite the Dart, tests, README or pubspec authored here.
+      - name: Generate temporary Android scaffold
+        run: |
+          flutter create --platforms android --project-name shule_altra_mobile --org com.shulealtra "$RUNNER_TEMP/shule_mobile"
+          cp -R "$RUNNER_TEMP/shule_mobile/android" ./android
+          python3 -m unittest discover -s tool -p "test_*.py"
+          python3 tool/configure_android.py
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Analyze
+        run: |
+          if ! flutter analyze --no-pub > "$RUNNER_TEMP/flutter-analyze.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-analyze.log"
+            while IFS= read -r line; do echo "::error::$line"; done < "$RUNNER_TEMP/flutter-analyze.log"
+            exit 1
+          fi
+
+      - name: Test
+        run: |
+          if ! flutter test --no-pub --reporter expanded > "$RUNNER_TEMP/flutter-test.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-test.log"
+            python3 -c 'import os; p=os.path.join(os.environ["RUNNER_TEMP"], "flutter-test.log"); s=open(p).read(); s=s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"); print("::error::" + s[-25000:])'
+            exit 1
+          fi
+          tail -n 20 "$RUNNER_TEMP/flutter-test.log"
+
+      - name: Build debug APK (prototype only)
+        run: |
+          if ! flutter build apk --debug > "$RUNNER_TEMP/flutter-build.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-build.log"
+            python3 -c 'import os; p=os.path.join(os.environ["RUNNER_TEMP"], "flutter-build.log"); s=open(p).read(); s=s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A"); print("::error::" + s[-25000:])'
+            exit 1
+          fi
+
+      - name: Upload debug prototype
+        uses: actions/upload-artifact@v4
+        with:
+          name: shule-altra-prototype-debug-apk
+          path: mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
