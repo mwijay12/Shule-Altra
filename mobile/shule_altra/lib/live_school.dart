@@ -22,8 +22,15 @@ class SchoolFirebaseConfig {
 }
 
 class LiveLearner {
-  final String name, className;
-  const LiveLearner(this.name, this.className);
+  final String name, className, status, guardianName, guardianPhone, guardianEmail;
+  const LiveLearner(this.name, this.className, {this.status = '', this.guardianName = '', this.guardianPhone = '', this.guardianEmail = ''});
+
+  factory LiveLearner.fromFirestore(Map<String, dynamic> data) {
+    String text(String key) => data[key] is String ? (data[key] as String).trim() : '';
+    final name = text('name'), className = text('class');
+    return LiveLearner(name.isEmpty ? 'Unnamed learner' : name, className.isEmpty ? 'Class not set' : className,
+      status: text('status'), guardianName: text('guardianName'), guardianPhone: text('guardianPhone'), guardianEmail: text('guardianEmail'));
+  }
 }
 
 class LearnerPage {
@@ -64,10 +71,7 @@ class FirebaseSchoolGateway implements SchoolGateway {
     final result = await query.limit(41).get(const GetOptions(source: Source.server));
     if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
     final visible = result.docs.take(40).toList();
-    final rows = visible.map((doc) {
-      final data = doc.data();
-      return LiveLearner(data['name'] is String ? data['name'] as String : 'Unnamed learner', data['class'] is String ? data['class'] as String : 'Class not set');
-    }).toList();
+    final rows = visible.map((doc) => LiveLearner.fromFirestore(doc.data())).toList();
     return LearnerPage(rows, result.docs.length > 40 ? visible.last : null);
   }
 }
@@ -138,13 +142,13 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
-      if (snapshot.hasError) return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.'));
+      if (snapshot.hasError) { learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
       if (lastUid != snapshot.data) { learners = null; query = ''; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
-        const SizedBox(height: 12), const Text('Sign in with the Google account your school already uses. This early pilot displays learner names and classes from the school register.', style: TextStyle(color: muted, height: 1.5)),
+        const SizedBox(height: 12), const Text('Sign in with the Google account your school already uses. This early pilot displays learner and guardian details from the school register.', style: TextStyle(color: muted, height: 1.5)),
         const SizedBox(height: 24),
         FilledButton.icon(onPressed: busy ? null : signIn, icon: const Icon(Icons.login), label: const Text('Continue with Google')),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
@@ -166,7 +170,18 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
             const SizedBox(height: 18), TextField(key: ValueKey(searchVersion), onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
             const SizedBox(height: 14), Text('${rows.length} shown', style: const TextStyle(color: muted)),
             if (rows.isEmpty) const Padding(padding: EdgeInsets.only(top: 14), child: Text('No matching learners in this page.')),
-            ...rows.map((row) => Card(child: ListTile(title: Text(row.name), subtitle: Text(row.className)))),
+            ...rows.map((row) => Card(child: ExpansionTile(
+              title: Text(row.name), subtitle: Text(row.className),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                const Text('Read-only details from this page load. Refresh the register for newer changes.', style: TextStyle(color: muted, fontSize: 12)),
+                const SizedBox(height: 8),
+                _DetailLine('Status', row.status),
+                _DetailLine('Guardian', row.guardianName),
+                _DetailLine('Guardian phone', row.guardianPhone),
+                _DetailLine('Guardian email', row.guardianEmail),
+              ],
+            ))),
             Wrap(spacing: 8, children: [
               OutlinedButton(onPressed: previousCursors.isEmpty ? null : previousPage, child: const Text('Previous page')),
               FilledButton(onPressed: data.data!.page!.nextCursor == null ? null : () => nextPage(data.data!.page!.nextCursor!), child: const Text('Next page')),
@@ -175,5 +190,17 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         }),
       ]);
     }),
+  );
+}
+
+class _DetailLine extends StatelessWidget {
+  final String label, value;
+  const _DetailLine(this.label, this.value);
+  @override Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Expanded(flex: 2, child: Text(label, style: const TextStyle(color: muted, fontSize: 12))),
+      Expanded(flex: 3, child: SelectableText(value.isEmpty ? 'Not provided' : value, style: const TextStyle(fontSize: 13))),
+    ]),
   );
 }
