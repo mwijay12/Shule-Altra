@@ -37,9 +37,19 @@ jobs:
       - name: Resolve packages
         run: flutter pub get
       - name: Analyze
-        run: flutter analyze
+        run: |
+          if ! flutter analyze --no-pub > "$RUNNER_TEMP/flutter-analyze.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-analyze.log"
+            while IFS= read -r line; do echo "::error::$line"; done < "$RUNNER_TEMP/flutter-analyze.log"
+            exit 1
+          fi
       - name: Test
-        run: flutter test
+        run: |
+          if ! flutter test --no-pub > "$RUNNER_TEMP/flutter-test.log" 2>&1; then
+            cat "$RUNNER_TEMP/flutter-test.log"
+            tail -40 "$RUNNER_TEMP/flutter-test.log" | while IFS= read -r line; do echo "::error::$line"; done
+            exit 1
+          fi
       - name: Build debug APK (prototype only)
         run: flutter build apk --debug
       - name: Upload debug prototype
