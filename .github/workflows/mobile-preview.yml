@@ -93,6 +93,13 @@ jobs:
             exit 1
           fi
 
+      # A universal debug APK carries all three ABIs, which is roughly 190 MB to
+      # download on a phone. The phone gets an arm64-only build of the same code;
+      # every Android phone made since about 2015 is arm64, and the universal APK
+      # stays available as the workflow artifact for anything else.
+      - name: Build a phone-sized APK (arm64 only)
+        run: flutter build apk --debug --target-platform android-arm64
+
       - name: Upload debug prototype
         uses: actions/upload-artifact@v4
         with:
