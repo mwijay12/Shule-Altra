@@ -29,9 +29,9 @@ merge commit of pull request #30 passed every step, in this order:
    permission and backup policy, with its own unit tests run first.
 2. `flutter pub get`
 3. `flutter analyze` — **any** warning fails the job.
-4. `flutter test` — 62 tests: contrast (every text pair the app draws, both
-   themes), reduced motion, learner mapping, configuration guards, session
-   behaviour and end-to-end widget flows at 390x844.
+4. `flutter test` — the whole suite: contrast (every text pair the app draws,
+   in both themes), reduced motion, learner mapping, configuration guards,
+   session behaviour, practice sheets and end-to-end widget flows at 390x844.
 5. `flutter build apk --debug` — an unsigned debug APK, uploaded as the artifact
    `shule-altra-prototype-debug-apk` (7-day retention).
 
