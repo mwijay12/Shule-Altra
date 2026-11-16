@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:shule_altra_mobile/data/demo_credentials.dart';
 import 'package:shule_altra_mobile/data/learner.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
 
@@ -95,6 +96,10 @@ class FakeGateway implements SchoolGateway {
 
   @override
   bool get acceptsDemoCredential => demoDoor;
+
+  @override
+  DemoIdentity? get demoIdentity =>
+      demoDoor && _uid == 'fake-demo' ? (uid: 'fake-demo', email: 'demo@shule.test') : null;
 
   @override
   Future<void> signInWithDemo(String email, String password) async {
