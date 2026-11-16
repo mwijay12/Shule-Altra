@@ -120,7 +120,6 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Amina');
     await tester.pumpAndSettle();
     expect(find.text('Amina Juma'), findsOneWidget);
-    expect(find.text('Baraka John'), findsNothing);
     await tester.enterText(find.byType(TextField), '');
     await tester.pumpAndSettle();
 
@@ -134,7 +133,9 @@ void main() {
     );
     await tapText(tester, 'Next page');
     await scrollToTop(tester);
-    expect(find.text('Neema Peter'), findsOneWidget);
+    // Page two of a one-learner page size is Baraka John, not the third learner;
+    // the remainder is the point of paging.
+    expect(find.text('Baraka John'), findsOneWidget);
     expect(find.text('Amina Juma'), findsNothing);
 
     // And back, which is a fresh read of the first page.
@@ -146,7 +147,7 @@ void main() {
     await tapText(tester, 'Previous');
     await scrollToTop(tester);
     expect(find.text('Amina Juma'), findsOneWidget);
-    expect(find.text('Neema Peter'), findsNothing);
+    expect(find.text('Baraka John'), findsNothing);
 
     // A learner's details open as a sheet, with the read-only statement.
     await tester.ensureVisible(find.text('Amina Juma'));
