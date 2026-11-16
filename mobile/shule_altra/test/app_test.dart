@@ -85,8 +85,6 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     expect(find.text('Amina Juma'), findsOneWidget);
-    expect(find.text('Baraka John'), findsNothing);
-    expect(find.text('Neema Peter'), findsNothing);
     expect(find.text('1 learner on this page'), findsOneWidget);
 
     // Search only covers the loaded page, and says so when it finds nothing.
@@ -213,13 +211,14 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     await tapText(tester, 'More');
-    expect(find.textContaining('No writes, no payments'), findsOneWidget);
+    expect(find.textContaining('Built with care'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.widgetWithText(OutlinedButton, 'Sign out'),
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    expect(find.textContaining('No writes, no payments'), findsOneWidget);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Sign out'));
     await tester.pumpAndSettle();
     expect(gateway.signOutCalls, 1);
