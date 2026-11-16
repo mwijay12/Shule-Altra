@@ -98,7 +98,13 @@ jobs:
       # phone made since roughly 2015 is arm64 — and the universal APK stays
       # available as the workflow artifact for anything else.
       - name: Build a phone-sized APK (per-ABI split)
-        run: flutter build apk --debug --split-per-abi
+        run: |
+          flutter build apk --debug --split-per-abi
+          # A release build is AOT-compiled, an order of magnitude smaller and
+          # opens far faster than debug. It is signed with the throwaway debug key
+          # because this pilot has no release keystore, which makes it fine to
+          # install and look at and unfit to distribute.
+          flutter build apk --release --split-per-abi
 
       - name: Upload debug prototype
         uses: actions/upload-artifact@v4
@@ -122,14 +128,20 @@ jobs:
         run: |
           tag="apk-${GITHUB_REF_NAME//\//-}"
           short="${GITHUB_SHA:0:7}"
-          built="build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk"
-          release="${RUNNER_TEMP}/shule-altra-${short}-arm64-debug.apk"
+          out="build/app/outputs/flutter-apk"
+          app="${RUNNER_TEMP}/shule-altra-${short}-arm64.apk"
+          debug="${RUNNER_TEMP}/shule-altra-${short}-arm64-debug.apk"
           log="${RUNNER_TEMP}/release.log"
-          cp "$built" "$release"
+          cp "$out/app-arm64-v8a-release.apk" "$app"
+          cp "$out/app-arm64-v8a-debug.apk" "$debug"
           # The step log is not readable from every network; a notice is.
-          echo "::notice::arm64 APK is $(( $(stat -c%s "$release") / 1048576 )) MB"
+          echo "::notice::arm64 APK is $(( $(stat -c%s "$app") / 1048576 )) MB release, $(( $(stat -c%s "$debug") / 1048576 )) MB debug"
           notes="$(cat <<EOF
-          Debug build of the Shule Altra mobile pilot, from \`${short}\` on \`${GITHUB_REF_NAME}\`.
+          The Shule Altra mobile pilot, built from \`${short}\` on \`${GITHUB_REF_NAME}\`.
+
+          Download \`shule-altra-${short}-arm64.apk\` — arm64, release build, signed with
+          a throwaway debug key. \`shule-altra-${short}-arm64-debug.apk\` is the same app
+          in debug mode, for a logcat session; it is several times larger and slower.
 
           **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
 
@@ -138,14 +150,15 @@ jobs:
 
           That credential opens six fictional learners held on the phone. It is not a
           school account, it stores nothing, and it cannot read a real register — the
-          live path refuses it in code. This is a debug APK, unsigned for release.
+          live path refuses it in code. This is a preview build, not a release: it is
+          signed with a throwaway key and there is no update path from it.
           EOF
           )"
           # The tag is rolling: one tag per branch, so old builds do not pile up and
           # the newest link always works.
           {
             gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-            gh release create "$tag" "$release" \
+            gh release create "$tag" "$app" "$debug" \
               --title "Shule Altra mobile pilot — ${short}" \
               --notes "$notes" \
               --target "$GITHUB_SHA" \
