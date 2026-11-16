@@ -19,6 +19,15 @@ import 'package:shule_altra_mobile/screens/demo_sign_in.dart';
 
 import 'fake_gateway.dart';
 
+Future<void> _tap(WidgetTester tester, String label) async {
+  final target = find.text(label);
+  expect(target, findsWidgets, reason: 'nothing on screen says "$label"');
+  await tester.ensureVisible(target.first);
+  await tester.pumpAndSettle();
+  await tester.tap(target.first);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   group('DemoCredentials', () {
     test('accepts the printed pair, and only that pair', () {
@@ -121,14 +130,12 @@ void main() {
       final gateway = SampleGateway();
       await tester.pumpWidget(ShuleApp.withGateway(gateway: gateway));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Explore the sample preview'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Learners'));
-      await tester.pumpAndSettle();
+      // Onboarding scrolls on a phone, so every step is reached the way a
+      // person reaches it: scrolled into view, then tapped.
+      await _tap(tester, 'Continue');
+      await _tap(tester, 'Continue');
+      await _tap(tester, 'Explore the sample preview');
+      await _tap(tester, 'Learners');
 
       // The form exists, and the credential is on it before anything is typed.
       expect(find.byType(DemoSignInForm), findsOneWidget);
@@ -136,17 +143,8 @@ void main() {
       expect(find.textContaining(DemoCredentials.demoPassword), findsWidgets);
 
       // The fill button is the path a reviewer takes.
-      final fill = find.text('Fill the demo credential');
-      await tester.ensureVisible(fill);
-      await tester.pumpAndSettle();
-      await tester.tap(fill);
-      await tester.pumpAndSettle();
-
-      final signIn = find.text('Sign in to the demo');
-      await tester.ensureVisible(signIn);
-      await tester.pumpAndSettle();
-      await tester.tap(signIn);
-      await tester.pumpAndSettle();
+      await _tap(tester, 'Fill the demo credential');
+      await _tap(tester, 'Sign in to the demo');
 
       // Signed in: the fictional register is readable.
       expect(find.text('Amina Juma'), findsOneWidget);
@@ -168,21 +166,19 @@ void main() {
       final gateway = SampleGateway();
       await tester.pumpWidget(ShuleApp.withGateway(gateway: gateway));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Explore the sample preview'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Learners'));
-      await tester.pumpAndSettle();
+      // Onboarding scrolls on a phone, so every step is reached the way a
+      // person reaches it: scrolled into view, then tapped.
+      await _tap(tester, 'Continue');
+      await _tap(tester, 'Continue');
+      await _tap(tester, 'Explore the sample preview');
+      await _tap(tester, 'Learners');
 
-      await tester.enterText(find.byType(TextField).last, 'wrong-password');
-      final signIn = find.text('Sign in to the demo');
-      await tester.ensureVisible(signIn);
+      final password = find.byType(TextField).last;
+      await tester.ensureVisible(password);
       await tester.pumpAndSettle();
-      await tester.tap(signIn);
+      await tester.enterText(password, 'wrong-password');
       await tester.pumpAndSettle();
+      await _tap(tester, 'Sign in to the demo');
 
       expect(find.textContaining('do not match the demo account'), findsOneWidget);
       expect(find.text('Amina Juma'), findsNothing);
