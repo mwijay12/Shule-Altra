@@ -111,6 +111,19 @@ class FirebaseSchoolGateway implements SchoolGateway {
     await _firestore.terminate();
   }
 
+  /// The live path has no demo door, and never will: a demo credential that
+  /// could read a school's register would not be a demo.
+  @override
+  bool get acceptsDemoCredential => false;
+
+  @override
+  Future<void> signInWithDemo(String email, String password) async {
+    throw const GatewayFailure(
+      'This build reads a real school, so it only accepts your school account.',
+      kind: GatewayFailureKind.signedOut,
+    );
+  }
+
   @override
   Future<void> signOut() async {
     if (_googleReady) {
