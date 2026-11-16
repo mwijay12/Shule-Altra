@@ -93,12 +93,12 @@ jobs:
             exit 1
           fi
 
-      # A universal debug APK carries all three ABIs, which is roughly 190 MB to
-      # download on a phone. The phone gets an arm64-only build of the same code;
-      # every Android phone made since about 2015 is arm64, and the universal APK
-      # stays available as the workflow artifact for anything else.
-      - name: Build a phone-sized APK (arm64 only)
-        run: flutter build apk --debug --target-platform android-arm64
+      # A universal debug APK carries all three ABIs, which is a slow download on
+      # a phone. The phone gets the arm64 split of the same code — every Android
+      # phone made since roughly 2015 is arm64 — and the universal APK stays
+      # available as the workflow artifact for anything else.
+      - name: Build a phone-sized APK (per-ABI split)
+        run: flutter build apk --debug --split-per-abi
 
       - name: Upload debug prototype
         uses: actions/upload-artifact@v4
@@ -122,10 +122,12 @@ jobs:
         run: |
           tag="apk-${GITHUB_REF_NAME//\//-}"
           short="${GITHUB_SHA:0:7}"
-          built="build/app/outputs/flutter-apk/app-debug.apk"
-          release="${RUNNER_TEMP}/shule-altra-${short}-debug.apk"
+          built="build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk"
+          release="${RUNNER_TEMP}/shule-altra-${short}-arm64-debug.apk"
           log="${RUNNER_TEMP}/release.log"
           cp "$built" "$release"
+          # The step log is not readable from every network; a notice is.
+          echo "::notice::arm64 APK is $(( $(stat -c%s "$release") / 1048576 )) MB"
           notes="$(cat <<EOF
           Debug build of the Shule Altra mobile pilot, from \`${short}\` on \`${GITHUB_REF_NAME}\`.
 
