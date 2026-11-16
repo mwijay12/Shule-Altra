@@ -153,19 +153,15 @@ void main() {
         ),
       );
 
+      // Reduced motion takes the controller out of the tree, so the child is
+      // already in its final position and does not move. Measuring the position
+      // is honest; counting Opacity widgets would measure Material's own wrapper.
       expect(find.text('always visible'), findsOneWidget);
-      expect(
-        tester
-            .widget<Opacity>(
-              find
-                  .ancestor(of: find.text('always visible'), matching: find.byType(Opacity))
-                  .first,
-            )
-            .opacity,
-        1.0,
-      );
+      final before = tester.getTopLeft(find.text('always visible'));
       await tester.pumpAndSettle();
-      expect(find.text('always visible'), findsOneWidget);
+      final after = tester.getTopLeft(find.text('always visible'));
+      expect(after, before, reason: 'the text must not move once animations are off');
+      expect(tester.getSize(find.text('always visible')).height, greaterThan(0));
     });
 
     testWidgets('StickerPop rests at full size when animations are off', (tester) async {
@@ -179,15 +175,12 @@ void main() {
         ),
       );
       await tester.pump();
+      // At rest: full size, drawn, in place. Under reduced motion the pop never
+      // starts, so the first frame is the last frame.
       expect(find.text('sticker'), findsOneWidget);
-      expect(
-        tester
-            .widget<Opacity>(
-              find.ancestor(of: find.text('sticker'), matching: find.byType(Opacity)).first,
-            )
-            .opacity,
-        1.0,
-      );
+      final before = tester.getRect(find.text('sticker'));
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(tester.getRect(find.text('sticker')), before);
     });
 
     test('MotionPrefs zeroes every duration it owns', () {

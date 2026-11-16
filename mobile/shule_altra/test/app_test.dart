@@ -81,7 +81,11 @@ void main() {
     await tapText(tester, 'Learners');
 
     // Signed out: the register says so and offers exactly one action.
-    expect(find.textContaining('The register is behind'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('The register is behind'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tapText(tester, 'Continue with Google');
 
     expect(find.text('Amina Juma'), findsOneWidget);
@@ -117,6 +121,11 @@ void main() {
     // A learner's details open as a sheet, with the read-only statement.
     await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Read-only snapshot'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('Read-only snapshot'), findsOneWidget);
 
     await gateway.close();
@@ -213,12 +222,20 @@ void main() {
     await tapText(tester, 'More');
     expect(find.textContaining('Built with care'), findsOneWidget);
 
+    // Walk down the page the way a person does, and stop when the statement
+    // appears: the list builds its children lazily, so nothing below the fold
+    // exists until it is scrolled into view.
+    final statement = find.textContaining('No writes, no payments');
+    for (var step = 0; step < 8 && statement.evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -260));
+      await tester.pumpAndSettle();
+    }
+    expect(statement, findsOneWidget);
     await tester.scrollUntilVisible(
       find.widgetWithText(OutlinedButton, 'Sign out'),
-      200,
+      160,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.textContaining('No writes, no payments'), findsOneWidget);
     await tester.tap(find.widgetWithText(OutlinedButton, 'Sign out'));
     await tester.pumpAndSettle();
     expect(gateway.signOutCalls, 1);
