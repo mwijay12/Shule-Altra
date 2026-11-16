@@ -1,0 +1,29 @@
+name: shule_altra_mobile
+description: Shule Altra mobile early read-only Firebase pilot.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  # google_sign_in 7.x and firebase_* 3.x/5.x both need Dart 3.7 or newer.
+  sdk: '>=3.7.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # The live, read-only Firebase path. These three move together; the test
+  # suite never touches them because the gateway is injected.
+  firebase_core: ^3.13.0
+  firebase_auth: ^5.5.4
+  cloud_firestore: ^5.6.7
+  # Google Sign-In on Android (v7 API: `GoogleSignIn.instance` + `authenticate()`).
+  # Firebase Auth cannot call `signInWithProvider` here: that is web-only and
+  # throws on Android.
+  google_sign_in: ^7.2.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
