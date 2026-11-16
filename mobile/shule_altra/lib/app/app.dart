@@ -30,6 +30,7 @@ class ShuleApp extends StatefulWidget {
   const ShuleApp({super.key})
       : initialMode = AppMode.onboarding,
         themeMode = null,
+        textScale = null,
         _injected = null;
 
   /// A gateway may be injected by a test. When it is, the app starts in
