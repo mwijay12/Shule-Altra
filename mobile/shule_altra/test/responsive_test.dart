@@ -78,9 +78,17 @@ void main() {
         await tester.tapAt(const Offset(10, 10)); // dismiss the sheet
         await tester.pumpAndSettle();
 
-        // The practice sheet and the honest page.
+        // The practice sheet, scrolled far enough to reach the first mark, then
+        // the honest page. (At 1.3x text the mark pills are well below the fold on
+        // a phone, and a lazily built list has not created them yet.)
         await _tap(tester, 'Day');
         await _expectNoOverflow(tester, 'school day');
+        await tester.scrollUntilVisible(
+          find.text('Present').first,
+          300,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await _expectNoOverflow(tester, 'school day, scrolled to marks');
         await _tap(tester, 'Present');
         await _expectNoOverflow(tester, 'school day, marked');
 
