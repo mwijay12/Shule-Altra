@@ -156,15 +156,13 @@ void main() {
     await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
     // The sheet has its own scroll view; the register's list is still in the tree
-    // behind it, so this must not use `Scrollable.first`.
-    await tester.scrollUntilVisible(
-      find.textContaining('Read-only snapshot'),
-      200,
-      scrollable: find.descendant(
-        of: find.byType(LearnerDetailSheet),
-        matching: find.byType(Scrollable),
-      ),
-    );
+    // behind it. A modal sheet can contain more than one Scrollable (the drag
+    // handle's gesture area is not one, but a nested TextField or list can be), so
+    // this drags the sheet up directly and then reads.
+    for (var step = 0; step < 6 && find.textContaining('Read-only snapshot').evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(LearnerDetailSheet), const Offset(0, -220));
+      await tester.pumpAndSettle();
+    }
     expect(find.textContaining('Read-only snapshot'), findsOneWidget);
 
     await gateway.close();
