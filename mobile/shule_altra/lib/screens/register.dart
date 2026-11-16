@@ -14,6 +14,7 @@ import '../design/motion.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../format.dart';
+import 'demo_sign_in.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
@@ -87,6 +88,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       color: tokens.primary,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
+        // Room to scroll the demo password field above the keyboard.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
         children: [
           const BrandBar(),
@@ -278,30 +281,48 @@ class _SignedOut extends StatelessWidget {
           ),
         ),
         const SizedBox(height: Space.xl),
-        Text('The register is behind\nyour school account.', style: Theme.of(context).textTheme.headlineSmall),
+        Text(
+          session.acceptsDemoCredential
+              ? 'A sample register,\nbehind a demo sign-in.'
+              : 'The register is behind\nyour school account.',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
         const SizedBox(height: Space.sm),
         Text(
-          'Sign in with the Google account your school already uses. Your school\'s '
-          'Firestore rules decide what you can read — the app does not widen that.',
+          session.acceptsDemoCredential
+              ? 'Six fictional learners, stored on this phone, with a credential printed '
+                'on the form. Nothing here is a real school and nothing is sent anywhere.'
+              : 'Sign in with the Google account your school already uses. Your school\'s '
+                'Firestore rules decide what you can read — the app does not widen that.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
         ),
         const SizedBox(height: Space.lg),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: session.busy ? null : onSignIn,
-            icon: session.busy
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2.4),
-                  )
-                : const Icon(Icons.login_rounded, size: 20),
-            label: Text(session.busy ? 'Signing in…' : 'Continue with Google'),
+        if (session.acceptsDemoCredential)
+          // The sample register, opened with the demo credential that is printed
+          // on the form itself.
+          DemoSignInForm(session: session)
+        else ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: session.busy ? null : onSignIn,
+              icon: session.busy
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2.4),
+                    )
+                  : const Icon(Icons.login_rounded, size: 20),
+              label: Text(session.busy ? 'Signing in…' : 'Continue with Google'),
+            ),
           ),
-        ),
-        if (session.failure != null) ...[
-          const SizedBox(height: Space.md),
-          Notice(title: 'Sign-in did not complete', body: session.failure!, tone: NoticeTone.danger),
+          if (session.failure != null) ...[
+            const SizedBox(height: Space.md),
+            Notice(
+              title: 'Sign-in did not complete',
+              body: session.failure!,
+              tone: NoticeTone.danger,
+            ),
+          ],
         ],
         const SizedBox(height: Space.lg),
         const Notice(

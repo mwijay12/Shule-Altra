@@ -16,6 +16,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../data/demo_credentials.dart';
 import '../data/learner.dart';
 import '../data/school_gateway.dart';
 
@@ -95,7 +96,17 @@ class AppSession extends ChangeNotifier {
     _notify();
   }
 
+  /// Which door this data source offers: a school's Google account, or the demo
+  /// credential. The screen asks, rather than assuming.
+  bool get acceptsDemoCredential => gateway.acceptsDemoCredential;
+
+  /// The demo account that is open, or null.
+  DemoIdentity? get demoIdentity => gateway.demoIdentity;
+
   Future<void> signIn() => _run(() => gateway.signIn());
+
+  Future<void> signInWithDemo(String email, String password) =>
+      _run(() => gateway.signInWithDemo(email, password));
 
   Future<void> signOut() async {
     _clearRows();

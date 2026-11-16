@@ -7,6 +7,7 @@ library;
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'package:shule_altra_mobile/data/demo_credentials.dart';
 import 'package:shule_altra_mobile/data/learner.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
 
@@ -86,6 +87,29 @@ class FakeGateway implements SchoolGateway {
     final failure = signInFailure;
     if (failure != null) throw failure;
     _uid = 'fake-staff';
+    _controller.add(_uid);
+  }
+
+  /// A test can opt the fake into the demo door; by default it behaves like the
+  /// live gateway and refuses.
+  bool demoDoor = false;
+
+  @override
+  bool get acceptsDemoCredential => demoDoor;
+
+  @override
+  DemoIdentity? get demoIdentity =>
+      demoDoor && _uid == 'fake-demo' ? (uid: 'fake-demo', email: 'demo@shule.test') : null;
+
+  @override
+  Future<void> signInWithDemo(String email, String password) async {
+    if (!demoDoor) {
+      throw const GatewayFailure(
+        'This data source does not take the demo sign-in.',
+        kind: GatewayFailureKind.signedOut,
+      );
+    }
+    _uid = 'fake-demo';
     _controller.add(_uid);
   }
 

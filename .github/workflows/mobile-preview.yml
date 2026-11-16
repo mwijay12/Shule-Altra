@@ -22,7 +22,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # `contents: write` is only used by the release step at the bottom of this file,
+  # and only on a branch push. The artifact CDN is not reachable from every
+  # network, so the APK is also published as a release asset that a phone can
+  # download with one tap.
+  contents: write
 
 concurrency:
   group: mobile-pilot-${{ github.ref }}
@@ -89,6 +93,19 @@ jobs:
             exit 1
           fi
 
+      # A universal debug APK carries all three ABIs, which is a slow download on
+      # a phone. The phone gets the arm64 split of the same code — every Android
+      # phone made since roughly 2015 is arm64 — and the universal APK stays
+      # available as the workflow artifact for anything else.
+      - name: Build a phone-sized APK (per-ABI split)
+        run: |
+          flutter build apk --debug --split-per-abi
+          # A release build is AOT-compiled, an order of magnitude smaller and
+          # opens far faster than debug. It is signed with the throwaway debug key
+          # because this pilot has no release keystore, which makes it fine to
+          # install and look at and unfit to distribute.
+          flutter build apk --release --split-per-abi
+
       - name: Upload debug prototype
         uses: actions/upload-artifact@v4
         with:
@@ -96,3 +113,62 @@ jobs:
           path: mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+
+      # A phone that is not signed in to GitHub cannot download a workflow
+      # artifact; it can download a release asset. This publishes the same APK
+      # under a rolling tag on the branch that built it, and says in the release
+      # notes exactly what the build is and what the demo credential opens.
+      #
+      # Paths here are relative to `mobile/shule_altra` (the job's working
+      # directory), not the repository root.
+      - name: Publish the APK as a release asset
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="apk-${GITHUB_REF_NAME//\//-}"
+          short="${GITHUB_SHA:0:7}"
+          out="build/app/outputs/flutter-apk"
+          app="${RUNNER_TEMP}/shule-altra-${short}-arm64.apk"
+          debug="${RUNNER_TEMP}/shule-altra-${short}-arm64-debug.apk"
+          log="${RUNNER_TEMP}/release.log"
+          cp "$out/app-arm64-v8a-release.apk" "$app"
+          cp "$out/app-arm64-v8a-debug.apk" "$debug"
+          # The step log is not readable from every network; a notice is.
+          echo "::notice::arm64 APK is $(( $(stat -c%s "$app") / 1048576 )) MB release, $(( $(stat -c%s "$debug") / 1048576 )) MB debug"
+          notes="$(cat <<EOF
+          The Shule Altra mobile pilot, built from \`${short}\` on \`${GITHUB_REF_NAME}\`.
+
+          Download \`shule-altra-${short}-arm64.apk\` — arm64, release build, signed with
+          a throwaway debug key. \`shule-altra-${short}-arm64-debug.apk\` is the same app
+          in debug mode, for a logcat session; it is several times larger and slower.
+
+          **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
+
+          - Email: \`demo@shule.test\`
+          - Password: \`shule-demo\`
+
+          That credential opens six fictional learners held on the phone. It is not a
+          school account, it stores nothing, and it cannot read a real register — the
+          live path refuses it in code. This is a preview build, not a release: it is
+          signed with a throwaway key and there is no update path from it.
+          EOF
+          )"
+          # The tag is rolling: one tag per branch, so old builds do not pile up and
+          # the newest link always works.
+          {
+            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+            gh release create "$tag" "$app" "$debug" \
+              --title "Shule Altra mobile pilot — ${short}" \
+              --notes "$notes" \
+              --target "$GITHUB_SHA" \
+              --prerelease
+          } > "$log" 2>&1 || {
+            # The step log is not readable from every network, so the reason is
+            # repeated as an annotation, which is.
+            while IFS= read -r line; do
+              echo "::error::${line//\%/%25}"
+            done < <(tail -n 12 "$log")
+            exit 1
+          }
+          echo "Published $tag"

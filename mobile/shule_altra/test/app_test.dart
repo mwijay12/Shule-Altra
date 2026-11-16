@@ -292,6 +292,7 @@ void main() {
     await tapText(tester, 'Explore the sample preview');
     await tapText(tester, 'Learners');
 
+    // The injected fake has no demo door, so this is the school-account form.
     // On a phone the illustration and three sentences do not all fit, so this
     // test scrolls through the screen and checks each statement exists.
     final statements = <String>[

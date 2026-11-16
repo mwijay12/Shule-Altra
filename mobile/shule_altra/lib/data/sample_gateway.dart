@@ -15,6 +15,7 @@ library;
 import 'dart:async';
 import 'dart:math' as math;
 
+import 'demo_credentials.dart';
 import 'learner.dart';
 import 'school_gateway.dart';
 
@@ -107,22 +108,66 @@ class SampleGateway implements SchoolGateway {
   /// is real and visible rather than something that only exists in theory.
   static const Duration latency = Duration(milliseconds: 420);
 
+  /// The signed-in address, when the demo credential was used. Shown in the UI,
+  /// because the person should be able to see which account is open.
+  String? _email;
+
   @override
   String get sourceLabel => 'Sample · fictional learners';
 
   @override
   Stream<String?> get sessionUid => _session.stream;
 
+  /// The sample preview takes the demo credential, and says so before anyone
+  /// types: see [DemoCredentials]. A build can remove it entirely with
+  /// `--dart-define=DISABLE_DEMO_SIGN_IN=true`.
+  @override
+  bool get acceptsDemoCredential => DemoCredentials.available;
+
+  @override
+  DemoIdentity? get demoIdentity => DemoCredentials.available &&
+          _uid == DemoCredentials.identity.uid
+      ? DemoCredentials.identity
+      : null;
+
   @override
   Future<void> signIn() async {
     await Future<void>.delayed(latency);
     _uid = 'sample-staff';
+    _email = null;
     _session.add(_uid);
   }
 
   @override
+  Future<void> signInWithDemo(String email, String password) async {
+    await Future<void>.delayed(latency);
+    if (!DemoCredentials.available) {
+      throw const GatewayFailure(
+        'The demo sign-in is switched off in this build. Use your school account.',
+        kind: GatewayFailureKind.notConfigured,
+      );
+    }
+    if (!DemoCredentials.accepts(email, password)) {
+      // One message for both fields. Saying which one was wrong would confirm a
+      // correct email address to someone guessing.
+      throw const GatewayFailure(
+        'That email and password do not match the demo account. Use the address '
+        'and password printed below the form.',
+        kind: GatewayFailureKind.denied,
+      );
+    }
+    _uid = DemoCredentials.identity.uid;
+    _email = DemoCredentials.identity.email;
+    _session.add(_uid);
+  }
+
+  /// The address that is signed in, if any. Used by the UI to show the account.
+  String? get signedInEmail => _email;
+
+  @override
   Future<void> signOut() async {
     _uid = null;
+    _email = null;
     _session.add(null);
   }
 

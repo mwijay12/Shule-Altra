@@ -10,6 +10,7 @@
 /// shows cached learner data as if it were current.
 library;
 
+import 'demo_credentials.dart';
 import 'learner.dart';
 
 /// Why a read or a sign-in did not work, in words a person can act on.
@@ -60,6 +61,26 @@ abstract class SchoolGateway {
 
   /// Sign in with the Google account the school already uses.
   Future<void> signIn();
+
+  /// Whether this gateway also accepts the demo credential.
+  ///
+  /// Only [SampleGateway] does. The live gateway returns false, so the demo
+  /// form is never shown for a school's own register.
+  bool get acceptsDemoCredential => false;
+
+  /// Sign in with the demo credential. Throws [GatewayFailure] when
+  /// [acceptsDemoCredential] is false, so a caller cannot bypass the check by
+  /// calling this directly.
+  Future<void> signInWithDemo(String email, String password) async {
+    throw const GatewayFailure(
+      'This data source does not take the demo sign-in. Use your school account.',
+      kind: GatewayFailureKind.signedOut,
+    );
+  }
+
+  /// Every implementation is offered the identity type, so the interface and
+  /// the demo credentials agree on what a session looks like.
+  DemoIdentity? get demoIdentity => null;
 
   Future<void> signOut();
 

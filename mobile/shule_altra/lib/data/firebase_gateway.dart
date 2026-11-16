@@ -20,6 +20,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import 'demo_credentials.dart';
 import 'learner.dart';
 import 'school_config.dart';
 import 'school_gateway.dart';
@@ -109,6 +110,22 @@ class FirebaseSchoolGateway implements SchoolGateway {
     }
     await _auth.signOut();
     await _firestore.terminate();
+  }
+
+  /// The live path has no demo door, and never will: a demo credential that
+  /// could read a school's register would not be a demo.
+  @override
+  bool get acceptsDemoCredential => false;
+
+  @override
+  DemoIdentity? get demoIdentity => null;
+
+  @override
+  Future<void> signInWithDemo(String email, String password) async {
+    throw const GatewayFailure(
+      'This build reads a real school, so it only accepts your school account.',
+      kind: GatewayFailureKind.signedOut,
+    );
   }
 
   @override

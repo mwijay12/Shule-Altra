@@ -54,9 +54,11 @@ class MoreScreen extends StatelessWidget {
               FactRow(label: 'Mode', value: isSample ? 'Sample preview (fictional data)' : 'Live school read'),
               FactRow(
                 label: 'Account',
-                value: session.signedIn
-                    ? (isSample ? 'Sample staff session' : 'Signed in')
-                    : 'Not signed in',
+                value: !session.signedIn
+                    ? 'Not signed in'
+                    : session.demoIdentity != null
+                        ? 'Demo · ${session.demoIdentity!.email}'
+                        : (isSample ? 'Sample staff session' : 'Signed in'),
               ),
               FactRow(
                 label: 'Firebase',
