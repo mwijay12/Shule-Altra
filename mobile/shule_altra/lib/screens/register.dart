@@ -207,16 +207,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (reading)
         const _Busy(label: 'Reading…')
       else
+        // Both buttons flex and their labels shrink to fit, so a long label or a
+        // large text setting cannot push either one off the screen.
         Row(
           children: [
-            OutlinedButton(
-              onPressed: session.canGoBack ? session.loadPreviousPage : null,
-              child: const Text('Previous'),
+            Flexible(
+              child: OutlinedButton(
+                onPressed: session.canGoBack ? session.loadPreviousPage : null,
+                child: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('Previous'),
+                ),
+              ),
             ),
-            const Spacer(),
-            FilledButton(
-              onPressed: session.canGoForward ? session.loadNextPage : null,
-              child: Text(session.canGoForward ? 'Next page' : 'End of register'),
+            const SizedBox(width: Space.md),
+            Flexible(
+              child: FilledButton(
+                onPressed: session.canGoForward ? session.loadNextPage : null,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(session.canGoForward ? 'Next page' : 'End of register'),
+                ),
+              ),
             ),
           ],
         ),

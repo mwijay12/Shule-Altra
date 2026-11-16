@@ -29,9 +29,12 @@ void usePhoneScreen(WidgetTester tester) {
 /// widget below the fold is a no-op in a widget test, and a silent one.
 Future<void> tapText(WidgetTester tester, String text) async {
   final target = find.text(text);
-  await tester.ensureVisible(target);
+  // Say which label is missing, rather than letting `ensureVisible` throw a bare
+  // "Bad state: No element" from inside the framework.
+  expect(target, findsWidgets, reason: 'nothing on screen says "$text"');
+  await tester.ensureVisible(target.first);
   await tester.pumpAndSettle();
-  await tester.tap(target);
+  await tester.tap(target.first);
   await tester.pumpAndSettle();
 }
 
@@ -80,19 +83,20 @@ void main() {
 
     await tapText(tester, 'Learners');
 
-    // Signed out: the register says so and offers exactly one action.
-    await tester.scrollUntilVisible(
-      find.textContaining('The register is behind'),
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
+    // Signed out: the register lists the effects and offers exactly one action.
+    // Only "Continue with Google" is asserted here; the surrounding sentences are
+    // below the fold on a phone and are checked in the screen's own test.
     await tapText(tester, 'Continue with Google');
 
     expect(find.text('Amina Juma'), findsOneWidget);
     expect(find.text('1 learner on this page'), findsOneWidget);
 
     // Search only covers the loaded page, and says so when it finds nothing.
-    await tester.ensureVisible(find.byType(TextField));
+    await tester.scrollUntilVisible(
+      find.byType(TextField),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Neema');
     await tester.pumpAndSettle();
@@ -242,6 +246,34 @@ void main() {
 
     await tapText(tester, 'Learners');
     expect(find.text('Continue with Google'), findsOneWidget);
+    await gateway.close();
+  });
+
+  testWidgets('the signed-out register states the rules in words', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Explore the sample preview');
+    await tapText(tester, 'Learners');
+
+    // On a phone the illustration and three sentences do not all fit, so this
+    // test scrolls through the screen and checks each statement exists.
+    final statements = <String>[
+      'The register is behind',
+      'Continue with Google',
+      'Read-only pilot',
+    ];
+    for (final statement in statements) {
+      await tester.scrollUntilVisible(
+        find.textContaining(statement),
+        160,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.textContaining(statement), findsOneWidget, reason: statement);
+    }
     await gateway.close();
   });
 
