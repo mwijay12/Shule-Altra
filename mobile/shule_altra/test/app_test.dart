@@ -75,11 +75,15 @@ void main() {
     await tapText(tester, 'Continue');
     await tapText(tester, 'Explore the sample preview');
 
-    // The sample preview is labelled on the home screen, in words.
+    // The sample preview is labelled on the home screen, in words. The label is
+    // below the fold, and a lazily built list does not create it until scrolled.
     expect(find.textContaining('A little more room'), findsOneWidget);
-    await tester.ensureVisible(find.text('Sample · fictional learners'));
-    await tester.pumpAndSettle();
-    expect(find.text('Sample · fictional learners'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.textContaining('Sample · fictional learners'),
+      160,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.textContaining('Sample · fictional learners'), findsOneWidget);
 
     await tapText(tester, 'Learners');
 
