@@ -25,6 +25,16 @@ void usePhoneScreen(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// Jump back to the top of the list on screen. A lazily built list only creates
+/// the rows in view, so a test that asserts on those rows has to be looking at
+/// them; jumping the scroll position is deterministic where repeated drags are
+/// not.
+Future<void> scrollToTop(WidgetTester tester) async {
+  final scrollable = tester.state<ScrollableState>(find.byType(Scrollable).first);
+  scrollable.position.jumpTo(0);
+  await tester.pumpAndSettle();
+}
+
 /// Scroll to a control before tapping it, the way a person would. A tap on a
 /// widget below the fold is a no-op in a widget test, and a silent one.
 Future<void> tapText(WidgetTester tester, String text) async {
@@ -123,29 +133,20 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Next page');
-
-    // A new page arrives at the top of the list, so scroll back up to read it.
-    // (A lazily built list does not have those rows until they are in view.)
-    await tester.scrollUntilVisible(
-      find.text('Neema Peter'),
-      -240,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await scrollToTop(tester);
     expect(find.text('Neema Peter'), findsOneWidget);
-    expect(find.text('1 learner on this page'), findsOneWidget);
+    expect(find.text('Amina Juma'), findsNothing);
 
+    // And back, which is a fresh read of the first page.
     await tester.scrollUntilVisible(
       find.text('Previous'),
       240,
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Previous');
-    await tester.scrollUntilVisible(
-      find.text('Amina Juma'),
-      -240,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await scrollToTop(tester);
     expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('Neema Peter'), findsNothing);
 
     // A learner's details open as a sheet, with the read-only statement.
     await tester.ensureVisible(find.text('Amina Juma'));
