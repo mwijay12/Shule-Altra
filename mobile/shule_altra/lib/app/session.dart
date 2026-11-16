@@ -90,6 +90,8 @@ class AppSession extends ChangeNotifier {
     // A different account, or none: nothing loaded from the previous session may
     // survive, even briefly.
     _forgetPages();
+    _state = LoadState.idle;
+    _lastFailure = null;
     _notify();
   }
 

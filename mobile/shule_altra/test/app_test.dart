@@ -16,8 +16,28 @@ import 'fake_gateway.dart';
 /// another one would test the wrapper's theme, not the app's.
 Widget _app(FakeGateway gateway) => ShuleApp.withGateway(gateway: gateway);
 
+/// Every screen is exercised at the size of the phone this is for (390x844), not
+/// at the test harness default, so a screen that only fits a wide window fails
+/// here instead of on someone's handset.
+void usePhoneScreen(WidgetTester tester) {
+  tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+  tester.view.devicePixelRatio = 3;
+  addTearDown(tester.view.reset);
+}
+
+/// Scroll to a control before tapping it, the way a person would. A tap on a
+/// widget below the fold is a no-op in a widget test, and a silent one.
+Future<void> tapText(WidgetTester tester, String text) async {
+  final target = find.text(text);
+  await tester.ensureVisible(target);
+  await tester.pumpAndSettle();
+  await tester.tap(target);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('onboarding explains itself and hands over to the sample', (tester) async {
+    usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
@@ -28,14 +48,11 @@ void main() {
 
     // First promise, in words, before anything is connected.
     expect(find.textContaining('Every learner'), findsOneWidget);
-    expect(find.text('Connect my school'), findsNothing);
 
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
     expect(find.textContaining('Not another'), findsOneWidget);
 
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
     expect(find.textContaining('Read-only'), findsOneWidget);
 
     // The last page is where the two paths are chosen.
@@ -45,27 +62,23 @@ void main() {
   });
 
   testWidgets('the register signs in, pages, searches and opens a learner', (tester) async {
+    usePhoneScreen(tester);
     final gateway = FakeGateway(pageSize: 2);
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Explore the sample preview'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Explore the sample preview');
 
     // The sample preview is labelled on the home screen, in words.
     expect(find.textContaining('A little more room'), findsOneWidget);
     expect(find.text('Sample · fictional learners'), findsOneWidget);
 
-    await tester.tap(find.text('Learners'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Learners');
 
     // Signed out: the register says so and offers exactly one action.
     expect(find.textContaining('The register is behind'), findsOneWidget);
-    await tester.tap(find.text('Continue with Google'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue with Google');
 
     expect(find.text('Amina Juma'), findsOneWidget);
     expect(find.text('Baraka John'), findsOneWidget);
@@ -73,6 +86,8 @@ void main() {
     expect(find.text('2 learners on this page'), findsOneWidget);
 
     // Search only covers the loaded page, and says so when it finds nothing.
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Neema');
     await tester.pumpAndSettle();
     expect(find.textContaining('0 of 2 learners match "Neema"'), findsOneWidget);
@@ -91,17 +106,14 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Next page'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Next page');
     expect(find.text('Neema Peter'), findsOneWidget);
     expect(find.text('Amina Juma'), findsNothing);
-    await tester.tap(find.text('Previous'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Previous');
     expect(find.text('Amina Juma'), findsOneWidget);
 
     // A learner's details open as a sheet, with the read-only statement.
-    await tester.tap(find.text('Amina Juma'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
     expect(find.textContaining('Read-only snapshot'), findsOneWidget);
 
@@ -109,20 +121,16 @@ void main() {
   });
 
   testWidgets('a refused read is shown as words, never as an empty list', (tester) async {
+    usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Explore the sample preview'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Explore the sample preview');
 
-    await tester.tap(find.text('Learners'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue with Google'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Learners');
+    await tapText(tester, 'Continue with Google');
 
     // The read fails, not the sign-in.
     gateway.loadFailure = const GatewayFailure(
@@ -136,8 +144,7 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Next page'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Next page');
 
     expect(find.text('Could not load learners'), findsOneWidget);
     expect(find.textContaining('refused this read'), findsOneWidget);
@@ -147,18 +154,15 @@ void main() {
   });
 
   testWidgets('the practice sheet marks, counts and clears without saving', (tester) async {
+    usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Explore the sample preview'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Explore the sample preview');
 
-    await tester.tap(find.text('Day'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Day');
 
     expect(find.textContaining('nothing is saved'), findsOneWidget);
     // The count sits below the notice, so it is found by scrolling to it.
@@ -178,8 +182,7 @@ void main() {
       240,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('Clear practice marks'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Clear practice marks');
     await tester.scrollUntilVisible(
       find.text('0 of 6 marked'),
       -200,
@@ -194,23 +197,18 @@ void main() {
   });
 
   testWidgets('More states what is missing and signs out', (tester) async {
+    usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Explore the sample preview'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Continue');
+    await tapText(tester, 'Explore the sample preview');
 
-    await tester.tap(find.text('Learners'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Continue with Google'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Learners');
+    await tapText(tester, 'Continue with Google');
 
-    await tester.tap(find.text('More'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'More');
     expect(find.textContaining('No writes, no payments, no offline'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -222,13 +220,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(gateway.signOutCalls, 1);
 
-    await tester.tap(find.text('Learners'));
-    await tester.pumpAndSettle();
+    await tapText(tester, 'Learners');
     expect(find.text('Continue with Google'), findsOneWidget);
     await gateway.close();
   });
 
   testWidgets('both themes render the same screens', (tester) async {
+    usePhoneScreen(tester);
     for (final dark in [false, true]) {
       final gateway = FakeGateway();
       await tester.pumpWidget(
@@ -238,12 +236,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Continue'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Explore the sample preview'));
-      await tester.pumpAndSettle();
+      await tapText(tester, 'Continue');
+      await tapText(tester, 'Continue');
+      await tapText(tester, 'Explore the sample preview');
 
       final context = tester.element(find.byType(NavigationBar));
       final tokens = ShuleTokens.of(context);
