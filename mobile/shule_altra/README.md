@@ -21,20 +21,22 @@ Being precise about this is the point of the pilot, so it comes before the
 instructions.
 
 **Verified by CI on every push to `mobile/shule_altra/**`**
-(`.github/workflows/mobile-preview.yml`, job `android-preview`):
+(`.github/workflows/mobile-preview.yml`, job `android-preview`). The run on the
+merge commit of pull request #30 passed every step, in this order:
 
 1. `flutter create` generates the Android scaffold into a temp directory and
    `tool/configure_android.py` applies the minimum API level, NDK, internet
-   permission and backup policy, with its own unit test run first.
+   permission and backup policy, with its own unit tests run first.
 2. `flutter pub get`
 3. `flutter analyze` — **any** warning fails the job.
-4. `flutter test` — contrast, learner mapping, configuration, session and widget
-   tests.
+4. `flutter test` — 62 tests: contrast (every text pair the app draws, both
+   themes), reduced motion, learner mapping, configuration guards, session
+   behaviour and end-to-end widget flows at 390x844.
 5. `flutter build apk --debug` — an unsigned debug APK, uploaded as the artifact
    `shule-altra-prototype-debug-apk` (7-day retention).
 
-The badge on the pull request is the evidence. If the job is red, the app is not
-verified, whatever this file says.
+That proves the app compiles, that its tests pass, and that a debug APK can be
+produced. If the job is red, none of that is true, whatever this file says.
 
 **Not verified, and it must be checked on a device before anyone relies on it:**
 
@@ -49,8 +51,11 @@ verified, whatever this file says.
 - Anything to do with money or attendance *writing*: it does not exist.
 
 The authoring environment had no Flutter or Android SDK, so **this code was
-written without being compiled locally**. CI is what compiles it. Treat the first
-green run as the start of verification, not the end of it.
+written without being compiled locally**. Every fix in the pull request's history
+came from a CI run reading back its own failure — including a real layout bug
+(the register's page buttons overflowed a 390 px screen by up to 91 px) and a
+real state bug (clearing the practice sheet did nothing, because the draft was a
+`final` field). A green run is the start of verification, not the end of it.
 
 ---
 
