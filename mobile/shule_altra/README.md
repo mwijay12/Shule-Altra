@@ -80,6 +80,31 @@ flutter run
 Sample preview only: `flutter run` and choose **Explore the sample preview**.
 Nothing else is needed — no account, no Firebase, no network.
 
+### The demo credential
+
+The sample preview comes with a sign-in, so the register, paging, search and the
+learner sheet can all be reached on a phone without a Firebase project:
+
+| | |
+| --- | --- |
+| Email | `demo@shule.test` |
+| Password | `shule-demo` |
+
+Both are printed on the sign-in form itself, with a button that fills them in.
+
+What that credential can and cannot do, stated plainly:
+
+- It **only** unlocks the sample gateway: six fictional learners, held in memory,
+  reading nothing and writing nothing.
+- It **cannot** read a school's register. The live path uses Firebase Auth, which
+  has never heard of this password, and the live form does not show the demo
+  fields at all.
+- A school that does not want it can build without it:
+  `--dart-define=DISABLE_DEMO_SIGN_IN=true` removes the form and makes the
+  service refuse even if something calls it.
+- `test/demo_sign_in_test.dart` holds all of the above: wrong passwords, a
+  gateway that has no demo door, and the build flag.
+
 ### The live path
 
 Build with the public client identifiers of **your** Firebase project:
