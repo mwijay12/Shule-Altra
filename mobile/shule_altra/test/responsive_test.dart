@@ -72,17 +72,24 @@ void main() {
         await _tap(tester, 'Continue with Google');
         await _expectNoOverflow(tester, 'register, loaded');
 
-        // A learner's sheet.
+        // A learner's sheet. It is dismissed with the back gesture, not by
+        // tapping a guessed coordinate: a tap that misses the barrier leaves the
+        // sheet up, and every later tap lands on the barrier instead.
         await _tap(tester, 'Amina Juma');
         await _expectNoOverflow(tester, 'learner detail');
-        await tester.tapAt(const Offset(10, 10)); // dismiss the sheet
+        await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
+        expect(find.text('Continue with Google'), findsNothing,
+            reason: 'the sheet must be closed before moving on');
 
         // The practice sheet, scrolled far enough to reach the first mark, then
         // the honest page. (At 1.3x text the mark pills are well below the fold on
         // a phone, and a lazily built list has not created them yet.)
         await _tap(tester, 'Day');
         await _expectNoOverflow(tester, 'school day');
+        // Confirm the tab really changed before looking for its content.
+        expect(find.text('Practice only, nothing saved'), findsOneWidget,
+            reason: 'the Day tab did not open');
         await tester.scrollUntilVisible(
           find.text('Present').first,
           300,
