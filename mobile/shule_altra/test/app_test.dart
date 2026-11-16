@@ -75,15 +75,17 @@ void main() {
     await tapText(tester, 'Continue');
     await tapText(tester, 'Explore the sample preview');
 
-    // The sample preview is labelled on the home screen, in words. The label is
-    // below the fold, and a lazily built list does not create it until scrolled.
+    // The sample preview is labelled with the gateway's own source, in words.
+    // (The injected fake calls itself "Fake"; the shipped sample gateway says
+    // "Sample · fictional learners".) The label is below the fold, and a lazily
+    // built list does not create it until it is scrolled to.
     expect(find.textContaining('A little more room'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.textContaining('Sample · fictional learners'),
+      find.textContaining('Fake'),
       160,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.textContaining('Sample · fictional learners'), findsOneWidget);
+    expect(find.textContaining('Fake'), findsOneWidget);
 
     await tapText(tester, 'Learners');
 
