@@ -35,9 +35,13 @@ class AppSession extends ChangeNotifier {
 
   LoadState _state = LoadState.idle;
   List<Learner> _rows = const [];
-  Object? _cursor;
-  bool _hasMore = false;
-  final List<Object?> _previousCursors = [];
+
+  /// The cursor that fetched the page on screen, and the cursor for the page
+  /// after it. Two different values: paging backwards needs the cursor that
+  /// produced this page, not the one that would leave it.
+  Object? _pageCursor;
+  Object? _forwardCursor;
+  final List<Object?> _history = [];
 
   bool _disposed = false;
 
@@ -59,9 +63,9 @@ class AppSession extends ChangeNotifier {
 
   List<Learner> get rows => _rows;
 
-  bool get canGoBack => _previousCursors.isNotEmpty;
+  bool get canGoBack => _history.isNotEmpty;
 
-  bool get canGoForward => _hasMore;
+  bool get canGoForward => _forwardCursor != null;
 
   String get sourceLabel => gateway.sourceLabel;
 
@@ -85,12 +89,7 @@ class AppSession extends ChangeNotifier {
     _uid = uid;
     // A different account, or none: nothing loaded from the previous session may
     // survive, even briefly.
-    _rows = const [];
-    _cursor = null;
-    _hasMore = false;
-    _previousCursors.clear();
-    _state = LoadState.idle;
-    _lastFailure = null;
+    _forgetPages();
     _notify();
   }
 
@@ -102,13 +101,17 @@ class AppSession extends ChangeNotifier {
   }
 
   void _clearRows() {
-    _rows = const [];
-    _cursor = null;
-    _hasMore = false;
-    _previousCursors.clear();
+    _forgetPages();
     _state = LoadState.idle;
     _lastFailure = null;
     _notify();
+  }
+
+  void _forgetPages() {
+    _rows = const [];
+    _pageCursor = null;
+    _forwardCursor = null;
+    _history.clear();
   }
 
   Future<void> _run(Future<void> Function() action) async {
@@ -131,19 +134,22 @@ class AppSession extends ChangeNotifier {
   /// The first page. Called by the register when it opens and when it refreshes.
   Future<void> loadFirstPage() async {
     if (_busy) return;
-    _previousCursors.clear();
+    _history.clear();
     await _load(after: null);
   }
 
   Future<void> loadNextPage() async {
-    if (_busy || !_hasMore) return;
-    _previousCursors.add(_cursor);
-    await _load(after: _cursor);
+    if (_busy || _forwardCursor == null) return;
+    final target = _forwardCursor;
+    // Coming back means asking for the page that is on screen now, so remember
+    // how *it* was fetched.
+    _history.add(_pageCursor);
+    await _load(after: target);
   }
 
   Future<void> loadPreviousPage() async {
-    if (_busy || _previousCursors.isEmpty) return;
-    final cursor = _previousCursors.removeLast();
+    if (_busy || _history.isEmpty) return;
+    final cursor = _history.removeLast();
     await _load(after: cursor);
   }
 
@@ -154,8 +160,8 @@ class AppSession extends ChangeNotifier {
     _notify();
     try {
       final page = await gateway.loadLearners(after: after);
-      _cursor = page.nextCursor;
-      _hasMore = page.hasMore;
+      _pageCursor = after;
+      _forwardCursor = page.nextCursor;
       _rows = page.rows;
       _state = LoadState.ready;
     } on GatewayFailure catch (error) {

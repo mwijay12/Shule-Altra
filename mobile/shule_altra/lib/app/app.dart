@@ -32,13 +32,14 @@ class ShuleApp extends StatefulWidget {
         themeMode = null,
         _injected = null;
 
-  /// A gateway may be injected by a test. When it is, the app starts signed out
-  /// inside [initialMode], and [themeMode] can pin the theme instead of
+  /// A gateway may be injected by a test. When it is, the app starts in
+  /// [initialMode] (onboarding unless the test says otherwise), uses that gateway
+  /// for the sample path too, and [themeMode] can pin the theme instead of
   /// following the phone.
   const ShuleApp.withGateway({
     super.key,
     required SchoolGateway gateway,
-    this.initialMode = AppMode.sample,
+    this.initialMode = AppMode.onboarding,
     this.themeMode,
   }) : _injected = gateway;
 
@@ -67,12 +68,11 @@ class _ShuleAppState extends State<ShuleApp> {
   @override
   void initState() {
     super.initState();
+    _mode = widget.initialMode;
     final injected = widget._injected;
-    if (injected != null) {
-      _mode = widget.initialMode;
+    // Onboarding has no data path yet, so no session is started for it.
+    if (injected != null && widget.initialMode != AppMode.onboarding) {
       _startSession(injected);
-    } else {
-      _mode = AppMode.onboarding;
     }
   }
 
@@ -120,11 +120,16 @@ class _ShuleAppState extends State<ShuleApp> {
   }
 
   void _useSample() {
+    // A test injects one gateway and both paths use it; the shipped app always
+    // gets the real sample gateway here.
+    final gateway = widget._injected ?? SampleGateway();
     setState(() {
       _mode = AppMode.sample;
       _liveProblem = null;
       _tab = 0;
-      _startSession(SampleGateway());
+      _session?.dispose();
+      _session = null;
+      _startSession(gateway);
     });
   }
 

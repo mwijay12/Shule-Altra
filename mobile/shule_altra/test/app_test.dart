@@ -22,6 +22,10 @@ void main() {
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
 
+    // Onboarding first: nothing is connected, and no session exists yet.
+    expect(find.text('Connect my school'), findsNothing);
+    expect(gateway.loadCalls, 0);
+
     // First promise, in words, before anything is connected.
     expect(find.textContaining('Every learner'), findsOneWidget);
     expect(find.text('Connect my school'), findsNothing);
