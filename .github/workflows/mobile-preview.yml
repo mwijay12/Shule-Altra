@@ -22,7 +22,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  # `contents: write` is only used by the release step at the bottom of this file,
+  # and only on a branch push. The artifact CDN is not reachable from every
+  # network, so the APK is also published as a release asset that a phone can
+  # download with one tap.
+  contents: write
 
 concurrency:
   group: mobile-pilot-${{ github.ref }}
@@ -96,3 +100,41 @@ jobs:
           path: mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
           retention-days: 7
+
+      # A phone that is not signed in to GitHub cannot download a workflow
+      # artifact; it can download a release asset. This publishes the same APK
+      # under a rolling tag on the branch that built it, and says in the release
+      # notes exactly what the build is and what the demo credential opens.
+      - name: Publish the APK as a release asset
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tag="apk-${REF_NAME//\//-}"
+          short="${SHA:0:7}"
+          apk="mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk"
+          cp "$apk" "${RUNNER_TEMP}/shule-altra-${short}-debug.apk"
+          notes="$(cat <<EOF
+          Debug build of the Shule Altra mobile pilot, from \`${short}\` on \`${REF_NAME}\`.
+
+          **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
+
+          - Email: \`demo@shule.test\`
+          - Password: \`shule-demo\`
+
+          That credential opens six fictional learners held on the phone. It is not a
+          school account, it stores nothing, and it cannot read a real register — the
+          live path refuses it in code. This is a debug APK, unsigned for release.
+          EOF
+          )"
+          # The tag is rolling: one tag per branch, so old builds do not pile up and
+          # the newest link always works.
+          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+          gh release create "$tag" \
+            "${RUNNER_TEMP}/shule-altra-${short}-debug.apk" \
+            --title "Shule Altra mobile pilot — ${short}" \
+            --notes "$notes" \
+            --target "$SHA" \
+            --prerelease
