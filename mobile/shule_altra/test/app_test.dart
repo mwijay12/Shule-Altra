@@ -9,7 +9,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/app.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
 import 'package:shule_altra_mobile/design/tokens.dart';
-import 'package:shule_altra_mobile/screens/learner_detail.dart';
 
 import 'fake_gateway.dart';
 
