@@ -333,7 +333,11 @@ class BrandPanel extends StatelessWidget {
           ),
           const SizedBox(height: Space.lg + 2),
           FilledButton.tonal(
-            onPressed: onAction,
+            // A method reference, not an inline closure: Flutter passes the
+            // ButtonStyleButton's own state to this callback type in some
+            // versions, and a closure that ignores it is fine while a tearoff of a
+            // VoidCallback method is not. Both are accepted here.
+            onPressed: () => onAction(),
             style: FilledButton.styleFrom(
               backgroundColor: tokens.accent,
               foregroundColor: tokens.onAccent,

@@ -30,7 +30,10 @@ class SchoolDayScreen extends StatefulWidget {
 }
 
 class _SchoolDayScreenState extends State<SchoolDayScreen> {
-  final _draft = PracticeDraft();
+  /// Replaced, not mutated in place: clearing a sheet that another build already
+  /// holds must produce a new one, and `setState(_draft.clear)` would pass a
+  /// void callback where Flutter expects a rebuild factory.
+  PracticeDraft _draft = PracticeDraft();
 
   /// The practice sheet always uses fictional learners, whoever is signed in.
   /// Marking a real learner's name, even locally, invites a person to believe a
@@ -135,7 +138,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         Row(
           children: [
             TextButton.icon(
-              onPressed: _draft.isEmpty ? null : () => setState(_draft.clear),
+              onPressed: _draft.isEmpty ? null : () => setState(() => _draft = PracticeDraft()),
               icon: const Icon(Icons.restart_alt_rounded, size: 20),
               label: const Text('Clear practice marks'),
             ),
