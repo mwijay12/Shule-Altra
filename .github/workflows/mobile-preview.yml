@@ -105,19 +105,22 @@ jobs:
       # artifact; it can download a release asset. This publishes the same APK
       # under a rolling tag on the branch that built it, and says in the release
       # notes exactly what the build is and what the demo credential opens.
+      #
+      # Paths here are relative to `mobile/shule_altra` (the job's working
+      # directory), not the repository root.
       - name: Publish the APK as a release asset
-        if: github.event_name == 'push'
+        if: github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          SHA: ${{ github.sha }}
-          REF_NAME: ${{ github.ref_name }}
         run: |
-          tag="apk-${REF_NAME//\//-}"
-          short="${SHA:0:7}"
-          apk="mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk"
-          cp "$apk" "${RUNNER_TEMP}/shule-altra-${short}-debug.apk"
+          tag="apk-${GITHUB_REF_NAME//\//-}"
+          short="${GITHUB_SHA:0:7}"
+          built="build/app/outputs/flutter-apk/app-debug.apk"
+          release="${RUNNER_TEMP}/shule-altra-${short}-debug.apk"
+          log="${RUNNER_TEMP}/release.log"
+          cp "$built" "$release"
           notes="$(cat <<EOF
-          Debug build of the Shule Altra mobile pilot, from \`${short}\` on \`${REF_NAME}\`.
+          Debug build of the Shule Altra mobile pilot, from \`${short}\` on \`${GITHUB_REF_NAME}\`.
 
           **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
 
@@ -131,10 +134,19 @@ jobs:
           )"
           # The tag is rolling: one tag per branch, so old builds do not pile up and
           # the newest link always works.
-          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
-          gh release create "$tag" \
-            "${RUNNER_TEMP}/shule-altra-${short}-debug.apk" \
-            --title "Shule Altra mobile pilot — ${short}" \
-            --notes "$notes" \
-            --target "$SHA" \
-            --prerelease
+          {
+            gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+            gh release create "$tag" "$release" \
+              --title "Shule Altra mobile pilot — ${short}" \
+              --notes "$notes" \
+              --target "$GITHUB_SHA" \
+              --prerelease
+          } > "$log" 2>&1 || {
+            # The step log is not readable from every network, so the reason is
+            # repeated as an annotation, which is.
+            while IFS= read -r line; do
+              echo "::error::${line//\%/%25}"
+            done < <(tail -n 12 "$log")
+            exit 1
+          }
+          echo "Published $tag"
