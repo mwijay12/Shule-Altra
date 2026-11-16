@@ -72,6 +72,8 @@ void main() {
 
     // The sample preview is labelled on the home screen, in words.
     expect(find.textContaining('A little more room'), findsOneWidget);
+    await tester.ensureVisible(find.text('Sample · fictional learners'));
+    await tester.pumpAndSettle();
     expect(find.text('Sample · fictional learners'), findsOneWidget);
 
     await tapText(tester, 'Learners');

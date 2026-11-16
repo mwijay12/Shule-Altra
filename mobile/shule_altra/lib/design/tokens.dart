@@ -27,6 +27,8 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     required this.mutedSurface,
     required this.ink,
     required this.inkMuted,
+    required this.brandSurface,
+    required this.onBrand,
     required this.primary,
     required this.onPrimary,
     required this.accent,
@@ -54,7 +56,20 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
   /// Secondary text. Still readable: 5.5:1 (day), 9.2:1 (night).
   final Color inkMuted;
 
-  /// The deep green of the brand, and the "brand" card by day.
+  /// The background of the "brand" card: a filled block, not a text surface.
+  ///
+  /// It is separate from [primary] because they play different roles: by day the
+  /// card is the deep green, at night it is the dark green, and [accent] and
+  /// [onPrimary] are the only things drawn on it. Measured, not guessed: 9.59:1
+  /// day, 13.01:1 night for accent on brand.
+  final Color brandSurface;
+
+  /// Text on [brandSurface]. By day this is white; at night it is the light ink,
+  /// because the card is a dark green there too (14.12:1).
+  final Color onBrand;
+
+  /// The primary action colour: a filled button by day, a light green button at
+  /// night. Never a background for body text.
   final Color primary;
 
   /// Text and icons on [primary].
@@ -80,7 +95,9 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     mutedSurface: Color(0xFFEAF0E6),
     ink: Color(0xFF14312A), // 12.97:1 on canvas
     inkMuted: Color(0xFF55685F), // 5.52:1 on canvas
-    primary: Color(0xFF183D36), // ink/primary 11.9:1
+    brandSurface: Color(0xFF183D36), // accent: 9.59:1, onBrand: 11.93:1
+    onBrand: Color(0xFFFFFFFF),
+    primary: Color(0xFF183D36), // onPrimary on this: 11.93:1
     onPrimary: Color(0xFFFFFFFF),
     accent: Color(0xFFD9EFAA), // ink/accent 11.2:1
     onAccent: Color(0xFF14312A),
@@ -97,7 +114,9 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     mutedSurface: Color(0xFF182E26),
     ink: Color(0xFFECF1E8), // 16.2:1 on canvas
     inkMuted: Color(0xFFA9BAB2), // 9.2:1 on canvas
-    primary: Color(0xFFD6EDA9), // light green button on dark canvas 14.7:1
+    brandSurface: Color(0xFF12241E), // accent: 13.01:1, onBrand: 14.12:1
+    onBrand: Color(0xFFECF1E8),
+    primary: Color(0xFFD6EDA9), // onPrimary on this: 14.66:1
     onPrimary: Color(0xFF0A1512),
     accent: Color(0xFFD9EFAA), // 15.0:1 on canvas
     onAccent: Color(0xFF0A1512),
@@ -113,13 +132,17 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     return tokens ?? day;
   }
 
-  /// The pairs the contrast test checks, named the way they are used.
+  /// The backgrounds a person can read text on, named the way they are used.
+  ///
+  /// `primary` is deliberately absent: it is the fill of a button, so the only
+  /// text that may sit on it is [onPrimary] (a large, bold label). Body text on a
+  /// primary fill is 1.17:1 by day, and the test below must not pretend
+  /// otherwise.
   Map<String, Color> get surfacesForTest => {
         'canvas': canvas,
         'surface': surface,
         'mutedSurface': mutedSurface,
-        'primary': primary,
-        'accent': accent,
+        'brandSurface': brandSurface,
       };
 
   @override
@@ -130,6 +153,8 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     Color? mutedSurface,
     Color? ink,
     Color? inkMuted,
+    Color? brandSurface,
+    Color? onBrand,
     Color? primary,
     Color? onPrimary,
     Color? accent,
@@ -146,6 +171,8 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
       mutedSurface: mutedSurface ?? this.mutedSurface,
       ink: ink ?? this.ink,
       inkMuted: inkMuted ?? this.inkMuted,
+      brandSurface: brandSurface ?? this.brandSurface,
+      onBrand: onBrand ?? this.onBrand,
       primary: primary ?? this.primary,
       onPrimary: onPrimary ?? this.onPrimary,
       accent: accent ?? this.accent,
@@ -167,6 +194,8 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
       mutedSurface: Color.lerp(mutedSurface, other.mutedSurface, t)!,
       ink: Color.lerp(ink, other.ink, t)!,
       inkMuted: Color.lerp(inkMuted, other.inkMuted, t)!,
+      brandSurface: Color.lerp(brandSurface, other.brandSurface, t)!,
+      onBrand: Color.lerp(onBrand, other.onBrand, t)!,
       primary: Color.lerp(primary, other.primary, t)!,
       onPrimary: Color.lerp(onPrimary, other.onPrimary, t)!,
       accent: Color.lerp(accent, other.accent, t)!,

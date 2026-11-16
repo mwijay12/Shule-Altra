@@ -98,7 +98,7 @@ class ShuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final radius = BorderRadius.circular(Corners.hero);
-    final background = brand ? tokens.primary : tokens.surface;
+    final background = brand ? tokens.brandSurface : tokens.surface;
     final content = Padding(padding: padding, child: child);
 
     return Material(
@@ -316,7 +316,7 @@ class BrandPanel extends StatelessWidget {
           Text(
             title,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: tokens.onPrimary,
+                  color: tokens.onBrand,
                   height: 1.14,
                   fontSize: 25,
                   fontWeight: FontWeight.w800,
@@ -325,8 +325,10 @@ class BrandPanel extends StatelessWidget {
           const SizedBox(height: Space.sm),
           Text(
             body,
+            // 82% of the ink, not of a pure white: the drawn colour is measured
+            // too, at 8.59:1 by day and 9.88:1 at night.
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: tokens.onPrimary.withValues(alpha: 0.82),
+                  color: tokens.onBrand.withValues(alpha: 0.82),
                 ),
           ),
           const SizedBox(height: Space.lg + 2),

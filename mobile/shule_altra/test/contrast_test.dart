@@ -42,6 +42,39 @@ void expectPass(String name, Color fg, Color bg, double floor) {
   );
 }
 
+/// Where each pair appears, so the table cannot drift from the screens.
+typedef _Use = ({
+  String where,
+  Color Function(ShuleTokens) foreground,
+  Color Function(ShuleTokens) background,
+});
+
+/// Every text pair the app actually draws, and the floor it must clear.
+///
+/// This is a table of real uses, not a cross product of every colour: `ink` on a
+/// dark brand fill is 1.17:1 and is meaningless because the app never draws it.
+/// If a new screen introduces a pair, it belongs in this table.
+final List<_Use> _textUses = <_Use>[
+  // Headings and body on the page.
+  (where: 'body on canvas', foreground: (t) => t.ink, background: (t) => t.canvas),
+  (where: 'body on card', foreground: (t) => t.ink, background: (t) => t.surface),
+  (where: 'body on notice', foreground: (t) => t.ink, background: (t) => t.mutedSurface),
+  // Secondary text: captions, the source label, hints.
+  (where: 'muted text on canvas', foreground: (t) => t.inkMuted, background: (t) => t.canvas),
+  (where: 'muted text on card', foreground: (t) => t.inkMuted, background: (t) => t.surface),
+  (where: 'muted text on notice', foreground: (t) => t.inkMuted, background: (t) => t.mutedSurface),
+  // Status words: the balance marker, the "marked present" line, cautions.
+  (where: 'danger on notice', foreground: (t) => t.danger, background: (t) => t.mutedSurface),
+  (where: 'danger on canvas', foreground: (t) => t.danger, background: (t) => t.canvas),
+  (where: 'success on card', foreground: (t) => t.success, background: (t) => t.surface),
+  (where: 'warning on card', foreground: (t) => t.warning, background: (t) => t.surface),
+  // Filled surfaces: button labels and the brand card.
+  (where: 'button label', foreground: (t) => t.onPrimary, background: (t) => t.primary),
+  (where: 'pill label', foreground: (t) => t.onAccent, background: (t) => t.accent),
+  (where: 'brand eyebrow', foreground: (t) => t.accent, background: (t) => t.brandSurface),
+  (where: 'brand heading', foreground: (t) => t.onBrand, background: (t) => t.brandSurface),
+];
+
 void main() {
   final themes = <String, ShuleTokens>{
     'day': ShuleTokens.day,
@@ -53,26 +86,33 @@ void main() {
       final name = entry.key;
       final tokens = entry.value;
 
-      test('$name body text on every surface', () {
-        for (final surface in tokens.surfacesForTest.entries) {
-          expectPass('$name ink on ${surface.key}', tokens.ink, surface.value, kBodyContrast);
-          expectPass('$name inkMuted on ${surface.key}', tokens.inkMuted, surface.value, kBodyContrast);
-        }
+      for (final use in _textUses) {
+        test('$name ${use.where}', () {
+          expectPass(
+            '$name ${use.where}',
+            use.foreground(tokens),
+            use.background(tokens),
+            kBodyContrast,
+          );
+        });
+      }
+
+      test('$name the brand card body text, at the opacity it is drawn', () {
+        // BrandPanel draws its body at 82% of onPrimary. Measuring the plain
+        // colour would pass while the drawn one might not.
+        final blended = Color.alphaBlend(
+          tokens.onBrand.withValues(alpha: 0.82),
+          tokens.brandSurface,
+        );
+        expectPass('$name brand body', blended, tokens.brandSurface, kBodyContrast);
       });
 
-      test('$name text that sits on the brand and accent fills', () {
-        expectPass('$name onPrimary', tokens.onPrimary, tokens.primary, kBodyContrast);
-        expectPass('$name onAccent', tokens.onAccent, tokens.accent, kBodyContrast);
-        // The brand card puts the accent eyebrow straight on the deep green.
-        expectPass('$name accent on primary', tokens.accent, tokens.primary, kBodyContrast);
-      });
-
-      test('$name status colours are readable, not decorative', () {
-        for (final surface in tokens.surfacesForTest.entries) {
-          expectPass('$name danger on ${surface.key}', tokens.danger, surface.value, kBodyContrast);
-          expectPass('$name success on ${surface.key}', tokens.success, surface.value, kBodyContrast);
-          expectPass('$name warning on ${surface.key}', tokens.warning, surface.value, kBodyContrast);
-        }
+      test('$name hairlines are decorative, and are not used as text', () {
+        // Recorded rather than asserted at 4.5:1: a border is not read, and
+        // pretending it is would push the palette into something it is not.
+        final border = tokens.border;
+        expect(border, isNot(tokens.ink));
+        expect(border, isNot(tokens.inkMuted));
       });
     }
   });
@@ -96,7 +136,7 @@ void main() {
       final light = buildTheme(Brightness.light);
       expect(light.filledButtonTheme.style?.minimumSize?.resolve(<WidgetState>{})?.height,
           greaterThanOrEqualTo(kMinTapTarget));
-      expect(light.outlinedButtonTheme.style?.minimumSize?.resolve({})?.height,
+      expect(light.outlinedButtonTheme.style?.minimumSize?.resolve(<WidgetState>{})?.height,
           greaterThanOrEqualTo(kMinTapTarget));
     });
   });
@@ -113,13 +153,15 @@ void main() {
         ),
       );
 
-      // First frame: no controller, no fade, no offset. The text is there.
       expect(find.text('always visible'), findsOneWidget);
       expect(
-        tester.widget<Opacity>(find.ancestor(
-          of: find.text('always visible'),
-          matching: find.byType(Opacity),
-        ).first).opacity,
+        tester
+            .widget<Opacity>(
+              find
+                  .ancestor(of: find.text('always visible'), matching: find.byType(Opacity))
+                  .first,
+            )
+            .opacity,
         1.0,
       );
       await tester.pumpAndSettle();
@@ -139,10 +181,11 @@ void main() {
       await tester.pump();
       expect(find.text('sticker'), findsOneWidget);
       expect(
-        tester.widget<Opacity>(find.ancestor(
-          of: find.text('sticker'),
-          matching: find.byType(Opacity),
-        ).first).opacity,
+        tester
+            .widget<Opacity>(
+              find.ancestor(of: find.text('sticker'), matching: find.byType(Opacity)).first,
+            )
+            .opacity,
         1.0,
       );
     });
