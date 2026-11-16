@@ -13,7 +13,10 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-CHUNK = 50_000
+# GitHub silently drops an annotation whose message is too long, so the log is
+# split well below that limit. A dropped annotation is worse than none: it looks
+# like the failure was never reported.
+CHUNK = 3_500
 
 
 def escape(text: str) -> str:

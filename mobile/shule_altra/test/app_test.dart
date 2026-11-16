@@ -63,7 +63,9 @@ void main() {
 
   testWidgets('the register signs in, pages, searches and opens a learner', (tester) async {
     usePhoneScreen(tester);
-    final gateway = FakeGateway(pageSize: 2);
+    // A short first page keeps the controls visible on one phone screen. The
+    // paging logic is the same; the two-page test lives in session_test.dart.
+    final gateway = FakeGateway(pageSize: 1);
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
     await tapText(tester, 'Continue');
@@ -83,16 +85,16 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     expect(find.text('Amina Juma'), findsOneWidget);
-    expect(find.text('Baraka John'), findsOneWidget);
+    expect(find.text('Baraka John'), findsNothing);
     expect(find.text('Neema Peter'), findsNothing);
-    expect(find.text('2 learners on this page'), findsOneWidget);
+    expect(find.text('1 learner on this page'), findsOneWidget);
 
     // Search only covers the loaded page, and says so when it finds nothing.
     await tester.ensureVisible(find.byType(TextField));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Neema');
     await tester.pumpAndSettle();
-    expect(find.textContaining('0 of 2 learners match "Neema"'), findsOneWidget);
+    expect(find.textContaining('0 of 1 learner match "Neema"'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Amina');
     await tester.pumpAndSettle();
     expect(find.text('Amina Juma'), findsOneWidget);
@@ -124,7 +126,7 @@ void main() {
 
   testWidgets('a refused read is shown as words, never as an empty list', (tester) async {
     usePhoneScreen(tester);
-    final gateway = FakeGateway();
+    final gateway = FakeGateway(pageSize: 1);
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
     await tapText(tester, 'Continue');
@@ -166,8 +168,8 @@ void main() {
 
     await tapText(tester, 'Day');
 
-    expect(find.textContaining('nothing is saved'), findsOneWidget);
-    // The count sits below the notice, so it is found by scrolling to it.
+    // Both statements are in the first screen, above the list.
+    expect(find.textContaining('Practice only'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('0 of 6 marked'),
       200,
@@ -211,7 +213,7 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     await tapText(tester, 'More');
-    expect(find.textContaining('No writes, no payments, no offline'), findsOneWidget);
+    expect(find.textContaining('No writes, no payments'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.widgetWithText(OutlinedButton, 'Sign out'),

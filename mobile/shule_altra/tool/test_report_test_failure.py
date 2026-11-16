@@ -24,6 +24,15 @@ class ReportTests(unittest.TestCase):
     def test_a_clean_log_still_gets_one_annotation(self) -> None:
         self.assertEqual(len(report(["all good"])), 1)
 
+    def test_a_long_log_is_split_into_annotations_github_will_keep(self) -> None:
+        lines = [f"line {i} " + "x" * 80 for i in range(200)]
+        commands = report(lines)
+        self.assertGreater(len(commands), 3)
+        # Escaping can expand text; every annotation must stay well under the
+        # command-length limit GitHub applies.
+        for command in commands:
+            self.assertLess(len(command), 6_000)
+
 
 if __name__ == "__main__":
     unittest.main()
