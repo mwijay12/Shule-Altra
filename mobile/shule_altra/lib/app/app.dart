@@ -41,6 +41,7 @@ class ShuleApp extends StatefulWidget {
     required SchoolGateway gateway,
     this.initialMode = AppMode.onboarding,
     this.themeMode,
+    this.textScale,
   }) : _injected = gateway;
 
   final SchoolGateway? _injected;
@@ -48,6 +49,9 @@ class ShuleApp extends StatefulWidget {
 
   /// Null means "follow the phone's setting", which is what ships.
   final ThemeMode? themeMode;
+
+  /// Tests pin the system font scale here. Null follows the phone.
+  final double? textScale;
 
   @override
   State<ShuleApp> createState() => _ShuleAppState();
@@ -154,10 +158,19 @@ class _ShuleAppState extends State<ShuleApp> {
       // MaterialApp installs the theme; the switch below therefore reads motion
       // preferences from a context that already has both themes available.
       home: Builder(
-        builder: (context) => AnimatedSwitcher(
-          duration: MotionPrefs.of(context).base,
-          child: _screen(),
-        ),
+        builder: (context) {
+          final scaled = widget.textScale == null
+              ? _screen()
+              : MediaQuery(
+                  data: MediaQuery.of(context)
+                      .copyWith(textScaler: TextScaler.linear(widget.textScale!)),
+                  child: _screen(),
+                );
+          return AnimatedSwitcher(
+            duration: MotionPrefs.of(context).base,
+            child: scaled,
+          );
+        },
       ),
     );
   }
