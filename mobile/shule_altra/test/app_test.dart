@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/app.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
 import 'package:shule_altra_mobile/design/tokens.dart';
+import 'package:shule_altra_mobile/screens/learner_detail.dart';
 
 import 'fake_gateway.dart';
 
@@ -154,10 +155,15 @@ void main() {
     await tester.pumpAndSettle();
     await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
+    // The sheet has its own scroll view; the register's list is still in the tree
+    // behind it, so this must not use `Scrollable.first`.
     await tester.scrollUntilVisible(
       find.textContaining('Read-only snapshot'),
       200,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byType(LearnerDetailSheet),
+        matching: find.byType(Scrollable),
+      ),
     );
     expect(find.textContaining('Read-only snapshot'), findsOneWidget);
 
