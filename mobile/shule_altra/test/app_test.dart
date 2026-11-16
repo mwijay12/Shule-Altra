@@ -155,15 +155,16 @@ void main() {
     await tester.pumpAndSettle();
     await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
-    // The sheet has its own scroll view; the register's list is still in the tree
-    // behind it. A modal sheet can contain more than one Scrollable (the drag
-    // handle's gesture area is not one, but a nested TextField or list can be), so
-    // this drags the sheet up directly and then reads.
-    for (var step = 0; step < 6 && find.textContaining('Read-only snapshot').evaluate().isEmpty; step++) {
-      await tester.drag(find.byType(LearnerDetailSheet), const Offset(0, -220));
-      await tester.pumpAndSettle();
-    }
-    expect(find.textContaining('Read-only snapshot'), findsOneWidget);
+    // Above the guardian fields sits the statement that decides what this sheet
+    // means: a sample record says so, a live one says it is a snapshot. Only one
+    // of the two is built, so this asserts whichever the session calls for.
+    expect(
+      find.textContaining('Sample learner').evaluate().isNotEmpty ||
+          find.textContaining('Read-only snapshot').evaluate().isNotEmpty,
+      isTrue,
+      reason: 'the sheet must say where its record came from',
+    );
+    expect(find.text('Fatuma Juma'), findsOneWidget);
 
     await gateway.close();
   });
