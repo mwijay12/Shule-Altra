@@ -85,7 +85,10 @@ Nothing else is needed — no account, no Firebase, no network.
 CI builds the app and publishes the newest one as a release asset, so a phone can
 download it without a GitHub account:
 
-<https://github.com/mwijay12/Shule-Altra/releases/tag/apk-arena-93ee0225-shule-altra>
+<https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main>
+
+Every branch publishes its own rolling tag (`apk-<branch>`), and `main` publishes
+`apk-main`; each push replaces that branch's tag with the build of the commit.
 
 Take `shule-altra-<sha>-arm64.apk` — about 18 MB, a release build signed with a
 throwaway debug key. The `-debug` file beside it is the same app in debug mode
@@ -95,8 +98,6 @@ installing from your browser; the app is not from the Play Store and has no
 publisher identity to show. To open it: **Continue** twice → **Explore the
 sample preview** → **Learners** → **Fill the demo credential** → **Sign in to
 the demo**.
-
-The tag is rolling: each push replaces it with the build of that commit.
 
 ### The demo credential
 
