@@ -90,12 +90,14 @@ void main() {
         // Confirm the tab really changed before looking for its content.
         expect(find.text('Practice only, nothing saved'), findsOneWidget,
             reason: 'the Day tab did not open');
-        await tester.scrollUntilVisible(
-          find.text('Present').first,
-          300,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await _expectNoOverflow(tester, 'school day, scrolled to marks');
+        // `.first` on an empty finder throws, and a lazily built list has no
+        // pills until they are near the viewport, so walk down until one exists.
+        final marks = find.text('Present');
+        for (var step = 0; step < 12 && marks.evaluate().isEmpty; step++) {
+          await tester.drag(find.byType(Scrollable).first, const Offset(0, -320));
+          await _expectNoOverflow(tester, 'school day, scrolled $step');
+        }
+        expect(marks, findsWidgets, reason: 'the practice marks were never built');
         await _tap(tester, 'Present');
         await _expectNoOverflow(tester, 'school day, marked');
 
