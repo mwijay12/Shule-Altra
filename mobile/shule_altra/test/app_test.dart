@@ -123,12 +123,33 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Next page');
+
+    // A new page arrives at the top of the list, so scroll back up to read it.
+    // (A lazily built list does not have those rows until they are in view.)
+    await tester.scrollUntilVisible(
+      find.text('Neema Peter'),
+      -240,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Neema Peter'), findsOneWidget);
-    expect(find.text('Amina Juma'), findsNothing);
+    expect(find.text('1 learner on this page'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('Previous'),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tapText(tester, 'Previous');
+    await tester.scrollUntilVisible(
+      find.text('Amina Juma'),
+      -240,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Amina Juma'), findsOneWidget);
 
     // A learner's details open as a sheet, with the read-only statement.
+    await tester.ensureVisible(find.text('Amina Juma'));
+    await tester.pumpAndSettle();
     await tapText(tester, 'Amina Juma');
     expect(find.text('one@example.test'), findsOneWidget);
     await tester.scrollUntilVisible(
