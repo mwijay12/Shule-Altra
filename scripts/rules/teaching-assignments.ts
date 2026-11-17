@@ -16,6 +16,7 @@ async function main() {
         setDoc(doc(db, `${root}/staff/teacher`), { role: 'TEACHER', active: true }),
         setDoc(doc(db, `${root}/staff/inactive`), { role: 'TEACHER', active: false }),
         setDoc(doc(db, `${root}/staff/other`), { role: 'TEACHER', active: true }),
+        setDoc(doc(db, `${root}/timetable/schedule-form-1-a`), { schemaVersion: 1, className: 'Form 1', stream: 'A', slots: { monday_p1: { subject: 'Mathematics', teacher: 'Teacher', room: '' } } }),
         setDoc(doc(db, `${root}/students/s1`), { class: 'Form 1', name: 'Test learner' }),
         setDoc(doc(db, `${root}/students/s2`), { class: 'Form 2', name: 'Test learner 2' }),
         setDoc(doc(db, `${root}/staff/teacher/teachingAssignments/Form 1|Mathematics`), { className: 'Form 1', subject: 'Mathematics' }),
@@ -42,6 +43,9 @@ async function main() {
     const lowerCase = await assertSucceeds(getDocs(query(studentList, orderBy('name'), startAt('test'), endAt('test\uf8ff'), limit(1))))
     assert.equal(lowerCase.size, 0)
     await assertFails(getDocs(query(collection(anonymous, `${root}/students`), orderBy('name'), startAt('Test'), endAt('Test\uf8ff'), limit(1))))
+    // Mobile timetable read is online-only and relies on these existing rules.
+    await assertSucceeds(getDoc(doc(teacher, `${root}/timetable/schedule-form-1-a`)))
+    await assertFails(getDoc(doc(anonymous, `${root}/timetable/schedule-form-1-a`)))
     await assertSucceeds(getDoc(doc(teacher, assignment)))
     await assertFails(getDoc(doc(other, assignment)))
     await assertFails(setDoc(doc(teacher, `${root}/staff/teacher/teachingAssignments/Form 1|English`), { className: 'Form 1', subject: 'English' }))

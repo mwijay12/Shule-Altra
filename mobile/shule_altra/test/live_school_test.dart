@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/live_school.dart';
+import 'package:shule_altra_mobile/live_timetable.dart';
 
 class FakeSchoolGateway implements SchoolGateway {
   final controller = StreamController<String?>.broadcast();
@@ -9,6 +10,7 @@ class FakeSchoolGateway implements SchoolGateway {
   String lastPrefix = '';
   @override Stream<String?> get sessionUid => controller.stream;
   @override Future<void> signInWithGoogle() async { controller.add('staff-1'); }
+  @override Future<LiveTimetable?> loadTimetable(String className, String stream) async => const LiveTimetable({'monday_p1': TimetableSlot('Mathematics', 'Mwalimu A', 'Room 1')});
   @override Future<void> signOut() async { controller.add(null); }
   @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) async {
     lastPrefix = namePrefix;
@@ -18,6 +20,15 @@ class FakeSchoolGateway implements SchoolGateway {
 }
 
 void main() {
+  test('timetable schema, free periods and schedule ID match the web format', () {
+    expect(timetableId('Form 1', 'A'), 'schedule-form-1-a');
+    final timetable = LiveTimetable.parse({'schemaVersion': 1, 'className': 'Form 1', 'stream': 'A', 'slots': {'monday_p1': {'subject': 'Math', 'teacher': 'Mwalimu', 'room': ''}}}, 'Form 1', 'A');
+    expect(timetable.slot('Monday', 'p1')?.subject, 'Math');
+    expect(timetable.slot('Monday', 'p2'), isNull);
+    expect(timetablePeriods.where((p) => p.isBreak).map((p) => p.id), ['b1', 'b2']);
+    expect(() => LiveTimetable.parse({'schemaVersion': 1, 'className': 'Form 2', 'stream': 'A', 'slots': {}}, 'Form 1', 'A'), throwsFormatException);
+    expect(() => LiveTimetable.parse({'schemaVersion': 1, 'className': 'Form 1', 'stream': 'A', 'slots': {'monday_p1': {'subject': 1}}}, 'Form 1', 'A'), throwsFormatException);
+  });
   test('configuration requires matching explicitly supplied projects', () {
     const good = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: 'key', appId: 'app', senderId: 'sender', googleWebClientId: 'web-client');
     const mismatch = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'other', apiKey: 'key', appId: 'app', senderId: 'sender', googleWebClientId: 'web-client');
@@ -40,6 +51,12 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add(null); await tester.pumpAndSettle();
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    expect(find.text('Mathematics'), findsOneWidget);
+    expect(find.text('Short break'), findsOneWidget);
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.enterText(find.widgetWithText(TextField, 'School name prefix'), 'Example');
     await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle();
     await tester.tap(find.text('Search school')); await tester.pumpAndSettle();

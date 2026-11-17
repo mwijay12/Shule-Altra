@@ -5,6 +5,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 
 import 'main.dart' show muted, Brand, Notice;
+import 'live_timetable.dart';
 
 /// Firebase Android client configuration is deliberately supplied at build time.
 /// There is no implicit fallback to a different school or Firebase project.
@@ -47,6 +48,7 @@ abstract class SchoolGateway {
   Future<void> signInWithGoogle();
   Future<void> signOut();
   Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''});
+  Future<LiveTimetable?> loadTimetable(String className, String stream);
 }
 
 class FirebaseSchoolGateway implements SchoolGateway {
@@ -68,6 +70,18 @@ class FirebaseSchoolGateway implements SchoolGateway {
     // Clear Firebase authorization even if the Google account-picker cleanup fails.
     await auth.signOut();
     await google.signOut();
+  }
+  @override Future<LiveTimetable?> loadTimetable(String className, String stream) async {
+    final id = timetableId(className, stream);
+    final user = auth.currentUser;
+    if (user == null) throw StateError('Sign in again.');
+    await user.reload();
+    if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
+    await user.getIdToken(true);
+    final doc = await firestore.collection('schools').doc('school-001').collection('timetable').doc(id).get(const GetOptions(source: Source.server));
+    if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
+    if (!doc.exists) return null;
+    return LiveTimetable.parse(doc.data()!, className, stream);
   }
   @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) async {
     // Force a fresh identity and server read. No offline data is shown in this
@@ -138,6 +152,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   String? lastUid;
   Future<_LearnerResult>? learners;
   bool busy = false;
+  bool showTimetable = false;
   String? message;
   String query = '';
   String draftPrefix = '';
@@ -160,7 +175,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
-    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); message = null; });
+    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
@@ -168,9 +183,9 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
-      if (snapshot.hasError) { learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
+      if (snapshot.hasError) { showTimetable = false; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-      if (lastUid != snapshot.data) { learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
+      if (lastUid != snapshot.data) { showTimetable = false; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -180,6 +195,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         if (message != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 22), const Notice(title: 'Online read-only pilot', body: 'Your school permissions still apply. Offline recording and synchronisation are not available yet.'),
       ]);
+      if (showTimetable) return LiveTimetablePanel(key: ValueKey(snapshot.data), load: widget.gateway.loadTimetable, onBack: () => setState(() => showTimetable = false), onSignOut: () => signOut());
       return ListView(padding: const EdgeInsets.all(24), children: [
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
         const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
@@ -189,7 +205,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         TextField(key: ValueKey('school-search-$globalSearchVersion'), maxLength: 100, onChanged: (value) => draftPrefix = value, onSubmitted: (_) => refresh(),
           textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search))),
         const SizedBox(height: 12),
-        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
+        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
         const SizedBox(height: 6),
         const Text('Leave empty to browse. Names without a name field are not included.', style: TextStyle(color: muted, fontSize: 12)),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
