@@ -18,7 +18,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/design/tokens.dart';
 
 /// Where the website's theme lives, relative to this package.
+/// Flutter runs tests from the package root (`mobile/shule_altra`), so the
+/// website's stylesheet and the package's own tokens file are two levels up.
 final File _globals = File('../../src/app/globals.css');
+
+/// Used only to find the repository: if the stylesheet is in the checkout, the
+/// checkout is where the test is running from.
+File get _tokens => File('lib/design/tokens.dart');
 
 /// One `--name: h s% l%` declaration, resolved to a colour.
 ///
@@ -77,8 +83,9 @@ void main() {
   late Map<String, Color> dark;
 
   setUpAll(() {
-    if (!_globals.existsSync()) {
-      fail('Cannot read ${_globals.path}. Run flutter test from mobile/shule_altra.');
+    if (!_globals.existsSync() || !_tokens.existsSync()) {
+      fail('Cannot find the repository beside the app package. Expected '
+          '${_globals.absolute.path} — run flutter test from mobile/shule_altra.');
     }
     css = _globals.readAsStringSync();
     light = _readBlock(css, ':root {');

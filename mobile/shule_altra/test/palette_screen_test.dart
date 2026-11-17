@@ -63,15 +63,35 @@ void main() {
       MaterialApp(
         theme: ThemeData(extensions: [ShuleTokens.day]),
         home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                GradientButton(label: 'Continue', onPressed: () => taps++, icon: Icons.arrow_forward),
-                GradientButton(label: 'Busy', onPressed: () => taps++, busy: true),
-                const GradientButton(label: 'Off', onPressed: null),
-              ],
+          body: Center(
+            // Three full-width bars on a 390 px phone would overflow this test's
+            // default 800x600 surface once they are 54 px tall plus padding.
+            child: Scrollable(
+              viewportBuilder: (context, offset) => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 320,
+                    child: GradientButton(
+                      label: 'Continue',
+                      onPressed: () => taps++,
+                      icon: Icons.arrow_forward,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 320,
+                    child: GradientButton(
+                      label: 'Busy',
+                      onPressed: () => taps++,
+                      busy: true,
+                    ),
+                  ),
+                  const SizedBox(
+                    width: 320,
+                    child: GradientButton(label: 'Off', onPressed: null),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -113,8 +133,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final decorated = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox));
-    for (final widget in decorated) {
+    final buttons = find.descendant(
+      of: find.byType(GradientButton),
+      matching: find.byType(DecoratedBox),
+    );
+    expect(buttons, findsWidgets);
+    for (final widget in tester.widgetList<DecoratedBox>(buttons)) {
       final decoration = widget.decoration;
       if (decoration is BoxDecoration) {
         expect(decoration.gradient, isNull,
