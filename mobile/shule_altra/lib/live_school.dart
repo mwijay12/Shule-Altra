@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import 'main.dart' show ink, lime, muted, Brand, Notice;
 import 'live_timetable.dart';
+import 'school_read_error.dart';
 
 /// Firebase Android client configuration is deliberately supplied at build time.
 /// There is no implicit fallback to a different school or Firebase project.
@@ -142,7 +143,8 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
 class _LearnerResult {
   final LearnerPage? page;
   final DateTime? completedAt;
-  const _LearnerResult(this.page, this.completedAt);
+  final SchoolReadProblem? problem;
+  const _LearnerResult(this.page, this.completedAt, this.problem);
 }
 
 class LiveSchoolPage extends StatefulWidget {
@@ -168,8 +170,8 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   Future<_LearnerResult> _loadSafely(Object? after) async {
     try {
       final page = await widget.gateway.loadLearners(after: after, namePrefix: activePrefix);
-      return _LearnerResult(page, DateTime.now());
-    } catch (_) { return const _LearnerResult(null, null); }
+      return _LearnerResult(page, DateTime.now(), null);
+    } catch (error) { return _LearnerResult(null, null, classifySchoolReadProblem(error)); }
   }
   void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
   void reloadPage() => setState(() { message = null; query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
@@ -243,7 +245,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         if (learners == null) const Padding(padding: EdgeInsets.only(top: 22), child: Notice(title: 'Start with a search', body: 'Enter the beginning of a name, or leave the field empty to browse the first page. School data is loaded only when you search.')),
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-          if (data.hasError || data.data?.page == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
+          if (data.hasError || data.data?.page == null) return Padding(padding: const EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: schoolReadGuidance(data.data?.problem ?? SchoolReadProblem.unknown, timetable: false)));
           final readAt = data.data!.completedAt!;
           final localizations = MaterialLocalizations.of(context);
           final readLabel = '${localizations.formatMediumDate(readAt)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(readAt))}';

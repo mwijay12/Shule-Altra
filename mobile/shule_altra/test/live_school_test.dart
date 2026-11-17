@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/live_school.dart';
 import 'package:shule_altra_mobile/live_timetable.dart';
@@ -7,6 +8,7 @@ import 'package:shule_altra_mobile/live_timetable.dart';
 class FakeSchoolGateway implements SchoolGateway {
   final controller = StreamController<String?>.broadcast();
   bool fail = false;
+  Object? readError;
   String lastPrefix = '';
   Object? lastCursor;
   int learnerLoads = 0;
@@ -18,6 +20,7 @@ class FakeSchoolGateway implements SchoolGateway {
     lastPrefix = namePrefix;
     lastCursor = after;
     learnerLoads++;
+    if (readError != null) throw readError!;
     if (fail) throw StateError('offline');
     return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', recordId: 'student-001', admissionNumber: 'A-001', residence: 'Day', enrollmentDate: '2026-01-01', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
@@ -121,6 +124,19 @@ void main() {
     await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Example Learner'), findsOneWidget);
     expect(fake.lastPrefix, 'Example');
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
+  testWidgets('register explains permission denial without showing raw errors', (tester) async {
+    final fake = FakeSchoolGateway()..readError = FirebaseException(plugin: 'test', code: 'permission-denied', message: 'sensitive server message');
+    await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('Ask your school administrator to check your access'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Ask your school administrator to check your access'), findsOneWidget);
+    expect(find.textContaining('sensitive server message'), findsNothing);
     await tester.pumpWidget(const SizedBox());
     await fake.controller.close();
   });

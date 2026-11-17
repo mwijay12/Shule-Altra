@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'school_read_error.dart';
+
 /// The saved schedule uses the same IDs and fixed period definitions as web.
 const timetableClasses = ['Form 1', 'Form 2', 'Form 3', 'Form 4'];
 const timetableStreams = ['A', 'B'];
@@ -52,8 +54,8 @@ class LiveTimetable {
 
 class _TimetableResult {
   final LiveTimetable? schedule;
-  final bool failed;
-  const _TimetableResult(this.schedule, this.failed);
+  final SchoolReadProblem? problem;
+  const _TimetableResult(this.schedule, this.problem);
 }
 
 class LiveTimetablePanel extends StatefulWidget {
@@ -67,8 +69,8 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
   String className = timetableClasses.first, stream = timetableStreams.first, day = timetableDays.first;
   Future<_TimetableResult>? result;
   Future<_TimetableResult> loadSafely() async {
-    try { return _TimetableResult(await widget.load(className, stream), false); }
-    catch (_) { return const _TimetableResult(null, true); }
+    try { return _TimetableResult(await widget.load(className, stream), null); }
+    catch (error) { return _TimetableResult(null, classifySchoolReadProblem(error)); }
   }
   @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(24), children: [
     const Text('School timetable', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
@@ -113,7 +115,7 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
     else const Text('Results are from the last server read. Load again to see newer changes.', style: TextStyle(color: Color(0xff667d75), fontSize: 12)),
     if (result != null) FutureBuilder<_TimetableResult>(future: result, builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
-      if (snapshot.hasError || snapshot.data?.failed != false) return const Padding(padding: EdgeInsets.only(top: 20), child: Text('Could not load this schedule. Check your connection, permissions and schedule format.'));
+      if (snapshot.hasError || snapshot.data == null || snapshot.data!.problem != null) return Padding(padding: const EdgeInsets.only(top: 20), child: Text(schoolReadGuidance(snapshot.data?.problem ?? SchoolReadProblem.unknown, timetable: true)));
       final schedule = snapshot.data!.schedule;
       if (schedule == null) return const Padding(padding: EdgeInsets.only(top: 20), child: Text('No saved schedule for this class and stream.'));
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
