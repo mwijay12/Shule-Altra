@@ -30,7 +30,13 @@ File get _tokens => File('lib/design/tokens.dart');
 ///
 /// The site writes `--primary: 214 69% 39%`, which is what
 /// `hsl(var(--primary))` expands to; this does the same conversion.
-Color _hsl(String h, String s, String l) => HSLColor.fromAHSL(1, double.parse(h), double.parse(s), double.parse(l)).toColor();
+/// CSS writes `69%`, and `HSLColor` wants `0.69`.
+Color _hsl(String h, String s, String l) => HSLColor.fromAHSL(
+      1,
+      double.parse(h),
+      double.parse(s) / 100,
+      double.parse(l) / 100,
+    ).toColor();
 
 /// Every custom property in the block that starts at [selector], as HSL colours.
 ///

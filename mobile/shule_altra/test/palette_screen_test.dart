@@ -59,44 +59,27 @@ void main() {
     addTearDown(tester.view.reset);
 
     var taps = 0;
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: ThemeData(extensions: [ShuleTokens.day]),
-        home: Scaffold(
-          body: Center(
-            // Three full-width bars on a 390 px phone would overflow this test's
-            // default 800x600 surface once they are 54 px tall plus padding.
-            child: Scrollable(
-              viewportBuilder: (context, offset) => Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 320,
-                    child: GradientButton(
-                      label: 'Continue',
-                      onPressed: () => taps++,
-                      icon: Icons.arrow_forward,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 320,
-                    child: GradientButton(
-                      label: 'Busy',
-                      onPressed: () => taps++,
-                      busy: true,
-                    ),
-                  ),
-                  const SizedBox(
-                    width: 320,
-                    child: GradientButton(label: 'Off', onPressed: null),
-                  ),
-                ],
-              ),
+    Future<void> show(List<Widget> bars) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(extensions: [ShuleTokens.day]),
+          home: Scaffold(
+            body: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                for (final bar in bars)
+                  Padding(padding: const EdgeInsets.only(bottom: 12), child: bar),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
+      await tester.pumpAndSettle();
+    }
+
+    await show([
+      GradientButton(label: 'Continue', onPressed: () => taps++, icon: Icons.arrow_forward),
+    ]);
     await tester.pumpAndSettle();
 
     // The ramp is behind the first one.
@@ -106,17 +89,19 @@ void main() {
     });
     expect(gradients, isNotEmpty, reason: 'no GradientButton drew a gradient');
 
-    // A tap goes through, once, and only on the enabled button.
+    // A tap goes through, once.
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(taps, 1);
 
     // A busy button refuses the tap: it is already doing the thing.
+    await show([GradientButton(label: 'Busy', onPressed: () => taps++, busy: true)]);
     await tester.tap(find.text('Busy'));
     await tester.pumpAndSettle();
     expect(taps, 1, reason: 'a busy button must not fire again');
 
     // A disabled button refuses too.
+    await show([const GradientButton(label: 'Off', onPressed: null)]);
     await tester.tap(find.text('Off'));
     await tester.pumpAndSettle();
     expect(taps, 1, reason: 'a disabled button must not fire');
