@@ -67,3 +67,7 @@ mobile/shule_altra/android/.gradle/
 # Python test cache
 __pycache__/
 *.py[cod]
+
+# Local Android Firebase client configuration (never commit downloaded files).
+mobile/shule_altra/.local/
+mobile/shule_altra/google-services.json
