@@ -23,6 +23,11 @@ class FakeSchoolGateway implements SchoolGateway {
   }
 }
 
+class DelayedSchoolGateway extends FakeSchoolGateway {
+  final pending = Completer<LearnerPage>();
+  @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) => pending.future;
+}
+
 void main() {
   test('timetable schema, free periods and schedule ID match the web format', () {
     expect(timetableId('Form 1', 'A'), 'schedule-form-1-a');
@@ -112,6 +117,24 @@ void main() {
     await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Example Learner'), findsOneWidget);
     expect(fake.lastPrefix, 'Example');
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
+  testWidgets('late learner response cannot reappear after an account change', (tester) async {
+    final fake = DelayedSchoolGateway();
+    await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pump();
+    fake.controller.add('staff-2'); await tester.pump();
+    fake.pending.complete(const LearnerPage([LiveLearner('Old account learner', 'Form 1', guardianEmail: 'private@example.test')], null));
+    await tester.pumpAndSettle();
+    expect(find.text('Old account learner'), findsNothing);
+    expect(find.text('private@example.test'), findsNothing);
+    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    expect(find.text('Start with a search'), findsOneWidget);
+    expect(find.text('Old account learner'), findsNothing);
     await tester.pumpWidget(const SizedBox());
     await fake.controller.close();
   });
