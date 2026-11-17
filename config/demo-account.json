@@ -1,0 +1,9 @@
+{
+  "email": "admin@shule.pro",
+  "password": "demo2026",
+  "name": "Demo Administrator",
+  "role": "ADMIN",
+  "uid": "demo-admin",
+  "schoolId": "school-001",
+  "schoolName": "Mwalimu Nyerere Secondary School"
+}

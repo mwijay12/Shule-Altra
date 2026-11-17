@@ -20,18 +20,24 @@
 /// habit.
 library;
 
+import 'demo_account.g.dart';
+
 /// What a demo sign-in produces: a session id and the address that was used.
 typedef DemoIdentity = ({String uid, String email});
 
 class DemoCredentials {
   const DemoCredentials._();
 
-  /// The account a reviewer types. Not a real staff member, not a real domain:
-  /// `example.test` is reserved, so it can never belong to anyone.
-  static const String demoEmail = 'demo@shule.test';
+  /// The account a reviewer types.
+  ///
+  /// It is the same pair the website's login screen takes, generated from
+  /// `config/demo-account.json` so the two products cannot drift apart. On the
+  /// web it resolves to a simulated staff record; here it only ever opens the
+  /// fictional sample register.
+  static const String demoEmail = DemoAccount.email;
 
-  /// Printed in the app and in the README. There is no secret to leak.
-  static const String demoPassword = 'shule-demo';
+  /// Printed in the app and on the website. There is no secret to leak.
+  static const String demoPassword = DemoAccount.password;
 
   /// Set `--dart-define=DISABLE_DEMO_SIGN_IN=true` to build without the demo
   /// door at all. Default false: an ordinary build keeps it, so the app can be
@@ -54,10 +60,12 @@ class DemoCredentials {
 
   /// The identity handed to the app on a successful demo sign-in.
   ///
-  /// The id is prefixed `demo-` so it can never be confused with a Firebase uid
-  /// (which is 28 alphanumeric characters) or with the sample preview's
-  /// `sample-staff`.
-  static const DemoIdentity identity = (uid: 'demo-reviewer', email: demoEmail);
+  /// The id is `demo-admin`, the staff document id the web demo seed creates for
+  /// this account. It is deliberately **not** shaped like a Firebase uid (28
+  /// alphanumeric characters), and not the sample preview's `sample-staff`, so a
+  /// screenshot of either product shows an id that is honest about where it
+  /// came from.
+  static const DemoIdentity identity = (uid: DemoAccount.uid, email: demoEmail);
 
   static bool _constantTimeEquals(String a, String b) {
     // Length is compared first: it is not secret here, and it keeps the loop

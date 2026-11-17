@@ -98,8 +98,11 @@ class FakeGateway implements SchoolGateway {
   bool get acceptsDemoCredential => demoDoor;
 
   @override
-  DemoIdentity? get demoIdentity =>
-      demoDoor && _uid == 'fake-demo' ? (uid: 'fake-demo', email: 'demo@shule.test') : null;
+  DemoIdentity? get demoIdentity => demoDoor && _uid == 'fake-demo'
+      // The account the app actually reports, so a test never has to know the
+      // address by heart.
+      ? DemoCredentials.identity
+      : null;
 
   @override
   Future<void> signInWithDemo(String email, String password) async {

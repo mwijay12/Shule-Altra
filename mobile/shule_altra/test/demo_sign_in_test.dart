@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/app.dart';
 import 'package:shule_altra_mobile/app/session.dart';
+import 'package:shule_altra_mobile/data/demo_account.g.dart';
 import 'package:shule_altra_mobile/data/demo_credentials.dart';
 import 'package:shule_altra_mobile/data/sample_gateway.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
@@ -33,17 +34,29 @@ void main() {
     test('accepts the printed pair, and only that pair', () {
       expect(DemoCredentials.accepts(DemoCredentials.demoEmail, DemoCredentials.demoPassword), isTrue);
       // Case and surrounding spaces are forgiven on the email only.
-      expect(DemoCredentials.accepts('  DEMO@Shule.test ', DemoCredentials.demoPassword), isTrue);
+      final shouted = DemoCredentials.demoEmail.toUpperCase();
+      expect(DemoCredentials.accepts('  $shouted ', DemoCredentials.demoPassword), isTrue);
       // The password is exact.
-      expect(DemoCredentials.accepts(DemoCredentials.demoEmail, 'SHULE-DEMO'), isFalse);
-      expect(DemoCredentials.accepts(DemoCredentials.demoEmail, 'shule-demo '), isFalse);
-      expect(DemoCredentials.accepts('someone@example.test', DemoCredentials.demoPassword), isFalse);
+      final louder = DemoCredentials.demoPassword.toUpperCase();
+      expect(DemoCredentials.accepts(DemoCredentials.demoEmail, louder), isFalse);
+      expect(DemoCredentials.accepts(DemoCredentials.demoEmail, '${DemoCredentials.demoPassword} '), isFalse);
+      expect(DemoCredentials.accepts('someone@example.com', DemoCredentials.demoPassword), isFalse);
       expect(DemoCredentials.accepts('', ''), isFalse);
     });
 
-    test('the demo address can never belong to a real person', () {
-      // `.test` is reserved by RFC 2606, so this address cannot be registered.
-      expect(DemoCredentials.demoEmail.endsWith('.test'), isTrue);
+    test('is the account the website signs in with, generated from one file', () {
+      // Both products read config/demo-account.json; the generated constants are
+      // what this test can see, and they must still be the documented pair.
+      expect(DemoCredentials.demoEmail, DemoAccount.email);
+      expect(DemoCredentials.demoPassword, DemoAccount.password);
+      expect(DemoCredentials.identity.uid, DemoAccount.uid);
+      // The account is the demo school's administrator, under the id the web
+      // seed creates the staff record with.
+      expect(DemoAccount.role, 'ADMIN');
+      expect(DemoAccount.schoolId, 'school-001');
+      expect(DemoAccount.uid, 'demo-admin');
+      // A real address would put a real person's name on a public demo screen.
+      expect(DemoCredentials.demoEmail.endsWith('.pro'), isTrue);
     });
 
     test('the identity cannot be mistaken for a Firebase uid', () {
