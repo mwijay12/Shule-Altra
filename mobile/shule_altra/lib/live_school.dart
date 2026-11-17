@@ -27,15 +27,16 @@ class SchoolFirebaseConfig {
 
 class LiveLearner {
   final String name, className, status, guardianName, guardianPhone, guardianEmail;
-  final String recordId, admissionNumber, residence, enrollmentDate;
-  const LiveLearner(this.name, this.className, {this.status = '', this.guardianName = '', this.guardianPhone = '', this.guardianEmail = '', this.recordId = '', this.admissionNumber = '', this.residence = '', this.enrollmentDate = ''});
+  final String recordId, admissionNumber, residence, enrollmentDate, attendanceStatus, attendanceUpdateTime;
+  const LiveLearner(this.name, this.className, {this.status = '', this.guardianName = '', this.guardianPhone = '', this.guardianEmail = '', this.recordId = '', this.admissionNumber = '', this.residence = '', this.enrollmentDate = '', this.attendanceStatus = '', this.attendanceUpdateTime = ''});
 
   factory LiveLearner.fromFirestore(Map<String, dynamic> data, {String recordId = ''}) {
     String text(String key) => data[key] is String ? (data[key] as String).trim() : '';
     final name = text('name'), className = text('class');
     return LiveLearner(name.isEmpty ? 'Unnamed learner' : name, className.isEmpty ? 'Class not set' : className,
       status: text('status'), guardianName: text('guardianName'), guardianPhone: text('guardianPhone'), guardianEmail: text('guardianEmail'),
-      recordId: recordId, admissionNumber: text('admissionNumber'), residence: text('type'), enrollmentDate: text('enrollmentDate'));
+      recordId: recordId, admissionNumber: text('admissionNumber'), residence: text('type'), enrollmentDate: text('enrollmentDate'),
+      attendanceStatus: text('attendanceStatus'), attendanceUpdateTime: text('lastAttendanceUpdate'));
   }
 }
 
@@ -277,6 +278,12 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
                 _DetailLine('Status', row.status),
                 _DetailLine('Residence', row.residence),
                 _DetailLine('Enrolment date', row.enrollmentDate),
+                const SizedBox(height: 12),
+                const Align(alignment: Alignment.centerLeft, child: Text('Latest stored attendance', style: TextStyle(fontWeight: FontWeight.w800))),
+                const SizedBox(height: 4),
+                const Text('This is the latest status on the learner record, not a dated attendance history. The stored time has no date and does not prove this is today.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
+                _DetailLine('Attendance status', row.attendanceStatus),
+                _DetailLine('Recorded time (no date)', row.attendanceUpdateTime),
                 const SizedBox(height: 12),
                 const Align(alignment: Alignment.centerLeft, child: Text('Guardian contact', style: TextStyle(fontWeight: FontWeight.w800))),
                 _DetailLine('Guardian', row.guardianName),

@@ -22,7 +22,7 @@ class FakeSchoolGateway implements SchoolGateway {
     learnerLoads++;
     if (readError != null) throw readError!;
     if (fail) throw StateError('offline');
-    return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', recordId: 'student-001', admissionNumber: 'A-001', residence: 'Day', enrollmentDate: '2026-01-01', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
+    return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', recordId: 'student-001', admissionNumber: 'A-001', residence: 'Day', enrollmentDate: '2026-01-01', attendanceStatus: 'Late', attendanceUpdateTime: '08:15', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
 }
 
@@ -52,7 +52,7 @@ void main() {
     expect(noGoogle.isValid, isFalse);
   });
   test('learner parser safely handles missing or malformed details', () {
-    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test ', 'type': ' Day ', 'enrollmentDate': 20260101, 'admissionNumber': ' A-123 '}, recordId: 'doc-1');
+    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test ', 'type': ' Day ', 'enrollmentDate': 20260101, 'admissionNumber': ' A-123 ', 'attendanceStatus': ' Late ', 'lastAttendanceUpdate': 815}, recordId: 'doc-1');
     expect(row.name, 'Amina');
     expect(row.className, 'Class not set');
     expect(row.guardianPhone, '');
@@ -61,6 +61,8 @@ void main() {
     expect(row.admissionNumber, 'A-123');
     expect(row.residence, 'Day');
     expect(row.enrollmentDate, '');
+    expect(row.attendanceStatus, 'Late');
+    expect(row.attendanceUpdateTime, '');
   });
   testWidgets('timetable clears a previous class and handles empty and failed reads', (tester) async {
     var calls = 0;
@@ -179,6 +181,9 @@ void main() {
     await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
     expect(find.text('student-001'), findsOneWidget);
     expect(find.text('A-001'), findsOneWidget);
+    expect(find.text('Latest stored attendance'), findsOneWidget);
+    expect(find.text('Late'), findsOneWidget);
+    expect(find.textContaining('not a dated attendance history'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('guardian@example.test'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(find.text('Timetable'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
