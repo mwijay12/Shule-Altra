@@ -6,10 +6,12 @@ import 'package:shule_altra_mobile/live_school.dart';
 class FakeSchoolGateway implements SchoolGateway {
   final controller = StreamController<String?>.broadcast();
   bool fail = false;
+  String lastPrefix = '';
   @override Stream<String?> get sessionUid => controller.stream;
   @override Future<void> signInWithGoogle() async { controller.add('staff-1'); }
   @override Future<void> signOut() async { controller.add(null); }
-  @override Future<LearnerPage> loadLearners({Object? after}) async {
+  @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) async {
+    lastPrefix = namePrefix;
     if (fail) throw StateError('offline');
     return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
@@ -38,13 +40,18 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add(null); await tester.pumpAndSettle();
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
-    await tester.tap(find.text('Load learners')); await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, 'School name prefix'), 'Example');
+    await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    expect(fake.lastPrefix, 'Example');
     expect(find.text('Example Learner'), findsOneWidget);
+    await tester.ensureVisible(find.text('Example Learner')); await tester.pumpAndSettle();
     await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
     expect(find.text('guardian@example.test'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, -450)); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Next page')); await tester.pumpAndSettle(); await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
     expect(find.text('Second Learner'), findsOneWidget);
+    expect(fake.lastPrefix, 'Example', reason: 'pagination keeps the server search');
     await tester.ensureVisible(find.text('Previous page')); await tester.pumpAndSettle(); await tester.tap(find.text('Previous page')); await tester.pumpAndSettle();
     expect(find.text('Example Learner'), findsOneWidget);
     await tester.ensureVisible(find.text('Example Learner')); await tester.pumpAndSettle();
@@ -54,7 +61,7 @@ void main() {
     expect(find.text('Example Learner'), findsNothing);
     expect(find.text('guardian@example.test'), findsNothing);
     fake.fail = true;
-    await tester.ensureVisible(find.text('Load learners')); await tester.pumpAndSettle(); await tester.tap(find.text('Load learners')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle(); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     expect(find.text('Could not load learners'), findsOneWidget);
     await tester.ensureVisible(find.text('Sign out')); await tester.pumpAndSettle(); await tester.tap(find.text('Sign out')); await tester.pumpAndSettle();
     expect(find.text('Continue with Google'), findsOneWidget);

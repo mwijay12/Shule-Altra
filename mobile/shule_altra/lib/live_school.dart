@@ -46,7 +46,7 @@ abstract class SchoolGateway {
   Stream<String?> get sessionUid;
   Future<void> signInWithGoogle();
   Future<void> signOut();
-  Future<LearnerPage> loadLearners({Object? after});
+  Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''});
 }
 
 class FirebaseSchoolGateway implements SchoolGateway {
@@ -69,7 +69,7 @@ class FirebaseSchoolGateway implements SchoolGateway {
     await auth.signOut();
     await google.signOut();
   }
-  @override Future<LearnerPage> loadLearners({Object? after}) async {
+  @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) async {
     // Force a fresh identity and server read. No offline data is shown in this
     // pilot; rules, not a UI role, authorize the collection query.
     final user = auth.currentUser;
@@ -78,9 +78,14 @@ class FirebaseSchoolGateway implements SchoolGateway {
     if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
     await user.getIdToken(true);
     Query<Map<String, dynamic>> query = firestore.collection('schools').doc('school-001').collection('students').orderBy('name');
+    // Names are not consistently normalised in existing records. Prefix
+    // matching is deliberately case-sensitive instead of inventing an index.
+    if (namePrefix.isNotEmpty) query = query.endAt(['$namePrefix\uf8ff']);
     if (after != null) {
       if (after is! DocumentSnapshot<Map<String, dynamic>>) throw StateError('Invalid page cursor.');
       query = query.startAfterDocument(after);
+    } else if (namePrefix.isNotEmpty) {
+      query = query.startAt([namePrefix]);
     }
     // Fetch one extra document to tell whether another page exists.
     final result = await query.limit(41).get(const GetOptions(source: Source.server));
@@ -135,14 +140,17 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   bool busy = false;
   String? message;
   String query = '';
+  String draftPrefix = '';
+  String activePrefix = '';
+  int globalSearchVersion = 0;
   int searchVersion = 0;
   Object? currentCursor;
   final List<Object?> previousCursors = [];
   Future<_LearnerResult> _loadSafely(Object? after) async {
-    try { return _LearnerResult(await widget.gateway.loadLearners(after: after)); }
+    try { return _LearnerResult(await widget.gateway.loadLearners(after: after, namePrefix: activePrefix)); }
     catch (_) { return const _LearnerResult(null); }
   }
-  void refresh() => setState(() { message = null; previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
+  void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
   void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; searchVersion++; learners = _loadSafely(cursor); });
   void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
   Future<void> signIn() async {
@@ -152,7 +160,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
-    setState(() { busy = true; learners = null; query = ''; searchVersion++; currentCursor = null; previousCursors.clear(); message = null; });
+    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
@@ -160,9 +168,9 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
-      if (snapshot.hasError) { learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
+      if (snapshot.hasError) { learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-      if (lastUid != snapshot.data) { learners = null; query = ''; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
+      if (lastUid != snapshot.data) { learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -176,9 +184,14 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
         const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
         const SizedBox(height: 18),
-        const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. Search applies only to this page. Results can change between reads.'),
+        const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. School search matches the beginning of a name exactly, including capital letters. Results can change between reads.'),
         const SizedBox(height: 14),
-        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.refresh), label: const Text('Load learners')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
+        TextField(key: ValueKey('school-search-$globalSearchVersion'), maxLength: 100, onChanged: (value) => draftPrefix = value, onSubmitted: (_) => refresh(),
+          textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search))),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
+        const SizedBox(height: 6),
+        const Text('Leave empty to browse. Names without a name field are not included.', style: TextStyle(color: muted, fontSize: 12)),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
@@ -186,7 +199,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
           final rows = (data.data!.page!.rows).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SizedBox(height: 18), TextField(key: ValueKey(searchVersion), onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
-            const SizedBox(height: 14), Text('${rows.length} shown', style: const TextStyle(color: muted)),
+            const SizedBox(height: 14), Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),
             if (rows.isEmpty) const Padding(padding: EdgeInsets.only(top: 14), child: Text('No matching learners in this page.')),
             ...rows.map((row) => Card(child: ExpansionTile(
               title: Text(row.name), subtitle: Text(row.className),
