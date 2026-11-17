@@ -134,7 +134,7 @@ class _PrototypeState extends State<Prototype> {
     const Text('for what matters.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1.1)),
     const SizedBox(height: 17),
     Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(26)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      const Row(children: [Icon(Icons.auto_awesome_outlined, size: 18, color: lime), SizedBox(width: 8), Text('YOUR SCHOOL DAY', style: TextStyle(color: lime, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 10))]),
+      const Row(children: [Icon(Icons.auto_awesome_outlined, size: 18, color: lime), SizedBox(width: 8), Expanded(child: Text('YOUR SCHOOL DAY', style: TextStyle(color: lime, fontWeight: FontWeight.w800, letterSpacing: 1.4, fontSize: 10)))]),
       const SizedBox(height: 19),
       const Text('Everything in\none place.', style: TextStyle(color: Colors.white, fontSize: 27, height: 1.08, fontWeight: FontWeight.w700, letterSpacing: -.8)),
       const SizedBox(height: 10),

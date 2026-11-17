@@ -89,9 +89,6 @@ void main() {
   });
 
   testWidgets('sample screens fit a narrow phone with larger text', (tester) async {
-    final previousErrorHandler = FlutterError.onError;
-    FlutterError.onError = (details) { debugPrint(details.toString()); previousErrorHandler?.call(details); };
-    addTearDown(() => FlutterError.onError = previousErrorHandler);
     tester.view.physicalSize = const Size(320, 640);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
