@@ -150,7 +150,8 @@ class _LearnerResult {
 
 class LiveSchoolPage extends StatefulWidget {
   final SchoolGateway gateway;
-  const LiveSchoolPage({super.key, required this.gateway});
+  final bool isSample;
+  const LiveSchoolPage({super.key, required this.gateway, this.isSample = false});
   @override State<LiveSchoolPage> createState() => _LiveSchoolPageState();
 }
 class _LiveSchoolPageState extends State<LiveSchoolPage> {
@@ -186,13 +187,14 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
+    if (widget.isSample) { Navigator.of(context).pop(); return; }
     setState(() { busy = true; learners = null; query = ''; attendanceFilter = 'All'; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; showHome = true; message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
   }
   @override Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('School connection')),
+    appBar: AppBar(title: Text(widget.isSample ? 'FICTIONAL WORKSPACE' : 'School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
       if (snapshot.hasError) { showTimetable = false; showHome = true; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; attendanceFilter = 'All'; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
@@ -211,40 +213,40 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         const SizedBox(height: 8),
         const Text('A clear start to your school day.', style: TextStyle(color: muted, height: 1.4)),
         const SizedBox(height: 22),
-        Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(24)), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(Icons.shield_outlined, color: lime), SizedBox(height: 16),
-          Text('School connection', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
-          SizedBox(height: 8), Text('Signed in · online reads only', style: TextStyle(color: lime)),
-          SizedBox(height: 8), Text('Access depends on your school permissions. An internet connection is required.', style: TextStyle(color: Colors.white, height: 1.4)),
+        Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(24)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Icon(Icons.shield_outlined, color: lime), const SizedBox(height: 16),
+          Text(widget.isSample ? 'Fictional preview' : 'School connection', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8), Text(widget.isSample ? 'Sample data · no school connection' : 'Signed in · online reads only', style: const TextStyle(color: lime)),
+          const SizedBox(height: 8), Text(widget.isSample ? 'Nothing here comes from your school or is sent to Firebase.' : 'Access depends on your school permissions. An internet connection is required.', style: const TextStyle(color: Colors.white, height: 1.4)),
         ])),
         const SizedBox(height: 26),
         const Text('Explore your workspace', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
         const SizedBox(height: 12),
-        _WorkspaceLink(icon: Icons.people_outline, title: 'Learner register', description: 'Search school records and view details', onTap: () => setState(() => showHome = false)),
+        _WorkspaceLink(icon: Icons.people_outline, title: 'Learner register', description: widget.isSample ? 'Search fictional learner records' : 'Search school records and view details', onTap: () => setState(() => showHome = false)),
         const SizedBox(height: 10),
-        _WorkspaceLink(icon: Icons.calendar_today_outlined, title: 'Timetable', description: 'View a saved class schedule', onTap: () => setState(() { showHome = false; showTimetable = true; })),
+        _WorkspaceLink(icon: Icons.calendar_today_outlined, title: 'Timetable', description: widget.isSample ? 'Explore a fictional class schedule' : 'View a saved class schedule', onTap: () => setState(() { showHome = false; showTimetable = true; })),
         const SizedBox(height: 20),
         const Notice(title: 'Early pilot', body: 'Learners and timetable are read-only. Attendance, payments and offline sync are not available here yet.'),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 16),
-        OutlinedButton.icon(onPressed: busy ? null : signOut, icon: const Icon(Icons.logout), label: const Text('Sign out')),
+        OutlinedButton.icon(onPressed: busy ? null : signOut, icon: const Icon(Icons.logout), label: Text(widget.isSample ? 'Exit fictional preview' : 'Sign out')),
       ]);
-      if (showTimetable) return LiveTimetablePanel(key: ValueKey(snapshot.data), load: widget.gateway.loadTimetable, onBack: () => setState(() => showTimetable = false), onSignOut: () => signOut());
+      if (showTimetable) return LiveTimetablePanel(key: ValueKey(snapshot.data), load: widget.gateway.loadTimetable, isSample: widget.isSample, onBack: () => setState(() => showTimetable = false), onSignOut: () => signOut());
       return ListView(key: const ValueKey('learner-register'), padding: const EdgeInsets.all(24), children: [
         Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => setState(() => showHome = true), icon: const Icon(Icons.arrow_back), label: const Text('Workspace'))),
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
-        const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
+        const SizedBox(height: 7), Text(widget.isSample ? 'Fictional · read-only · 2 per page' : 'Online · read-only · 40 per page', style: const TextStyle(color: muted)),
         const SizedBox(height: 18),
-        const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. School search matches the beginning of a name exactly, including capital letters. Results can change between reads.'),
+        Notice(title: widget.isSample ? 'Fictional sample data' : 'Live school data', body: widget.isSample ? 'These records are fictional and do not come from your school. Name search matches the beginning exactly, including capital letters.' : 'Use only an approved school account and a trusted device. School search matches the beginning of a name exactly, including capital letters. Results can change between reads.'),
         const SizedBox(height: 14),
         TextFormField(key: ValueKey('school-search-$globalSearchVersion'), initialValue: draftPrefix, maxLength: 100, onChanged: (value) => draftPrefix = value, onFieldSubmitted: (_) => refresh(),
           textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search), border: OutlineInputBorder())),
         const SizedBox(height: 12),
-        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; query = ''; attendanceFilter = 'All'; searchVersion++; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
+        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: Text(widget.isSample ? 'Search sample' : 'Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; query = ''; attendanceFilter = 'All'; searchVersion++; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: Text(widget.isSample ? 'Exit fictional preview' : 'Sign out'))]),
         const SizedBox(height: 6),
         const Text('Leave empty to browse. Names without a name field are not included.', style: TextStyle(color: muted, fontSize: 12)),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
-        if (learners == null) const Padding(padding: EdgeInsets.only(top: 22), child: Notice(title: 'Start with a search', body: 'Enter the beginning of a name, or leave the field empty to browse the first page. School data is loaded only when you search.')),
+        if (learners == null) Padding(padding: const EdgeInsets.only(top: 22), child: Notice(title: 'Start with a search', body: widget.isSample ? 'Enter the beginning of a name, or leave the field empty to browse fictional learners.' : 'Enter the beginning of a name, or leave the field empty to browse the first page. School data is loaded only when you search.')),
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
           if (data.hasError || data.data?.page == null) return Padding(padding: const EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: schoolReadGuidance(data.data?.problem ?? SchoolReadProblem.unknown, timetable: false)));
@@ -262,7 +264,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
             const SizedBox(height: 22),
             Text('Page ${previousCursors.length + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            Text('Read completed $readLabel (device time). Results do not update automatically.', style: const TextStyle(color: muted, fontSize: 12, height: 1.4)),
+            Text(widget.isSample ? 'Fictional sample loaded $readLabel (device time).' : 'Read completed $readLabel (device time). Results do not update automatically.', style: const TextStyle(color: muted, fontSize: 12, height: 1.4)),
             Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : reloadPage, icon: const Icon(Icons.refresh), label: const Text('Reload this page'))),
 
             Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),

@@ -61,7 +61,8 @@ class _TimetableResult {
 class LiveTimetablePanel extends StatefulWidget {
   final Future<LiveTimetable?> Function(String className, String stream) load;
   final VoidCallback onBack, onSignOut;
-  const LiveTimetablePanel({super.key, required this.load, required this.onBack, required this.onSignOut});
+  final bool isSample;
+  const LiveTimetablePanel({super.key, required this.load, required this.onBack, required this.onSignOut, this.isSample = false});
   @override State<LiveTimetablePanel> createState() => _LiveTimetablePanelState();
 }
 
@@ -75,7 +76,7 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
   @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(24), children: [
     const Text('School timetable', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
     const SizedBox(height: 6),
-    const Text('Saved schedule · online and read-only', style: TextStyle(color: Color(0xff667d75))),
+    Text(widget.isSample ? 'Fictional schedule · not school data' : 'Saved schedule · online and read-only', style: const TextStyle(color: Color(0xff667d75))),
     const SizedBox(height: 16),
     Container(
       padding: const EdgeInsets.all(16),
@@ -108,16 +109,16 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
     const SizedBox(height: 12),
     Wrap(spacing: 8, runSpacing: 4, children: [
       OutlinedButton(onPressed: widget.onBack, child: const Text('Learner register')),
-      OutlinedButton(onPressed: widget.onSignOut, child: const Text('Sign out')),
+      OutlinedButton(onPressed: widget.onSignOut, child: Text(widget.isSample ? 'Exit fictional preview' : 'Sign out')),
     ]),
     const SizedBox(height: 12),
     if (result == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.', style: TextStyle(color: Color(0xff667d75), height: 1.4))
-    else const Text('Results are from the last server read. Load again to see newer changes.', style: TextStyle(color: Color(0xff667d75), fontSize: 12)),
+    else Text(widget.isSample ? 'Fictional example only; no server was contacted.' : 'Results are from the last server read. Load again to see newer changes.', style: const TextStyle(color: Color(0xff667d75), fontSize: 12)),
     if (result != null) FutureBuilder<_TimetableResult>(future: result, builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
       if (snapshot.hasError || snapshot.data == null || snapshot.data!.problem != null) return Padding(padding: const EdgeInsets.only(top: 20), child: Text(schoolReadGuidance(snapshot.data?.problem ?? SchoolReadProblem.unknown, timetable: true)));
       final schedule = snapshot.data!.schedule;
-      if (schedule == null) return const Padding(padding: EdgeInsets.only(top: 20), child: Text('No saved schedule for this class and stream.'));
+      if (schedule == null) return Padding(padding: const EdgeInsets.only(top: 20), child: Text(widget.isSample ? 'No fictional example for this class and stream.' : 'No saved schedule for this class and stream.'));
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         const SizedBox(height: 20), Text('$day · $className $stream', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
         const SizedBox(height: 10),

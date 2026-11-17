@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'sample_day.dart';
 import 'live_school.dart';
+import 'sample_school_gateway.dart';
 
 void main() => runApp(const ShuleMobileApp());
 
@@ -169,6 +170,8 @@ class _PrototypeState extends State<Prototype> {
     ])),
     const SizedBox(height: 16),
     const Notice(title: 'Sample preview', body: 'Illustrative data only. No school data is shown here; payments and offline sync are not available.'),
+    const SizedBox(height: 12),
+    OutlinedButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolPage(gateway: SampleSchoolGateway(), isSample: true))), icon: const Icon(Icons.preview_outlined), label: const Text('Preview school workspace')),
   ]);
 
   Widget _learners() {

@@ -107,6 +107,39 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('fictional workspace previews real layouts without connecting a school', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Preview school workspace'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview school workspace')); await tester.pumpAndSettle();
+    expect(find.text('FICTIONAL WORKSPACE'), findsOneWidget);
+    expect(find.text('Sample data · no school connection'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Learner register'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Fictional sample data'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.scrollUntilVisible(find.text('Search sample'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Search sample')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Amina Juma'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('Live school data'), findsNothing);
+    await tester.scrollUntilVisible(find.text('Timetable'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    expect(find.text('Fictional schedule · not school data'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Load timetable'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Mathematics'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Exit fictional preview'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Exit fictional preview')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('for what matters.'), -200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('for what matters.'), findsOneWidget);
+  });
+
   testWidgets('sample register filters by class and clears search', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     for (var i = 0; i < 2; i++) {
