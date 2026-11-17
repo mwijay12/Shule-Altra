@@ -17,12 +17,14 @@ class FakeSchoolGateway implements SchoolGateway {
 
 void main() {
   test('configuration requires matching explicitly supplied projects', () {
-    const good = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: 'key', appId: 'app', senderId: 'sender');
-    const mismatch = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'other', apiKey: 'key', appId: 'app', senderId: 'sender');
-    const missing = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: '', appId: 'app', senderId: 'sender');
+    const good = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: 'key', appId: 'app', senderId: 'sender', googleWebClientId: 'web-client');
+    const mismatch = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'other', apiKey: 'key', appId: 'app', senderId: 'sender', googleWebClientId: 'web-client');
+    const missing = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: '', appId: 'app', senderId: 'sender', googleWebClientId: 'web-client');
     expect(good.isValid, isTrue);
     expect(mismatch.isValid, isFalse);
     expect(missing.isValid, isFalse);
+    const noGoogle = SchoolFirebaseConfig(projectId: 'p', expectedProjectId: 'p', apiKey: 'key', appId: 'app', senderId: 'sender', googleWebClientId: '');
+    expect(noGoogle.isValid, isFalse);
   });
   test('learner parser safely handles missing or malformed details', () {
     final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test '});

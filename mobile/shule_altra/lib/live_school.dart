@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 
 import 'main.dart' show muted, Brand, Notice;
@@ -8,16 +9,17 @@ import 'main.dart' show muted, Brand, Notice;
 /// Firebase Android client configuration is deliberately supplied at build time.
 /// There is no implicit fallback to a different school or Firebase project.
 class SchoolFirebaseConfig {
-  final String projectId, expectedProjectId, apiKey, appId, senderId;
-  const SchoolFirebaseConfig({required this.projectId, required this.expectedProjectId, required this.apiKey, required this.appId, required this.senderId});
+  final String projectId, expectedProjectId, apiKey, appId, senderId, googleWebClientId;
+  const SchoolFirebaseConfig({required this.projectId, required this.expectedProjectId, required this.apiKey, required this.appId, required this.senderId, required this.googleWebClientId});
   static const fromEnvironment = SchoolFirebaseConfig(
     projectId: String.fromEnvironment('FIREBASE_PROJECT_ID'),
     expectedProjectId: String.fromEnvironment('FIREBASE_EXPECTED_PROJECT_ID'),
     apiKey: String.fromEnvironment('FIREBASE_API_KEY'),
     appId: String.fromEnvironment('FIREBASE_ANDROID_APP_ID'),
     senderId: String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
+    googleWebClientId: String.fromEnvironment('FIREBASE_GOOGLE_WEB_CLIENT_ID'),
   );
-  bool get isValid => [projectId, expectedProjectId, apiKey, appId, senderId].every((value) => value.trim().isNotEmpty) && projectId == expectedProjectId;
+  bool get isValid => [projectId, expectedProjectId, apiKey, appId, senderId, googleWebClientId].every((value) => value.trim().isNotEmpty) && projectId == expectedProjectId;
   FirebaseOptions get options => FirebaseOptions(apiKey: apiKey, appId: appId, messagingSenderId: senderId, projectId: projectId);
 }
 
@@ -50,10 +52,23 @@ abstract class SchoolGateway {
 class FirebaseSchoolGateway implements SchoolGateway {
   final FirebaseAuth auth;
   final FirebaseFirestore firestore;
-  FirebaseSchoolGateway(this.auth, this.firestore);
+  final GoogleSignIn google;
+  FirebaseSchoolGateway(this.auth, this.firestore, this.google);
   @override Stream<String?> get sessionUid => auth.authStateChanges().map((user) => user?.uid);
-  @override Future<void> signInWithGoogle() async { await auth.signInWithProvider(GoogleAuthProvider()); }
-  @override Future<void> signOut() => auth.signOut();
+  @override Future<void> signInWithGoogle() async {
+    // Google uses its native Android account picker, then Firebase verifies the
+    // resulting credential. Cancellation must not create a Firebase session.
+    final account = await google.signIn();
+    if (account == null) return;
+    final tokens = await account.authentication;
+    if (tokens.idToken == null || tokens.idToken!.isEmpty) throw StateError('Google did not return an ID token.');
+    await auth.signInWithCredential(GoogleAuthProvider.credential(idToken: tokens.idToken, accessToken: tokens.accessToken));
+  }
+  @override Future<void> signOut() async {
+    // Clear Firebase authorization even if the Google account-picker cleanup fails.
+    await auth.signOut();
+    await google.signOut();
+  }
   @override Future<LearnerPage> loadLearners({Object? after}) async {
     // Force a fresh identity and server read. No offline data is shown in this
     // pilot; rules, not a UI role, authorize the collection query.
@@ -81,8 +96,11 @@ class LiveSchoolBootstrap extends StatefulWidget {
   @override State<LiveSchoolBootstrap> createState() => _LiveSchoolBootstrapState();
 }
 class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
-  late final Future<SchoolGateway> gateway = _initialise();
-  Future<SchoolGateway> _initialise() async {
+  // Firestore settings cannot be reconfigured after first use. Share one
+  // initialisation for the lifetime of this process, including route re-entry.
+  static Future<SchoolGateway>? _shared;
+  late final Future<SchoolGateway> gateway = _shared ??= _initialise();
+  static Future<SchoolGateway> _initialise() async {
     const config = SchoolFirebaseConfig.fromEnvironment;
     if (!config.isValid) throw StateError('Firebase Android configuration is missing or the project IDs do not match.');
     final existing = Firebase.apps.where((app) => app.name == 'school-live').toList();
@@ -90,12 +108,12 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
     if (app.options.projectId != config.projectId || app.options.appId != config.appId) throw StateError('Firebase configuration changed. Restart the app.');
     final firestore = FirebaseFirestore.instanceFor(app: app);
     firestore.settings = const Settings(persistenceEnabled: false);
-    return FirebaseSchoolGateway(FirebaseAuth.instanceFor(app: app), firestore);
+    return FirebaseSchoolGateway(FirebaseAuth.instanceFor(app: app), firestore, GoogleSignIn(serverClientId: config.googleWebClientId));
   }
   @override Widget build(BuildContext context) => FutureBuilder<SchoolGateway>(future: gateway, builder: (context, snapshot) {
     if (snapshot.hasData) return LiveSchoolPage(gateway: snapshot.data!);
     return Scaffold(appBar: AppBar(title: const Text('Connect school')), body: Padding(padding: const EdgeInsets.all(24), child: snapshot.hasError
-      ? const Notice(title: 'Configuration required', body: 'This build has no verified Firebase Android configuration, or setup failed. See the mobile setup guide. Your existing Firebase web connection is not changed.')
+      ? const Notice(title: 'Configuration required', body: 'This build has no verified Firebase Android configuration, or setup failed. Check the mobile setup guide and restart the app. Your existing Firebase web connection is not changed.')
       : const Center(child: CircularProgressIndicator())));
   });
 }
