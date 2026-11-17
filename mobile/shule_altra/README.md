@@ -106,8 +106,14 @@ learner sheet can all be reached on a phone without a Firebase project:
 
 | | |
 | --- | --- |
-| Email | `demo@shule.test` |
-| Password | `shule-demo` |
+| Email | `admin@shule.pro` |
+| Password | `demo2026` |
+
+These are the **same pair the website signs in with**. Both products read
+`config/demo-account.json`: the web hub imports it directly, and this app's
+`lib/data/demo_account.g.dart` is generated from it by
+`python3 tool/sync_demo_account.py`. CI re-runs the generator and fails if the
+two disagree, so the app and the site cannot hand out different credentials.
 
 Both are printed on the sign-in form itself, with a button that fills them in.
 
@@ -118,6 +124,10 @@ What that credential can and cannot do, stated plainly:
 - It **cannot** read a school's register. The live path uses Firebase Auth, which
   has never heard of this password, and the live form does not show the demo
   fields at all.
+- On the website the same address resolves to the simulated administrator in the
+  demo seed (`schools/school-001/staff/demo-admin`). Here it resolves to the same
+  fictional register the sample preview always had — six learners, in memory, on
+  the phone.
 - A school that does not want it can build without it:
   `--dart-define=DISABLE_DEMO_SIGN_IN=true` removes the form and makes the
   service refuse even if something calls it.

@@ -63,6 +63,18 @@ jobs:
           python3 -m unittest discover -s tool -p "test_*.py"
           python3 tool/configure_android.py
 
+      # One demo credential, two products. The generated Dart must match
+      # config/demo-account.json, or the app and the website would hand out
+      # different passwords and this build would be the one that lies.
+      - name: Check the demo account is in step with the website
+        run: |
+          python3 tool/sync_demo_account.py
+          if ! git diff --quiet -- lib/data/demo_account.g.dart; then
+            git diff -- lib/data/demo_account.g.dart
+            echo "::error::lib/data/demo_account.g.dart is stale. Run python3 tool/sync_demo_account.py and commit the result."
+            exit 1
+          fi
+
       - name: Resolve packages
         run: flutter pub get
 

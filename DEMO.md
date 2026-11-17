@@ -25,6 +25,15 @@ Then open the landing page and click **Launch Live Demo**, or go straight to
 | Bursar | `bursar@shule.pro` | Finance, canteen, boarding, transport |
 
 Any password is accepted by the demo auth layer (`demo2026` is pre-wired).
+
+**The administrator pair is the demo credential of the whole repository.**
+`admin@shule.pro` / `demo2026` is defined once, in `config/demo-account.json`, and
+both products read it: the hub through `src/lib/demo/account.ts`, the Android app
+through its generated `lib/data/demo_account.g.dart`. Change it in that one file
+and run `python3 mobile/shule_altra/tool/sync_demo_account.py`; CI fails if the
+two ever disagree. The Android app is a debug-signed preview build, published at
+<https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main>.
+
 “Continue as Guest Admin” also works and grants administrator scope.
 
 ---

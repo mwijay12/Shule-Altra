@@ -15,10 +15,13 @@ import { useAuth as useFirebaseId } from "@/firebase"
 import { signInWithEmailAndPassword, signInAnonymously, onAuthStateChanged } from "firebase/auth"
 import { signInWithGoogle, googleSignInError } from "@/hooks/use-auth"
 import { DEMO_MODE } from "@/lib/demo/config"
+import { DEMO_ACCOUNT, DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo/account"
 import { BrandMark, Wordmark } from "@/components/brand/logo"
 
 const DEMO_ROLES = [
-  { email: "admin@shule.pro", label: "Administrator", scope: "Full institutional control" },
+  // The first entry is the shared account in config/demo-account.json — the same
+  // address and password the mobile app accepts.
+  { email: DEMO_EMAIL, label: "Administrator", scope: "Full institutional control" },
   { email: "teacher@shule.pro", label: "Teacher", scope: "Students • Attendance • Academics" },
   { email: "bursar@shule.pro", label: "Bursar", scope: "Finance • Canteen • Boarding" },
 ] as const
@@ -86,7 +89,7 @@ export default function LoginPage() {
     setActiveDemoEmail(roleEmail)
     setError(null)
     try {
-      await signInWithEmailAndPassword(auth, roleEmail, "demo2026")
+      await signInWithEmailAndPassword(auth, roleEmail, DEMO_PASSWORD)
       router.replace("/dashboard")
     } catch (err) {
       setError("Demo role access failed to initialize.")
@@ -100,7 +103,7 @@ export default function LoginPage() {
     if (typeof window === "undefined") return
     const wantsDemo = new URLSearchParams(window.location.search).get("demo")
     if (DEMO_MODE && wantsDemo) {
-      void handleRoleLogin("admin@shule.pro")
+      void handleRoleLogin(DEMO_EMAIL)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -208,6 +211,20 @@ export default function LoginPage() {
                 )}
 
                 {DEMO_MODE && (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-3 text-center">
+                    <p className="text-[11px] font-black uppercase tracking-[0.16em] text-muted-foreground">
+                      The demo credential
+                    </p>
+                    <p className="mt-1 font-mono text-[13px] font-semibold text-primary">
+                      {DEMO_EMAIL} · {DEMO_PASSWORD}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                      The same pair signs in to the phone app · invented data, no real learners
+                    </p>
+                  </div>
+                )}
+
+                {DEMO_MODE && (
                   <div className="flex items-center gap-3" aria-hidden>
                     <span className="h-px flex-1 bg-border" />
                     <span className="text-[13px] font-medium text-muted-foreground">or use a school account</span>
@@ -277,7 +294,7 @@ export default function LoginPage() {
                   </Button>
 
                   <p className="text-[12px] leading-relaxed text-center text-muted-foreground/70">
-                    The demo runs fully offline · Mwalimu Nyerere Secondary School · 150 students seeded
+                    The demo runs fully offline · {DEMO_ACCOUNT.schoolName} · 150 students seeded
                   </p>
                 </div>
                 )}
