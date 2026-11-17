@@ -26,7 +26,7 @@ void main() {
     }
     await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
     await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
-    await tester.tap(find.text('Learners')); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Learners')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.byType(DropdownButtonFormField<String>)); await tester.pumpAndSettle();
     await tester.tap(find.byType(DropdownButtonFormField<String>)); await tester.pumpAndSettle();
     await tester.tap(find.text('Form 2 B').last); await tester.pumpAndSettle();
