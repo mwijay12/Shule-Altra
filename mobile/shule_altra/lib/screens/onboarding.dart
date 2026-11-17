@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../design/doodles.dart';
 import '../design/motion.dart';
+import '../design/theme.dart' show shuleShadow;
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
@@ -91,9 +92,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       child: AspectRatio(
                         aspectRatio: 1.16,
                         child: DecoratedBox(
+                          // The brand ramp, not a grey placeholder: the first
+                          // screen is the only chance to say what this product
+                          // looks like, and a muted box says nothing.
                           decoration: BoxDecoration(
-                            color: tokens.mutedSurface,
+                            gradient: tokens.brandGradient,
                             borderRadius: BorderRadius.circular(Corners.hero),
+                            boxShadow: shuleShadow(tokens, raised: true),
                           ),
                           child: Center(
                             child: AnimatedSwitcher(
@@ -107,6 +112,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                                 doodle: page.doodle,
                                 size: 132,
                                 strokeWidth: 3.4,
+                                // White line work on the ramp; the doodle's own
+                                // accent wash would disappear into the violet.
+                                color: tokens.onGradient,
+                                fillColor: tokens.onGradient.withValues(alpha: 0.18),
                               ),
                             ),
                           ),
@@ -164,12 +173,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ),
                   ),
                   const SizedBox(height: Space.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      onPressed: _next,
-                      child: Text(last ? 'Connect my school' : 'Continue'),
-                    ),
+                  GradientButton(
+                    label: last ? 'Connect my school' : 'Continue',
+                    onPressed: _next,
+                    icon: last ? Icons.school_outlined : null,
                   ),
                   if (last) ...[
                     const SizedBox(height: Space.sm),

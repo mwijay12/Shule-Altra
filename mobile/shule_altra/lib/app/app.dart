@@ -374,12 +374,10 @@ class _LiveUnavailable extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
             ),
             const SizedBox(height: Space.xl),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton(
-                onPressed: onSample,
-                child: const Text('Use the sample preview instead'),
-              ),
+            GradientButton(
+              label: 'Use the sample preview instead',
+              onPressed: onSample,
+              icon: Icons.visibility_outlined,
             ),
             const SizedBox(height: Space.sm),
             SizedBox(

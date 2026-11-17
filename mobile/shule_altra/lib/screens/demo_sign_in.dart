@@ -117,18 +117,11 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
           ),
         ],
         const SizedBox(height: Space.lg),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: session.busy ? null : _submit,
-            icon: session.busy
-                ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2.4),
-                  )
-                : const Icon(Icons.login_rounded, size: 20),
-            label: Text(session.busy ? 'Signing in…' : 'Sign in to the demo'),
-          ),
+        GradientButton(
+          label: session.busy ? 'Signing in…' : 'Sign in to the demo',
+          onPressed: session.busy ? null : _submit,
+          busy: session.busy,
+          icon: Icons.login_rounded,
         ),
         const SizedBox(height: Space.xl),
         // The credential itself, in the open.

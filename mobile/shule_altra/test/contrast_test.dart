@@ -71,8 +71,18 @@ final List<_Use> _textUses = <_Use>[
   // Filled surfaces: button labels and the brand card.
   (where: 'button label', foreground: (t) => t.onPrimary, background: (t) => t.primary),
   (where: 'pill label', foreground: (t) => t.onAccent, background: (t) => t.accent),
-  (where: 'brand eyebrow', foreground: (t) => t.accent, background: (t) => t.brandSurface),
+  // The panel's eyebrow is onGradient like everything else on the ramp: the
+  // accent on the primary fill was 1.45:1, which this table used to assert as
+  // passing. It never was drawn that way by the old widget, and it is no longer
+  // a pair the app has.
+  (where: 'brand eyebrow', foreground: (t) => t.onGradient, background: (t) => t.gradientStart),
   (where: 'brand heading', foreground: (t) => t.onBrand, background: (t) => t.brandSurface),
+  // Text on the brand ramp, measured against *both* stops: a gradient has no
+  // single background colour, so the harder end has to pass on its own.
+  (where: 'heading on the ramp start', foreground: (t) => t.onGradient, background: (t) => t.gradientStart),
+  (where: 'heading on the ramp end', foreground: (t) => t.onGradient, background: (t) => t.gradientEnd),
+  // The inverted pill that sits on the ramp: a white/blue button on the gradient.
+  (where: 'pill on the ramp start', foreground: (t) => t.primary, background: (t) => t.surface),
 ];
 
 void main() {
@@ -97,14 +107,40 @@ void main() {
         });
       }
 
-      test('$name the brand card body text, at the opacity it is drawn', () {
-        // BrandPanel draws its body at 82% of onPrimary. Measuring the plain
-        // colour would pass while the drawn one might not.
-        final blended = Color.alphaBlend(
-          tokens.onBrand.withValues(alpha: 0.82),
-          tokens.brandSurface,
-        );
-        expectPass('$name brand body', blended, tokens.brandSurface, kBodyContrast);
+      test('$name the brand panel draws its text at full strength', () {
+        // This is the test that caught the first attempt: the panel drew its
+        // body at 86% and its eyebrow at 80%, which looks refined and measures
+        // 3.92:1 and 3.61:1 at the violet end — below AA. The panel now draws
+        // `onGradient` at full opacity.
+        for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
+          expectPass('$name brand text on the ramp', tokens.onGradient, stop, kBodyContrast);
+        }
+
+        // Why it must not fade: the worst stop decides. By day the ink is white
+        // on a dark ramp, so a fade costs contrast quickly; at night the ink is
+        // near-black on a light ramp and survives further — which is why one
+        // shared rule for both themes would have been wrong.
+        for (final alpha in <double>[0.95, 0.9, 0.86, 0.8]) {
+          var worst = double.infinity;
+          for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
+            final drawn = Color.alphaBlend(tokens.onGradient.withValues(alpha: alpha), stop);
+            worst = math.min(worst, ratio(drawn, stop));
+          }
+          if (tokens.brightness == Brightness.light) {
+            expect(
+              worst,
+              lessThan(kBodyContrast),
+              reason: 'day: fading the ramp text to $alpha now passes AA, so the '
+                  'comment in widgets.dart is wrong. Re-measure and decide.',
+            );
+          } else {
+            expect(
+              worst,
+              greaterThanOrEqualTo(kBodyContrast),
+              reason: 'night: fading to $alpha now fails AA. The panel must not fade.',
+            );
+          }
+        }
       });
 
       test('$name hairlines are decorative, and are not used as text', () {
