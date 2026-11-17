@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/material.dart';
 
-import 'main.dart' show muted, Brand, Notice;
+import 'main.dart' show ink, lime, muted, Brand, Notice;
 import 'live_timetable.dart';
 
 /// Firebase Android client configuration is deliberately supplied at build time.
@@ -153,6 +153,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   Future<_LearnerResult>? learners;
   bool busy = false;
   bool showTimetable = false;
+  bool showHome = true;
   String? message;
   String query = '';
   String draftPrefix = '';
@@ -175,7 +176,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
-    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; message = null; });
+    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; showHome = true; message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
@@ -183,9 +184,9 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
-      if (snapshot.hasError) { showTimetable = false; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
+      if (snapshot.hasError) { showTimetable = false; showHome = true; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-      if (lastUid != snapshot.data) { showTimetable = false; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
+      if (lastUid != snapshot.data) { showTimetable = false; showHome = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -195,8 +196,32 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         if (message != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 22), const Notice(title: 'Online read-only pilot', body: 'Your school permissions still apply. Offline recording and synchronisation are not available yet.'),
       ]);
+      if (showHome) return ListView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 32), children: [
+        const Text('Your workspace', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
+        const SizedBox(height: 8),
+        const Text('A clear start to your school day.', style: TextStyle(color: muted, height: 1.4)),
+        const SizedBox(height: 22),
+        Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(24)), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.shield_outlined, color: lime), SizedBox(height: 16),
+          Text('School connection', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+          SizedBox(height: 8), Text('Signed in · online reads only', style: TextStyle(color: lime)),
+          SizedBox(height: 8), Text('Access depends on your school permissions. An internet connection is required.', style: TextStyle(color: Colors.white, height: 1.4)),
+        ])),
+        const SizedBox(height: 26),
+        const Text('Explore your workspace', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        _WorkspaceLink(icon: Icons.people_outline, title: 'Learner register', description: 'Search school records and view details', onTap: () => setState(() => showHome = false)),
+        const SizedBox(height: 10),
+        _WorkspaceLink(icon: Icons.calendar_today_outlined, title: 'Timetable', description: 'View a saved class schedule', onTap: () => setState(() { showHome = false; showTimetable = true; })),
+        const SizedBox(height: 20),
+        const Notice(title: 'Early pilot', body: 'Learners and timetable are read-only. Attendance, payments and offline sync are not available here yet.'),
+        if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(onPressed: busy ? null : signOut, icon: const Icon(Icons.logout), label: const Text('Sign out')),
+      ]);
       if (showTimetable) return LiveTimetablePanel(key: ValueKey(snapshot.data), load: widget.gateway.loadTimetable, onBack: () => setState(() => showTimetable = false), onSignOut: () => signOut());
       return ListView(padding: const EdgeInsets.all(24), children: [
+        Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => setState(() => showHome = true), icon: const Icon(Icons.arrow_back), label: const Text('Workspace'))),
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
         const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
         const SizedBox(height: 18),
@@ -237,6 +262,24 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         }),
       ]);
     }),
+  );
+}
+
+class _WorkspaceLink extends StatelessWidget {
+  final IconData icon;
+  final String title, description;
+  final VoidCallback onTap;
+  const _WorkspaceLink({required this.icon, required this.title, required this.description, required this.onTap});
+  @override Widget build(BuildContext context) => Material(
+    color: Colors.white, borderRadius: BorderRadius.circular(20),
+    child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(20), child: Padding(
+      padding: const EdgeInsets.all(16), child: Row(children: [
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: ink)),
+        const SizedBox(width: 14),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(description, style: const TextStyle(color: muted, height: 1.3))])),
+        const SizedBox(width: 8), const Icon(Icons.chevron_right, color: muted),
+      ]),
+    )),
   );
 }
 

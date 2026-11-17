@@ -51,7 +51,9 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add(null); await tester.pumpAndSettle();
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
-    await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    expect(find.text('Your workspace'), findsOneWidget);
+    expect(find.text('Signed in · online reads only'), findsOneWidget);
+    await tester.ensureVisible(find.text('Timetable')); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
     await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
     expect(find.text('Mathematics'), findsOneWidget);
     expect(find.text('Short break'), findsOneWidget);
@@ -78,6 +80,8 @@ void main() {
     expect(find.text('Example Learner'), findsNothing);
     expect(find.text('guardian@example.test'), findsNothing);
     fake.fail = true;
+    expect(find.text('Your workspace'), findsOneWidget);
+    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle(); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     expect(find.text('Could not load learners'), findsOneWidget);
     await tester.ensureVisible(find.text('Sign out')); await tester.pumpAndSettle(); await tester.tap(find.text('Sign out')); await tester.pumpAndSettle();
