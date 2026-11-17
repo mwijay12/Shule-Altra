@@ -162,6 +162,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   bool showHome = true;
   String? message;
   String query = '';
+  String attendanceFilter = 'All';
   String draftPrefix = '';
   String activePrefix = '';
   int globalSearchVersion = 0;
@@ -174,10 +175,10 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
       return _LearnerResult(page, DateTime.now(), null);
     } catch (error) { return _LearnerResult(null, null, classifySchoolReadProblem(error)); }
   }
-  void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
-  void reloadPage() => setState(() { message = null; query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
-  void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; searchVersion++; learners = _loadSafely(cursor); });
-  void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
+  void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; attendanceFilter = 'All'; searchVersion++; learners = _loadSafely(null); });
+  void reloadPage() => setState(() { message = null; query = ''; attendanceFilter = 'All'; searchVersion++; learners = _loadSafely(currentCursor); });
+  void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; attendanceFilter = 'All'; searchVersion++; learners = _loadSafely(cursor); });
+  void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; attendanceFilter = 'All'; searchVersion++; learners = _loadSafely(currentCursor); });
   Future<void> signIn() async {
     setState(() { busy = true; message = null; });
     try { await widget.gateway.signInWithGoogle(); }
@@ -185,7 +186,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     finally { if (mounted) setState(() => busy = false); }
   }
   Future<void> signOut() async {
-    setState(() { busy = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; showHome = true; message = null; });
+    setState(() { busy = true; learners = null; query = ''; attendanceFilter = 'All'; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); showTimetable = false; showHome = true; message = null; });
     try { await widget.gateway.signOut(); }
     catch (_) { if (mounted) setState(() => message = 'Could not sign out. Check your connection and try again.'); }
     finally { if (mounted) setState(() => busy = false); }
@@ -193,9 +194,9 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   @override Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('School connection')),
     body: StreamBuilder<String?>(stream: session, builder: (context, snapshot) {
-      if (snapshot.hasError) { showTimetable = false; showHome = true; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
+      if (snapshot.hasError) { showTimetable = false; showHome = true; learners = null; lastUid = null; currentCursor = null; previousCursors.clear(); query = ''; attendanceFilter = 'All'; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; return const Padding(padding: EdgeInsets.all(24), child: Notice(title: 'Session unavailable', body: 'The sign-in session could not be checked. Try again.')); }
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
-      if (lastUid != snapshot.data) { showTimetable = false; showHome = true; learners = null; query = ''; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
+      if (lastUid != snapshot.data) { showTimetable = false; showHome = true; learners = null; query = ''; attendanceFilter = 'All'; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
         const Brand(), const SizedBox(height: 35),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -239,7 +240,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         TextFormField(key: ValueKey('school-search-$globalSearchVersion'), initialValue: draftPrefix, maxLength: 100, onChanged: (value) => draftPrefix = value, onFieldSubmitted: (_) => refresh(),
           textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search), border: OutlineInputBorder())),
         const SizedBox(height: 12),
-        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
+        Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; query = ''; attendanceFilter = 'All'; searchVersion++; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
         const SizedBox(height: 6),
         const Text('Leave empty to browse. Names without a name field are not included.', style: TextStyle(color: muted, fontSize: 12)),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
@@ -250,7 +251,13 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
           final readAt = data.data!.completedAt!;
           final localizations = MaterialLocalizations.of(context);
           final readLabel = '${localizations.formatMediumDate(readAt)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(readAt))}';
-          final rows = (data.data!.page!.rows).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
+          final rows = (data.data!.page!.rows).where((row) {
+            final matchesText = '${row.name} ${row.className} ${row.recordId} ${row.admissionNumber}'.toLowerCase().contains(query.toLowerCase());
+            final status = row.attendanceStatus;
+            final matchesAttendance = attendanceFilter == 'All' || (attendanceFilter == 'Other or not set'
+              ? !['Present', 'Absent', 'Late'].contains(status) : status == attendanceFilter);
+            return matchesText && matchesAttendance;
+          }).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SizedBox(height: 22),
             Text('Page ${previousCursors.length + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
@@ -261,9 +268,15 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
             Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),
             const SizedBox(height: 12),
             TextFormField(key: ValueKey('page-search-$searchVersion'), initialValue: query, onChanged: (value) => setState(() => query = value.trim()),
-              decoration: InputDecoration(labelText: 'Search loaded learners', helperText: 'Filters this page only', prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(),
+              decoration: InputDecoration(labelText: 'Search loaded learners', helperText: 'Name, class or ID · this page only', prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(),
                 suffixIcon: query.isEmpty ? null : IconButton(tooltip: 'Clear page filter', onPressed: () => setState(() { query = ''; searchVersion++; }), icon: const Icon(Icons.close)))),
-            if (rows.isEmpty) Padding(padding: const EdgeInsets.only(top: 14), child: Notice(title: 'No learners shown', body: query.isEmpty ? 'No records were returned on this page. Try another school search.' : 'No loaded learners match this page filter. Clear it or search the school again.')),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(isExpanded: true, value: attendanceFilter,
+              decoration: const InputDecoration(labelText: 'Stored attendance · this page only', border: OutlineInputBorder()),
+              items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+              onChanged: (value) { if (value != null) setState(() => attendanceFilter = value); }),
+            const Padding(padding: EdgeInsets.only(top: 8), child: Text('Latest stored status only; it has no date and may not be from today. Filter applies only to this page.', style: TextStyle(color: muted, fontSize: 12, height: 1.4))),
+            if (rows.isEmpty) Padding(padding: const EdgeInsets.only(top: 14), child: Notice(title: 'No learners shown', body: query.isEmpty && attendanceFilter == 'All' ? 'No records were returned on this page. Try another school search.' : 'No loaded learners match these page filters. Change them or search the school again.')),
             const SizedBox(height: 8),
             ...rows.map((row) => Card(margin: const EdgeInsets.only(bottom: 10), child: ExpansionTile(
               leading: const CircleAvatar(backgroundColor: Color(0xffe5efde), foregroundColor: ink, child: Icon(Icons.person_outline)),

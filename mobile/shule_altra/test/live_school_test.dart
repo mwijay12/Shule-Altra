@@ -130,6 +130,33 @@ void main() {
     await fake.controller.close();
   });
 
+  testWidgets('stored attendance and ID filters apply only to the loaded page', (tester) async {
+    final fake = FakeSchoolGateway();
+    await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    final filter = find.byType(DropdownButtonFormField<String>);
+    await tester.scrollUntilVisible(filter, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(filter); await tester.pumpAndSettle();
+    await tester.tap(find.text('Absent').last); await tester.pumpAndSettle();
+    expect(find.text('No learners shown'), findsOneWidget);
+    expect(find.text('Example Learner'), findsNothing);
+    await tester.ensureVisible(filter); await tester.tap(filter); await tester.pumpAndSettle();
+    await tester.tap(find.text('Late').last); await tester.pumpAndSettle();
+    expect(find.text('Example Learner'), findsOneWidget);
+    final pageSearch = find.widgetWithText(TextField, 'Search loaded learners');
+    await tester.ensureVisible(pageSearch); await tester.pumpAndSettle();
+    await tester.enterText(pageSearch, 'a-001'); await tester.pumpAndSettle();
+    expect(find.text('Example Learner'), findsOneWidget);
+    expect(fake.learnerLoads, 1, reason: 'page filters do not query the school');
+    await tester.scrollUntilVisible(find.text('Next page'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
+    expect(find.text('Second Learner'), findsOneWidget, reason: 'page change resets local filters');
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
   testWidgets('register explains permission denial without showing raw errors', (tester) async {
     final fake = FakeSchoolGateway()..readError = FirebaseException(plugin: 'test', code: 'permission-denied', message: 'sensitive server message');
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
