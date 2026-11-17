@@ -75,18 +75,42 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
     const SizedBox(height: 6),
     const Text('Saved schedule · online and read-only', style: TextStyle(color: Color(0xff667d75))),
     const SizedBox(height: 16),
-    Wrap(spacing: 12, runSpacing: 8, children: [
-      DropdownButton<String>(value: className, items: timetableClasses.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) => setState(() { className = value!; result = null; })),
-      DropdownButton<String>(value: stream, items: timetableStreams.map((value) => DropdownMenuItem(value: value, child: Text('Stream $value'))).toList(), onChanged: (value) => setState(() { stream = value!; result = null; })),
-      DropdownButton<String>(value: day, items: timetableDays.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) => setState(() => day = value!)),
-    ]),
-    Wrap(spacing: 8, children: [
-      FilledButton.icon(onPressed: () => setState(() { result = loadSafely(); }), icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
+    Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Choose a schedule', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 12),
+        LayoutBuilder(builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 280 || MediaQuery.textScalerOf(context).scale(1) > 1.3;
+          final width = stacked ? constraints.maxWidth : (constraints.maxWidth - 12) / 2;
+          return Wrap(spacing: 12, runSpacing: 12, children: [
+            SizedBox(width: width, child: DropdownButtonFormField<String>(value: className,
+              decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
+              items: timetableClasses.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+              onChanged: (value) { if (value != null) setState(() { className = value; result = null; }); })),
+            SizedBox(width: width, child: DropdownButtonFormField<String>(value: stream,
+              decoration: const InputDecoration(labelText: 'Stream', border: OutlineInputBorder()),
+              items: timetableStreams.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+              onChanged: (value) { if (value != null) setState(() { stream = value; result = null; }); })),
+            SizedBox(width: constraints.maxWidth, child: DropdownButtonFormField<String>(value: day,
+              decoration: const InputDecoration(labelText: 'Day', border: OutlineInputBorder()),
+              items: timetableDays.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+              onChanged: (value) { if (value != null) setState(() => day = value); })),
+          ]);
+        }),
+        const SizedBox(height: 14),
+        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => setState(() { result = loadSafely(); }), icon: const Icon(Icons.refresh), label: const Text('Load timetable'))),
+      ]),
+    ),
+    const SizedBox(height: 12),
+    Wrap(spacing: 8, runSpacing: 4, children: [
       OutlinedButton(onPressed: widget.onBack, child: const Text('Learner register')),
       OutlinedButton(onPressed: widget.onSignOut, child: const Text('Sign out')),
     ]),
     const SizedBox(height: 12),
-    const Text('Showing the last successful server read. Changes by others are not shown until you load again.', style: TextStyle(color: Color(0xff667d75), fontSize: 12)),
+    if (result == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.', style: TextStyle(color: Color(0xff667d75), height: 1.4))
+    else const Text('Results are from the last server read. Load again to see newer changes.', style: TextStyle(color: Color(0xff667d75), fontSize: 12)),
     if (result != null) FutureBuilder<_TimetableResult>(future: result, builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
       if (snapshot.hasError || snapshot.data?.failed != false) return const Padding(padding: EdgeInsets.only(top: 20), child: Text('Could not load this schedule. Check your connection, permissions and schedule format.'));
@@ -99,7 +123,7 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
           final slot = period.isBreak ? null : schedule.slot(day, period.id);
           final title = period.isBreak ? period.label : (slot?.subject.trim().isNotEmpty == true ? slot!.subject : 'Not scheduled');
           final details = period.isBreak ? 'Break' : slot == null ? 'No saved lesson' : [slot.teacher, slot.room].where((value) => value.trim().isNotEmpty).join(' · ');
-          return Card(child: ListTile(title: Text(title), subtitle: Text('${period.time} · $details'), leading: Icon(period.isBreak ? Icons.free_breakfast_outlined : Icons.menu_book_outlined)));
+          return Card(child: ListTile(title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('${period.label} · ${period.time}${details.isEmpty ? '' : ' · $details'}'), leading: Icon(period.isBreak ? Icons.free_breakfast_outlined : Icons.menu_book_outlined)));
         }),
       ]);
     }),

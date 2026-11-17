@@ -46,6 +46,41 @@ void main() {
     expect(row.guardianPhone, '');
     expect(row.guardianEmail, 'x@example.test');
   });
+  testWidgets('timetable clears a previous class and handles empty and failed reads', (tester) async {
+    var calls = 0;
+    var fail = false;
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveTimetablePanel(
+      onBack: () {}, onSignOut: () {},
+      load: (className, stream) async {
+        calls++;
+        if (fail) throw StateError('unavailable');
+        if (className == 'Form 2') return null;
+        return const LiveTimetable({'monday_p1': TimetableSlot('Mathematics', 'Teacher', 'Room')});
+      },
+    ))));
+    await tester.scrollUntilVisible(find.textContaining('Choose a class and stream'), 150, scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Choose a class and stream'), findsOneWidget);
+    await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Mathematics'), findsOneWidget);
+    final classField = find.byType(DropdownButtonFormField<String>).first;
+    await tester.ensureVisible(classField); await tester.pumpAndSettle();
+    await tester.tap(classField); await tester.pumpAndSettle();
+    await tester.tap(find.text('Form 2').last); await tester.pumpAndSettle();
+    expect(find.text('Mathematics'), findsNothing);
+    expect(calls, 1, reason: 'changing class requires an explicit load');
+    await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('No saved schedule for this class and stream.'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('No saved schedule for this class and stream.'), findsOneWidget);
+    fail = true;
+    await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('Could not load this schedule.'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Could not load this schedule.'), findsOneWidget);
+  });
+
   testWidgets('sign in, load, error and account switch discard displayed records', (tester) async {
     final fake = FakeSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
@@ -54,8 +89,11 @@ void main() {
     expect(find.text('Your workspace'), findsOneWidget);
     expect(find.text('Signed in · online reads only'), findsOneWidget);
     await tester.ensureVisible(find.text('Timetable')); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
     await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Mathematics'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Short break'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Short break'), findsOneWidget);
     await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
