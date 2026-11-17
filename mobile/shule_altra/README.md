@@ -15,6 +15,26 @@ the working thing.
 
 ---
 
+## The look is the website's look
+
+The palette is not invented here. `src/app/globals.css` owns it — #1F5BA6 blue,
+#7C5AE0 violet, the cool #F8FAFC workspace, the 1.25rem radius and the
+`135deg` brand ramp — and `lib/design/tokens.dart` carries the same values,
+converted from the same HSL triplets.
+
+Two tests hold that:
+
+- `test/palette_parity_test.dart` reads `globals.css` out of the repository and
+  fails if a token drifts from it, if the retired forest green comes back, or if
+  the ramp collapses to a flat colour. It also asserts the one deliberate
+  exception: the site's muted grey is 4.49:1 on its own background, so the app's
+  is a shade darker.
+- `test/palette_screen_test.dart` proves the ramp is actually **drawn** — the
+  onboarding hero, the primary buttons, both themes — because a palette in a file
+  is not a palette on a screen.
+
+---
+
 ## What is verified, and what is not
 
 Being precise about this is the point of the pilot, so it comes before the

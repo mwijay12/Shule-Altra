@@ -137,9 +137,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Row(
           children: [
             Expanded(
-              child: FilledButton(
+              child: GradientButton(
+                label: 'Try again',
                 onPressed: session.busy ? null : session.loadFirstPage,
-                child: const Text('Try again'),
               ),
             ),
             const SizedBox(width: Space.md),
@@ -225,12 +225,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(width: Space.md),
             Flexible(
-              child: FilledButton(
+              child: GradientButton(
+                label: session.canGoForward ? 'Next page' : 'End of register',
                 onPressed: session.canGoForward ? session.loadNextPage : null,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(session.canGoForward ? 'Next page' : 'End of register'),
-                ),
+                expand: false,
               ),
             ),
           ],
@@ -302,18 +300,11 @@ class _SignedOut extends StatelessWidget {
           // on the form itself.
           DemoSignInForm(session: session)
         else ...[
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: session.busy ? null : onSignIn,
-              icon: session.busy
-                  ? const SizedBox.square(
-                      dimension: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2.4),
-                    )
-                  : const Icon(Icons.login_rounded, size: 20),
-              label: Text(session.busy ? 'Signing in…' : 'Continue with Google'),
-            ),
+          GradientButton(
+            label: session.busy ? 'Signing in…' : 'Continue with Google',
+            onPressed: session.busy ? null : onSignIn,
+            busy: session.busy,
+            icon: Icons.login_rounded,
           ),
           if (session.failure != null) ...[
             const SizedBox(height: Space.md),

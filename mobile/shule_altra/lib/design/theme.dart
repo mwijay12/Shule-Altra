@@ -1,9 +1,13 @@
 /// The app's two themes, built from [ShuleTokens].
 ///
-/// Day is paper and deep green; night is the same green after dark, not a
-/// different product. Both are complete: a screen that only looks right in one
-/// of them is a bug, and `test/contrast_test.dart` holds every text pair to its
-/// ratio.
+/// Day is the hub's cool workspace; night is the hub after dark (`globals.css`
+/// `.dark`). Both are complete: a screen that only looks right in one of them is
+/// a bug, and `test/contrast_test.dart` holds every text pair to its ratio.
+///
+/// The house style comes from the website and is applied here once, so screens do
+/// not restate it: the brand ramp on every filled button, 20 px radii (the site's
+/// `--radius`), a soft blue-tinted shadow instead of Material elevation, and the
+/// input treatment the hub uses (filled, borderless, focus ring).
 library;
 
 import 'package:flutter/material.dart';
@@ -60,10 +64,16 @@ ThemeData buildTheme(Brightness brightness) {
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.card)),
         ),
-        backgroundColor: WidgetStatePropertyAll(tokens.primary),
-        foregroundColor: WidgetStatePropertyAll(tokens.onPrimary),
+        // The ramp, as `.colorful-gradient` draws it on the website. A disabled
+        // button loses the gradient entirely rather than showing a pale one.
+        backgroundColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.disabled) ? tokens.border : null;
+        }),
+        foregroundColor: WidgetStateProperty.resolveWith((states) {
+          return states.contains(WidgetState.disabled) ? tokens.inkMuted : tokens.onGradient;
+        }),
         textStyle: const WidgetStatePropertyAll(
-          TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: -0.1),
         ),
       ),
     ),
@@ -75,8 +85,9 @@ ThemeData buildTheme(Brightness brightness) {
         ),
         side: WidgetStatePropertyAll(BorderSide(color: tokens.border)),
         foregroundColor: WidgetStatePropertyAll(tokens.primary),
+        backgroundColor: WidgetStatePropertyAll(tokens.surface),
         textStyle: const WidgetStatePropertyAll(
-          TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          TextStyle(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: -0.1),
         ),
       ),
     ),
@@ -90,26 +101,35 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: tokens.surface,
+      // The hub's field is a muted fill on a card, not a white box on white.
+      fillColor: tokens.mutedSurface,
       hintStyle: TextStyle(color: tokens.inkMuted, fontSize: 15),
+      labelStyle: TextStyle(color: tokens.inkMuted, fontSize: 14, fontWeight: FontWeight.w600),
+      floatingLabelStyle: TextStyle(color: tokens.primary, fontSize: 14, fontWeight: FontWeight.w700),
       contentPadding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.lg),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Corners.card),
+        borderRadius: BorderRadius.circular(Corners.field),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Corners.card),
+        borderRadius: BorderRadius.circular(Corners.field),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(Corners.card),
-        borderSide: BorderSide(color: tokens.primary, width: 1.6),
+        borderRadius: BorderRadius.circular(Corners.field),
+        borderSide: BorderSide(color: tokens.primary, width: 1.8),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(Corners.field),
+        borderSide: BorderSide(color: tokens.danger, width: 1.4),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: tokens.surface,
       surfaceTintColor: Colors.transparent,
-      indicatorColor: tokens.accent,
+      // The active tab sits on a 12% wash of the primary, the way the sidebar's
+      // selected row does on the website.
+      indicatorColor: tokens.primary.withValues(alpha: 0.12),
       elevation: 0,
       height: 68,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -118,14 +138,14 @@ ThemeData buildTheme(Brightness brightness) {
         return TextStyle(
           fontSize: 11,
           fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-          color: selected ? tokens.onAccent : tokens.inkMuted,
+          color: selected ? tokens.primary : tokens.inkMuted,
         );
       }),
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
           size: 22,
-          color: selected ? tokens.onAccent : tokens.inkMuted,
+          color: selected ? tokens.primary : tokens.inkMuted,
         );
       }),
     ),
@@ -136,7 +156,50 @@ ThemeData buildTheme(Brightness brightness) {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.card)),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: tokens.primary),
+    cardTheme: CardThemeData(
+      color: tokens.surface,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: tokens.shadow,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.panel)),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: tokens.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.panel)),
+    ),
+    bottomSheetTheme: BottomSheetThemeData(
+      backgroundColor: tokens.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Corners.panel)),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: tokens.mutedSurface,
+      selectedColor: tokens.primary.withValues(alpha: 0.12),
+      labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tokens.ink),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.pill)),
+    ),
+    dividerTheme: DividerThemeData(color: tokens.border, thickness: 1, space: 1),
   );
+}
+
+/// The house shadow, used by cards and the sticky header.
+///
+/// Defined once because a shadow is the fastest way for an app to look
+/// home-made: three different elevations in one screen read as three products.
+List<BoxShadow> shuleShadow(ShuleTokens tokens, {bool raised = false}) {
+  return [
+    BoxShadow(
+      color: tokens.shadow,
+      blurRadius: raised ? 40 : 24,
+      offset: Offset(0, raised ? 18 : 8),
+      spreadRadius: raised ? -4 : -2,
+    ),
+  ];
 }
 
 TextTheme _textTheme(ShuleTokens tokens) {

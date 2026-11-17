@@ -9,7 +9,116 @@ import 'package:flutter/material.dart';
 
 import 'doodles.dart';
 import 'motion.dart';
+import 'theme.dart' show shuleShadow;
 import 'tokens.dart';
+
+/// The app's main call to action: the website's brand ramp, in a button.
+///
+/// `FilledButton` cannot draw a gradient (it fills with one colour), and the
+/// gradient is the most recognisable thing the product has — it is on the login
+/// card, every primary button and the landing page's hero. So the primary action
+/// is this widget rather than a styled `FilledButton`.
+///
+/// It keeps the things a button owes a finger: 54 logical pixels tall, a
+/// [Semantics] button role, an InkWell ripple clipped to the pill, and a disabled
+/// state that reads as disabled (flat hairline, muted label) instead of a faded
+/// gradient that still looks tappable.
+class GradientButton extends StatelessWidget {
+  const GradientButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.busy = false,
+    this.expand = true,
+  });
+
+  final String label;
+
+  /// Null disables the button.
+  final VoidCallback? onPressed;
+
+  final IconData? icon;
+
+  /// Shows a spinner in place of the icon and refuses taps.
+  final bool busy;
+
+  /// Full width by default: every primary action in this app is a full-width bar.
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    final enabled = onPressed != null && !busy;
+    final radius = BorderRadius.circular(Corners.card);
+
+    final content = Row(
+      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (busy) ...[
+          SizedBox.square(
+            dimension: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.4,
+              valueColor: AlwaysStoppedAnimation<Color>(tokens.onGradient),
+            ),
+          ),
+          const SizedBox(width: Space.sm),
+        ] else if (icon != null) ...[
+          Icon(icon, size: 20, color: tokens.onGradient),
+          const SizedBox(width: Space.sm),
+        ],
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: enabled ? tokens.onGradient : tokens.inkMuted,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.1,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.9,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: enabled ? tokens.brandGradient : null,
+            color: enabled ? null : tokens.mutedSurface,
+            borderRadius: radius,
+            border: enabled ? null : Border.all(color: tokens.border),
+            boxShadow: enabled ? shuleShadow(tokens) : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: radius,
+            child: InkWell(
+              borderRadius: radius,
+              onTap: enabled ? onPressed : null,
+              child: Container(
+                height: 54,
+                constraints: const BoxConstraints(minWidth: kMinTapTarget),
+                padding: const EdgeInsets.symmetric(horizontal: Space.xl),
+                alignment: Alignment.center,
+                child: content,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 /// The app header: mark, wordmark, and the honesty badge.
 class BrandBar extends StatelessWidget {
@@ -79,38 +188,70 @@ class SectionHead extends StatelessWidget {
   }
 }
 
-/// A card. `brand` fills it with the deep green and switches to the light ink.
+/// A card: white on the hub's off-white page, a hairline edge, a soft shadow.
+///
+/// `brand` fills it with the ramp and switches to the gradient ink; `transparent`
+/// lets a caller draw its own background (the gradient panel does), so the card
+/// still owns the padding, radius and tap behaviour.
 class ShuleCard extends StatelessWidget {
   const ShuleCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(Space.xl),
     this.brand = false,
+    this.transparent = false,
+    this.flat = false,
     this.onTap,
   });
 
   final Widget child;
   final EdgeInsets padding;
   final bool brand;
+
+  /// Draw no background of its own; the caller supplies one.
+  final bool transparent;
+
+  /// No shadow and no hairline: for cards inside a card.
+  final bool flat;
+
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final radius = BorderRadius.circular(Corners.hero);
-    final background = brand ? tokens.brandSurface : tokens.surface;
+    final ink = brand ? tokens.onGradient : tokens.ink;
     final content = Padding(padding: padding, child: child);
 
-    return Material(
-      color: background,
-      borderRadius: radius,
-      child: onTap == null
+    if (transparent) {
+      return onTap == null
           ? content
-          : InkWell(
-              borderRadius: radius,
-              onTap: onTap,
-              child: content,
-            ),
+          : InkWell(borderRadius: radius, onTap: onTap, child: content);
+    }
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        // A brand card gets the ramp as a flat block of its first stop: the
+        // gradient belongs to the panel that wraps it.
+        color: brand ? tokens.gradientStart : tokens.surface,
+        borderRadius: radius,
+        border: flat ? null : Border.all(color: tokens.border),
+        boxShadow: flat ? null : shuleShadow(tokens),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        child: DefaultTextStyle.merge(
+          style: TextStyle(color: ink),
+          child: onTap == null
+              ? content
+              : InkWell(
+                  borderRadius: radius,
+                  onTap: onTap,
+                  child: content,
+                ),
+        ),
+      ),
     );
   }
 }
@@ -297,55 +438,79 @@ class BrandPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    return ShuleCard(
-      brand: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              ExcludeSemantics(child: Icon(Icons.auto_awesome_outlined, size: 16, color: tokens.accent)),
-              const SizedBox(width: Space.sm),
-              Text(
-                eyebrow,
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.accent),
-              ),
-            ],
-          ),
-          const SizedBox(height: Space.lg),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: tokens.onBrand,
-                  height: 1.14,
-                  fontSize: 25,
-                  fontWeight: FontWeight.w800,
+    return Container(
+      decoration: BoxDecoration(
+        // The website's `.colorful-gradient`: the one place the product shows
+        // its whole palette at once.
+        gradient: tokens.brandGradient,
+        borderRadius: BorderRadius.circular(Corners.hero),
+        boxShadow: shuleShadow(tokens, raised: true),
+      ),
+      child: ShuleCard(
+        brand: true,
+        transparent: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                ExcludeSemantics(
+                  child: Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 16,
+                    // Full-strength ink. A 12% reduction looked nicer and measured
+                    // 3.9:1 at the violet end, which is below AA — the hierarchy
+                    // here comes from size and tracking instead.
+                    color: tokens.onGradient,
+                  ),
                 ),
-          ),
-          const SizedBox(height: Space.sm),
-          Text(
-            body,
-            // 82% of the ink, not of a pure white: the drawn colour is measured
-            // too, at 8.59:1 by day and 9.88:1 at night.
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: tokens.onBrand.withValues(alpha: 0.82),
+                const SizedBox(width: Space.sm),
+                Text(
+                  eyebrow,
+                  style: Theme.of(context)
+                      .textTheme
+                      .labelSmall
+                      ?.copyWith(color: tokens.onGradient, letterSpacing: 1.6),
                 ),
-          ),
-          const SizedBox(height: Space.lg + 2),
-          FilledButton.tonal(
-            // A method reference, not an inline closure: Flutter passes the
-            // ButtonStyleButton's own state to this callback type in some
-            // versions, and a closure that ignores it is fine while a tearoff of a
-            // VoidCallback method is not. Both are accepted here.
-            onPressed: () => onAction(),
-            style: FilledButton.styleFrom(
-              backgroundColor: tokens.accent,
-              foregroundColor: tokens.onAccent,
-              minimumSize: const Size(0, kMinTapTarget),
+              ],
             ),
-            child: Text(actionLabel),
-          ),
-        ],
+            const SizedBox(height: Space.lg),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: tokens.onGradient,
+                    height: 1.14,
+                    fontSize: 25,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const SizedBox(height: Space.sm),
+            Text(
+              body,
+              // Full ink, because 86% measured 3.92:1 at the violet end. The
+              // panel's hierarchy is the heading's size, not a faded paragraph.
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: tokens.onGradient,
+                  ),
+            ),
+            const SizedBox(height: Space.lg + 2),
+            // On the gradient the action is a white pill with the blue label —
+            // the same inverted button the website uses on its dark blocks.
+            FilledButton(
+              onPressed: () => onAction(),
+              style: FilledButton.styleFrom(
+                backgroundColor: tokens.surface,
+                foregroundColor: tokens.primary,
+                minimumSize: const Size(0, kMinTapTarget),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Corners.pill),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: Space.xl),
+              ),
+              child: Text(actionLabel),
+            ),
+          ],
+        ),
       ),
     );
   }

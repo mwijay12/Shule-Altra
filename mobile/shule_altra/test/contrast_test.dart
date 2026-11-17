@@ -73,6 +73,12 @@ final List<_Use> _textUses = <_Use>[
   (where: 'pill label', foreground: (t) => t.onAccent, background: (t) => t.accent),
   (where: 'brand eyebrow', foreground: (t) => t.accent, background: (t) => t.brandSurface),
   (where: 'brand heading', foreground: (t) => t.onBrand, background: (t) => t.brandSurface),
+  // Text on the brand ramp, measured against *both* stops: a gradient has no
+  // single background colour, so the harder end has to pass on its own.
+  (where: 'heading on the ramp start', foreground: (t) => t.onGradient, background: (t) => t.gradientStart),
+  (where: 'heading on the ramp end', foreground: (t) => t.onGradient, background: (t) => t.gradientEnd),
+  // The inverted pill that sits on the ramp: a white/blue button on the gradient.
+  (where: 'pill on the ramp start', foreground: (t) => t.primary, background: (t) => t.surface),
 ];
 
 void main() {
@@ -97,14 +103,33 @@ void main() {
         });
       }
 
-      test('$name the brand card body text, at the opacity it is drawn', () {
-        // BrandPanel draws its body at 82% of onPrimary. Measuring the plain
-        // colour would pass while the drawn one might not.
-        final blended = Color.alphaBlend(
-          tokens.onBrand.withValues(alpha: 0.82),
-          tokens.brandSurface,
-        );
-        expectPass('$name brand body', blended, tokens.brandSurface, kBodyContrast);
+      test('$name the brand panel draws its text at full strength', () {
+        // This is the test that caught the first attempt: the panel drew its
+        // body at 86% and its eyebrow at 80%, which looks refined and measures
+        // 3.92:1 and 3.61:1 at the violet end — below AA. The panel now draws
+        // `onGradient` at full opacity, and this test keeps it that way by
+        // failing if any reduced opacity would slip under the floor.
+        for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
+          for (final alpha in <double>[1.0, 0.86, 0.8]) {
+            final drawn = Color.alphaBlend(
+              tokens.onGradient.withValues(alpha: alpha),
+              stop,
+            );
+            final measured = ratio(drawn, stop);
+            if (alpha == 1.0) {
+              expectPass('$name brand text on the ramp', drawn, stop, kBodyContrast);
+            } else {
+              // Recorded, not required: if a future design wants transparency it
+              // has to change this test on purpose, not by accident.
+              expect(
+                measured,
+                lessThan(kBodyContrast),
+                reason: 'a reduced-opacity ink now passes; the panel may use it, '
+                    'but update this test so the decision is deliberate',
+              );
+            }
+          }
+        }
       });
 
       test('$name hairlines are decorative, and are not used as text', () {

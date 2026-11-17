@@ -71,7 +71,9 @@ class DoodleView extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final ink = color ?? tokens.primary;
-    final fill = fillColor ?? tokens.accent;
+    // The doodle's wash is the accent at low opacity: the violet reads as a
+    // hand-drawn highlighter, where a solid violet fill would look like a badge.
+    final fill = fillColor ?? tokens.accent.withValues(alpha: 0.16);
     final painted = SizedBox.square(
       dimension: size,
       child: CustomPaint(
