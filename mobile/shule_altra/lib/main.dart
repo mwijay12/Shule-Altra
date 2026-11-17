@@ -42,6 +42,7 @@ class _PrototypeState extends State<Prototype> {
   String query = '';
   final attendance = SampleAttendanceDraft();
   String sampleDay = 'Monday';
+  String sampleClass = 'All classes';
 
   @override
   void dispose() { search.dispose(); super.dispose(); }
@@ -135,13 +136,15 @@ class _PrototypeState extends State<Prototype> {
   ]);
 
   Widget _learners() {
-    final shown = sampleLearners.where((item) => '${item.name} ${item.className}'.toLowerCase().contains(query.toLowerCase())).toList();
+    final shown = sampleLearners.where((item) => (sampleClass == 'All classes' || item.className == sampleClass) && '${item.name} ${item.className}'.toLowerCase().contains(query.toLowerCase())).toList();
     return ListView(padding: const EdgeInsets.fromLTRB(22, 22, 22, 28), children: [
       const Brand(), const SizedBox(height: 30),
       const Text('Learners', style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, letterSpacing: -1)),
       const SizedBox(height: 5), const Text('A sample register to explore the layout.', style: TextStyle(color: muted)),
       const SizedBox(height: 20),
-      TextField(controller: search, onChanged: (value) => setState(() => query = value.trim()), decoration: InputDecoration(hintText: 'Search sample learners', prefixIcon: const Icon(Icons.search), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.circular(18)))),
+      TextField(controller: search, onChanged: (value) => setState(() => query = value.trim()), decoration: InputDecoration(labelText: 'Search sample learners', prefixIcon: const Icon(Icons.search), suffixIcon: query.isEmpty ? null : IconButton(tooltip: 'Clear search', onPressed: () => setState(() { search.clear(); query = ''; }), icon: const Icon(Icons.close)), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.circular(18)))),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(value: sampleClass, decoration: const InputDecoration(labelText: 'Sample class', border: OutlineInputBorder()), items: ['All classes', ...sampleLearners.map((item) => item.className).toSet()].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) { if (value != null) setState(() => sampleClass = value); }),
       const SizedBox(height: 24),
       SectionTitle('Sample register', '${shown.length} shown'), const SizedBox(height: 12),
       if (shown.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No sample learners match your search.', style: TextStyle(color: muted))),
@@ -151,7 +154,7 @@ class _PrototypeState extends State<Prototype> {
         title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text('${item.className}  ·  Sample', style: const TextStyle(color: muted)),
         trailing: const Icon(Icons.chevron_right, color: muted),
-        onTap: () => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (context) => SafeArea(child: SingleChildScrollView(child: Padding(padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 8), Text('${item.className} · Sample profile'), const SizedBox(height: 18), const Notice(title: 'Design preview', body: 'This is fictional sample data. Real learner details are not connected.')]))))),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SampleLearnerProfile(learner: item, mark: attendance.markFor(item.id)))),
       )))),
     ]);
   }
@@ -233,8 +236,47 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 12),
     const Notice(title: 'School connection', body: 'No Firebase project or school account is connected to this prototype.'),
     const SizedBox(height: 22),
-    OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
+    OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; sampleClass = 'All classes'; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
   ]);
+}
+
+/// A clearly fictional, read-only profile; practice attendance is never saved.
+class SampleLearnerProfile extends StatelessWidget {
+  final SampleLearner learner;
+  final SampleAttendance? mark;
+  const SampleLearnerProfile({super.key, required this.learner, required this.mark});
+
+  @override Widget build(BuildContext context) {
+    final status = switch (mark) {
+      SampleAttendance.present => 'Present',
+      SampleAttendance.absent => 'Absent',
+      SampleAttendance.late => 'Late',
+      null => 'Not marked',
+    };
+    return Scaffold(
+      appBar: AppBar(title: const Text('Sample profile')),
+      body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(22, 12, 22, 28), children: [
+        Container(padding: const EdgeInsets.all(22), decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(24)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          CircleAvatar(radius: 28, backgroundColor: lime, foregroundColor: ink, child: Text(learner.initials, style: const TextStyle(fontWeight: FontWeight.w800))),
+          const SizedBox(height: 16), Text(learner.name, style: const TextStyle(color: Colors.white, fontSize: 25, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 5), Text('${learner.className} · Sample learner', style: const TextStyle(color: lime)),
+        ])),
+        const SizedBox(height: 20),
+        const Notice(title: 'Fictional profile', body: 'This is fictional sample data. Real learner details are not connected to this preview.'),
+        const SizedBox(height: 24),
+        const Text('At a glance', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        Card(child: Column(children: [
+          ListTile(leading: const Icon(Icons.school_outlined), title: const Text('Class'), subtitle: Text(learner.className)),
+          ListTile(leading: const Icon(Icons.how_to_reg_outlined), title: const Text('Practice attendance'), subtitle: Text('$status · this session only')),
+        ])),
+        const SizedBox(height: 12),
+        const Text('Practice attendance is not a school record and is never sent or saved.', style: TextStyle(color: muted, height: 1.4)),
+        const SizedBox(height: 20),
+        OutlinedButton.icon(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.arrow_back), label: const Text('Back to sample register')),
+      ])),
+    );
+  }
 }
 
 class Brand extends StatelessWidget {

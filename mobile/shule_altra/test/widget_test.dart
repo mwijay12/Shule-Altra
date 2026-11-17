@@ -18,6 +18,26 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('sample register filters by class and clears search', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learners')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(DropdownButtonFormField<String>)); await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>)); await tester.pumpAndSettle();
+    await tester.tap(find.text('Form 2 B').last); await tester.pumpAndSettle();
+    expect(find.text('Baraka John'), findsOneWidget);
+    expect(find.text('Amina Juma'), findsNothing);
+    await tester.enterText(find.byType(TextField), 'no match'); await tester.pumpAndSettle();
+    expect(find.text('No sample learners match your search.'), findsOneWidget);
+    await tester.tap(find.byTooltip('Clear search')); await tester.pumpAndSettle();
+    expect(find.text('Baraka John'), findsOneWidget);
+  });
+
   testWidgets('prototype onboarding, search, detail and reset', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);
@@ -33,8 +53,10 @@ void main() {
     await tester.enterText(find.byType(TextField), 'Amina'); await tester.pumpAndSettle();
     expect(find.text('Amina Juma'), findsOneWidget);
     expect(find.text('Baraka John'), findsNothing);
+    await tester.ensureVisible(find.text('Amina Juma')); await tester.pumpAndSettle();
     await tester.tap(find.text('Amina Juma')); await tester.pumpAndSettle();
     expect(find.textContaining('fictional sample data'), findsOneWidget);
+    expect(find.text('Not marked · this session only'), findsOneWidget);
     await tester.binding.handlePopRoute(); await tester.pumpAndSettle();
     await tester.tap(find.text('Day')); await tester.pumpAndSettle();
     expect(find.text('Practice only · not saved'), findsOneWidget);
