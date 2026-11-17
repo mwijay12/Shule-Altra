@@ -129,6 +129,18 @@ void main() {
       expectSameColour('gradientEnd', ShuleTokens.night.gradientEnd, dark['accent']!);
       expectSameColour('border', ShuleTokens.night.border, dark['border']!);
     });
+
+    test('danger is the second documented exception', () {
+      // `.dark --destructive` (#DF3A3A) measures 3.55:1 on the notice surface.
+      // The app lightens it and says so here, so a future reader does not
+      // "restore parity" and ship an unreadable warning.
+      expect(ShuleTokens.night.danger, isNot(dark['destructive']));
+      expect(
+        ShuleTokens.night.danger.computeLuminance(),
+        greaterThan(dark['destructive']!.computeLuminance()),
+        reason: 'the app danger must be lighter (higher contrast) than the site',
+      );
+    });
   });
 
   group('the shape vocabulary is the website radius', () {

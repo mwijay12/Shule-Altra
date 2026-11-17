@@ -147,6 +147,10 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
 
   /// Night: the site's `.dark` block — #090E1A canvas, #111827 cards, and both
   /// ramp stops lightened so the gradient carries dark text.
+  ///
+  /// `danger` is the one value lightened past the site's: `.dark
+  /// --destructive` (#DF3A3A) measures 3.55:1 on the notice surface, below AA,
+  /// and a warning line nobody can read is not a warning.
   static const ShuleTokens night = ShuleTokens(
     brightness: Brightness.dark,
     canvas: Color(0xFF090E1A), // .dark --background 222 47% 7%
@@ -161,7 +165,7 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     accent: Color(0xFFA58DEC), // .dark --accent 255 72% 74%
     onAccent: Color(0xFF0B111E), // onAccent on it 6.85:1
     border: Color(0xFF262E40), // .dark --border
-    danger: Color(0xFFDF3A3A), // .dark --destructive
+    danger: Color(0xFFFF8080), // the site's destructive lightened: 6.39:1 on notice
     success: Color(0xFF6FD3A6), // 10.04:1 on canvas
     warning: Color(0xFFF0C67D), // 11.60:1 on canvas
     gradientStart: Color(0xFF4C93F0),

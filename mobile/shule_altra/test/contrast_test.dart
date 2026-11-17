@@ -71,7 +71,11 @@ final List<_Use> _textUses = <_Use>[
   // Filled surfaces: button labels and the brand card.
   (where: 'button label', foreground: (t) => t.onPrimary, background: (t) => t.primary),
   (where: 'pill label', foreground: (t) => t.onAccent, background: (t) => t.accent),
-  (where: 'brand eyebrow', foreground: (t) => t.accent, background: (t) => t.brandSurface),
+  // The panel's eyebrow is onGradient like everything else on the ramp: the
+  // accent on the primary fill was 1.45:1, which this table used to assert as
+  // passing. It never was drawn that way by the old widget, and it is no longer
+  // a pair the app has.
+  (where: 'brand eyebrow', foreground: (t) => t.onGradient, background: (t) => t.gradientStart),
   (where: 'brand heading', foreground: (t) => t.onBrand, background: (t) => t.brandSurface),
   // Text on the brand ramp, measured against *both* stops: a gradient has no
   // single background colour, so the harder end has to pass on its own.
@@ -110,24 +114,26 @@ void main() {
         // `onGradient` at full opacity, and this test keeps it that way by
         // failing if any reduced opacity would slip under the floor.
         for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
-          for (final alpha in <double>[1.0, 0.86, 0.8]) {
+          // What the app draws: full strength.
+          expectPass(
+            '$name brand text on the ramp',
+            tokens.onGradient,
+            stop,
+            kBodyContrast,
+          );
+          // And what it must not draw without changing this test: any fading
+          // that would slip under AA. Measured, so the comment cannot rot.
+          for (final alpha in <double>[0.9, 0.86, 0.8]) {
             final drawn = Color.alphaBlend(
               tokens.onGradient.withValues(alpha: alpha),
               stop,
             );
-            final measured = ratio(drawn, stop);
-            if (alpha == 1.0) {
-              expectPass('$name brand text on the ramp', drawn, stop, kBodyContrast);
-            } else {
-              // Recorded, not required: if a future design wants transparency it
-              // has to change this test on purpose, not by accident.
-              expect(
-                measured,
-                lessThan(kBodyContrast),
-                reason: 'a reduced-opacity ink now passes; the panel may use it, '
-                    'but update this test so the decision is deliberate',
-              );
-            }
+            expect(
+              ratio(drawn, stop),
+              lessThan(kBodyContrast),
+              reason: 'fading the ramp text to $alpha no longer fails AA, so this '
+                  'test no longer protects anything. Re-measure and decide.',
+            );
           }
         }
       });
