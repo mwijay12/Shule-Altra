@@ -74,13 +74,16 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // Not pumpAndSettle: a busy button shows a CircularProgressIndicator,
+      // which never stops animating, so "settled" is a state this screen does
+      // not have. Two frames is what a person sees.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
     }
 
     await show([
       GradientButton(label: 'Continue', onPressed: () => taps++, icon: Icons.arrow_forward),
     ]);
-    await tester.pumpAndSettle();
 
     // The ramp is behind the first one.
     final gradients = tester.widgetList<DecoratedBox>(find.byType(DecoratedBox)).where((widget) {
@@ -91,19 +94,19 @@ void main() {
 
     // A tap goes through, once.
     await tester.tap(find.text('Continue'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(taps, 1);
 
     // A busy button refuses the tap: it is already doing the thing.
     await show([GradientButton(label: 'Busy', onPressed: () => taps++, busy: true)]);
     await tester.tap(find.text('Busy'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(taps, 1, reason: 'a busy button must not fire again');
 
     // A disabled button refuses too.
     await show([const GradientButton(label: 'Off', onPressed: null)]);
     await tester.tap(find.text('Off'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 400));
     expect(taps, 1, reason: 'a disabled button must not fire');
   });
 
