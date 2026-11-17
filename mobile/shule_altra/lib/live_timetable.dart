@@ -81,7 +81,7 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
       DropdownButton<String>(value: day, items: timetableDays.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) => setState(() => day = value!)),
     ]),
     Wrap(spacing: 8, children: [
-      FilledButton.icon(onPressed: () => setState(() => result = loadSafely()), icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
+      FilledButton.icon(onPressed: () => setState(() { result = loadSafely(); }), icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
       OutlinedButton(onPressed: widget.onBack, child: const Text('Learner register')),
       OutlinedButton(onPressed: widget.onSignOut, child: const Text('Sign out')),
     ]),
