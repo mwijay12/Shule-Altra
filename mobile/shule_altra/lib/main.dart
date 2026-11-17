@@ -132,7 +132,21 @@ class _PrototypeState extends State<Prototype> {
       ]);
     }),
     const SizedBox(height: 22),
-    const Notice(title: 'Prototype mode', body: 'Illustrative data only. Sign-in, payments and offline sync are not connected.'),
+    Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Practice overview', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 6),
+      const Text('Fictional learners · current session only', style: TextStyle(color: muted, fontSize: 12)),
+      const SizedBox(height: 16),
+      Text('${attendance.markedCount} of ${attendance.totalCount} sample learners marked', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+      const SizedBox(height: 8),
+      LinearProgressIndicator(value: attendance.markedCount / attendance.totalCount, minHeight: 8, backgroundColor: const Color(0xffeaf0e6), color: ink, borderRadius: BorderRadius.circular(8), semanticsLabel: 'Sample attendance progress', semanticsValue: '${attendance.markedCount} of ${attendance.totalCount} marked'),
+      const SizedBox(height: 8),
+      const Text('Not a school record. Closing or restarting the app clears these marks.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
+      const SizedBox(height: 8),
+      TextButton.icon(onPressed: () => setState(() => tab = 2), icon: const Icon(Icons.event_note_outlined), label: const Text('Open practice day')),
+    ])),
+    const SizedBox(height: 16),
+    const Notice(title: 'Sample preview', body: 'Illustrative data only. No school data is shown here; payments and offline sync are not available.'),
   ]);
 
   Widget _learners() {
@@ -234,7 +248,9 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 22),
     const Notice(title: 'Offline & sync', body: 'Not implemented yet. Safe queues, conflict handling, authentication and device security must be designed and tested before use.'),
     const SizedBox(height: 12),
-    const Notice(title: 'School connection', body: 'No Firebase project or school account is connected to this prototype.'),
+    const Notice(title: 'School connection', body: 'This sample is separate from the online school connection. The school connection requires Android Firebase setup and an approved account.'),
+    const SizedBox(height: 12),
+    FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())), icon: const Icon(Icons.link), label: const Text('Connect to your school')),
     const SizedBox(height: 22),
     OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; sampleClass = 'All classes'; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
   ]);

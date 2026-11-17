@@ -18,6 +18,26 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('sample home reflects in-memory attendance practice', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('0 of 3 sample learners marked')); await tester.pumpAndSettle();
+    expect(find.text('0 of 3 sample learners marked'), findsOneWidget);
+    await tester.ensureVisible(find.text('Open practice day')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Open practice day')); await tester.pumpAndSettle();
+    final present = find.widgetWithText(ChoiceChip, 'Present').first;
+    await tester.ensureVisible(present); await tester.pumpAndSettle();
+    await tester.tap(present); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Home')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('1 of 3 sample learners marked')); await tester.pumpAndSettle();
+    expect(find.text('1 of 3 sample learners marked'), findsOneWidget);
+  });
+
   testWidgets('sample register filters by class and clears search', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     for (var i = 0; i < 2; i++) {
@@ -77,6 +97,7 @@ void main() {
     expect(find.text('0 of 3 marked'), findsOneWidget);
     await tester.tap(find.text('More')); await tester.pumpAndSettle();
     expect(find.text('Offline & sync'), findsOneWidget);
+    await tester.ensureVisible(find.text('View onboarding again')); await tester.pumpAndSettle();
     await tester.tap(find.text('View onboarding again')); await tester.pumpAndSettle();
     expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);
   });
