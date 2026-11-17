@@ -44,10 +44,10 @@ void main() {
     await tester.tap(find.text('Tuesday').last); await tester.pumpAndSettle();
     expect(find.text('History'), findsOneWidget);
     final present = find.widgetWithText(ChoiceChip, 'Present').first;
-    await tester.ensureVisible(present); await tester.tap(present); await tester.pumpAndSettle();
+    await tester.ensureVisible(present); await tester.pumpAndSettle(); await tester.tap(present); await tester.pumpAndSettle();
     expect(tester.widget<ChoiceChip>(present).selected, isTrue);
     final absent = find.widgetWithText(ChoiceChip, 'Absent').first;
-    await tester.ensureVisible(absent); await tester.tap(absent); await tester.pumpAndSettle();
+    await tester.ensureVisible(absent); await tester.pumpAndSettle(); await tester.tap(absent); await tester.pumpAndSettle();
     expect(tester.widget<ChoiceChip>(absent).selected, isTrue);
     await tester.scrollUntilVisible(find.text('Clear practice marks'), 250, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Clear practice marks')); await tester.pumpAndSettle();
