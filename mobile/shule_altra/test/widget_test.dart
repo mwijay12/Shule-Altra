@@ -38,6 +38,11 @@ void main() {
     await tester.binding.handlePopRoute(); await tester.pumpAndSettle();
     await tester.tap(find.text('Day')); await tester.pumpAndSettle();
     expect(find.text('Practice only · not saved'), findsOneWidget);
+    await tester.ensureVisible(find.text('Sample timetable'));
+    expect(find.text('Fictional preview · not your school schedule'), findsOneWidget);
+    await tester.tap(find.byType(DropdownButtonFormField<String>)); await tester.pumpAndSettle();
+    await tester.tap(find.text('Tuesday').last); await tester.pumpAndSettle();
+    expect(find.text('History'), findsOneWidget);
     final present = find.widgetWithText(ChoiceChip, 'Present').first;
     await tester.ensureVisible(present); await tester.tap(present); await tester.pumpAndSettle();
     expect(tester.widget<ChoiceChip>(present).selected, isTrue);

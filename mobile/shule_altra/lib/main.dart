@@ -41,6 +41,7 @@ class _PrototypeState extends State<Prototype> {
   final search = TextEditingController();
   String query = '';
   final attendance = SampleAttendanceDraft();
+  String sampleDay = 'Monday';
 
   @override
   void dispose() { search.dispose(); super.dispose(); }
@@ -163,6 +164,8 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 20),
     const Notice(title: 'Practice only · not saved', body: 'These fictional marks stay in memory during this session. They are not attendance records and are never sent to a school.'),
     const SizedBox(height: 24),
+    _sampleSchedule(),
+    const SizedBox(height: 24),
     SectionTitle('Sample attendance', '${attendance.markedCount} of ${attendance.totalCount} marked'),
     const SizedBox(height: 8),
     const Text('Tap a status to try it. Closing or restarting the app loses this practice data.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
@@ -187,6 +190,40 @@ class _PrototypeState extends State<Prototype> {
       icon: const Icon(Icons.restart_alt), label: const Text('Clear practice marks'))),
   ]);
 
+  Widget _sampleSchedule() {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const subjects = {
+      'Monday': ['Mathematics', 'English', 'Biology'],
+      'Tuesday': ['History', 'Kiswahili', 'Chemistry'],
+      'Wednesday': ['Geography', 'Mathematics', 'English'],
+      'Thursday': ['Biology', 'Civics', 'Kiswahili'],
+      'Friday': ['Chemistry', 'History', 'Geography'],
+    };
+    const times = ['08:00 – 08:40', '08:40 – 09:20', '09:20 – 10:00'];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Text('Sample timetable', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 5),
+        const Text('Fictional preview · not your school schedule', style: TextStyle(color: muted, fontSize: 12)),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<String>(
+          value: sampleDay,
+          decoration: const InputDecoration(labelText: 'Sample day', border: OutlineInputBorder()),
+          items: days.map((day) => DropdownMenuItem(value: day, child: Text(day))).toList(),
+          onChanged: (day) { if (day != null) setState(() => sampleDay = day); },
+        ),
+        const SizedBox(height: 8),
+        for (var i = 0; i < times.length; i++)
+          ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.menu_book_outlined, color: ink),
+            title: Text(subjects[sampleDay]![i], style: const TextStyle(fontWeight: FontWeight.w700)),
+            subtitle: Text('${times[i]} · Sample lesson')),
+        const Text('Three illustrative periods only. Connect to see saved schedules when configured.', style: TextStyle(color: muted, fontSize: 12)),
+      ]),
+    );
+  }
+
   Widget _more() => ListView(padding: const EdgeInsets.fromLTRB(22, 22, 22, 28), children: [
     const Brand(), const SizedBox(height: 30),
     const Text('Built with care.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
@@ -196,7 +233,7 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 12),
     const Notice(title: 'School connection', body: 'No Firebase project or school account is connected to this prototype.'),
     const SizedBox(height: 22),
-    OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
+    OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
   ]);
 }
 

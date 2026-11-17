@@ -196,7 +196,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         if (message != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 22), const Notice(title: 'Online read-only pilot', body: 'Your school permissions still apply. Offline recording and synchronisation are not available yet.'),
       ]);
-      if (showHome) return ListView(padding: const EdgeInsets.fromLTRB(24, 16, 24, 32), children: [
+      if (showHome) return ListView(key: const ValueKey('workspace-home'), padding: const EdgeInsets.fromLTRB(24, 16, 24, 32), children: [
         const Text('Your workspace', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
         const SizedBox(height: 8),
         const Text('A clear start to your school day.', style: TextStyle(color: muted, height: 1.4)),
@@ -220,7 +220,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         OutlinedButton.icon(onPressed: busy ? null : signOut, icon: const Icon(Icons.logout), label: const Text('Sign out')),
       ]);
       if (showTimetable) return LiveTimetablePanel(key: ValueKey(snapshot.data), load: widget.gateway.loadTimetable, onBack: () => setState(() => showTimetable = false), onSignOut: () => signOut());
-      return ListView(padding: const EdgeInsets.all(24), children: [
+      return ListView(key: const ValueKey('learner-register'), padding: const EdgeInsets.all(24), children: [
         Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: () => setState(() => showHome = true), icon: const Icon(Icons.arrow_back), label: const Text('Workspace'))),
         const Text('Learner register', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
         const SizedBox(height: 7), const Text('Online · read-only · 40 per page', style: TextStyle(color: muted)),
