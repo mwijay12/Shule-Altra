@@ -2,7 +2,7 @@
 
 ## Goal and current boundary
 
-A polished, reliable Flutter Android app for school staff in variable connectivity, sharing the existing Firebase-backed school data and role model. The initial `mobile/shule_altra/` is a **visual prototype only**, including an in-memory fictional attendance practice that never saves or syncs. An experimental read-only Firebase connection path is being built and still needs real-device integration verification. No offline store or synchronisation is delivered yet. A debug prototype APK was built before this connection path was added; it is not a production release. The ten web phases are not all complete; mobile must not imply those gaps are solved. Tauri desktop remains a separate later decision.
+A polished, reliable Flutter Android app for school staff in variable connectivity, sharing the existing Firebase-backed school data and role model. The initial `mobile/shule_altra/` includes an in-memory fictional attendance practice that never saves or syncs, and an experimental read-only Firebase connection path that still needs real-device integration verification. No offline store or synchronisation is delivered yet. CI has built debug prototype APKs with the connection code, but without Firebase configuration; they are not production releases. The ten web phases are not all complete; mobile must not imply those gaps are solved. Tauri desktop remains a separate later decision.
 
 ## Delivery stages and release gates
 

@@ -89,9 +89,10 @@ class _PrototypeState extends State<Prototype> {
             const SizedBox(height: 14),
             Text(pages[step].$2, style: const TextStyle(fontSize: 16, height: 1.5, color: muted)),
             const SizedBox(height: 25),
-            Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffccd8ca), borderRadius: BorderRadius.circular(8))))),
+            Semantics(label: 'Introduction, page ${step + 1} of ${pages.length}', child: Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffccd8ca), borderRadius: BorderRadius.circular(8)))))),
             const SizedBox(height: 25),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
+            if (step > 0) Center(child: TextButton.icon(onPressed: () => setState(() => step--), icon: const Icon(Icons.arrow_back), label: const Text('Previous'))),
             if (step == pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => entered = true), child: const Text('Explore sample preview instead'))),
             const SizedBox(height: 12),
             const Center(child: Text('EARLY ACCESS  ·  READ-ONLY PILOT', style: TextStyle(fontSize: 10, letterSpacing: 1.1, fontWeight: FontWeight.w700, color: muted))),
@@ -120,11 +121,14 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 24),
     const SectionTitle('Your workspace', 'A first look'),
     const SizedBox(height: 12),
-    Row(children: [
-      Expanded(child: FeatureCard(icon: Icons.people_outline, title: 'Learners', caption: 'Browse sample profiles', onTap: () => setState(() => tab = 1))),
-      const SizedBox(width: 10),
-      Expanded(child: FeatureCard(icon: Icons.event_note_outlined, title: 'School day', caption: 'Try sample attendance', onTap: () => setState(() => tab = 2))),
-    ]),
+    LayoutBuilder(builder: (context, constraints) {
+      final stack = constraints.maxWidth < 340 || MediaQuery.textScalerOf(context).scale(1) > 1.3;
+      final cardWidth = stack ? constraints.maxWidth : (constraints.maxWidth - 10) / 2;
+      return Wrap(spacing: 10, runSpacing: 10, children: [
+        SizedBox(width: cardWidth, child: FeatureCard(icon: Icons.people_outline, title: 'Learners', caption: 'Browse sample profiles', onTap: () => setState(() => tab = 1))),
+        SizedBox(width: cardWidth, child: FeatureCard(icon: Icons.event_note_outlined, title: 'School day', caption: 'Try sample attendance', onTap: () => setState(() => tab = 2))),
+      ]);
+    }),
     const SizedBox(height: 22),
     const Notice(title: 'Prototype mode', body: 'Illustrative data only. Sign-in, payments and offline sync are not connected.'),
   ]);
@@ -146,7 +150,7 @@ class _PrototypeState extends State<Prototype> {
         title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text('${item.className}  ·  Sample', style: const TextStyle(color: muted)),
         trailing: const Icon(Icons.chevron_right, color: muted),
-        onTap: () => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (context) => SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 8), Text('${item.className} · Sample profile'), const SizedBox(height: 18), const Notice(title: 'Design preview', body: 'This is fictional sample data. Real learner details are not connected.')])))),
+        onTap: () => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (context) => SafeArea(child: SingleChildScrollView(child: Padding(padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [Text(item.name, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800)), const SizedBox(height: 8), Text('${item.className} · Sample profile'), const SizedBox(height: 18), const Notice(title: 'Design preview', body: 'This is fictional sample data. Real learner details are not connected.')]))))),
       )))),
     ]);
   }

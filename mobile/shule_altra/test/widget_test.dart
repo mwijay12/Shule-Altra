@@ -3,6 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/main.dart';
 
 void main() {
+  testWidgets('onboarding can go back and announces progress', (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(const ShuleMobileApp());
+    expect(find.bySemanticsLabel('Introduction, page 1 of 3'), findsOneWidget);
+    await tester.ensureVisible(find.text('Continue'));
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.bySemanticsLabel('Introduction, page 2 of 3'), findsOneWidget);
+    await tester.ensureVisible(find.text('Previous'));
+    await tester.tap(find.text('Previous'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('prototype onboarding, search, detail and reset', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);

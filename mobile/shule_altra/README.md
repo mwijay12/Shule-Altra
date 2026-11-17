@@ -35,7 +35,7 @@ flutter build apk --debug
 
 A GitHub Actions workflow at `.github/workflows/mobile-preview.yml` can generate a temporary Android scaffold, analyze and test the app, and upload a **debug-only prototype** APK if it succeeds. It runs after the branch is pushed; a workflow file alone is not evidence of a successful build.
 
-Flutter and Android SDK were unavailable in the authoring environment, so the Dart code, widget test and build commands above have **not** been executed here. Treat this as a starting point requiring validation on a real device, including small screens, larger text, screen readers and reduced motion.
+Flutter and Android SDK were unavailable in the authoring environment. GitHub Actions has run the analyzer, widget tests and debug APK build, but this does not replace validation on a real device, including small screens, larger text, screen readers and reduced motion.
 
 See [mobile delivery plan](../../docs/mobile-apk-plan.md) and [creative web reference library](../../docs/creative-web-references.md).
 
