@@ -85,15 +85,15 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
           final stacked = constraints.maxWidth < 280 || MediaQuery.textScalerOf(context).scale(1) > 1.3;
           final width = stacked ? constraints.maxWidth : (constraints.maxWidth - 12) / 2;
           return Wrap(spacing: 12, runSpacing: 12, children: [
-            SizedBox(width: width, child: DropdownButtonFormField<String>(value: className,
+            SizedBox(width: width, child: DropdownButtonFormField<String>(isExpanded: true, value: className,
               decoration: const InputDecoration(labelText: 'Class', border: OutlineInputBorder()),
               items: timetableClasses.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
               onChanged: (value) { if (value != null) setState(() { className = value; result = null; }); })),
-            SizedBox(width: width, child: DropdownButtonFormField<String>(value: stream,
+            SizedBox(width: width, child: DropdownButtonFormField<String>(isExpanded: true, value: stream,
               decoration: const InputDecoration(labelText: 'Stream', border: OutlineInputBorder()),
               items: timetableStreams.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
               onChanged: (value) { if (value != null) setState(() { stream = value; result = null; }); })),
-            SizedBox(width: constraints.maxWidth, child: DropdownButtonFormField<String>(value: day,
+            SizedBox(width: constraints.maxWidth, child: DropdownButtonFormField<String>(isExpanded: true, value: day,
               decoration: const InputDecoration(labelText: 'Day', border: OutlineInputBorder()),
               items: timetableDays.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
               onChanged: (value) { if (value != null) setState(() => day = value); })),

@@ -180,7 +180,7 @@ class _PrototypeState extends State<Prototype> {
       const SizedBox(height: 20),
       TextField(controller: search, onChanged: (value) => setState(() => query = value.trim()), decoration: InputDecoration(labelText: 'Search sample learners', prefixIcon: const Icon(Icons.search), suffixIcon: query.isEmpty ? null : IconButton(tooltip: 'Clear search', onPressed: () => setState(() { search.clear(); query = ''; }), icon: const Icon(Icons.close)), filled: true, fillColor: Colors.white, border: OutlineInputBorder(borderSide: BorderSide.none, borderRadius: BorderRadius.circular(18)))),
       const SizedBox(height: 12),
-      DropdownButtonFormField<String>(value: sampleClass, decoration: const InputDecoration(labelText: 'Sample class', border: OutlineInputBorder()), items: ['All classes', ...sampleLearners.map((item) => item.className).toSet()].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) { if (value != null) setState(() => sampleClass = value); }),
+      DropdownButtonFormField<String>(isExpanded: true, value: sampleClass, decoration: const InputDecoration(labelText: 'Sample class', border: OutlineInputBorder()), items: ['All classes', ...sampleLearners.map((item) => item.className).toSet()].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(), onChanged: (value) { if (value != null) setState(() => sampleClass = value); }),
       const SizedBox(height: 24),
       SectionTitle('Sample register', '${shown.length} shown'), const SizedBox(height: 12),
       if (shown.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No sample learners match your search.', style: TextStyle(color: muted))),
@@ -264,6 +264,7 @@ class _PrototypeState extends State<Prototype> {
         const Text('Fictional preview · not your school schedule', style: TextStyle(color: muted, fontSize: 12)),
         const SizedBox(height: 10),
         DropdownButtonFormField<String>(
+          isExpanded: true,
           value: sampleDay,
           decoration: const InputDecoration(labelText: 'Sample day', border: OutlineInputBorder()),
           items: days.map((day) => DropdownMenuItem(value: day, child: Text(day))).toList(),
