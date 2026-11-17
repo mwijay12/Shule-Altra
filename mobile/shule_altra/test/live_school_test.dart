@@ -90,10 +90,11 @@ void main() {
     final schoolSearch = find.widgetWithText(TextField, 'School name prefix');
     await tester.ensureVisible(schoolSearch); await tester.pumpAndSettle();
     await tester.enterText(schoolSearch, 'Example');
-    await tester.ensureVisible(find.text('Workspace')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Workspace'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Workspace')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(schoolSearch, 150, scrollable: find.byType(Scrollable).first);
     expect(tester.widget<TextField>(schoolSearch).controller!.text, 'Example');
     await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle();
     await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
@@ -102,7 +103,7 @@ void main() {
     await tester.enterText(pageSearch, 'not found'); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('No learners shown'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('No learners shown'), findsOneWidget);
-    await tester.ensureVisible(find.byTooltip('Clear page filter')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byTooltip('Clear page filter'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('Clear page filter')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Example Learner'), findsOneWidget);
