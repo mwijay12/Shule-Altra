@@ -26,15 +26,15 @@ void main() {
     }
     await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
     await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('0 of 3 sample learners marked')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('0 of 3 sample learners marked'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     expect(find.text('0 of 3 sample learners marked'), findsOneWidget);
     await tester.ensureVisible(find.text('Open practice day')); await tester.pumpAndSettle();
     await tester.tap(find.text('Open practice day')); await tester.pumpAndSettle();
     final present = find.widgetWithText(ChoiceChip, 'Present').first;
-    await tester.ensureVisible(present); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(present, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(present); await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(NavigationDestination, 'Home')); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('1 of 3 sample learners marked')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('1 of 3 sample learners marked'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     expect(find.text('1 of 3 sample learners marked'), findsOneWidget);
   });
 
