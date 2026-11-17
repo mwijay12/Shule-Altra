@@ -81,6 +81,36 @@ void main() {
     expect(find.textContaining('Could not load this schedule.'), findsOneWidget);
   });
 
+  testWidgets('register keeps visible search state when navigating and clears a page filter', (tester) async {
+    final fake = FakeSchoolGateway();
+    await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    final schoolSearch = find.widgetWithText(TextField, 'School name prefix');
+    await tester.ensureVisible(schoolSearch); await tester.pumpAndSettle();
+    await tester.enterText(schoolSearch, 'Example');
+    await tester.ensureVisible(find.text('Workspace')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Workspace')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(schoolSearch).controller!.text, 'Example');
+    await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    final pageSearch = find.widgetWithText(TextField, 'Search loaded learners');
+    await tester.scrollUntilVisible(pageSearch, 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(pageSearch, 'not found'); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('No learners shown'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('No learners shown'), findsOneWidget);
+    await tester.ensureVisible(find.byTooltip('Clear page filter')); await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Clear page filter')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Example Learner'), findsOneWidget);
+    expect(fake.lastPrefix, 'Example');
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
   testWidgets('sign in, load, error and account switch discard displayed records', (tester) async {
     final fake = FakeSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));

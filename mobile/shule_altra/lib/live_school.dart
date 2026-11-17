@@ -227,23 +227,32 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         const SizedBox(height: 18),
         const Notice(title: 'Live school data', body: 'Use only an approved school account and a trusted device. School search matches the beginning of a name exactly, including capital letters. Results can change between reads.'),
         const SizedBox(height: 14),
-        TextField(key: ValueKey('school-search-$globalSearchVersion'), maxLength: 100, onChanged: (value) => draftPrefix = value, onSubmitted: (_) => refresh(),
-          textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search))),
+        TextFormField(key: ValueKey('school-search-$globalSearchVersion'), initialValue: draftPrefix, maxLength: 100, onChanged: (value) => draftPrefix = value, onFieldSubmitted: (_) => refresh(),
+          textInputAction: TextInputAction.search, decoration: const InputDecoration(labelText: 'School name prefix', hintText: 'Match exact capital letters', prefixIcon: Icon(Icons.search), border: OutlineInputBorder())),
         const SizedBox(height: 12),
         Wrap(spacing: 8, children: [FilledButton.icon(onPressed: busy ? null : refresh, icon: const Icon(Icons.search), label: const Text('Search school')), OutlinedButton(onPressed: busy ? null : () => setState(() { learners = null; showTimetable = true; }), child: const Text('Timetable')), OutlinedButton(onPressed: busy ? null : signOut, child: const Text('Sign out'))]),
         const SizedBox(height: 6),
         const Text('Leave empty to browse. Names without a name field are not included.', style: TextStyle(color: muted, fontSize: 12)),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 12), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
+        if (learners == null) const Padding(padding: EdgeInsets.only(top: 22), child: Notice(title: 'Start with a search', body: 'Enter the beginning of a name, or leave the field empty to browse the first page. School data is loaded only when you search.')),
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
           if (data.hasError || data.data?.page == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
           final rows = (data.data!.page!.rows).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const SizedBox(height: 18), TextField(key: ValueKey(searchVersion), onChanged: (value) => setState(() => query = value.trim()), decoration: const InputDecoration(labelText: 'Search loaded learners', prefixIcon: Icon(Icons.search))),
-            const SizedBox(height: 14), Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),
-            if (rows.isEmpty) const Padding(padding: EdgeInsets.only(top: 14), child: Text('No matching learners in this page.')),
-            ...rows.map((row) => Card(child: ExpansionTile(
-              title: Text(row.name), subtitle: Text(row.className),
+            const SizedBox(height: 22),
+            Text('Page ${previousCursors.length + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),
+            const SizedBox(height: 12),
+            TextFormField(key: ValueKey('page-search-$searchVersion'), initialValue: query, onChanged: (value) => setState(() => query = value.trim()),
+              decoration: InputDecoration(labelText: 'Search loaded learners', helperText: 'Filters this page only', prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(),
+                suffixIcon: query.isEmpty ? null : IconButton(tooltip: 'Clear page filter', onPressed: () => setState(() { query = ''; searchVersion++; }), icon: const Icon(Icons.close)))),
+            if (rows.isEmpty) Padding(padding: const EdgeInsets.only(top: 14), child: Notice(title: 'No learners shown', body: query.isEmpty ? 'No records were returned on this page. Try another school search.' : 'No loaded learners match this page filter. Clear it or search the school again.')),
+            const SizedBox(height: 8),
+            ...rows.map((row) => Card(margin: const EdgeInsets.only(bottom: 10), child: ExpansionTile(
+              leading: const CircleAvatar(backgroundColor: Color(0xffe5efde), foregroundColor: ink, child: Icon(Icons.person_outline)),
+              title: Text(row.name, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(row.className),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: [
                 const Text('Read-only details from this page load. Refresh the register for newer changes.', style: TextStyle(color: muted, fontSize: 12)),
