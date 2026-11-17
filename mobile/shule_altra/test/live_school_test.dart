@@ -116,6 +116,36 @@ void main() {
     await fake.controller.close();
   });
 
+  testWidgets('school screens remain usable on a narrow phone with larger text', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final previousErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) { debugPrint(details.toString()); previousErrorHandler?.call(details); };
+    addTearDown(() => FlutterError.onError = previousErrorHandler);
+    final fake = FakeSchoolGateway();
+    await tester.pumpWidget(MediaQuery(data: const MediaQueryData(textScaler: TextScaler.linear(1.5)), child: MaterialApp(home: LiveSchoolPage(gateway: fake))));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Learner register'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Search school'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('guardian@example.test'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.scrollUntilVisible(find.text('Timetable'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Load timetable'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
   testWidgets('sign in, load, error and account switch discard displayed records', (tester) async {
     final fake = FakeSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
