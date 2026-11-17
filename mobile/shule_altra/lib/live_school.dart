@@ -139,7 +139,8 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
 
 class _LearnerResult {
   final LearnerPage? page;
-  const _LearnerResult(this.page);
+  final DateTime? completedAt;
+  const _LearnerResult(this.page, this.completedAt);
 }
 
 class LiveSchoolPage extends StatefulWidget {
@@ -163,10 +164,13 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
   Object? currentCursor;
   final List<Object?> previousCursors = [];
   Future<_LearnerResult> _loadSafely(Object? after) async {
-    try { return _LearnerResult(await widget.gateway.loadLearners(after: after, namePrefix: activePrefix)); }
-    catch (_) { return const _LearnerResult(null); }
+    try {
+      final page = await widget.gateway.loadLearners(after: after, namePrefix: activePrefix);
+      return _LearnerResult(page, DateTime.now());
+    } catch (_) { return const _LearnerResult(null, null); }
   }
   void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; searchVersion++; learners = _loadSafely(null); });
+  void reloadPage() => setState(() { message = null; query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
   void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; searchVersion++; learners = _loadSafely(cursor); });
   void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; searchVersion++; learners = _loadSafely(currentCursor); });
   Future<void> signIn() async {
@@ -238,11 +242,17 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         if (learners != null) FutureBuilder<_LearnerResult>(future: learners, builder: (context, data) {
           if (data.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
           if (data.hasError || data.data?.page == null) return const Padding(padding: EdgeInsets.only(top: 18), child: Notice(title: 'Could not load learners', body: 'Check your internet connection, session and school permissions, then try again. No cached results are shown.'));
+          final readAt = data.data!.completedAt!;
+          final localizations = MaterialLocalizations.of(context);
+          final readLabel = '${localizations.formatMediumDate(readAt)} · ${localizations.formatTimeOfDay(TimeOfDay.fromDateTime(readAt))}';
           final rows = (data.data!.page!.rows).where((row) => '${row.name} ${row.className}'.toLowerCase().contains(query.toLowerCase())).toList();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const SizedBox(height: 22),
             Text('Page ${previousCursors.length + 1}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
+            Text('Read completed $readLabel (device time). Results do not update automatically.', style: const TextStyle(color: muted, fontSize: 12, height: 1.4)),
+            Align(alignment: Alignment.centerLeft, child: TextButton.icon(onPressed: busy ? null : reloadPage, icon: const Icon(Icons.refresh), label: const Text('Reload this page'))),
+
             Text('${rows.length} shown on this page${activePrefix.isEmpty ? '' : ' · name starts with “$activePrefix”'}', style: const TextStyle(color: muted)),
             const SizedBox(height: 12),
             TextFormField(key: ValueKey('page-search-$searchVersion'), initialValue: query, onChanged: (value) => setState(() => query = value.trim()),

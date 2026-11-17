@@ -8,12 +8,16 @@ class FakeSchoolGateway implements SchoolGateway {
   final controller = StreamController<String?>.broadcast();
   bool fail = false;
   String lastPrefix = '';
+  Object? lastCursor;
+  int learnerLoads = 0;
   @override Stream<String?> get sessionUid => controller.stream;
   @override Future<void> signInWithGoogle() async { controller.add('staff-1'); }
   @override Future<LiveTimetable?> loadTimetable(String className, String stream) async => const LiveTimetable({'monday_p1': TimetableSlot('Mathematics', 'Mwalimu A', 'Room 1')});
   @override Future<void> signOut() async { controller.add(null); }
   @override Future<LearnerPage> loadLearners({Object? after, String namePrefix = ''}) async {
     lastPrefix = namePrefix;
+    lastCursor = after;
+    learnerLoads++;
     if (fail) throw StateError('offline');
     return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
@@ -140,6 +144,14 @@ void main() {
     await tester.ensureVisible(find.text('Next page')); await tester.pumpAndSettle(); await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
     expect(find.text('Second Learner'), findsOneWidget);
     expect(fake.lastPrefix, 'Example', reason: 'pagination keeps the server search');
+    await tester.scrollUntilVisible(find.text('Reload this page'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    expect(find.textContaining('Read completed'), findsOneWidget);
+    await tester.tap(find.text('Reload this page')); await tester.pumpAndSettle();
+    expect(fake.lastCursor, 'next', reason: 'reload stays on the current page');
+    expect(fake.lastPrefix, 'Example');
+    expect(fake.learnerLoads, 3);
+    await tester.scrollUntilVisible(find.text('Second Learner'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Second Learner'), findsOneWidget);
     await tester.ensureVisible(find.text('Previous page')); await tester.pumpAndSettle(); await tester.tap(find.text('Previous page')); await tester.pumpAndSettle();
     expect(find.text('Example Learner'), findsOneWidget);
     await tester.ensureVisible(find.text('Example Learner')); await tester.pumpAndSettle();
