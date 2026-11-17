@@ -38,6 +38,28 @@ void main() {
     expect(find.text('1 of 3 sample learners marked'), findsOneWidget);
   });
 
+  testWidgets('practice summary fills only unmarked learners and supports individual clearing', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Day')); await tester.pumpAndSettle();
+    final absent = find.widgetWithText(ChoiceChip, 'Absent').first;
+    await tester.scrollUntilVisible(absent, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(absent); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mark unmarked samples present'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark unmarked samples present')); await tester.pumpAndSettle();
+    expect(find.text('Present: 2'), findsOneWidget);
+    expect(find.text('Absent: 1'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Clear Amina Juma mark'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear Amina Juma mark')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Unmarked: 1'), -200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Unmarked: 1'), findsOneWidget);
+  });
+
   testWidgets('sample register filters by class and clears search', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     for (var i = 0; i < 2; i++) {

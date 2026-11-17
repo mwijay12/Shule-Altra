@@ -185,7 +185,22 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 24),
     SectionTitle('Sample attendance', '${attendance.markedCount} of ${attendance.totalCount} marked'),
     const SizedBox(height: 8),
-    const Text('Tap a status to try it. Closing or restarting the app loses this practice data.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
+    const Text('Tap a status to try it. These marks are not tied to the timetable day above. Closing or restarting the app loses this practice data.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
+    const SizedBox(height: 12),
+    Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const Text('Practice summary', style: TextStyle(fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      Wrap(spacing: 14, runSpacing: 6, children: [
+        Text('Present: ${attendance.count(SampleAttendance.present)}'),
+        Text('Absent: ${attendance.count(SampleAttendance.absent)}'),
+        Text('Late: ${attendance.count(SampleAttendance.late)}'),
+        Text('Unmarked: ${attendance.totalCount - attendance.markedCount}'),
+      ]),
+      const SizedBox(height: 8),
+      TextButton.icon(onPressed: attendance.markedCount == attendance.totalCount ? null : () => setState(attendance.markUnmarkedPresent),
+        icon: const Icon(Icons.done_all), label: const Text('Mark unmarked samples present')),
+      const Text('Existing choices stay unchanged.', style: TextStyle(color: muted, fontSize: 12)),
+    ])),
     const SizedBox(height: 12),
     ...sampleLearners.map((learner) => Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -195,6 +210,7 @@ class _PrototypeState extends State<Prototype> {
         Row(children: [CircleAvatar(backgroundColor: const Color(0xffe5efde), foregroundColor: ink, child: Text(learner.initials, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12))),
           const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(learner.name, style: const TextStyle(fontWeight: FontWeight.w800)), Text('${learner.className} · Sample', style: const TextStyle(fontSize: 12, color: muted))]))]),
         const SizedBox(height: 12),
+        if (attendance.markFor(learner.id) != null) Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => attendance.clearMark(learner.id)), icon: const Icon(Icons.close, size: 18), label: Text('Clear ${learner.name} mark'))),
         Wrap(spacing: 6, runSpacing: 4, children: SampleAttendance.values.map((status) {
           final label = switch (status) { SampleAttendance.present => 'Present', SampleAttendance.absent => 'Absent', SampleAttendance.late => 'Late' };
           return ChoiceChip(label: Text(label), selected: attendance.markFor(learner.id) == status,

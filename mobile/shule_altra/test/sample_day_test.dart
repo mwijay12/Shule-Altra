@@ -10,6 +10,13 @@ void main() {
     draft.mark('sample-1', SampleAttendance.absent);
     expect(draft.markedCount, 1);
     expect(draft.markFor('sample-1'), SampleAttendance.absent);
+    draft.markUnmarkedPresent();
+    expect(draft.markFor('sample-1'), SampleAttendance.absent);
+    expect(draft.count(SampleAttendance.present), 2);
+    expect(draft.count(SampleAttendance.absent), 1);
+    draft.clearMark('sample-1');
+    expect(draft.markFor('sample-1'), isNull);
+    expect(draft.markedCount, 2);
     expect(() => draft.mark('real-student-id', SampleAttendance.present), throwsArgumentError);
     draft.clear();
     expect(draft.markedCount, 0);
