@@ -19,7 +19,7 @@ class FakeSchoolGateway implements SchoolGateway {
     lastCursor = after;
     learnerLoads++;
     if (fail) throw StateError('offline');
-    return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
+    return after == null ? const LearnerPage([LiveLearner('Example Learner', 'Form 1', recordId: 'student-001', admissionNumber: 'A-001', residence: 'Day', enrollmentDate: '2026-01-01', guardianName: 'Example Guardian', guardianEmail: 'guardian@example.test')], 'next') : const LearnerPage([LiveLearner('Second Learner', 'Form 2')], null);
   }
 }
 
@@ -49,11 +49,15 @@ void main() {
     expect(noGoogle.isValid, isFalse);
   });
   test('learner parser safely handles missing or malformed details', () {
-    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test '});
+    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test ', 'type': ' Day ', 'enrollmentDate': 20260101, 'admissionNumber': ' A-123 '}, recordId: 'doc-1');
     expect(row.name, 'Amina');
     expect(row.className, 'Class not set');
     expect(row.guardianPhone, '');
     expect(row.guardianEmail, 'x@example.test');
+    expect(row.recordId, 'doc-1');
+    expect(row.admissionNumber, 'A-123');
+    expect(row.residence, 'Day');
+    expect(row.enrollmentDate, '');
   });
   testWidgets('timetable clears a previous class and handles empty and failed reads', (tester) async {
     var calls = 0;
@@ -157,6 +161,8 @@ void main() {
     await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Example Learner'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
+    expect(find.text('student-001'), findsOneWidget);
+    expect(find.text('A-001'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('guardian@example.test'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
     await tester.scrollUntilVisible(find.text('Timetable'), -200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
@@ -192,6 +198,7 @@ void main() {
     expect(find.text('Example Learner'), findsOneWidget);
     await tester.ensureVisible(find.text('Example Learner')); await tester.pumpAndSettle();
     await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('guardian@example.test'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('guardian@example.test'), findsOneWidget);
     await tester.drag(find.byType(ListView), const Offset(0, -450)); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Next page')); await tester.pumpAndSettle(); await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
@@ -209,6 +216,7 @@ void main() {
     expect(find.text('Example Learner'), findsOneWidget);
     await tester.ensureVisible(find.text('Example Learner')); await tester.pumpAndSettle();
     await tester.tap(find.text('Example Learner')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('guardian@example.test'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('guardian@example.test'), findsOneWidget);
     fake.controller.add('staff-2'); await tester.pumpAndSettle();
     expect(find.text('Example Learner'), findsNothing);

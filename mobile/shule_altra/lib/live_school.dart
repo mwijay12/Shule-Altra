@@ -26,13 +26,15 @@ class SchoolFirebaseConfig {
 
 class LiveLearner {
   final String name, className, status, guardianName, guardianPhone, guardianEmail;
-  const LiveLearner(this.name, this.className, {this.status = '', this.guardianName = '', this.guardianPhone = '', this.guardianEmail = ''});
+  final String recordId, admissionNumber, residence, enrollmentDate;
+  const LiveLearner(this.name, this.className, {this.status = '', this.guardianName = '', this.guardianPhone = '', this.guardianEmail = '', this.recordId = '', this.admissionNumber = '', this.residence = '', this.enrollmentDate = ''});
 
-  factory LiveLearner.fromFirestore(Map<String, dynamic> data) {
+  factory LiveLearner.fromFirestore(Map<String, dynamic> data, {String recordId = ''}) {
     String text(String key) => data[key] is String ? (data[key] as String).trim() : '';
     final name = text('name'), className = text('class');
     return LiveLearner(name.isEmpty ? 'Unnamed learner' : name, className.isEmpty ? 'Class not set' : className,
-      status: text('status'), guardianName: text('guardianName'), guardianPhone: text('guardianPhone'), guardianEmail: text('guardianEmail'));
+      status: text('status'), guardianName: text('guardianName'), guardianPhone: text('guardianPhone'), guardianEmail: text('guardianEmail'),
+      recordId: recordId, admissionNumber: text('admissionNumber'), residence: text('type'), enrollmentDate: text('enrollmentDate'));
   }
 }
 
@@ -105,7 +107,7 @@ class FirebaseSchoolGateway implements SchoolGateway {
     final result = await query.limit(41).get(const GetOptions(source: Source.server));
     if (auth.currentUser?.uid != user.uid) throw StateError('Your session changed. Sign in again.');
     final visible = result.docs.take(40).toList();
-    final rows = visible.map((doc) => LiveLearner.fromFirestore(doc.data())).toList();
+    final rows = visible.map((doc) => LiveLearner.fromFirestore(doc.data(), recordId: doc.id)).toList();
     return LearnerPage(rows, result.docs.length > 40 ? visible.last : null);
   }
 }
@@ -267,7 +269,14 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
               children: [
                 const Text('Read-only details from this page load. Refresh the register for newer changes.', style: TextStyle(color: muted, fontSize: 12)),
                 const SizedBox(height: 8),
+                const Align(alignment: Alignment.centerLeft, child: Text('Learner information', style: TextStyle(fontWeight: FontWeight.w800))),
+                _DetailLine('Record ID', row.recordId),
+                _DetailLine('Admission number', row.admissionNumber),
                 _DetailLine('Status', row.status),
+                _DetailLine('Residence', row.residence),
+                _DetailLine('Enrolment date', row.enrollmentDate),
+                const SizedBox(height: 12),
+                const Align(alignment: Alignment.centerLeft, child: Text('Guardian contact', style: TextStyle(fontWeight: FontWeight.w800))),
                 _DetailLine('Guardian', row.guardianName),
                 _DetailLine('Guardian phone', row.guardianPhone),
                 _DetailLine('Guardian email', row.guardianEmail),
