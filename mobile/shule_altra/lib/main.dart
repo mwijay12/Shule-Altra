@@ -47,6 +47,28 @@ class _PrototypeState extends State<Prototype> {
   @override
   void dispose() { search.dispose(); super.dispose(); }
 
+  Future<bool> _confirmDiscard(String action) async => await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Discard practice marks?'),
+      content: const Text('Your fictional attendance marks will be cleared from this session. Nothing was saved or sent to a school.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Keep practicing')),
+        FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(action)),
+      ],
+    ),
+  ) ?? false;
+
+  Future<void> _clearPractice() async {
+    if (await _confirmDiscard('Clear marks') && mounted) setState(attendance.clear);
+  }
+
+  Future<void> _resetPreview() async {
+    if (attendance.markedCount > 0 && !await _confirmDiscard('Reset preview')) return;
+    if (!mounted) return;
+    setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; sampleClass = 'All classes'; attendance.clear(); });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!entered) return _onboarding();
@@ -219,7 +241,7 @@ class _PrototypeState extends State<Prototype> {
       ]),
     )),
     Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-      onPressed: attendance.markedCount == 0 ? null : () => setState(attendance.clear),
+      onPressed: attendance.markedCount == 0 ? null : _clearPractice,
       icon: const Icon(Icons.restart_alt), label: const Text('Clear practice marks'))),
   ]);
 
@@ -268,7 +290,7 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 12),
     FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())), icon: const Icon(Icons.link), label: const Text('Connect to your school')),
     const SizedBox(height: 22),
-    OutlinedButton.icon(onPressed: () => setState(() { entered = false; step = 0; tab = 0; search.clear(); query = ''; sampleDay = 'Monday'; sampleClass = 'All classes'; attendance.clear(); }), icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
+    OutlinedButton.icon(onPressed: _resetPreview, icon: const Icon(Icons.restart_alt), label: const Text('View onboarding again')),
   ]);
 }
 
@@ -322,7 +344,7 @@ class Brand extends StatelessWidget {
 class SectionTitle extends StatelessWidget {
   final String title, trailing;
   const SectionTitle(this.title, this.trailing, {super.key});
-  @override Widget build(BuildContext context) => Row(children: [Expanded(child: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))), Text(trailing, style: const TextStyle(color: muted, fontSize: 12))]);
+  @override Widget build(BuildContext context) => Wrap(alignment: WrapAlignment.spaceBetween, crossAxisAlignment: WrapCrossAlignment.center, spacing: 12, runSpacing: 4, children: [Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)), Text(trailing, style: const TextStyle(color: muted, fontSize: 12))]);
 }
 class FeatureCard extends StatelessWidget {
   final IconData icon; final String title, caption; final VoidCallback onTap;

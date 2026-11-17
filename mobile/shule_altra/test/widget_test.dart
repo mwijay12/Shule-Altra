@@ -62,6 +62,51 @@ void main() {
     expect(find.text('Unmarked: 1'), findsOneWidget);
   });
 
+  testWidgets('reset preview protects session-only marks until confirmed', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Day')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Mark unmarked samples present'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Mark unmarked samples present')); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'More')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('View onboarding again')); await tester.pumpAndSettle();
+    await tester.tap(find.text('View onboarding again')); await tester.pumpAndSettle();
+    expect(find.text('Discard practice marks?'), findsOneWidget);
+    await tester.tap(find.text('Keep practicing')); await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Home')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('3 of 3 sample learners marked'), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('3 of 3 sample learners marked'), findsOneWidget);
+    await tester.tap(find.widgetWithText(NavigationDestination, 'More')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('View onboarding again')); await tester.pumpAndSettle();
+    await tester.tap(find.text('View onboarding again')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Reset preview')); await tester.pumpAndSettle();
+    expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);
+  });
+
+  testWidgets('sample screens fit a narrow phone with larger text', (tester) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(MediaQuery(data: const MediaQueryData(textScaler: TextScaler.linear(1.5)), child: const MaterialApp(home: Prototype())));
+    for (var i = 0; i < 2; i++) {
+      await tester.ensureVisible(find.text('Continue')); await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue')); await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Practice overview'), 200, scrollable: find.byType(Scrollable).first);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.widgetWithText(NavigationDestination, 'Day')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Practice summary'), 200, scrollable: find.byType(Scrollable).first);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('sample register filters by class and clears search', (tester) async {
     await tester.pumpWidget(const ShuleMobileApp());
     for (var i = 0; i < 2; i++) {
@@ -118,6 +163,8 @@ void main() {
     expect(tester.widget<ChoiceChip>(absent).selected, isTrue);
     await tester.scrollUntilVisible(find.text('Clear practice marks'), 250, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Clear practice marks')); await tester.pumpAndSettle();
+    expect(find.text('Discard practice marks?'), findsOneWidget);
+    await tester.tap(find.text('Clear marks')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('0 of 3 marked'), -250, scrollable: find.byType(Scrollable).first);
     expect(find.text('0 of 3 marked'), findsOneWidget);
     await tester.tap(find.text('More')); await tester.pumpAndSettle();
