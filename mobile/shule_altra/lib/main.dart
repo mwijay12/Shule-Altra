@@ -106,7 +106,7 @@ class _PrototypeState extends State<Prototype> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Brand(),
             const SizedBox(height: 32),
-            Container(height: 260, width: double.infinity, decoration: BoxDecoration(color: const Color(0xffe5eddd), borderRadius: BorderRadius.circular(30)), child: const SchoolIllustration()),
+            SchoolHeroImage(height: constraints.maxHeight < 700 || MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 190 : 260),
             const SizedBox(height: 30),
             Text('SHULE ALTRA  /  MOBILE', style: Theme.of(context).textTheme.labelSmall?.copyWith(letterSpacing: 1.8, fontWeight: FontWeight.w800, color: muted)),
             const SizedBox(height: 12),
@@ -360,6 +360,22 @@ class Notice extends StatelessWidget {
   const Notice({super.key, required this.title, required this.body});
   @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(20)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, size: 19, color: ink), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(body, style: const TextStyle(color: muted, fontSize: 12, height: 1.45))]))]));
 }
+/// Decorative, bundled illustration; a vector fallback keeps onboarding usable
+/// if the asset cannot be decoded on a device.
+class SchoolHeroImage extends StatelessWidget {
+  final double height;
+  const SchoolHeroImage({super.key, required this.height});
+  @override Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(30),
+    child: SizedBox(
+      height: height, width: double.infinity,
+      child: Image.asset('assets/images/onboarding_school.jpg',
+        fit: BoxFit.cover, alignment: Alignment.center, excludeFromSemantics: true,
+        errorBuilder: (context, error, stackTrace) => const ColoredBox(color: Color(0xffe5eddd), child: SchoolIllustration())),
+    ),
+  );
+}
+
 class SchoolIllustration extends StatelessWidget {
   const SchoolIllustration({super.key});
   @override Widget build(BuildContext context) => CustomPaint(painter: _SchoolPainter());

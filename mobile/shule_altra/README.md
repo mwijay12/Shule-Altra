@@ -10,7 +10,7 @@ Open the independent SVG concepts in `design/`:
 - [Home](design/02-home.svg)
 - [Learners](design/03-learners.svg)
 
-These are static visual concepts; Flutter layouts use native Material widgets and will not be pixel-identical. They are not screenshots or proof of an APK build.
+The app also bundles AI-generated fictional school illustrations for onboarding and the school workspace, with visual fallbacks and no network fetch. They are illustrations, not photographs of the school. These SVGs are static visual concepts; Flutter layouts use native Material widgets and will not be pixel-identical. They are not screenshots or proof of an APK build.
 
 ## Run locally with Flutter
 
