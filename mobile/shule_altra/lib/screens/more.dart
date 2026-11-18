@@ -148,8 +148,8 @@ class MoreScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Returns to onboarding and clears this session. Nothing is saved, so nothing '
-                'is lost.',
+                'Returns to the school or sample choice and clears this session. The introduction '
+                'preference remains on this device.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: Space.md),

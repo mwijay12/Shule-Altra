@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../data/firebase_gateway.dart';
 import '../data/learner.dart';
+import '../data/onboarding_store.dart';
 import '../data/sample_gateway.dart';
 import '../data/school_gateway.dart';
 import '../design/motion.dart';
@@ -182,6 +183,7 @@ class _ShuleAppState extends State<ShuleApp> {
       case AppMode.onboarding:
         return OnboardingPage(
           key: const ValueKey('onboarding'),
+          store: widget._injected == null ? const DeviceOnboardingStore() : null,
           onConnect: _connectLive,
           onTrySample: _useSample,
         );

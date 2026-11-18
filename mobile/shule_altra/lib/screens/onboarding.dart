@@ -6,7 +6,11 @@
 /// the open, and the app can never drift from one into the other later.
 library;
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+
+import '../data/onboarding_store.dart';
 
 import '../design/doodles.dart';
 import '../design/motion.dart';
@@ -19,6 +23,7 @@ class OnboardingPage extends StatefulWidget {
     super.key,
     required this.onConnect,
     required this.onTrySample,
+    this.store,
   });
 
   /// "Connect my school": try the live gateway.
@@ -27,12 +32,52 @@ class OnboardingPage extends StatefulWidget {
   /// "Explore the sample preview": the labelled fictional preview.
   final VoidCallback onTrySample;
 
+  /// Null disables persistence for injected test apps.
+  final OnboardingStore? store;
+
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
   int _index = 0;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.store != null) {
+      _loading = true;
+      unawaited(_loadIntroduction());
+    }
+  }
+
+  Future<void> _loadIntroduction() async {
+    var seen = false;
+    try {
+      seen = await widget.store!.hasSeenIntroduction();
+    } catch (_) {
+      // If local preferences are unavailable, show the introduction again.
+    }
+    if (!mounted) return;
+    setState(() {
+      _index = seen ? _pages.length - 1 : 0;
+      _loading = false;
+    });
+  }
+
+  Future<void> _rememberIntroduction() async {
+    try {
+      await widget.store?.markIntroductionSeen();
+    } catch (_) {
+      // A storage failure must not block the user's choice or connection.
+    }
+  }
+
+  void _goTo(int index) {
+    setState(() => _index = index);
+    if (index == _pages.length - 1) unawaited(_rememberIntroduction());
+  }
 
   static const _pages = <({String lead, String title, String body, Doodle doodle})>[
     (
@@ -64,11 +109,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
       widget.onConnect();
       return;
     }
-    setState(() => _index += 1);
+    _goTo(_index + 1);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator(semanticsLabel: 'Loading introduction')));
+    }
     final tokens = ShuleTokens.of(context);
     final prefs = MotionPrefs.of(context);
     final page = _pages[_index];
@@ -187,7 +235,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   if (!last)
                     TextButton(
-                      onPressed: () => setState(() => _index = _pages.length - 1),
+                      onPressed: () => _goTo(_pages.length - 1),
                       child: const Text('Skip introduction'),
                     ),
                   if (last) ...[
