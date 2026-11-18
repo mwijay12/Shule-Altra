@@ -44,6 +44,8 @@ void main() {
     await reveal(tester, find.text('Clear all page filters'));
     await tester.tap(find.text('Clear all page filters')); await tester.pumpAndSettle();
     expect(find.text('2 page filters active'), findsNothing);
+    tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+    await tester.pumpAndSettle();
     await reveal(tester, find.byType(TextField));
     await tester.enterText(find.byType(TextField), 'one'); await tester.pumpAndSettle();
     expect(find.text('1 page filter active'), findsOneWidget);
