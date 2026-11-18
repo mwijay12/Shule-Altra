@@ -13,6 +13,8 @@ import '../app/session.dart';
 import '../data/learner.dart';
 import '../data/sample_gateway.dart';
 import '../data/sample_timetable.dart';
+import '../data/saved_timetable.dart';
+import 'saved_timetable.dart';
 import '../design/doodles.dart';
 import '../design/motion.dart';
 import '../design/tokens.dart';
@@ -66,6 +68,16 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               'discards them.',
           tone: NoticeTone.caution,
         ),
+        if (widget.session.gateway is TimetableReader) ...[
+          const SizedBox(height: Space.md),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SavedTimetableScreen(
+              session: widget.session, reader: widget.session.gateway as TimetableReader,
+            ))),
+            icon: const Icon(Icons.calendar_month_outlined),
+            label: const Text('Open saved school timetable'),
+          ),
+        ],
         const SizedBox(height: Space.xl),
         SectionHead(
           title: 'Sample attendance',

@@ -23,12 +23,13 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'demo_credentials.dart';
 import 'learner.dart';
 import 'school_config.dart';
+import 'saved_timetable.dart';
 import 'school_gateway.dart';
 
 /// How a page of the register is read.
 const int kRegisterPageSize = 40;
 
-class FirebaseSchoolGateway implements SchoolGateway {
+class FirebaseSchoolGateway implements SchoolGateway, TimetableReader {
   FirebaseSchoolGateway({
     required FirebaseAuth auth,
     required FirebaseFirestore firestore,
@@ -139,6 +140,43 @@ class FirebaseSchoolGateway implements SchoolGateway {
       }
     }
     await _auth.signOut();
+  }
+
+  @override
+  Future<SavedTimetable?> loadTimetable(String className, String stream) async {
+    final id = timetableId(className, stream);
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const GatewayFailure('Sign in again to read the timetable.', kind: GatewayFailureKind.signedOut);
+    }
+    try {
+      await user.reload();
+      if (_auth.currentUser?.uid != user.uid) {
+        throw const GatewayFailure('The signed-in account changed. Sign in again.', kind: GatewayFailureKind.signedOut);
+      }
+      await user.getIdToken(true);
+      final doc = await _firestore.collection('schools').doc(_scope.schoolId)
+          .collection('timetable').doc(id).get(const GetOptions(source: Source.server));
+      if (_auth.currentUser?.uid != user.uid) {
+        throw const GatewayFailure('The signed-in account changed during the read.', kind: GatewayFailureKind.signedOut);
+      }
+      final data = doc.data();
+      if (!doc.exists) return null;
+      if (data == null) throw const FormatException('Missing schedule data');
+      return SavedTimetable.parse(data, className, stream);
+    } on GatewayFailure {
+      rethrow;
+    } on FormatException {
+      throw const GatewayFailure('The saved schedule has an unsupported format. Ask your school administrator to check it.');
+    } on FirebaseException catch (error) {
+      final message = switch (error.code) {
+        'permission-denied' => 'Your school permissions do not allow this timetable read.',
+        'unauthenticated' => 'The session expired. Sign in again.',
+        'unavailable' || 'deadline-exceeded' => 'The timetable could not be reached. Check the connection and try again.',
+        _ => 'The timetable could not be read. Try again or contact your school administrator.',
+      };
+      throw GatewayFailure(message);
+    }
   }
 
   @override

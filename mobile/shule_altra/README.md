@@ -253,8 +253,12 @@ and phone number is fictional, and every sample email is on `example.test`.
 
 The main app is the modular pilot in this folder. The earlier independent pilot is
 preserved in `mobile/legacy_pilot` for reference and is not the active app. Its
-features (including live saved timetables and server-side name-prefix search)
+features (including server-side name-prefix search)
 still need to be ported and tested in the modular app. The day screen offers a separately labelled, day-selectable fictional timetable
-for every account; it does not read a school schedule. The cut-out onboarding
+for every account; it does not read a school schedule. A separate read-only saved
+school timetable is available from the Day screen on the live path. It requires
+a signed-in account and server access; results clear when class, stream or account
+changes. Neither the live timetable nor its permissions have been verified on a
+real project or device. The cut-out onboarding
 illustrations, skip action, introduction preference and loaded-page class/stream/stored-attendance filters have been integrated here. The filters clear on a new page read or account change; stored attendance is undated, not evidence of today’s attendance. Neither pilot is proof
 of live Firebase connectivity or device verification.
