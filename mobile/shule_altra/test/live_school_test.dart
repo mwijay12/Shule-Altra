@@ -134,7 +134,7 @@ void main() {
     final fake = FakeSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add('staff-1'); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     final filter = find.byType(DropdownButtonFormField<String>);
     await tester.scrollUntilVisible(filter, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
@@ -161,7 +161,7 @@ void main() {
     final fake = FakeSchoolGateway()..readError = FirebaseException(plugin: 'test', code: 'permission-denied', message: 'sensitive server message');
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add('staff-1'); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.textContaining('Ask your school administrator to check your access'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('Ask your school administrator to check your access'), findsOneWidget);
@@ -174,14 +174,14 @@ void main() {
     final fake = DelayedSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add('staff-1'); await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pump();
     fake.controller.add('staff-2'); await tester.pump();
     fake.pending.complete(const LearnerPage([LiveLearner('Old account learner', 'Form 1', guardianEmail: 'private@example.test')], null));
     await tester.pumpAndSettle();
     expect(find.text('Old account learner'), findsNothing);
     expect(find.text('private@example.test'), findsNothing);
-    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     expect(find.text('Start with a search'), findsOneWidget);
     expect(find.text('Old account learner'), findsNothing);
     await tester.pumpWidget(const SizedBox());
@@ -230,7 +230,7 @@ void main() {
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
     expect(find.text('Your workspace'), findsOneWidget);
     expect(find.text('Signed in · online reads only'), findsOneWidget);
-    await tester.ensureVisible(find.text('Timetable')); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Timetable')); await tester.pumpAndSettle(); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
     await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
@@ -271,7 +271,7 @@ void main() {
     expect(find.text('guardian@example.test'), findsNothing);
     fake.fail = true;
     expect(find.text('Your workspace'), findsOneWidget);
-    await tester.ensureVisible(find.text('Learner register')); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Learner register')); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle(); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     expect(find.text('Could not load learners'), findsOneWidget);
     await tester.ensureVisible(find.text('Sign out')); await tester.pumpAndSettle(); await tester.tap(find.text('Sign out')); await tester.pumpAndSettle();
