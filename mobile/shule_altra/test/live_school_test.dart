@@ -137,6 +137,8 @@ void main() {
     fake.controller.add('staff-1'); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Learner register'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle(); await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Search school')); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Refine this page'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Refine this page')); await tester.pumpAndSettle();
     final filter = find.byType(DropdownButtonFormField<String>);
     await tester.scrollUntilVisible(filter, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(filter); await tester.pumpAndSettle();
@@ -166,6 +168,8 @@ void main() {
     await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Search school'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Refine this page'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Refine this page')); await tester.pumpAndSettle();
     // Selectors are located by labels so the test does not depend on session counters.
     final classSelector = find.widgetWithText(DropdownButtonFormField<int>, 'All classes on page');
     await tester.scrollUntilVisible(classSelector, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
@@ -174,6 +178,11 @@ void main() {
     final streamSelector = find.widgetWithText(DropdownButtonFormField<int>, 'All streams on page');
     await tester.ensureVisible(streamSelector); await tester.pumpAndSettle(); await tester.tap(streamSelector); await tester.pumpAndSettle();
     await tester.tap(find.text('Stream not recorded').last); await tester.pumpAndSettle();
+    expect(find.text('Example Learner'), findsOneWidget);
+    expect(find.text('2 page filters active'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Clear all page filters'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Clear all page filters')); await tester.pumpAndSettle();
+    expect(find.text('2 page filters active'), findsNothing);
     expect(find.text('Example Learner'), findsOneWidget);
     expect(fake.learnerLoads, 1);
     await tester.pumpWidget(const SizedBox());

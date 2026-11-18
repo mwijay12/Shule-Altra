@@ -178,6 +178,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
     } catch (error) { return _LearnerResult(null, null, classifySchoolReadProblem(error)); }
   }
   void refresh() => setState(() { message = null; activePrefix = draftPrefix.trim(); previousCursors.clear(); currentCursor = null; query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; searchVersion++; learners = _loadSafely(null); });
+  void clearPageFilters() => setState(() { query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; searchVersion++; });
   void reloadPage() => setState(() { message = null; query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; searchVersion++; learners = _loadSafely(currentCursor); });
   void nextPage(Object cursor) => setState(() { previousCursors.add(currentCursor); currentCursor = cursor; query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; searchVersion++; learners = _loadSafely(cursor); });
   void previousPage() => setState(() { currentCursor = previousCursors.removeLast(); query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; searchVersion++; learners = _loadSafely(currentCursor); });
@@ -265,6 +266,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
           final selectedClass = classFilter == 0 ? null : classes[classFilter - 1];
           final inClass = pageRows.where((row) => selectedClass == null || row.className == selectedClass);
           final streams = inClass.map((row) => row.stream).where((value) => value.isNotEmpty).toSet().toList()..sort();
+          final activeFilters = (query.isNotEmpty ? 1 : 0) + (classFilter != 0 ? 1 : 0) + (streamFilter != 0 ? 1 : 0) + (attendanceFilter != 'All' ? 1 : 0);
           final rows = pageRows.where((row) {
             final matchesText = '${row.name} ${row.className} ${row.stream} ${row.recordId} ${row.admissionNumber}'.toLowerCase().contains(query.toLowerCase());
             final matchesClass = selectedClass == null || row.className == selectedClass;
@@ -287,24 +289,36 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
               decoration: InputDecoration(labelText: 'Search loaded learners', helperText: 'Name, class, stream or ID · this page only', prefixIcon: const Icon(Icons.search), border: const OutlineInputBorder(),
                 suffixIcon: query.isEmpty ? null : IconButton(tooltip: 'Clear page filter', onPressed: () => setState(() { query = ''; searchVersion++; }), icon: const Icon(Icons.close)))),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(key: ValueKey('class-filter-$searchVersion'), isExpanded: true, value: classFilter,
-              decoration: const InputDecoration(labelText: 'Class · this page only', border: OutlineInputBorder()),
-              items: [const DropdownMenuItem(value: 0, child: Text('All classes on page')),
-                ...classes.asMap().entries.map((entry) => DropdownMenuItem(value: entry.key + 1, child: Text(entry.value)))],
-              onChanged: (value) { if (value != null) setState(() { classFilter = value; streamFilter = 0; }); }),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<int>(key: ValueKey('stream-filter-$searchVersion-$classFilter'), isExpanded: true, value: streamFilter,
-              decoration: const InputDecoration(labelText: 'Stream · this page only', border: OutlineInputBorder()),
-              items: [const DropdownMenuItem(value: 0, child: Text('All streams on page')),
-                const DropdownMenuItem(value: 1, child: Text('Stream not recorded')),
-                ...streams.asMap().entries.map((entry) => DropdownMenuItem(value: entry.key + 2, child: Text(entry.value)))],
-              onChanged: (value) { if (value != null) setState(() => streamFilter = value); }),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(key: ValueKey('attendance-filter-$searchVersion'), isExpanded: true, value: attendanceFilter,
-              decoration: const InputDecoration(labelText: 'Stored attendance · this page only', border: OutlineInputBorder()),
-              items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-              onChanged: (value) { if (value != null) setState(() => attendanceFilter = value); }),
-            const Padding(padding: EdgeInsets.only(top: 8), child: Text('Latest stored status only; it has no date and may not be from today. Filter applies only to this page.', style: TextStyle(color: muted, fontSize: 12, height: 1.4))),
+            Card(
+              margin: EdgeInsets.zero,
+              child: ExpansionTile(
+                title: const Text('Refine this page', style: TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text(activeFilters == 0 ? 'Class, stream and stored attendance' : '$activeFilters page filter${activeFilters == 1 ? '' : 's'} active'),
+                childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                children: [
+                DropdownButtonFormField<int>(key: ValueKey('class-filter-$searchVersion'), isExpanded: true, value: classFilter,
+                  decoration: const InputDecoration(labelText: 'Class · this page only', border: OutlineInputBorder()),
+                  items: [const DropdownMenuItem(value: 0, child: Text('All classes on page')),
+                    ...classes.asMap().entries.map((entry) => DropdownMenuItem(value: entry.key + 1, child: Text(entry.value)))],
+                  onChanged: (value) { if (value != null) setState(() { classFilter = value; streamFilter = 0; }); }),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<int>(key: ValueKey('stream-filter-$searchVersion-$classFilter'), isExpanded: true, value: streamFilter,
+                  decoration: const InputDecoration(labelText: 'Stream · this page only', border: OutlineInputBorder()),
+                  items: [const DropdownMenuItem(value: 0, child: Text('All streams on page')),
+                    const DropdownMenuItem(value: 1, child: Text('Stream not recorded')),
+                    ...streams.asMap().entries.map((entry) => DropdownMenuItem(value: entry.key + 2, child: Text(entry.value)))],
+                  onChanged: (value) { if (value != null) setState(() => streamFilter = value); }),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(key: ValueKey('attendance-filter-$searchVersion'), isExpanded: true, value: attendanceFilter,
+                  decoration: const InputDecoration(labelText: 'Stored attendance · this page only', border: OutlineInputBorder()),
+                  items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+                  onChanged: (value) { if (value != null) setState(() => attendanceFilter = value); }),
+                const Padding(padding: EdgeInsets.only(top: 8), child: Text('Latest stored status only; it has no date and may not be from today. Filter applies only to this page.', style: TextStyle(color: muted, fontSize: 12, height: 1.4))),
+                ],
+              ),
+            ),
+            if (activeFilters > 0) Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+              onPressed: clearPageFilters, icon: const Icon(Icons.filter_alt_off_outlined), label: const Text('Clear all page filters'))),
             if (rows.isEmpty) Padding(padding: const EdgeInsets.only(top: 14), child: Notice(title: 'No learners shown', body: query.isEmpty && attendanceFilter == 'All' && classFilter == 0 && streamFilter == 0 ? 'No records were returned on this page. Try another school search.' : 'No loaded learners match these page filters. Change them or search the school again.')),
             const SizedBox(height: 8),
             ...rows.map((row) => Card(margin: const EdgeInsets.only(bottom: 10), child: ExpansionTile(
