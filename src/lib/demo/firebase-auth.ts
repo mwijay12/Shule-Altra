@@ -5,6 +5,8 @@
  * accounts, and the session survives a refresh through localStorage.
  */
 
+import { DEMO_ACCOUNT } from './account';
+
 export type DemoUser = {
   uid: string;
   email: string | null;
@@ -36,27 +38,29 @@ function hasWindow(): boolean {
 /** Demo accounts surfaced on the login screen. */
 export const DEMO_ACCOUNTS = [
   {
-    email: 'admin@shule.pro',
-    password: 'demo2026',
+    // The shared account (config/demo-account.json): the same address and
+    // password the Flutter app accepts.
+    email: DEMO_ACCOUNT.email,
+    password: DEMO_ACCOUNT.password,
     label: 'Administrator',
     description: 'Full access to every module',
   },
   {
     email: 'teacher@shule.pro',
-    password: 'demo2026',
+    password: DEMO_ACCOUNT.password,
     label: 'Teacher',
     description: 'Students, attendance, academics & timetable',
   },
   {
     email: 'bursar@shule.pro',
-    password: 'demo2026',
+    password: DEMO_ACCOUNT.password,
     label: 'Bursar',
     description: 'Finance, canteen, hostel & transport',
   },
 ] as const;
 
 const UID_BY_EMAIL: Record<string, string> = {
-  'admin@shule.pro': 'demo-admin',
+  [DEMO_ACCOUNT.email]: DEMO_ACCOUNT.uid,
   'teacher@shule.pro': 'demo-teacher',
   'bursar@shule.pro': 'demo-bursar',
   'accounts@shule.pro': 'demo-accountant',
@@ -186,7 +190,9 @@ export function onIdTokenChanged(
 }
 
 export async function signInAnonymously(auth: DemoAuth): Promise<{ user: DemoUser }> {
-  const user = buildUser('demo-admin', null, 'Demo Administrator', true);
+  // A guest sits in the same account as the shared demo login, so every screen
+  // that works for the demo login also works for the guest.
+  const user = buildUser(DEMO_ACCOUNT.uid, DEMO_ACCOUNT.email, DEMO_ACCOUNT.name, true);
   auth.setUser(user);
   return { user };
 }
@@ -205,6 +211,8 @@ export async function signInWithEmailAndPassword(
   }
 
   const uid = UID_BY_EMAIL[normalized] || `demo-${normalized.split('@')[0].replace(/[^a-z0-9]/g, '')}`;
+  // Any password is accepted in demo mode; the shared account is the one shown
+  // to people, and the one the mobile app also takes.
   const displayName = NAME_BY_EMAIL[normalized] || normalized.split('@')[0].replace(/[._]/g, ' ');
   const user = buildUser(uid, normalized, displayName, false);
   auth.setUser(user);

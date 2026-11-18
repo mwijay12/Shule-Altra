@@ -2289,7 +2289,8 @@ html[data-scroll-locked] .app-scroll {
 
 .sd-footer-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  /* Five columns: the product, two walk-through columns, the phone and the studio. */
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
   gap: clamp(1.2rem, 3vw, 2.6rem);
   max-width: 1520px;
   margin-inline: auto;

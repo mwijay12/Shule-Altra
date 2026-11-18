@@ -35,6 +35,17 @@ import {
   Users,
 } from "lucide-react"
 import { COMPANY, PRODUCT } from "@/lib/company"
+import { DEMO_EMAIL, DEMO_PASSWORD } from "@/lib/demo/account"
+
+/**
+ * The newest arm64 APK, published by the `Mobile pilot` workflow.
+ *
+ * The tag is rolling: every push to `main` replaces the asset behind it, so this
+ * link is always the build of the commit that is live. It is a GitHub release
+ * asset rather than a file in this repository, because the binary does not belong
+ * in git and a phone can download it without signing in.
+ */
+const APK_URL = "https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main"
 
 const BELL = [
   "EVERY REGISTER",
@@ -134,7 +145,7 @@ function Closing() {
               </span>
             </Link>
             <span className="sd-close-note">
-              admin@shule.pro · demo2026 · no sign-up
+              {DEMO_EMAIL} · {DEMO_PASSWORD} · no sign-up
             </span>
           </div>
         </Reveal>
@@ -175,15 +186,34 @@ function Footer() {
         <div className="sd-footer-col">
           <span className="sd-label">Walk the demo</span>
           <p className="sd-footer-mono">
-            admin@shule.pro
+            {DEMO_EMAIL}
             <br />
             teacher@shule.pro
             <br />
             bursar@shule.pro
             <br />
-            <b>demo2026</b>
+            <b>{DEMO_PASSWORD}</b>
           </p>
           <p className="sd-footer-note">Invented data. No real learner records.</p>
+        </div>
+        <div className="sd-footer-col">
+          <span className="sd-label">On a phone</span>
+          <p className="sd-footer-note">
+            The same register as an Android app, with the same demo credential. Install it beside
+            the hub and compare the two.
+          </p>
+          <p className="sd-footer-mono">
+            <a
+              href={APK_URL}
+              rel="noopener noreferrer"
+              className="underline decoration-from-font underline-offset-4"
+            >
+              Download the APK
+            </a>
+          </p>
+          <p className="sd-footer-note">
+            Debug-signed preview build · arm64 · opens with {DEMO_EMAIL}
+          </p>
         </div>
         <div className="sd-footer-col">
           <span className="sd-label">Built by</span>

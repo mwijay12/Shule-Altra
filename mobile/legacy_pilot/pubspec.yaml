@@ -1,0 +1,27 @@
+name: shule_altra_mobile
+description: Shule Altra mobile early read-only Firebase pilot.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  firebase_core: ^3.12.1
+  firebase_auth: ^5.5.1
+  google_sign_in: ^6.2.2
+  cloud_firestore: ^5.6.5
+  shared_preferences: ^2.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/school_cutout.png
+    - assets/images/learning_cutout.png
+    - assets/images/connection_cutout.png
