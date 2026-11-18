@@ -106,7 +106,7 @@ class _PrototypeState extends State<Prototype> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             const Brand(),
             const SizedBox(height: 32),
-            SchoolHeroImage(height: constraints.maxHeight < 700 || MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 190 : 260),
+            SchoolHeroImage(height: constraints.maxHeight < 700 || MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 190 : 260, asset: ['assets/images/school_cutout.png', 'assets/images/learning_cutout.png', 'assets/images/connection_cutout.png'][step]),
             const SizedBox(height: 30),
             Text('SHULE ALTRA  /  MOBILE', style: Theme.of(context).textTheme.labelSmall?.copyWith(letterSpacing: 1.8, fontWeight: FontWeight.w800, color: muted)),
             const SizedBox(height: 12),
@@ -117,6 +117,7 @@ class _PrototypeState extends State<Prototype> {
             Semantics(label: 'Introduction, page ${step + 1} of ${pages.length}', child: Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffc9d9eb), borderRadius: BorderRadius.circular(8)))))),
             const SizedBox(height: 25),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
+            if (step < pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => step = pages.length - 1), child: const Text('Skip introduction'))),
             if (step > 0) Center(child: TextButton.icon(onPressed: () => setState(() => step--), icon: const Icon(Icons.arrow_back), label: const Text('Previous'))),
             if (step == pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => entered = true), child: const Text('Explore sample preview instead'))),
             const SizedBox(height: 12),
@@ -364,12 +365,13 @@ class Notice extends StatelessWidget {
 /// if the asset cannot be decoded on a device.
 class SchoolHeroImage extends StatelessWidget {
   final double height;
-  const SchoolHeroImage({super.key, required this.height});
+  final String asset;
+  const SchoolHeroImage({super.key, required this.height, required this.asset});
   @override Widget build(BuildContext context) => ClipRRect(
     borderRadius: BorderRadius.circular(30),
     child: SizedBox(
       height: height, width: double.infinity,
-      child: ColoredBox(color: const Color(0xffedf5fd), child: Image.asset('assets/images/school_cutout.png',
+      child: ColoredBox(color: const Color(0xffedf5fd), child: Image.asset(asset,
         fit: BoxFit.contain, alignment: Alignment.center, excludeFromSemantics: true,
         errorBuilder: (context, error, stackTrace) => const SchoolIllustration())),
     ),

@@ -16,11 +16,26 @@ void main() {
     await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsLabel('Introduction, page 2 of 3'), findsOneWidget);
+    expect((tester.widget<Image>(find.byType(Image)).image as AssetImage).assetName, 'assets/images/learning_cutout.png');
     await tester.ensureVisible(find.text('Previous'));
     await tester.tap(find.text('Previous'));
     await tester.pumpAndSettle();
     expect(find.text('Your school,\ncloser than ever.'), findsOneWidget);
     semantics.dispose();
+  });
+
+  testWidgets('skip introduction goes straight to connection and sample choices', (tester) async {
+    await tester.pumpWidget(const ShuleMobileApp());
+    await tester.ensureVisible(find.text('Skip introduction')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Skip introduction')); await tester.pumpAndSettle();
+    expect(find.text('Connected with\ncare.'), findsOneWidget);
+    expect((tester.widget<Image>(find.byType(Image)).image as AssetImage).assetName, 'assets/images/connection_cutout.png');
+    await tester.ensureVisible(find.text('Connect to your school')); await tester.pumpAndSettle();
+    expect(find.text('Connect to your school'), findsOneWidget);
+    await tester.ensureVisible(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    expect(find.text('Explore sample preview instead'), findsOneWidget);
+    await tester.tap(find.text('Explore sample preview instead')); await tester.pumpAndSettle();
+    expect(find.text('for what matters.'), findsOneWidget);
   });
 
   testWidgets('sample home reflects in-memory attendance practice', (tester) async {

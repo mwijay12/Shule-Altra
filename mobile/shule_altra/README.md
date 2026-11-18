@@ -10,7 +10,7 @@ Open the independent SVG concepts in `design/`:
 - [Home](design/02-home.svg)
 - [Learners](design/03-learners.svg)
 
-The app also bundles AI-generated fictional, transparent-background school cutouts for onboarding and the school workspace, with visual fallbacks and no network fetch. The palette follows the default web dashboard’s blue and white. They are illustrations, not photographs of the school. These SVGs are static visual concepts; Flutter layouts use native Material widgets and will not be pixel-identical. They are not screenshots or proof of an APK build.
+The app also bundles AI-generated fictional, transparent-background school cutouts for onboarding and the school workspace; the three onboarding pages use different illustrations and can be skipped, with visual fallbacks and no network fetch. The palette follows the default web dashboard’s blue and white. They are illustrations, not photographs of the school. These SVGs are static visual concepts; Flutter layouts use native Material widgets and will not be pixel-identical. They are not screenshots or proof of an APK build.
 
 ## Run locally with Flutter
 

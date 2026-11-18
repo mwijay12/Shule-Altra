@@ -7,7 +7,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test('bundled cutouts have real transparent corners', () async {
-    for (final asset in ['assets/images/school_cutout.png', 'assets/images/learning_cutout.png']) {
+    for (final asset in ['assets/images/school_cutout.png', 'assets/images/learning_cutout.png', 'assets/images/connection_cutout.png']) {
       final data = await rootBundle.load(asset);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       final image = (await codec.getNextFrame()).image;
