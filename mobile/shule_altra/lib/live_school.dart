@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'main.dart' show ink, lime, muted, Brand, Notice;
 import 'live_timetable.dart';
 import 'school_read_error.dart';
+import 'sample_school_gateway.dart';
 
 /// Firebase Android client configuration is deliberately supplied at build time.
 /// There is no implicit fallback to a different school or Firebase project.
@@ -135,9 +136,23 @@ class _LiveSchoolBootstrapState extends State<LiveSchoolBootstrap> {
   }
   @override Widget build(BuildContext context) => FutureBuilder<SchoolGateway>(future: gateway, builder: (context, snapshot) {
     if (snapshot.hasData) return LiveSchoolPage(gateway: snapshot.data!);
-    return Scaffold(appBar: AppBar(title: const Text('Connect school')), body: Padding(padding: const EdgeInsets.all(24), child: snapshot.hasError
-      ? const Notice(title: 'Configuration required', body: 'This build has no verified Firebase Android configuration, or setup failed. Check the mobile setup guide and restart the app. Your existing Firebase web connection is not changed.')
-      : const Center(child: CircularProgressIndicator())));
+    return Scaffold(appBar: AppBar(title: const Text('Connect school')), body: snapshot.hasError
+      ? ListView(padding: const EdgeInsets.all(24), children: [
+          Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: const Color(0xffedf5fd), borderRadius: BorderRadius.circular(22)), child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.settings_outlined, color: ink, size: 30), SizedBox(height: 12),
+            Text('Configuration required', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800)),
+            SizedBox(height: 8), Text('This build is not ready to connect, or setup failed. The existing web connection has not been changed.', style: TextStyle(color: muted, height: 1.4)),
+          ])),
+          const SizedBox(height: 22),
+          const Text('For your school administrator', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          const SizedBox(height: 8),
+          const Text('Verify the Firebase project, Android app registration, Google sign-in and signing fingerprint. Follow the mobile setup guide, then install a configured build.', style: TextStyle(color: muted, height: 1.5)),
+          const SizedBox(height: 18),
+          const Notice(title: 'Want to explore first?', body: 'You can try the workspace with fictional records. This does not connect to your school or send data.'),
+          const SizedBox(height: 12),
+          FilledButton.icon(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolPage(gateway: SampleSchoolGateway(), isSample: true))), icon: const Icon(Icons.preview_outlined), label: const Text('Preview with fictional data')),
+        ])
+      : const Center(child: CircularProgressIndicator()));
   });
 }
 
@@ -202,11 +217,15 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
       if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
       if (lastUid != snapshot.data) { showTimetable = false; showHome = true; learners = null; query = ''; attendanceFilter = 'All'; classFilter = 0; streamFilter = 0; draftPrefix = ''; activePrefix = ''; globalSearchVersion++; searchVersion++; currentCursor = null; previousCursors.clear(); lastUid = snapshot.data; }
       if (snapshot.data == null) return ListView(padding: const EdgeInsets.all(24), children: [
-        const Brand(), const SizedBox(height: 35),
+        const Brand(), const SizedBox(height: 20),
+        Container(height: 160, width: double.infinity, decoration: BoxDecoration(color: const Color(0xffedf5fd), borderRadius: BorderRadius.circular(24)),
+          child: Image.asset('assets/images/connection_cutout.png', fit: BoxFit.contain, excludeFromSemantics: true,
+            errorBuilder: (context, error, stackTrace) => const Icon(Icons.shield_outlined, color: ink, size: 48))),
+        const SizedBox(height: 24),
         const Text('Your school, connected.', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, letterSpacing: -1)),
         const SizedBox(height: 12), const Text('Sign in with the Google account your school already uses. This early pilot displays learner and guardian details from the school register.', style: TextStyle(color: muted, height: 1.5)),
         const SizedBox(height: 24),
-        FilledButton.icon(onPressed: busy ? null : signIn, icon: const Icon(Icons.login), label: const Text('Continue with Google')),
+        FilledButton.icon(onPressed: busy ? null : signIn, icon: const Icon(Icons.login), label: Text(busy ? 'Opening Google sign-in…' : 'Continue with Google'), style: FilledButton.styleFrom(minimumSize: const Size(0, 52))),
         if (message != null) Padding(padding: const EdgeInsets.only(top: 16), child: Text(message!, style: const TextStyle(color: Colors.redAccent))),
         const SizedBox(height: 22), const Notice(title: 'Online read-only pilot', body: 'Your school permissions still apply. Offline recording and synchronisation are not available yet.'),
       ]);

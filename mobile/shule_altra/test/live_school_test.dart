@@ -65,6 +65,19 @@ void main() {
     expect(row.attendanceUpdateTime, '');
     expect(row.stream, 'A');
   });
+  testWidgets('unconfigured build explains setup and offers a separate fictional preview', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: LiveSchoolBootstrap()));
+    await tester.pumpAndSettle();
+    expect(find.text('Configuration required'), findsOneWidget);
+    expect(find.textContaining('Firebase project'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Preview with fictional data'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Preview with fictional data')); await tester.pumpAndSettle();
+    expect(find.text('FICTIONAL WORKSPACE'), findsOneWidget);
+    expect(find.text('Sample data · no school connection'), findsOneWidget);
+    await tester.pageBack(); await tester.pumpAndSettle();
+    expect(find.text('Configuration required'), findsOneWidget);
+  });
+
   testWidgets('timetable clears a previous class and handles empty and failed reads', (tester) async {
     var calls = 0;
     var fail = false;
@@ -259,6 +272,7 @@ void main() {
     final fake = FakeSchoolGateway();
     await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
     fake.controller.add(null); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Continue with Google'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
     expect(find.text('Your workspace'), findsOneWidget);
     expect(find.text('Signed in · online reads only'), findsOneWidget);
@@ -307,6 +321,7 @@ void main() {
     await tester.ensureVisible(find.text('Search school')); await tester.pumpAndSettle(); await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
     expect(find.text('Could not load learners'), findsOneWidget);
     await tester.ensureVisible(find.text('Sign out')); await tester.pumpAndSettle(); await tester.tap(find.text('Sign out')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Continue with Google'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Continue with Google'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await fake.controller.close();
