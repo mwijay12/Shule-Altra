@@ -230,7 +230,7 @@ void main() {
     await tester.tap(find.text('Continue with Google')); await tester.pumpAndSettle();
     expect(find.text('Your workspace'), findsOneWidget);
     expect(find.text('Signed in · online reads only'), findsOneWidget);
-    await tester.ensureVisible(find.text('Timetable')); await tester.pumpAndSettle(); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Timetable'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle(); await tester.tap(find.text('Timetable')); await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
     await tester.tap(find.text('Load timetable')); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
