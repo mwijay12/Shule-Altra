@@ -45,6 +45,7 @@ class AppSession extends ChangeNotifier {
   final List<Object?> _history = [];
 
   bool _disposed = false;
+  int _generation = 0;
 
   /// The signed-in uid, or null.
   String? get uid => _uid;
@@ -74,6 +75,9 @@ class AppSession extends ChangeNotifier {
     _subscription ??= gateway.sessionUid.listen(
       _onSession,
       onError: (Object error) {
+        _uid = null;
+        _forgetPages();
+        _state = LoadState.idle;
         _lastFailure = 'The sign-in session could not be checked. Try again.';
         _resolved = true;
         _notify();
@@ -121,6 +125,9 @@ class AppSession extends ChangeNotifier {
   }
 
   void _forgetPages() {
+    // Any in-flight operation belongs to the old session and may not publish.
+    _generation++;
+    _busy = false;
     _rows = const [];
     _pageCursor = null;
     _forwardCursor = null;
@@ -129,18 +136,23 @@ class AppSession extends ChangeNotifier {
 
   Future<void> _run(Future<void> Function() action) async {
     if (_busy) return;
+    final generation = _generation;
     _busy = true;
     _lastFailure = null;
     _notify();
     try {
       await action();
     } on GatewayFailure catch (error) {
-      _lastFailure = error.message;
+      if (!_disposed && generation == _generation) _lastFailure = error.message;
     } catch (_) {
-      _lastFailure = 'That did not complete. Check the connection and try again.';
+      if (!_disposed && generation == _generation) {
+        _lastFailure = 'That did not complete. Check the connection and try again.';
+      }
     } finally {
-      _busy = false;
-      _notify();
+      if (!_disposed && generation == _generation) {
+        _busy = false;
+        _notify();
+      }
     }
   }
 
@@ -167,27 +179,34 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> _load({required Object? after}) async {
+    final generation = _generation;
+    final uid = _uid;
     _busy = true;
     _state = LoadState.loading;
     _lastFailure = null;
     _notify();
     try {
       final page = await gateway.loadLearners(after: after);
+      if (_disposed || generation != _generation || uid != _uid) return;
       _pageCursor = after;
       _forwardCursor = page.nextCursor;
       _rows = page.rows;
       _state = LoadState.ready;
     } on GatewayFailure catch (error) {
+      if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
       _state = LoadState.failed;
       _lastFailure = error.message;
     } catch (_) {
+      if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
       _state = LoadState.failed;
       _lastFailure = 'The register could not be read. Check the connection and try again.';
     } finally {
-      _busy = false;
-      _notify();
+      if (!_disposed && generation == _generation && uid == _uid) {
+        _busy = false;
+        _notify();
+      }
     }
   }
 
