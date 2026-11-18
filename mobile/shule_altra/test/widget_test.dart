@@ -7,8 +7,10 @@ void main() {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(const ShuleMobileApp());
     expect(find.bySemanticsLabel('Introduction, page 1 of 3'), findsOneWidget);
+    expect(ink, const Color(0xff1f5ba6));
+    expect(canvas, const Color(0xfff8fafc));
     final hero = tester.widget<Image>(find.byType(Image));
-    expect((hero.image as AssetImage).assetName, 'assets/images/onboarding_school.jpg');
+    expect((hero.image as AssetImage).assetName, 'assets/images/school_cutout.png');
     expect(hero.excludeFromSemantics, isTrue);
     await tester.ensureVisible(find.text('Continue'));
     await tester.tap(find.text('Continue'));

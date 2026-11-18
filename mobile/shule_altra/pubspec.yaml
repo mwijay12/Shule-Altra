@@ -21,5 +21,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/onboarding_school.jpg
-    - assets/images/workspace_learning.jpg
+    - assets/images/school_cutout.png
+    - assets/images/learning_cutout.png

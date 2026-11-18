@@ -6,10 +6,10 @@ import 'sample_school_gateway.dart';
 
 void main() => runApp(const ShuleMobileApp());
 
-const ink = Color(0xff183d36);
-const muted = Color(0xff667d75);
-const canvas = Color(0xfff6f7f1);
-const lime = Color(0xffd9efaa);
+const ink = Color(0xff1f5ba6);
+const muted = Color(0xff53677d);
+const canvas = Color(0xfff8fafc);
+const lime = Color(0xffdcecff);
 
 class ShuleMobileApp extends StatelessWidget {
   const ShuleMobileApp({super.key});
@@ -114,7 +114,7 @@ class _PrototypeState extends State<Prototype> {
             const SizedBox(height: 14),
             Text(pages[step].$2, style: const TextStyle(fontSize: 16, height: 1.5, color: muted)),
             const SizedBox(height: 25),
-            Semantics(label: 'Introduction, page ${step + 1} of ${pages.length}', child: Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffccd8ca), borderRadius: BorderRadius.circular(8)))))),
+            Semantics(label: 'Introduction, page ${step + 1} of ${pages.length}', child: Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffc9d9eb), borderRadius: BorderRadius.circular(8)))))),
             const SizedBox(height: 25),
             SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
             if (step > 0) Center(child: TextButton.icon(onPressed: () => setState(() => step--), icon: const Icon(Icons.arrow_back), label: const Text('Previous'))),
@@ -162,7 +162,7 @@ class _PrototypeState extends State<Prototype> {
       const SizedBox(height: 16),
       Text('${attendance.markedCount} of ${attendance.totalCount} sample learners marked', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
       const SizedBox(height: 8),
-      LinearProgressIndicator(value: attendance.markedCount / attendance.totalCount, minHeight: 8, backgroundColor: const Color(0xffeaf0e6), color: ink, borderRadius: BorderRadius.circular(8), semanticsLabel: 'Sample attendance progress', semanticsValue: '${attendance.markedCount} of ${attendance.totalCount} marked'),
+      LinearProgressIndicator(value: attendance.markedCount / attendance.totalCount, minHeight: 8, backgroundColor: const Color(0xffeaf3fc), color: ink, borderRadius: BorderRadius.circular(8), semanticsLabel: 'Sample attendance progress', semanticsValue: '${attendance.markedCount} of ${attendance.totalCount} marked'),
       const SizedBox(height: 8),
       const Text('Not a school record. Closing or restarting the app clears these marks.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
       const SizedBox(height: 8),
@@ -189,7 +189,7 @@ class _PrototypeState extends State<Prototype> {
       if (shown.isEmpty) const Padding(padding: EdgeInsets.symmetric(vertical: 20), child: Text('No sample learners match your search.', style: TextStyle(color: muted))),
       ...shown.map((item) => Padding(padding: const EdgeInsets.only(bottom: 9), child: Material(color: Colors.white, borderRadius: BorderRadius.circular(20), child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-        leading: CircleAvatar(backgroundColor: const Color(0xffe5efde), foregroundColor: ink, child: Text(item.initials, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12))),
+        leading: CircleAvatar(backgroundColor: const Color(0xffe4f0fc), foregroundColor: ink, child: Text(item.initials, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12))),
         title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text('${item.className}  ·  Sample', style: const TextStyle(color: muted)),
         trailing: const Icon(Icons.chevron_right, color: muted),
@@ -212,7 +212,7 @@ class _PrototypeState extends State<Prototype> {
     const SizedBox(height: 8),
     const Text('Tap a status to try it. These marks are not tied to the timetable day above. Closing or restarting the app loses this practice data.', style: TextStyle(color: muted, fontSize: 12, height: 1.4)),
     const SizedBox(height: 12),
-    Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf3fc), borderRadius: BorderRadius.circular(18)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Text('Practice summary', style: TextStyle(fontWeight: FontWeight.w800)),
       const SizedBox(height: 8),
       Wrap(spacing: 14, runSpacing: 6, children: [
@@ -232,7 +232,7 @@ class _PrototypeState extends State<Prototype> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [CircleAvatar(backgroundColor: const Color(0xffe5efde), foregroundColor: ink, child: Text(learner.initials, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12))),
+        Row(children: [CircleAvatar(backgroundColor: const Color(0xffe4f0fc), foregroundColor: ink, child: Text(learner.initials, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12))),
           const SizedBox(width: 12), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(learner.name, style: const TextStyle(fontWeight: FontWeight.w800)), Text('${learner.className} · Sample', style: const TextStyle(fontSize: 12, color: muted))]))]),
         const SizedBox(height: 12),
         if (attendance.markFor(learner.id) != null) Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => setState(() => attendance.clearMark(learner.id)), icon: const Icon(Icons.close, size: 18), label: Text('Clear ${learner.name} mark'))),
@@ -342,7 +342,7 @@ class Brand extends StatelessWidget {
   @override Widget build(BuildContext context) => Row(children: [
     Container(width: 40, height: 40, decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(13)), child: const Icon(Icons.auto_stories_rounded, color: lime, size: 21)),
     const SizedBox(width: 10), const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('shule altra', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: -.5)), Text('SCHOOL, IN SYNC', style: TextStyle(fontSize: 9, letterSpacing: 1.2, fontWeight: FontWeight.w700, color: muted))])),
-    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: const Color(0xffe7eee3), borderRadius: BorderRadius.circular(20)), child: const Text('PREVIEW', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: ink))),
+    Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), decoration: BoxDecoration(color: const Color(0xffe8f2fc), borderRadius: BorderRadius.circular(20)), child: const Text('PREVIEW', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1, color: ink))),
   ]);
 }
 class SectionTitle extends StatelessWidget {
@@ -358,7 +358,7 @@ class FeatureCard extends StatelessWidget {
 class Notice extends StatelessWidget {
   final String title, body;
   const Notice({super.key, required this.title, required this.body});
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(20)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, size: 19, color: ink), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(body, style: const TextStyle(color: muted, fontSize: 12, height: 1.45))]))]));
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: const Color(0xffeaf3fc), borderRadius: BorderRadius.circular(20)), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [const Icon(Icons.info_outline_rounded, size: 19, color: ink), const SizedBox(width: 10), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 5), Text(body, style: const TextStyle(color: muted, fontSize: 12, height: 1.45))]))]));
 }
 /// Decorative, bundled illustration; a vector fallback keeps onboarding usable
 /// if the asset cannot be decoded on a device.
@@ -369,9 +369,9 @@ class SchoolHeroImage extends StatelessWidget {
     borderRadius: BorderRadius.circular(30),
     child: SizedBox(
       height: height, width: double.infinity,
-      child: Image.asset('assets/images/onboarding_school.jpg',
-        fit: BoxFit.cover, alignment: Alignment.center, excludeFromSemantics: true,
-        errorBuilder: (context, error, stackTrace) => const ColoredBox(color: Color(0xffe5eddd), child: SchoolIllustration())),
+      child: ColoredBox(color: const Color(0xffedf5fd), child: Image.asset('assets/images/school_cutout.png',
+        fit: BoxFit.contain, alignment: Alignment.center, excludeFromSemantics: true,
+        errorBuilder: (context, error, stackTrace) => const SchoolIllustration())),
     ),
   );
 }
@@ -383,15 +383,15 @@ class SchoolIllustration extends StatelessWidget {
 class _SchoolPainter extends CustomPainter {
   @override void paint(Canvas canvas, Size size) {
     final p = Paint();
-    canvas.drawCircle(Offset(size.width * .5, size.height * .48), size.height * .34, p..color = const Color(0xffcbdabf));
+    canvas.drawCircle(Offset(size.width * .5, size.height * .48), size.height * .34, p..color = const Color(0xffcfe1f4));
     final rect = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(size.width * .5, size.height * .54), width: 155, height: 120), const Radius.circular(14));
     canvas.drawRRect(rect, p..color = ink);
     final roof = Path()..moveTo(size.width * .5 - 92, size.height * .39)..lineTo(size.width * .5, size.height * .18)..lineTo(size.width * .5 + 92, size.height * .39)..close();
-    canvas.drawPath(roof, p..color = const Color(0xff335f50));
+    canvas.drawPath(roof, p..color = const Color(0xff3474bd));
     canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(size.width * .5, size.height * .66), width: 34, height: 55), const Radius.circular(7)), p..color = lime);
-    for (final dx in [-50.0, 50.0]) { canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(size.width * .5 + dx, size.height * .48), width: 28, height: 30), const Radius.circular(5)), p..color = const Color(0xffe7f2d6)); }
+    for (final dx in [-50.0, 50.0]) { canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(size.width * .5 + dx, size.height * .48), width: 28, height: 30), const Radius.circular(5)), p..color = const Color(0xffedf6ff)); }
     canvas.drawCircle(Offset(size.width * .76, size.height * .27), 17, p..color = const Color(0xffeab77f));
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(size.width * .14, size.height * .75, size.width * .72, 5), const Radius.circular(4)), p..color = const Color(0xff9ab49e));
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(size.width * .14, size.height * .75, size.width * .72, 5), const Radius.circular(4)), p..color = const Color(0xffa9c7e7));
   }
   @override bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

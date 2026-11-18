@@ -76,7 +76,7 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
   @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(24), children: [
     const Text('School timetable', style: TextStyle(fontSize: 29, fontWeight: FontWeight.w800)),
     const SizedBox(height: 6),
-    Text(widget.isSample ? 'Fictional schedule · not school data' : 'Saved schedule · online and read-only', style: const TextStyle(color: Color(0xff667d75))),
+    Text(widget.isSample ? 'Fictional schedule · not school data' : 'Saved schedule · online and read-only', style: const TextStyle(color: Color(0xff53677d))),
     const SizedBox(height: 16),
     Container(
       padding: const EdgeInsets.all(16),
@@ -112,8 +112,8 @@ class _LiveTimetablePanelState extends State<LiveTimetablePanel> {
       OutlinedButton(onPressed: widget.onSignOut, child: Text(widget.isSample ? 'Exit fictional preview' : 'Sign out')),
     ]),
     const SizedBox(height: 12),
-    if (result == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.', style: TextStyle(color: Color(0xff667d75), height: 1.4))
-    else Text(widget.isSample ? 'Fictional example only; no server was contacted.' : 'Results are from the last server read. Load again to see newer changes.', style: const TextStyle(color: Color(0xff667d75), fontSize: 12)),
+    if (result == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.', style: TextStyle(color: Color(0xff53677d), height: 1.4))
+    else Text(widget.isSample ? 'Fictional example only; no server was contacted.' : 'Results are from the last server read. Load again to see newer changes.', style: const TextStyle(color: Color(0xff53677d), fontSize: 12)),
     if (result != null) FutureBuilder<_TimetableResult>(future: result, builder: (context, snapshot) {
       if (snapshot.connectionState != ConnectionState.done) return const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()));
       if (snapshot.hasError || snapshot.data == null || snapshot.data!.problem != null) return Padding(padding: const EdgeInsets.only(top: 20), child: Text(schoolReadGuidance(snapshot.data?.problem ?? SchoolReadProblem.unknown, timetable: true)));

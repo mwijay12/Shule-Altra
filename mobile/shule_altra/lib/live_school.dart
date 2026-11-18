@@ -213,9 +213,9 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
         const SizedBox(height: 8),
         const Text('A clear start to your school day.', style: TextStyle(color: muted, height: 1.4)),
         const SizedBox(height: 18),
-        ClipRRect(borderRadius: BorderRadius.circular(22), child: SizedBox(height: 140, width: double.infinity,
-          child: Image.asset('assets/images/workspace_learning.jpg', fit: BoxFit.cover, excludeFromSemantics: true,
-            errorBuilder: (context, error, stackTrace) => const ColoredBox(color: Color(0xffe5eddd), child: Center(child: Icon(Icons.school_outlined, color: ink, size: 40)))))),
+        ClipRRect(borderRadius: BorderRadius.circular(22), child: SizedBox(height: 165, width: double.infinity,
+          child: ColoredBox(color: const Color(0xffedf5fd), child: Image.asset('assets/images/learning_cutout.png', fit: BoxFit.contain, excludeFromSemantics: true,
+            errorBuilder: (context, error, stackTrace) => const Center(child: Icon(Icons.school_outlined, color: ink, size: 40)))))),
         const SizedBox(height: 6),
         const Text('Illustration · not a photo of your school', style: TextStyle(color: muted, fontSize: 11)),
         const SizedBox(height: 18),
@@ -287,7 +287,7 @@ class _LiveSchoolPageState extends State<LiveSchoolPage> {
             if (rows.isEmpty) Padding(padding: const EdgeInsets.only(top: 14), child: Notice(title: 'No learners shown', body: query.isEmpty && attendanceFilter == 'All' ? 'No records were returned on this page. Try another school search.' : 'No loaded learners match these page filters. Change them or search the school again.')),
             const SizedBox(height: 8),
             ...rows.map((row) => Card(margin: const EdgeInsets.only(bottom: 10), child: ExpansionTile(
-              leading: const CircleAvatar(backgroundColor: Color(0xffe5efde), foregroundColor: ink, child: Icon(Icons.person_outline)),
+              leading: const CircleAvatar(backgroundColor: Color(0xffe4f0fc), foregroundColor: ink, child: Icon(Icons.person_outline)),
               title: Text(row.name, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text(row.className),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: [
@@ -332,7 +332,7 @@ class _WorkspaceLink extends StatelessWidget {
     color: Colors.white, borderRadius: BorderRadius.circular(20),
     child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(20), child: Padding(
       padding: const EdgeInsets.all(16), child: Row(children: [
-        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xffeaf0e6), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: ink)),
+        Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: const Color(0xffeaf3fc), borderRadius: BorderRadius.circular(14)), child: Icon(icon, color: ink)),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)), const SizedBox(height: 4), Text(description, style: const TextStyle(color: muted, height: 1.3))])),
         const SizedBox(width: 8), const Icon(Icons.chevron_right, color: muted),
