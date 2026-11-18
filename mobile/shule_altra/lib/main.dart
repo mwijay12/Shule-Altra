@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'sample_day.dart';
 import 'live_school.dart';
 import 'sample_school_gateway.dart';
+import 'onboarding_store.dart';
 
 void main() => runApp(const ShuleMobileApp());
 
@@ -40,10 +43,36 @@ class _PrototypeState extends State<Prototype> {
   int tab = 0;
   bool entered = false;
   final search = TextEditingController();
+  bool loadingIntroduction = true;
+  final OnboardingStore introductionStore = const DeviceOnboardingStore();
   String query = '';
   final attendance = SampleAttendanceDraft();
   String sampleDay = 'Monday';
   String sampleClass = 'All classes';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIntroduction();
+  }
+
+  Future<void> _loadIntroduction() async {
+    var seen = false;
+    try { seen = await introductionStore.hasSeenIntroduction(); } catch (_) { /* Show the introduction if local storage is unavailable. */ }
+    if (!mounted) return;
+    setState(() { step = seen ? 2 : 0; loadingIntroduction = false; });
+  }
+
+  Future<void> _rememberIntroduction() async {
+    // A preferences failure must never block either sample preview or sign-in.
+    try { await introductionStore.markIntroductionSeen(); } catch (_) { /* The introduction may be shown again on restart. */ }
+  }
+
+  void _advanceIntroduction({bool skip = false}) {
+    final next = skip ? 2 : step + 1;
+    setState(() => step = next);
+    if (next == 2) unawaited(_rememberIntroduction());
+  }
 
   @override
   void dispose() { search.dispose(); super.dispose(); }
@@ -72,6 +101,7 @@ class _PrototypeState extends State<Prototype> {
 
   @override
   Widget build(BuildContext context) {
+    if (loadingIntroduction) return const Scaffold(body: Center(child: CircularProgressIndicator(semanticsLabel: 'Loading introduction')));
     if (!entered) return _onboarding();
     return Scaffold(
       body: SafeArea(child: switch (tab) {
@@ -116,8 +146,8 @@ class _PrototypeState extends State<Prototype> {
             const SizedBox(height: 25),
             Semantics(label: 'Introduction, page ${step + 1} of ${pages.length}', child: Row(children: List.generate(pages.length, (i) => AnimatedContainer(duration: MediaQuery.disableAnimationsOf(context) ? Duration.zero : const Duration(milliseconds: 180), margin: const EdgeInsets.only(right: 6), width: step == i ? 25 : 7, height: 7, decoration: BoxDecoration(color: step == i ? ink : const Color(0xffc9d9eb), borderRadius: BorderRadius.circular(8)))))),
             const SizedBox(height: 25),
-            SizedBox(width: double.infinity, child: FilledButton(onPressed: () => setState(() { if (step < pages.length - 1) { step++; } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }), style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
-            if (step < pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => step = pages.length - 1), child: const Text('Skip introduction'))),
+            SizedBox(width: double.infinity, child: FilledButton(onPressed: () { if (step < pages.length - 1) { _advanceIntroduction(); } else { Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => const LiveSchoolBootstrap())); } }, style: FilledButton.styleFrom(backgroundColor: ink, minimumSize: const Size(0, 56), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))), child: Text(step == pages.length - 1 ? 'Connect to your school' : 'Continue'))),
+            if (step < pages.length - 1) Center(child: TextButton(onPressed: () => _advanceIntroduction(skip: true), child: const Text('Skip introduction'))),
             if (step > 0) Center(child: TextButton.icon(onPressed: () => setState(() => step--), icon: const Icon(Icons.arrow_back), label: const Text('Previous'))),
             if (step == pages.length - 1) Center(child: TextButton(onPressed: () => setState(() => entered = true), child: const Text('Explore sample preview instead'))),
             const SizedBox(height: 12),
