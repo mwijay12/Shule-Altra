@@ -2,11 +2,25 @@
 /// change, or a failure leaving a blank screen. Both are tested here.
 library;
 
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shule_altra_mobile/data/learner.dart';
 import 'package:shule_altra_mobile/app/session.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
 
 import 'fake_gateway.dart';
+
+class DelayedGateway extends FakeGateway {
+  final requests = <Completer<LearnerPage>>[];
+
+  @override
+  Future<LearnerPage> loadLearners({int limit = 40, Object? after}) {
+    final pending = Completer<LearnerPage>();
+    requests.add(pending);
+    return pending.future;
+  }
+}
 
 void main() {
   test('signing in loads a page, and the count is the page, not the school', () async {
@@ -58,6 +72,50 @@ void main() {
     expect(session.canGoBack, isFalse);
     await gateway.close();
     session.dispose();
+  });
+
+  test('late response from old account cannot overwrite a new account read', () async {
+    final gateway = DelayedGateway();
+    final session = AppSession(gateway);
+    await session.start();
+    await session.signIn();
+    await Future<void>.delayed(Duration.zero);
+    final oldRead = session.loadFirstPage();
+    gateway.signedInAs('new-staff');
+    await Future<void>.delayed(Duration.zero);
+    expect(session.rows, isEmpty);
+    expect(session.busy, isFalse);
+    final newRead = session.loadFirstPage();
+    gateway.requests[0].complete(LearnerPage(rows: [Learner.fromDocument('old', {'name': 'Old account'})]));
+    await oldRead;
+    expect(session.rows, isEmpty);
+    expect(session.busy, isTrue, reason: 'old completion cannot unlock the current read');
+    gateway.requests[1].complete(LearnerPage(rows: [Learner.fromDocument('new', {'name': 'New account'})]));
+    await newRead;
+    expect(session.rows.single.name, 'New account');
+    expect(session.busy, isFalse);
+    session.dispose();
+    await gateway.close();
+  });
+
+  test('sign out is not blocked by a pending read and ignores its late failure', () async {
+    final gateway = DelayedGateway();
+    final session = AppSession(gateway);
+    await session.start();
+    await session.signIn();
+    await Future<void>.delayed(Duration.zero);
+    final read = session.loadFirstPage();
+    await session.signOut();
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.signOutCalls, 1);
+    expect(session.signedIn, isFalse);
+    gateway.requests.single.completeError(const GatewayFailure('old failure'));
+    await read;
+    expect(session.rows, isEmpty);
+    expect(session.failure, isNull);
+    expect(session.state, LoadState.idle);
+    session.dispose();
+    await gateway.close();
   });
 
   test('a refused read is explained and leaves no rows behind', () async {

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
+import assert from 'node:assert/strict'
 import { initializeTestEnvironment, assertFails, assertSucceeds } from '@firebase/rules-unit-testing'
-import { doc, setDoc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, collection, query, orderBy, startAt, endAt, startAfter, limit, getDocs, setDoc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore'
 
 // Run ONLY against the Firestore emulator. Never point this at a real project.
 async function main() {
@@ -15,6 +16,7 @@ async function main() {
         setDoc(doc(db, `${root}/staff/teacher`), { role: 'TEACHER', active: true }),
         setDoc(doc(db, `${root}/staff/inactive`), { role: 'TEACHER', active: false }),
         setDoc(doc(db, `${root}/staff/other`), { role: 'TEACHER', active: true }),
+        setDoc(doc(db, `${root}/timetable/schedule-form-1-a`), { schemaVersion: 1, className: 'Form 1', stream: 'A', slots: { monday_p1: { subject: 'Mathematics', teacher: 'Teacher', room: '' } } }),
         setDoc(doc(db, `${root}/students/s1`), { class: 'Form 1', name: 'Test learner' }),
         setDoc(doc(db, `${root}/students/s2`), { class: 'Form 2', name: 'Test learner 2' }),
         setDoc(doc(db, `${root}/staff/teacher/teachingAssignments/Form 1|Mathematics`), { className: 'Form 1', subject: 'Mathematics' }),
@@ -30,6 +32,20 @@ async function main() {
     const record = { studentId: 's1', class: 'Form 1', subject: 'Mathematics', score: 70, term: 'Term 1', examType: 'Annual', academicYear: '2026', recordedByUid: 'teacher' }
     const gradeId = 'entry|s1|Term 1|Annual|Mathematics|2026'
     const gradePath = `${root}/grades/${gradeId}`
+    // Mobile search uses the real Firestore range and document cursor. Verify
+    // page boundaries and case sensitivity under the same authenticated rules.
+    const studentList = collection(teacher, `${root}/students`)
+    const firstPage = await assertSucceeds(getDocs(query(studentList, orderBy('name'), startAt('Test'), endAt('Test\uf8ff'), limit(1))))
+    assert.equal(firstPage.size, 1)
+    const secondPage = await assertSucceeds(getDocs(query(studentList, orderBy('name'), startAfter(firstPage.docs[0]), endAt('Test\uf8ff'), limit(1))))
+    assert.equal(secondPage.size, 1)
+    assert.notEqual(firstPage.docs[0].id, secondPage.docs[0].id)
+    const lowerCase = await assertSucceeds(getDocs(query(studentList, orderBy('name'), startAt('test'), endAt('test\uf8ff'), limit(1))))
+    assert.equal(lowerCase.size, 0)
+    await assertFails(getDocs(query(collection(anonymous, `${root}/students`), orderBy('name'), startAt('Test'), endAt('Test\uf8ff'), limit(1))))
+    // Mobile timetable read is online-only and relies on these existing rules.
+    await assertSucceeds(getDoc(doc(teacher, `${root}/timetable/schedule-form-1-a`)))
+    await assertFails(getDoc(doc(anonymous, `${root}/timetable/schedule-form-1-a`)))
     await assertSucceeds(getDoc(doc(teacher, assignment)))
     await assertFails(getDoc(doc(other, assignment)))
     await assertFails(setDoc(doc(teacher, `${root}/staff/teacher/teachingAssignments/Form 1|English`), { className: 'Form 1', subject: 'English' }))

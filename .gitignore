@@ -56,3 +56,18 @@ private/email-previews/
 # Firebase service account keys — never commit these.
 service-account*.json
 *-firebase-adminsdk-*.json
+
+# Flutter local build and tooling artifacts
+mobile/shule_altra/.dart_tool/
+mobile/shule_altra/.flutter-plugins*
+mobile/shule_altra/build/
+mobile/shule_altra/android/local.properties
+mobile/shule_altra/android/.gradle/
+
+# Python test cache
+__pycache__/
+*.py[cod]
+
+# Local Android Firebase client configuration (never commit downloaded files).
+mobile/shule_altra/.local/
+mobile/shule_altra/google-services.json

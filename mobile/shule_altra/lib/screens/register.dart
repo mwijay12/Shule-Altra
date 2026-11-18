@@ -36,6 +36,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _search = TextEditingController();
   String _query = '';
   bool _requestedFirstPage = false;
+  String? _classFilter;
+  String? _streamFilter;
+  String _attendanceFilter = 'All';
+  int _filterVersion = 0;
+  String? _observedUid;
+  LoadState _observedState = LoadState.idle;
 
   @override
   void initState() {
@@ -50,16 +56,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  void _clearFilters() {
+    _search.clear();
+    _query = '';
+    _classFilter = null;
+    _streamFilter = null;
+    _attendanceFilter = 'All';
+    _filterVersion++;
+  }
+
   void _onSessionChanged() {
-    if (!widget.session.signedIn) {
-      _requestedFirstPage = false;
-      // Signing out clears the query too: leaving a search string over a
-      // signed-out screen implies something is still loaded.
-      if (_query.isNotEmpty) {
-        _search.clear();
-        setState(() => _query = '');
-      }
-    }
+    final session = widget.session;
+    final changedAccount = _observedUid != session.uid;
+    final startedRead = session.state == LoadState.loading && _observedState != LoadState.loading;
+    _observedUid = session.uid;
+    _observedState = session.state;
+    if (!session.signedIn) _requestedFirstPage = false;
+    // Page-only controls cannot survive a new read or an account change.
+    if (changedAccount || startedRead) setState(_clearFilters);
   }
 
   /// Loads the first page after the frame that first needs it.
@@ -152,7 +166,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ];
     }
 
-    final shown = session.rows.where((row) => row.matches(_query)).toList();
+    final classes = session.rows.map((row) => row.className).toSet().toList()..sort();
+    final streams = session.rows.map((row) => row.stream).where((value) => value.isNotEmpty).toSet().toList()..sort();
+    final filtersActive = (_query.isNotEmpty ? 1 : 0) + (_classFilter == null ? 0 : 1) +
+        (_streamFilter == null ? 0 : 1) + (_attendanceFilter == 'All' ? 0 : 1);
+    final shown = session.rows.where((row) {
+      final attendance = row.attendanceStatus.toLowerCase();
+      final known = ['present', 'absent', 'late'].contains(attendance);
+      return row.matches(_query) &&
+          (_classFilter == null || row.className == _classFilter) &&
+          (_streamFilter == null || (_streamFilter == 'missing' ? row.stream.isEmpty : 'value:${row.stream}' == _streamFilter)) &&
+          (_attendanceFilter == 'All' || (_attendanceFilter == 'Other or not set' ? !known : attendance == _attendanceFilter.toLowerCase()));
+    }).toList();
     final reading = session.state == LoadState.loading;
 
     return [
@@ -161,7 +186,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         onChanged: (value) => setState(() => _query = value.trim()),
         textInputAction: TextInputAction.search,
         decoration: InputDecoration(
-          hintText: 'Search name or class',
+          hintText: 'Search name, class, stream or ID',
+          helperText: 'Loaded page only',
           prefixIcon: const Icon(Icons.search_rounded),
           suffixIcon: _query.isEmpty
               ? null
@@ -176,21 +202,65 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       ),
       const SizedBox(height: Space.sm),
+      Card(
+        child: ExpansionTile(
+          title: const Text('Refine this page'),
+          subtitle: Text(filtersActive == 0 ? 'Class, stream and stored attendance' :
+              '$filtersActive page filter${filtersActive == 1 ? '' : 's'} active'),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            DropdownButtonFormField<String>(
+              key: ValueKey('class-$_filterVersion'),
+              value: _classFilter, isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Class · this page only'),
+              items: [const DropdownMenuItem(value: null, child: Text('All classes on page')),
+                ...classes.map((value) => DropdownMenuItem(value: value, child: Text(value)))],
+              onChanged: (value) => setState(() => _classFilter = value),
+            ),
+            const SizedBox(height: Space.md),
+            DropdownButtonFormField<String>(
+              key: ValueKey('stream-$_filterVersion'),
+              value: _streamFilter, isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Stream · this page only'),
+              items: [const DropdownMenuItem(value: null, child: Text('All streams on page')),
+                const DropdownMenuItem(value: 'missing', child: Text('Stream not recorded')),
+                ...streams.map((value) => DropdownMenuItem(value: 'value:$value', child: Text(value)))],
+              onChanged: (value) => setState(() => _streamFilter = value),
+            ),
+            const SizedBox(height: Space.md),
+            DropdownButtonFormField<String>(
+              key: ValueKey('attendance-$_filterVersion'),
+              value: _attendanceFilter, isExpanded: true,
+              decoration: const InputDecoration(labelText: 'Stored attendance · this page only'),
+              items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set']
+                  .map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+              onChanged: (value) { if (value != null) setState(() => _attendanceFilter = value); },
+            ),
+            const SizedBox(height: Space.sm),
+            const Text('Latest stored status only; it has no date and may not be from today.'),
+          ],
+        ),
+      ),
+      if (filtersActive > 0)
+        Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+          onPressed: () => setState(_clearFilters),
+          icon: const Icon(Icons.filter_alt_off_outlined), label: const Text('Clear all page filters'),
+        )),
+      const SizedBox(height: Space.sm),
       Text(
-        _query.isEmpty
+        filtersActive == 0
             ? '${countLabel(session.rows.length)} on this page'
-            : '${shown.length} of ${countLabel(session.rows.length)} match "$_query"',
+            : '${shown.length} of ${countLabel(session.rows.length)} match page filters',
         style: Theme.of(context).textTheme.bodySmall,
       ),
       const SizedBox(height: Space.lg),
       if (shown.isEmpty)
         EmptyState(
-          title: _query.isEmpty ? 'This page is empty' : 'No learner on this page matches',
-          body: _query.isEmpty
+          title: filtersActive == 0 ? 'This page is empty' : 'No learner on this page matches',
+          body: filtersActive == 0
               ? 'The school may have no learners, or your account may only see a part of '
                   'the register. Pull down to read again.'
-              : 'Search only covers the page you have loaded. Move to the next page, then '
-                  'search again.',
+              : 'Filters only cover the page you have loaded. Change them or move to another page.',
           doodle: Doodle.sparkles,
         )
       else

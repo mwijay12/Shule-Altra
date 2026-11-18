@@ -49,6 +49,18 @@ Future<void> tapText(WidgetTester tester, String text) async {
 }
 
 void main() {
+  testWidgets('skip introduction reaches explicit choices without starting a session', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    expect(find.text('Connect my school'), findsOneWidget);
+    expect(find.text('Explore the sample preview'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await gateway.close();
+  });
+
   testWidgets('onboarding explains itself and hands over to the sample', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
@@ -116,7 +128,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Neema');
     await tester.pumpAndSettle();
-    expect(find.textContaining('0 of 1 learner match "Neema"'), findsOneWidget);
+    expect(find.textContaining('0 of 1 learner match page filters'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Amina');
     await tester.pumpAndSettle();
     expect(find.text('Amina Juma'), findsOneWidget);

@@ -7,7 +7,9 @@ A Flutter app with **two separate data paths** and no third one:
 | **Sample preview** | Fictional learners, in the app | none | none |
 | **Live school** | `schools/{schoolId}/students` in your Firebase project | Firebase, server reads only | none |
 
-The app opens on onboarding and asks which one you want. It never drifts from one
+The app opens on onboarding and asks which one you want. After completing or skipping
+the introduction, a device-only preference opens that choice directly on later starts.
+No school or personal data is stored in this preference. It never drifts from one
 into the other, and every register screen prints which one you are looking at.
 
 This replaces the three static SVGs in `design/`. The SVGs are the intent; this is
@@ -246,3 +248,12 @@ that, and checks every text pair at 4.5:1 (3:1 for large text) in **both** theme
 
 No real learner data was used to build or test this. Every sample name, guardian
 and phone number is fictional, and every sample email is on `example.test`.
+
+### Parallel pilot integration
+
+The main app is the modular pilot in this folder. The earlier independent pilot is
+preserved in `mobile/legacy_pilot` for reference and is not the active app. Its
+features (including saved timetables and server-side name-prefix search)
+still need to be ported and tested in the modular app. The cut-out onboarding
+illustrations, skip action, introduction preference and loaded-page class/stream/stored-attendance filters have been integrated here. The filters clear on a new page read or account change; stored attendance is undated, not evidence of today’s attendance. Neither pilot is proof
+of live Firebase connectivity or device verification.
