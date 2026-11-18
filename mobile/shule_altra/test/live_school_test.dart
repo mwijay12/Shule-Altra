@@ -52,7 +52,7 @@ void main() {
     expect(noGoogle.isValid, isFalse);
   });
   test('learner parser safely handles missing or malformed details', () {
-    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test ', 'type': ' Day ', 'enrollmentDate': 20260101, 'admissionNumber': ' A-123 ', 'attendanceStatus': ' Late ', 'lastAttendanceUpdate': 815}, recordId: 'doc-1');
+    final row = LiveLearner.fromFirestore({'name': ' Amina ', 'class': null, 'guardianPhone': 123, 'guardianEmail': ' x@example.test ', 'type': ' Day ', 'enrollmentDate': 20260101, 'admissionNumber': ' A-123 ', 'attendanceStatus': ' Late ', 'lastAttendanceUpdate': 815, 'stream': ' A '}, recordId: 'doc-1');
     expect(row.name, 'Amina');
     expect(row.className, 'Class not set');
     expect(row.guardianPhone, '');
@@ -63,6 +63,7 @@ void main() {
     expect(row.enrollmentDate, '');
     expect(row.attendanceStatus, 'Late');
     expect(row.attendanceUpdateTime, '');
+    expect(row.stream, 'A');
   });
   testWidgets('timetable clears a previous class and handles empty and failed reads', (tester) async {
     var calls = 0;
@@ -153,6 +154,28 @@ void main() {
     await tester.scrollUntilVisible(find.text('Next page'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
     await tester.tap(find.text('Next page')); await tester.pumpAndSettle();
     expect(find.text('Second Learner'), findsOneWidget, reason: 'page change resets local filters');
+    await tester.pumpWidget(const SizedBox());
+    await fake.controller.close();
+  });
+
+  testWidgets('class and stream choices filter only the loaded page', (tester) async {
+    final fake = FakeSchoolGateway();
+    await tester.pumpWidget(MaterialApp(home: LiveSchoolPage(gateway: fake)));
+    fake.controller.add('staff-1'); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Learner register'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Learner register')); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Search school'), 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(find.text('Search school')); await tester.pumpAndSettle();
+    // Selectors are located by labels so the test does not depend on session counters.
+    final classSelector = find.widgetWithText(DropdownButtonFormField<int>, 'All classes on page');
+    await tester.scrollUntilVisible(classSelector, 200, scrollable: find.byType(Scrollable).first); await tester.pumpAndSettle();
+    await tester.tap(classSelector); await tester.pumpAndSettle();
+    await tester.tap(find.text('Form 1').last); await tester.pumpAndSettle();
+    final streamSelector = find.widgetWithText(DropdownButtonFormField<int>, 'All streams on page');
+    await tester.ensureVisible(streamSelector); await tester.pumpAndSettle(); await tester.tap(streamSelector); await tester.pumpAndSettle();
+    await tester.tap(find.text('Stream not recorded').last); await tester.pumpAndSettle();
+    expect(find.text('Example Learner'), findsOneWidget);
+    expect(fake.learnerLoads, 1);
     await tester.pumpWidget(const SizedBox());
     await fake.controller.close();
   });

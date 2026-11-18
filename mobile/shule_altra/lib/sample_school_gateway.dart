@@ -7,8 +7,8 @@ class SampleSchoolGateway implements SchoolGateway {
   const SampleSchoolGateway();
 
   static const _rows = [
-    LiveLearner('Amina Juma', 'Form 1', recordId: 'sample-001', attendanceStatus: 'Present'),
-    LiveLearner('Baraka John', 'Form 2', recordId: 'sample-002', attendanceStatus: 'Late'),
+    LiveLearner('Amina Juma', 'Form 1', recordId: 'sample-001', stream: 'A', attendanceStatus: 'Present'),
+    LiveLearner('Baraka John', 'Form 2', recordId: 'sample-002', stream: 'B', attendanceStatus: 'Late'),
     LiveLearner('Neema Peter', 'Form 3', recordId: 'sample-003', attendanceStatus: 'Absent'),
   ];
 
