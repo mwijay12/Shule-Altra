@@ -128,7 +128,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'Neema');
     await tester.pumpAndSettle();
-    expect(find.textContaining('0 of 1 learner match "Neema"'), findsOneWidget);
+    expect(find.textContaining('0 of 1 learner match page filters'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'Amina');
     await tester.pumpAndSettle();
     expect(find.text('Amina Juma'), findsOneWidget);

@@ -22,6 +22,8 @@ class Learner {
     required this.guardianEmail,
     required this.balance,
     required this.type,
+    this.stream = '',
+    this.attendanceStatus = '',
   });
 
   final String id;
@@ -39,6 +41,10 @@ class Learner {
   final double? balance;
 
   final String type;
+
+  /// Stored stream and latest attendance status; neither is inferred.
+  final String stream;
+  final String attendanceStatus;
 
   /// Read one Firestore document, tolerating the misses a real school produces:
   /// a missing name, a number stored as a string, a null field.
@@ -65,6 +71,10 @@ class Learner {
       guardianEmail: text('guardianEmail'),
       balance: _money(data['balance']),
       type: text('type'),
+      stream: data['stream'] is String ? (data['stream'] as String).trim() : '',
+      attendanceStatus: data['attendanceStatus'] is String
+          ? (data['attendanceStatus'] as String).trim()
+          : '',
     );
   }
 
@@ -88,11 +98,12 @@ class Learner {
   /// The words shown when a stored record has no name.
   static const String missingName = 'Unnamed learner';
 
-  /// True when the row matches a search query across name and class only.
+  /// True when the row matches a query across loaded name, class, stream or ID.
   bool matches(String query) {
     final needle = query.trim().toLowerCase();
     if (needle.isEmpty) return true;
-    return name.toLowerCase().contains(needle) || className.toLowerCase().contains(needle);
+    return name.toLowerCase().contains(needle) || className.toLowerCase().contains(needle) ||
+        stream.toLowerCase().contains(needle) || id.toLowerCase().contains(needle);
   }
 }
 

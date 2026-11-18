@@ -50,6 +50,15 @@ void main() {
       expect(junk.balance, isNull);
     });
 
+    test('retains real stream and stored attendance without inventing missing data', () {
+      final row = Learner.fromDocument('id-1', {'stream': ' A ', 'attendanceStatus': ' Late '});
+      expect(row.stream, 'A');
+      expect(row.attendanceStatus, 'Late');
+      final missing = Learner.fromDocument('id-2', {'stream': 1, 'attendanceStatus': null});
+      expect(missing.stream, isEmpty);
+      expect(missing.attendanceStatus, isEmpty);
+    });
+
     test('a single-word name keeps one initial', () {
       expect(Learner.fromDocument('s-5', {'name': 'Madonna'}).initials, 'M');
     });
