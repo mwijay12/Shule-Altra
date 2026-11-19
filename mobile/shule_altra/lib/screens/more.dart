@@ -41,7 +41,9 @@ class MoreScreen extends StatelessWidget {
         context: context,
         builder: (context) => AlertDialog(
           title: const Text('Return to the start?'),
-          content: const Text('You will be signed out. Fictional practice marks will be discarded. No school records are changed.'),
+          content: Text(session.signedIn
+              ? 'You will be signed out. Fictional practice marks will be discarded. No school records are changed.'
+              : 'Return to the school or sample choice. Fictional practice marks will be discarded. No school records are changed.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Stay here')),
             TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign out and return')),
@@ -121,7 +123,7 @@ class MoreScreen extends StatelessWidget {
         const SectionHead(title: 'What is not here'),
         const SizedBox(height: Space.md),
         const Notice(
-          title: 'No writes, no payments, no offline',
+          title: 'No writes, no payments, no offline capture',
           body: 'Attendance cannot be recorded and fees cannot be paid. Live reads require a '
               'connection; the fictional sample works without Firebase.',
           tone: NoticeTone.caution,
@@ -133,10 +135,11 @@ class MoreScreen extends StatelessWidget {
               'attention, you will only see it when you open the app.',
         ),
         const SizedBox(height: Space.md),
-        const Notice(
-          title: 'No caching of learner data',
-          body: 'Each register page is read from the school when you ask for it. A signed-out '
-              'or offline phone shows a message, not a stored copy of the register.',
+        Notice(
+          title: 'No caching of live learner data',
+          body: isSample
+              ? 'Sample learners are bundled fictional data. Live school pages are read from the server rather than shown from a cache.'
+              : 'Each register page is read from the school when you ask for it. A signed-out or offline phone shows a message, not a stored copy of the register.',
           tone: NoticeTone.done,
         ),
         const SizedBox(height: Space.xl),
