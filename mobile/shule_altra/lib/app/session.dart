@@ -64,6 +64,9 @@ class AppSession extends ChangeNotifier {
   /// True from the moment sign-out starts until it succeeds or fails.
   bool get signingOut => _signingOut;
 
+  /// A pending register read can be cancelled safely by signing out.
+  bool get canSignOut => signedIn && !_signingOut && !_authInFlight;
+
   /// Changes whenever private page data becomes invalid, including sign-out.
   int get dataRevision => _generation;
 

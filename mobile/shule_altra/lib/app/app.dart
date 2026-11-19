@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/appearance_store.dart';
 import '../data/firebase_gateway.dart';
 import '../data/learner.dart';
 import '../data/onboarding_store.dart';
@@ -32,6 +33,7 @@ class ShuleApp extends StatefulWidget {
       : initialMode = AppMode.onboarding,
         themeMode = null,
         textScale = null,
+        appearanceStore = null,
         _injected = null;
 
   /// A gateway may be injected by a test. When it is, the app starts in
@@ -44,13 +46,17 @@ class ShuleApp extends StatefulWidget {
     this.initialMode = AppMode.onboarding,
     this.themeMode,
     this.textScale,
+    this.appearanceStore,
   }) : _injected = gateway;
 
   final SchoolGateway? _injected;
   final AppMode initialMode;
 
-  /// Null means "follow the phone's setting", which is what ships.
+  /// Test override for the initial theme. Production restores the device setting.
   final ThemeMode? themeMode;
+
+  /// Optional injectable preference store for deterministic tests.
+  final AppearanceStore? appearanceStore;
 
   /// Tests pin the system font scale here. Null follows the phone.
   final double? textScale;
@@ -61,6 +67,11 @@ class ShuleApp extends StatefulWidget {
 
 class _ShuleAppState extends State<ShuleApp> {
   late ThemeMode _themeMode = widget.themeMode ?? ThemeMode.system;
+  late final AppearanceStore? _appearanceStore = widget.appearanceStore ??
+      (widget._injected == null ? const DeviceAppearanceStore() : null);
+  int _appearanceRevision = 0;
+  String? _appearanceNotice;
+  Future<void> _appearanceWrites = Future<void>.value();
 
   // Built once: a new ThemeData on every tab change would restart Flutter's
   // implicit theme animations and re-lay out the whole app.
@@ -75,11 +86,46 @@ class _ShuleAppState extends State<ShuleApp> {
   void initState() {
     super.initState();
     _mode = widget.initialMode;
+    if (_appearanceStore != null && widget.themeMode == null) {
+      unawaited(_restoreAppearance());
+    }
     final injected = widget._injected;
     // Onboarding has no data path yet, so no session is started for it.
     if (injected != null && widget.initialMode != AppMode.onboarding) {
       _startSession(injected);
     }
+  }
+
+  Future<void> _restoreAppearance() async {
+    final revision = _appearanceRevision;
+    try {
+      final mode = await _appearanceStore!.read();
+      if (!mounted || revision != _appearanceRevision) return;
+      setState(() => _themeMode = mode);
+    } catch (_) {
+      if (!mounted || revision != _appearanceRevision) return;
+      setState(() => _appearanceNotice = 'Could not load your saved appearance. The app follows the phone for now.');
+    }
+  }
+
+  void _changeAppearance(ThemeMode mode) {
+    final revision = ++_appearanceRevision;
+    setState(() { _themeMode = mode; _appearanceNotice = null; });
+    final store = _appearanceStore;
+    if (store == null) return;
+    // Serialize writes so a slow older choice cannot overwrite the newest one.
+    _appearanceWrites = _appearanceWrites.then((_) async {
+      try {
+        await store.write(mode);
+        if (mounted && revision == _appearanceRevision) {
+          setState(() => _appearanceNotice = null);
+        }
+      } catch (_) {
+        if (mounted && revision == _appearanceRevision) {
+          setState(() => _appearanceNotice = 'Could not save this appearance. It may reset when you reopen the app.');
+        }
+      }
+    });
   }
 
   void _startSession(SchoolGateway gateway) {
@@ -215,7 +261,9 @@ class _ShuleAppState extends State<ShuleApp> {
           tab: _tab,
           themeMode: _themeMode,
           onTab: (value) => setState(() => _tab = value),
-          onThemeChanged: (mode) => setState(() => _themeMode = mode),
+          onThemeChanged: _changeAppearance,
+          appearanceNotice: _appearanceNotice,
+          appearancePersistent: _appearanceStore != null,
           onRestart: _restart,
         );
     }
@@ -231,6 +279,8 @@ class _Shell extends StatefulWidget {
     required this.themeMode,
     required this.onTab,
     required this.onThemeChanged,
+    required this.appearanceNotice,
+    required this.appearancePersistent,
     required this.onRestart,
   });
 
@@ -240,6 +290,8 @@ class _Shell extends StatefulWidget {
   final ThemeMode themeMode;
   final ValueChanged<int> onTab;
   final ValueChanged<ThemeMode> onThemeChanged;
+  final String? appearanceNotice;
+  final bool appearancePersistent;
   final VoidCallback onRestart;
 
   @override
@@ -287,6 +339,8 @@ class _ShellState extends State<_Shell> {
                   onRestart: widget.onRestart,
                   onThemeChanged: widget.onThemeChanged,
                   themeMode: widget.themeMode,
+                  appearanceNotice: widget.appearanceNotice,
+                  appearancePersistent: widget.appearancePersistent,
                 ),
               if (_visitedRegister)
                 Offstage(

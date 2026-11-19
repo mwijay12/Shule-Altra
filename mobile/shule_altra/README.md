@@ -9,8 +9,9 @@ A Flutter app with **two separate data paths** and no third one:
 
 The app opens on onboarding and asks which one you want. After completing or skipping
 the introduction, a device-only preference opens that choice directly on later starts.
-No school or personal data is stored in this preference. It never drifts from one
-into the other, and every register screen prints which one you are looking at.
+No school or personal data is stored in this preference. The separately stored
+appearance preference contains only system, light or dark. Sample and live paths
+never drift into one another, and every register screen says which one is in use.
 
 This replaces the three static SVGs in `design/`. The SVGs are the intent; this is
 the working thing.

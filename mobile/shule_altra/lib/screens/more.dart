@@ -18,6 +18,8 @@ class MoreScreen extends StatelessWidget {
     required this.onRestart,
     required this.onThemeChanged,
     required this.themeMode,
+    required this.appearanceNotice,
+    required this.appearancePersistent,
   });
 
   final AppSession session;
@@ -26,26 +28,46 @@ class MoreScreen extends StatelessWidget {
   final VoidCallback onRestart;
   final ValueChanged<ThemeMode> onThemeChanged;
   final ThemeMode themeMode;
+  final String? appearanceNotice;
+  final bool appearancePersistent;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     const config = SchoolFirebaseConfig.fromEnvironment;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
+    Future<void> confirmRestart() async {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Return to the start?'),
+          content: const Text('You will be signed out. Fictional practice marks will be discarded. No school records are changed.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Stay here')),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign out and return')),
+          ],
+        ),
+      );
+      if (confirmed == true && context.mounted && !session.busy && session.resolved) {
+        onRestart();
+      }
+    }
+
+    return LayoutBuilder(builder: (context, constraints) {
+      final gutter = constraints.maxWidth > 760 ? (constraints.maxWidth - 712) / 2 : Space.gutter;
+      return ListView(
+      padding: EdgeInsets.fromLTRB(gutter, Space.lg, gutter, Space.xxl),
       children: [
         const BrandBar(),
         const SizedBox(height: Space.xl),
-        Text('Built with care,\nand with limits.', style: Theme.of(context).textTheme.displaySmall),
+        Text('Settings & account', style: Theme.of(context).textTheme.displaySmall),
         const SizedBox(height: Space.sm),
-        Text(
-          'Shule Altra mobile is an early read-only pilot. This page is the whole list of '
-          'what it does and does not do, so nobody has to discover it by accident.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-        ),
+        Text('Manage this session, appearance and understand the limits of this pilot.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted)),
         const SizedBox(height: Space.xl),
-        SectionHead(title: 'Connection', trailing: session.sourceLabel),
+        const SectionHead(title: 'Connection'),
+        const SizedBox(height: Space.sm),
+        Text(session.sourceLabel, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: Space.md),
         ShuleCard(
           child: Column(
@@ -54,7 +76,9 @@ class MoreScreen extends StatelessWidget {
               FactRow(label: 'Mode', value: isSample ? 'Sample preview (fictional data)' : 'Live school read'),
               FactRow(
                 label: 'Account',
-                value: !session.signedIn
+                value: !session.resolved
+                    ? 'Checking session…'
+                    : !session.signedIn
                     ? 'Not signed in'
                     : session.demoIdentity != null
                         ? 'Demo · ${session.demoIdentity!.email}'
@@ -63,7 +87,7 @@ class MoreScreen extends StatelessWidget {
               FactRow(
                 label: 'Firebase',
                 value: config.isComplete
-                    ? (config.projectMatches ? 'Configured · ${config.projectId}' : 'Project id mismatch')
+                    ? (config.projectMatches ? 'Values present · ${config.projectId} (not verified)' : 'Project id mismatch')
                     : 'No values in this build',
               ),
               const SizedBox(height: Space.sm),
@@ -85,7 +109,7 @@ class MoreScreen extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: session.busy ? null : onSignOut,
+                    onPressed: session.canSignOut ? onSignOut : null,
                     child: const Text('Sign out'),
                   ),
                 ),
@@ -124,8 +148,18 @@ class MoreScreen extends StatelessWidget {
             children: [
               Text('Choose your appearance', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: Space.sm),
-              Text('The system option follows your phone. Your choice lasts until the app closes. Motion follows your phone’s accessibility setting.',
-                  style: Theme.of(context).textTheme.bodySmall),
+              Text(
+                appearancePersistent
+                    ? 'Follow system uses your phone’s theme. Your selection is stored on this device when available.'
+                    : 'Follow system uses your phone’s theme. Your choice lasts until the app closes.',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: Space.sm),
+              Text('Motion follows your phone’s accessibility setting.', style: Theme.of(context).textTheme.bodySmall),
+              if (appearanceNotice != null) ...[
+                const SizedBox(height: Space.md),
+                Notice(title: 'Appearance preference', body: appearanceNotice!, tone: NoticeTone.caution),
+              ],
               for (final option in <(ThemeMode, String)>[
                 (ThemeMode.system, 'Follow system'),
                 (ThemeMode.light, 'Light'),
@@ -157,7 +191,7 @@ class MoreScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: session.busy || !session.resolved ? null : onRestart,
+                  onPressed: session.busy || !session.resolved ? null : confirmRestart,
                   icon: const Icon(Icons.restart_alt_rounded, size: 20),
                   label: const Text('Back to the start'),
                 ),
@@ -179,6 +213,7 @@ class MoreScreen extends StatelessWidget {
           ),
         ),
       ],
-    );
+      );
+    });
   }
 }

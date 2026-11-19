@@ -310,7 +310,7 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     await tapText(tester, 'More');
-    expect(find.textContaining('Built with care'), findsOneWidget);
+    expect(find.text('Settings & account'), findsOneWidget);
 
     // Walk down the page the way a person does, and stop when the statement
     // appears: the list builds its children lazily, so nothing below the fold
@@ -347,6 +347,10 @@ void main() {
     gateway.signOutFailure = const GatewayFailure('Sign-out failed. Try again.');
     await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
     await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Stay here');
+    expect(gateway.signOutCalls, 0);
+    await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Sign out and return');
     expect(gateway.signOutCalls, 1);
     expect(find.byType(NavigationBar), findsOneWidget);
     await tester.scrollUntilVisible(find.textContaining('Sign-out failed'), -200, scrollable: find.byType(Scrollable).first);
@@ -354,6 +358,7 @@ void main() {
     gateway.signOutFailure = null;
     await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
     await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Sign out and return');
     expect(gateway.signOutCalls, 2);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.textContaining('Your register,'), findsOneWidget);
