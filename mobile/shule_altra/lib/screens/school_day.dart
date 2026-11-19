@@ -71,6 +71,14 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         Text('Choose a timetable or try the fictional attendance sheet below.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted)),
         const SizedBox(height: Space.xl),
+        const Notice(
+          title: 'Practice only, nothing saved',
+          body: 'These marks stay in memory when you change tabs. They are not '
+              'attendance records, they never reach a school, and returning to the start '
+              'or closing the app discards them.',
+          tone: NoticeTone.caution,
+        ),
+        const SizedBox(height: Space.xl),
         Container(
           padding: const EdgeInsets.all(Space.lg),
           decoration: BoxDecoration(
@@ -109,14 +117,6 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               )),
             ],
           ]),
-        ),
-        const SizedBox(height: Space.xl),
-        const Notice(
-          title: 'Practice only, nothing saved',
-          body: 'These marks stay in memory when you change tabs. They are not '
-              'attendance records, they never reach a school, and returning to the start '
-              'or closing the app discards them.',
-          tone: NoticeTone.caution,
         ),
         const SizedBox(height: Space.xl),
         SectionHead(

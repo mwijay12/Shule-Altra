@@ -129,7 +129,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: SavedTimetableScreen(session: session, reader: reader)));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Load timetable')); await tester.pump();
-    await tester.tap(find.byType(DropdownButtonFormField<String>).first); await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first); await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
     await tester.tap(find.text('Form 2').last); await tester.pumpAndSettle();
     reader.pending.first.complete(const SavedTimetable({'monday_p1': TimetableSlot('Old class lesson', '', '')}));
     await tester.pumpAndSettle();
@@ -157,12 +158,14 @@ void main() {
     await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: SavedTimetableScreen(session: session, reader: reader)));
     await tester.pumpAndSettle();
     final signOut = session.signOut(); await tester.pump();
-    final button = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Load timetable'));
+    final buttonFinder = find.ancestor(of: find.text('Load timetable'),
+        matching: find.byWidgetPredicate((widget) => widget is FilledButton)).first;
+    final button = tester.widget<FilledButton>(buttonFinder);
     expect(button.onPressed, isNull);
     expect(reader.pending, isEmpty);
     gateway.pendingSignOut.completeError(const GatewayFailure('Sign out failed'));
     expect(await signOut, isFalse); await tester.pumpAndSettle();
-    expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Load timetable')).onPressed, isNotNull);
+    expect(tester.widget<FilledButton>(buttonFinder).onPressed, isNotNull);
     await tester.pumpWidget(const SizedBox.shrink()); session.dispose(); await gateway.close();
   });
 
