@@ -152,6 +152,12 @@ Every live surface must have **signed-out, starting, loading, success, empty, of
 
 Phases 2–4 are **in progress**, not complete: the mobile palette and labelled bottom navigation now use the requested blue direction, onboarding has a light cut-out hero and Previous control, and Home distinguishes unread pages and missing balances from zero. A small-screen attendance overflow was also fixed. The updated widget suite includes 320dp and 1.5× text, onboarding navigation, and Home data-state tests. [Mobile CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44441079085) passed analysis, tests and prototype APK builds; [Demo CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44441079128) passed. Real-device visuals, TalkBack, live Firebase and school-wide dashboard metrics remain unverified or unfinished. The login flow, navigation state, motion and the rest of each phase still need the planned work.
 
+### Follow-up frontend and usability batch (2026-11-09)
+
+Phases 2, 3, 6 and 7 remain **in progress**. The signed-out register now reuses a bundled decorative cut-out with a fallback. Appearance offers system, light and dark (choice is in-memory only). Fictional practice marks now survive bottom-tab changes during the session, and clearing asks for confirmation; returning to the start or closing the app discards them. Register state is still intentionally not preserved across tab changes; these changes do not save attendance or enable live writes. Widget tests cover system-dark/explicit theme choices, preserving marks, and cancel/confirm clear. [Mobile CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44443019031) passed analyzer, tests and debug/split APK builds; [Demo CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44443019021) passed. No real phone, TalkBack or live Firebase verification was performed.
+
+The audit observations above record the original review; this update supersedes the old findings about the theme toggle and discarded Day-tab drafts.
+
 ### Phase completion rules
 
 Each phase closes only when its acceptance criteria and relevant tests pass, data source and remaining limitations are recorded, and any required external verification is explicitly passed or marked **blocked**. Related improvements are grouped into these batches; no artificial “phase complete” for a tiny change. Prioritize P0 trust and task completion over decorative motion.
