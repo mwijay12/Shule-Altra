@@ -76,6 +76,9 @@ void main() {
         // A learner's sheet. It is dismissed with the back gesture, not by
         // tapping a guessed coordinate: a tap that misses the barrier leaves the
         // sheet up, and every later tap lands on the barrier instead.
+        // The signed-out form may leave the list below the newly loaded rows.
+        await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
+        await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
           find.text('Amina Juma'), 180,
           scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)).first,
