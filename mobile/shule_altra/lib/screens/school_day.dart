@@ -12,6 +12,9 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/learner.dart';
 import '../data/sample_gateway.dart';
+import '../data/sample_timetable.dart';
+import '../data/saved_timetable.dart';
+import 'saved_timetable.dart';
 import '../design/doodles.dart';
 import '../design/motion.dart';
 import '../design/tokens.dart';
@@ -34,6 +37,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   /// holds must produce a new one, and `setState(_draft.clear)` would pass a
   /// void callback where Flutter expects a rebuild factory.
   PracticeDraft _draft = PracticeDraft();
+  String _sampleDay = 'Monday';
 
   /// The practice sheet always uses fictional learners, whoever is signed in.
   /// Marking a real learner's name, even locally, invites a person to believe a
@@ -64,6 +68,16 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               'discards them.',
           tone: NoticeTone.caution,
         ),
+        if (widget.session.gateway is TimetableReader) ...[
+          const SizedBox(height: Space.md),
+          OutlinedButton.icon(
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SavedTimetableScreen(
+              session: widget.session, reader: widget.session.gateway as TimetableReader,
+            ))),
+            icon: const Icon(Icons.calendar_month_outlined),
+            label: const Text('Open saved school timetable'),
+          ),
+        ],
         const SizedBox(height: Space.xl),
         SectionHead(
           title: 'Sample attendance',
@@ -152,6 +166,36 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               'that exists in this pilot, so this screen practices and does not record.',
           tone: NoticeTone.info,
         ),
+        const SizedBox(height: Space.xl),
+        const SectionHead(title: 'Fictional timetable'),
+        const SizedBox(height: Space.sm),
+        const Notice(
+          title: 'Sample schedule only',
+          body: 'This is fictional even when signed in to a school. It is not the '
+              'saved school timetable. Practice marks do not change with the day.',
+          tone: NoticeTone.info,
+        ),
+        const SizedBox(height: Space.md),
+        DropdownButtonFormField<String>(
+          value: _sampleDay,
+          isExpanded: true,
+          decoration: const InputDecoration(labelText: 'Sample day'),
+          items: sampleTimetable.keys
+              .map((day) => DropdownMenuItem(value: day, child: Text(day)))
+              .toList(),
+          onChanged: (day) {
+            if (day != null) setState(() => _sampleDay = day);
+          },
+        ),
+        const SizedBox(height: Space.md),
+        for (final lesson in sampleTimetable[_sampleDay]!)
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.menu_book_outlined),
+              title: Text(lesson.subject),
+              subtitle: Text('${lesson.time} · ${lesson.teacher} · fictional'),
+            ),
+          ),
         const SizedBox(height: Space.lg),
         OutlinedButton.icon(
           onPressed: widget.onOpenRegister,
