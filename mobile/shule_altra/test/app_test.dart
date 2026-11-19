@@ -254,6 +254,7 @@ void main() {
     );
     expect(find.text('0 of 6 marked'), findsOneWidget);
 
+    await tester.scrollUntilVisible(find.text('Present').first, 180, scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Present').first);
     await tester.pumpAndSettle();
     expect(find.text('1 of 6 marked'), findsOneWidget);

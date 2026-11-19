@@ -9,6 +9,7 @@ import '../data/school_gateway.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../format.dart';
+import 'schedule_entry.dart';
 
 class SavedTimetableScreen extends StatefulWidget {
   const SavedTimetableScreen({super.key, required this.session, required this.reader});
@@ -25,6 +26,7 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
   String _day = timetableDays.first;
   String? _uid;
   late int _revision;
+  late bool _signingOut;
   DateTime? _readAt;
   SavedTimetable? _schedule;
   String? _error;
@@ -37,6 +39,7 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
     super.initState();
     _uid = widget.session.uid;
     _revision = widget.session.dataRevision;
+    _signingOut = widget.session.signingOut;
     widget.session.addListener(_sessionChanged);
   }
 
@@ -56,18 +59,20 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
   }
 
   void _sessionChanged() {
-    if (_uid != widget.session.uid || _revision != widget.session.dataRevision) {
+    final invalidated = _uid != widget.session.uid || _revision != widget.session.dataRevision;
+    if (invalidated || _signingOut != widget.session.signingOut) {
       setState(() {
         _uid = widget.session.uid;
         _revision = widget.session.dataRevision;
-        _clear();
+        _signingOut = widget.session.signingOut;
+        if (invalidated) _clear();
       });
     }
   }
 
   Future<void> _load() async {
     final uid = widget.session.uid;
-    if (uid == null) return;
+    if (uid == null || _loading || widget.session.signingOut) return;
     final generation = ++_generation;
     final revision = widget.session.dataRevision;
     final className = _className;
@@ -123,9 +128,9 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
             onChanged: (value) { if (value != null) setState(() => _day = value); },
           ),
           const SizedBox(height: Space.md),
-          FilledButton.icon(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
+          FilledButton.icon(onPressed: _loading || _signingOut ? null : _load, icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
           const SizedBox(height: Space.md),
-          if (_loading) const Center(child: CircularProgressIndicator())
+          if (_loading) const Center(child: CircularProgressIndicator(semanticsLabel: 'Loading school timetable'))
           else if (_error != null) Notice(title: 'Could not load timetable', body: _error!, tone: NoticeTone.danger)
           else if (_loaded && schedule == null) const Notice(title: 'No saved schedule', body: 'No schedule was found for this class and stream.')
           else if (schedule == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.')
@@ -135,7 +140,7 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
               children: [
                 Text('$_day · $_className $_stream', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: Space.xs),
-                Text('Read from the server at ${timeStamp(_readAt!)} · reload for newer changes',
+                Text('Read on this device ${localDateTime(_readAt!)} · reload for newer changes',
                     style: Theme.of(context).textTheme.bodySmall),
               ],
             )),
@@ -146,11 +151,12 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
                 final title = period.isBreak ? period.label :
                     (slot?.subject.trim().isNotEmpty == true ? slot!.subject : 'Not scheduled');
                 final detail = slot == null ? '' : [slot.teacher, slot.room].where((value) => value.trim().isNotEmpty).join(' · ');
-                return Card(child: ListTile(
-                  leading: Icon(period.isBreak ? Icons.free_breakfast_outlined : Icons.menu_book_outlined),
-                  title: Text(title),
-                  subtitle: Text('${period.label} · ${period.time}${detail.isEmpty ? '' : ' · $detail'}'),
-                ));
+                return ScheduleEntry(
+                  time: period.time,
+                  title: title,
+                  detail: '${period.label}${detail.isEmpty ? '' : ' · $detail'}',
+                  isBreak: period.isBreak,
+                );
               }),
           ],
         ],

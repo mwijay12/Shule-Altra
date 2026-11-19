@@ -61,6 +61,9 @@ class AppSession extends ChangeNotifier {
   /// True while a sign-in, sign-out or page read is in flight.
   bool get busy => _busy || _authInFlight || _signingOut;
 
+  /// True from the moment sign-out starts until it succeeds or fails.
+  bool get signingOut => _signingOut;
+
   /// Changes whenever private page data becomes invalid, including sign-out.
   int get dataRevision => _generation;
 
