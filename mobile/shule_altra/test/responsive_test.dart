@@ -76,6 +76,9 @@ void main() {
         // A learner's sheet. It is dismissed with the back gesture, not by
         // tapping a guessed coordinate: a tap that misses the barrier leaves the
         // sheet up, and every later tap lands on the barrier instead.
+        await tester.scrollUntilVisible(
+          find.text('Amina Juma'), 180, scrollable: find.byType(Scrollable).first,
+        );
         await _tap(tester, 'Amina Juma');
         await _expectNoOverflow(tester, 'learner detail');
         await tester.binding.handlePopRoute();
