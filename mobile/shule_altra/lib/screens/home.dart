@@ -29,6 +29,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final rows = session.rows;
+    final hasPage = session.signedIn && session.state == LoadState.ready;
+    final unknownBalances = rows.where((row) => row.balance == null).length;
     final classes = <String>{for (final row in rows) row.className};
     final withFees = rows.where((row) => (row.balance ?? 0) > 0).length;
     final owed = rows.fold<double>(0, (sum, row) => sum + (row.balance ?? 0));
@@ -43,9 +45,9 @@ class HomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ASSEMBLY, THEN CLASS', style: Theme.of(context).textTheme.labelSmall),
+              Text('Your school workspace', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: tokens.primary)),
               const SizedBox(height: Space.sm),
-              Text('A little more room\nfor what matters.', style: Theme.of(context).textTheme.displaySmall),
+              Text('A clearer start\nto your school day.', style: Theme.of(context).textTheme.displaySmall),
             ],
           ),
         ),
@@ -70,11 +72,13 @@ class HomeScreen extends StatelessWidget {
         Rise(
           index: 2,
           child: ShuleCard(
-            child: session.signedIn
-                ? _Metrics(rows: rows, classes: classes.length, withFees: withFees, owed: owed)
+            child: hasPage
+                ? _Metrics(rows: rows, classes: classes.length, withFees: withFees, owed: owed, unknownBalances: unknownBalances)
                 : Text(
-                    'Nothing has been read yet, so there is nothing to count. '
-                    'Load the register and these figures fill in from the page you loaded.',
+                    !session.signedIn ? 'Sign in and load the register to see a page summary.' :
+                    session.state == LoadState.loading ? 'Reading your register…' :
+                    session.state == LoadState.failed ? 'The register could not be read. Open Learners to try again.' :
+                    'Open Learners to load a page before showing a summary.',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
                   ),
           ),
@@ -83,10 +87,10 @@ class HomeScreen extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(top: Space.sm),
           child: Text(
-            session.signedIn
+            hasPage
                 ? 'Counts cover the ${countLabel(rows.length)} on the page you loaded, '
                     'not the whole school.'
-                : 'No figures are shown before a read, on purpose.',
+                : 'No figures are shown until a page is read.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),
@@ -146,12 +150,14 @@ class _Metrics extends StatelessWidget {
     required this.classes,
     required this.withFees,
     required this.owed,
+    required this.unknownBalances,
   });
 
   final List<Learner> rows;
   final int classes;
   final int withFees;
   final double owed;
+  final int unknownBalances;
 
   @override
   Widget build(BuildContext context) {
@@ -190,9 +196,11 @@ class _Metrics extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                owed == 0
-                    ? 'No open balance on this page.'
-                    : '${formatTzs(owed)} outstanding on this page.',
+                unknownBalances == rows.length && rows.isNotEmpty
+                    ? 'Balances are not recorded for this page.'
+                    : owed == 0
+                        ? (unknownBalances > 0 ? 'No recorded open balance; some balances are unavailable.' : 'No open balance on this page.')
+                        : '${formatTzs(owed)} outstanding on this page${unknownBalances > 0 ? ' · some balances unavailable' : ''}.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens.ink),
               ),
             ),

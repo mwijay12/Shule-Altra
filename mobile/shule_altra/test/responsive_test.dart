@@ -19,6 +19,7 @@ import 'fake_gateway.dart';
 
 /// Logical sizes, with the pixel ratio a real device of that class reports.
 const _sizes = <({String name, Size size, double ratio})>[
+  (name: 'small phone 320x640', size: Size(320, 640), ratio: 2),
   (name: 'phone 390x844', size: Size(390, 844), ratio: 3),
   (name: 'tablet 820x1180', size: Size(820, 1180), ratio: 2),
   (name: 'large window 1440x900', size: Size(1440, 900), ratio: 1),
@@ -26,7 +27,7 @@ const _sizes = <({String name, Size size, double ratio})>[
 
 /// Android's font scale goes to 2.0; 1.3 is a common accessibility setting and
 /// the point where fixed-height rows usually start to break.
-const _scales = <double>[1.0, 1.3];
+const _scales = <double>[1.0, 1.3, 1.5];
 
 Future<void> _expectNoOverflow(WidgetTester tester, String where) async {
   await tester.pumpAndSettle();

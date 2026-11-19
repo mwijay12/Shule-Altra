@@ -14,7 +14,6 @@ import '../data/onboarding_store.dart';
 
 import '../design/doodles.dart';
 import '../design/motion.dart';
-import '../design/theme.dart' show shuleShadow;
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
@@ -133,44 +132,38 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const BrandBar(),
-                  const SizedBox(height: Space.xxl),
+                  const SizedBox(height: Space.lg),
                   StickerPop(
                     child: SizedBox(
                       width: double.infinity,
-                      child: AspectRatio(
-                        aspectRatio: 1.16,
-                        child: DecoratedBox(
-                          // The brand ramp, not a grey placeholder: the first
-                          // screen is the only chance to say what this product
-                          // looks like, and a muted box says nothing.
-                          decoration: BoxDecoration(
-                            gradient: tokens.brandGradient,
-                            borderRadius: BorderRadius.circular(Corners.hero),
-                            boxShadow: shuleShadow(tokens, raised: true),
+                      height: constraints.maxHeight < 700 || MediaQuery.textScalerOf(context).scale(1) > 1.3 ? 190 : 238,
+                      child: DecoratedBox(
+                        key: const ValueKey('onboarding-hero'),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [tokens.surface, tokens.mutedSurface],
                           ),
-                          child: Center(
-                            child: AnimatedSwitcher(
-                              duration: prefs.base,
-                              transitionBuilder: (child, animation) => FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              ),
-                              child: Image.asset(
-                                const [
-                                  'assets/images/school_cutout.png',
-                                  'assets/images/learning_cutout.png',
-                                  'assets/images/connection_cutout.png',
-                                ][_index],
-                                key: ValueKey(_index),
-                                fit: BoxFit.contain,
-                                excludeFromSemantics: true,
-                                errorBuilder: (context, error, stackTrace) => DoodleView(
-                                  doodle: page.doodle,
-                                  size: 132,
-                                  strokeWidth: 3.4,
-                                  color: tokens.onGradient,
-                                  fillColor: tokens.onGradient.withValues(alpha: 0.18),
-                                ),
+                          borderRadius: BorderRadius.circular(Corners.hero),
+                          border: Border.all(color: tokens.border),
+                        ),
+                        child: Center(
+                          child: AnimatedSwitcher(
+                            duration: prefs.base,
+                            transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                            child: Image.asset(
+                              const [
+                                'assets/images/school_cutout.png',
+                                'assets/images/learning_cutout.png',
+                                'assets/images/connection_cutout.png',
+                              ][_index],
+                              key: ValueKey(_index),
+                              fit: BoxFit.contain,
+                              excludeFromSemantics: true,
+                              errorBuilder: (context, error, stackTrace) => DoodleView(
+                                doodle: page.doodle, size: 120, strokeWidth: 3.4,
+                                color: tokens.primary, fillColor: tokens.primary.withValues(alpha: 0.12),
                               ),
                             ),
                           ),
@@ -178,7 +171,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: Space.xxl),
+                  const SizedBox(height: Space.xl),
                   AnimatedSwitcher(
                     duration: prefs.base,
                     switchInCurve: Curves2.enter,
@@ -237,6 +230,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     TextButton(
                       onPressed: () => _goTo(_pages.length - 1),
                       child: const Text('Skip introduction'),
+                    ),
+                  if (_index > 0)
+                    TextButton.icon(
+                      onPressed: () => _goTo(_index - 1),
+                      icon: const Icon(Icons.arrow_back_rounded),
+                      label: const Text('Previous'),
                     ),
                   if (last) ...[
                     const SizedBox(height: Space.sm),

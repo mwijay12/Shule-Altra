@@ -76,6 +76,9 @@ void main() {
 
     await tapText(tester, 'Continue');
     expect(find.textContaining('Not another'), findsOneWidget);
+    await tapText(tester, 'Previous');
+    expect(find.textContaining('Every learner'), findsOneWidget);
+    await tapText(tester, 'Continue');
 
     await tapText(tester, 'Continue');
     expect(find.textContaining('Read-only'), findsOneWidget);
@@ -101,7 +104,7 @@ void main() {
     // (The injected fake calls itself "Fake"; the shipped sample gateway says
     // "Sample · fictional learners".) The label is below the fold, and a lazily
     // built list does not create it until it is scrolled to.
-    expect(find.textContaining('A little more room'), findsOneWidget);
+    expect(find.textContaining('A clearer start'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.textContaining('Fake'),
       160,
@@ -379,7 +382,7 @@ void main() {
       final context = tester.element(find.byType(NavigationBar));
       final tokens = ShuleTokens.of(context);
       expect(tokens.brightness, dark ? Brightness.dark : Brightness.light);
-      expect(find.textContaining('A little more room'), findsOneWidget);
+      expect(find.textContaining('A clearer start'), findsOneWidget);
       await gateway.close();
       await tester.pumpWidget(const SizedBox.shrink());
     }

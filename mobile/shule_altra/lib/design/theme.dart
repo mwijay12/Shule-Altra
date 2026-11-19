@@ -131,12 +131,12 @@ ThemeData buildTheme(Brightness brightness) {
       // selected row does on the website.
       indicatorColor: tokens.primary.withValues(alpha: 0.12),
       elevation: 0,
-      height: 68,
+      height: 72,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           color: selected ? tokens.primary : tokens.inkMuted,
         );
@@ -144,7 +144,7 @@ ThemeData buildTheme(Brightness brightness) {
       iconTheme: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return IconThemeData(
-          size: 22,
+          size: 24,
           color: selected ? tokens.primary : tokens.inkMuted,
         );
       }),

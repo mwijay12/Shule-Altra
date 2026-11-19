@@ -5,9 +5,9 @@
 /// value, and the contrast test can check every pair without rendering a page.
 ///
 /// **The palette is the website's palette.** `src/app/globals.css` defines the
-/// hub: #1F5BA6 blue carrying the action, #7C5AE0 violet carrying the warmth, a
+/// hub: #1F5BA6 blue carrying the action, a blue accent chosen for mobile, a
 /// cool #F8FAFC workspace and a 1.25rem radius. The app reads the same values
-/// here, converted from the same HSL triplets, so a button on the phone and a
+/// here, with a deliberate blue-only mobile accent, so a button on the phone and a
 /// button in the dashboard are the same button. A test
 /// (`test/palette_parity_test.dart`) reads `globals.css` and fails if these drift.
 ///
@@ -106,11 +106,11 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
   /// this is `.colorful-gradient`, `linear-gradient(135deg, primary, accent)`.
   final Color gradientStart;
 
-  /// Second stop of the same ramp — the site's `--accent` violet.
+  /// Second stop of the mobile blue ramp.
   final Color gradientEnd;
 
   /// Text drawn **on** the ramp. White by day (6.8:1 at the blue end, 4.69:1 at
-  /// the violet end); near-black at night, where both stops are light.
+  /// the darker blue end); near-black at night, where both stops are light.
   final Color onGradient;
 
   /// The elevation colour: the site's soft blue-tinted card shadow, not
@@ -133,15 +133,15 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     onBrand: Color(0xFFFFFFFF),
     primary: Color(0xFF1F5AA8), // --primary; onPrimary on it 6.80:1
     onPrimary: Color(0xFFFFFFFF),
-    accent: Color(0xFF7D5CE0), // --accent violet; onAccent on it 4.69:1
+    accent: Color(0xFF17467F), // blue accent, intentionally distinct from the web violet
     onAccent: Color(0xFFFFFFFF),
     border: Color(0xFFE1E7EF), // --border, hairlines only
     danger: Color(0xFFCC1E1E), // --destructive; 5.56:1 on canvas
     success: Color(0xFF1B6247), // 6.80:1 on canvas
     warning: Color(0xFF8A5200), // 5.90:1 on canvas
     gradientStart: Color(0xFF1F5AA8), // --primary
-    gradientEnd: Color(0xFF7D5CE0), // --accent
-    onGradient: Color(0xFFFFFFFF), // 6.80:1 at the blue end, 4.69:1 at the violet
+    gradientEnd: Color(0xFF17467F), // deep blue
+    onGradient: Color(0xFFFFFFFF), // white on both blue stops
     shadow: Color(0x1A1F5AA8), // the site's blue-tinted card shadow
   );
 
@@ -162,15 +162,15 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     onBrand: Color(0xFFF1F5F9),
     primary: Color(0xFF4C93F0), // .dark --primary 214 85% 62%
     onPrimary: Color(0xFF0B111E), // onPrimary on it 6.05:1
-    accent: Color(0xFFA58DEC), // .dark --accent 255 72% 74%
+    accent: Color(0xFF9CC9FF), // accessible light blue
     onAccent: Color(0xFF0B111E), // onAccent on it 6.85:1
     border: Color(0xFF262E40), // .dark --border
     danger: Color(0xFFFF8080), // the site's destructive lightened: 6.39:1 on notice
     success: Color(0xFF6FD3A6), // 10.04:1 on canvas
     warning: Color(0xFFF0C67D), // 11.60:1 on canvas
     gradientStart: Color(0xFF4C93F0),
-    gradientEnd: Color(0xFFA58DEC),
-    onGradient: Color(0xFF0B111E), // 6.05:1 at the blue end, 6.85:1 at the violet
+    gradientEnd: Color(0xFF9CC9FF),
+    onGradient: Color(0xFF0B111E), // dark ink on both blue stops
     shadow: Color(0x66000000),
   );
 
