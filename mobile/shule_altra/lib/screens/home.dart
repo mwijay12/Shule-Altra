@@ -58,8 +58,8 @@ class HomeScreen extends StatelessWidget {
             body: session.signedIn
                 ? 'Read-only. Your school rules still decide which learners you can see.'
                 : 'Use the Google account your school already uses. Nothing is cached on the phone.',
-            actionLabel: session.signedIn ? 'Open the register' : 'Check the connection',
-            onAction: session.signedIn ? onOpenRegister : onOpenMore,
+            actionLabel: session.signedIn ? 'Open the register' : 'Sign in',
+            onAction: onOpenRegister,
           ),
         ),
         const SizedBox(height: Space.xl),

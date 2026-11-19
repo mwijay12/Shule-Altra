@@ -294,6 +294,44 @@ void main() {
     await gateway.close();
   });
 
+  testWidgets('back to start signs out and retains the screen when sign-out fails', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Explore the sample preview');
+    await tapText(tester, 'Learners');
+    await tapText(tester, 'Continue with Google');
+    await tapText(tester, 'More');
+    gateway.signOutFailure = const GatewayFailure('Sign-out failed. Try again.');
+    await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
+    await tapText(tester, 'Back to the start');
+    expect(gateway.signOutCalls, 1);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Sign-out failed'), -200, scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Sign-out failed'), findsOneWidget);
+    gateway.signOutFailure = null;
+    await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
+    await tapText(tester, 'Back to the start');
+    expect(gateway.signOutCalls, 2);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.textContaining('Every learner'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await gateway.close();
+  });
+
+  testWidgets('signed out home sign-in action opens the register sign-in', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Explore the sample preview');
+    await tapText(tester, 'Sign in');
+    expect(find.text('Continue with Google'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await gateway.close();
+  });
+
   testWidgets('the signed-out register states the rules in words', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();

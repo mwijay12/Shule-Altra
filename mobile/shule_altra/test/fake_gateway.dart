@@ -64,6 +64,7 @@ class FakeGateway implements SchoolGateway {
 
   /// Make the next [signIn] throw this.
   GatewayFailure? signInFailure;
+  GatewayFailure? signOutFailure;
 
   int loadCalls = 0;
   int signInCalls = 0;
@@ -119,6 +120,8 @@ class FakeGateway implements SchoolGateway {
   @override
   Future<void> signOut() async {
     signOutCalls++;
+    final failure = signOutFailure;
+    if (failure != null) throw failure;
     _uid = null;
     _controller.add(null);
   }

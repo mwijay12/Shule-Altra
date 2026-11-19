@@ -3,6 +3,7 @@ library;
 
 import 'package:flutter/material.dart';
 
+import '../app/session.dart';
 import '../data/learner.dart';
 import '../design/doodles.dart';
 import '../design/tokens.dart';
@@ -106,11 +107,21 @@ Future<void> showLearnerDetail(
   BuildContext context, {
   required Learner learner,
   required bool isSample,
+  required AppSession session,
 }) {
+  final revision = session.dataRevision;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => LearnerDetailSheet(learner: learner, isSample: isSample),
+    builder: (context) => AnimatedBuilder(
+      animation: session,
+      builder: (context, _) => session.dataRevision == revision && session.signedIn
+          ? LearnerDetailSheet(learner: learner, isSample: isSample)
+          : const SafeArea(child: Padding(
+              padding: EdgeInsets.all(Space.gutter),
+              child: Notice(title: 'Session changed', body: 'Learner details were cleared. Close this sheet and sign in again if needed.'),
+            )),
+    ),
   );
 }

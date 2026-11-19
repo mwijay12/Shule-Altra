@@ -185,8 +185,7 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
             const SizedBox(width: Space.sm),
             Expanded(
               child: Text(
-                'You can also continue with Google above, if this build has a school '
-                'project configured.',
+                'To use a real school account, go back to the start and choose Connect my school.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ),

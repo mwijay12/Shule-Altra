@@ -139,7 +139,13 @@ class _ShuleAppState extends State<ShuleApp> {
     });
   }
 
-  void _restart() {
+  Future<void> _restart() async {
+    final session = _session;
+    if (session != null) {
+      if (session.busy || !session.resolved) return;
+      if (session.signedIn && !await session.signOut()) return;
+      if (!mounted || _session != session) return;
+    }
     setState(() {
       _session?.dispose();
       _session = null;
@@ -242,7 +248,7 @@ class _Shell extends StatelessWidget {
     final tokens = ShuleTokens.of(context);
 
     void openLearner(Learner learner) {
-      showLearnerDetail(context, learner: learner, isSample: isSample);
+      showLearnerDetail(context, learner: learner, isSample: isSample, session: session);
     }
 
     return Scaffold(

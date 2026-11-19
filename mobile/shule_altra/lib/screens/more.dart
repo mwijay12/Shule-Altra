@@ -76,6 +76,10 @@ class MoreScreen extends StatelessWidget {
                         'is written to the phone.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+              if (session.failure != null) ...[
+                const SizedBox(height: Space.md),
+                Notice(title: 'Action not completed', body: session.failure!, tone: NoticeTone.danger),
+              ],
               if (session.signedIn) ...[
                 const SizedBox(height: Space.lg),
                 SizedBox(
@@ -94,9 +98,8 @@ class MoreScreen extends StatelessWidget {
         const SizedBox(height: Space.md),
         const Notice(
           title: 'No writes, no payments, no offline',
-          body: 'Attendance cannot be recorded, fees cannot be paid, and nothing works '
-              'without a connection. Those are not switched off in this build; they do not '
-              'exist in it yet.',
+          body: 'Attendance cannot be recorded and fees cannot be paid. Live reads require a '
+              'connection; the fictional sample works without Firebase.',
           tone: NoticeTone.caution,
         ),
         const SizedBox(height: Space.md),
@@ -148,15 +151,15 @@ class MoreScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Returns to the school or sample choice and clears this session. The introduction '
-                'preference remains on this device.',
+                'Signs out and returns to the school or sample choice. If sign-out fails, '
+                'stay here and try again. The introduction preference remains on this device.',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: Space.md),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: onRestart,
+                  onPressed: session.busy || !session.resolved ? null : onRestart,
                   icon: const Icon(Icons.restart_alt_rounded, size: 20),
                   label: const Text('Back to the start'),
                 ),
