@@ -28,7 +28,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
     final rows = session.rows;
     final hasPage = session.signedIn && session.state == LoadState.ready;
     final unknownBalances = rows.where((row) => row.balance == null).length;
