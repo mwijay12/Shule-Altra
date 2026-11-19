@@ -470,17 +470,12 @@ class _LearnerRow extends StatelessWidget {
                       learner.stream.isEmpty ? learner.className : '${learner.className} · ${learner.stream}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (owes)
+                      Text('Balance due',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning)),
                   ],
                 ),
               ),
-              if (owes)
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.sm),
-                  child: Text(
-                    'Balance due',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning),
-                  ),
-                ),
               Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
             ],
           ),
