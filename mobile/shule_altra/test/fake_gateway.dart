@@ -71,6 +71,9 @@ class FakeGateway implements SchoolGateway {
   int signOutCalls = 0;
 
   @override
+  bool get fictionalData => false;
+
+  @override
   String get sourceLabel => 'Fake';
 
   @override

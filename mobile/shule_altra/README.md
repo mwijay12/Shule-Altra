@@ -46,8 +46,8 @@ merge commit of pull request #30 passed every step, in this order:
 4. `flutter test` — the whole suite: contrast (every text pair the app draws,
    in both themes), reduced motion, learner mapping, configuration guards,
    session behaviour, practice sheets and end-to-end widget flows at 390x844.
-5. `flutter build apk --debug` — an unsigned debug APK, uploaded as the artifact
-   `shule-altra-prototype-debug-apk` (7-day retention).
+5. Debug and split-ABI debug/release-mode APKs — test builds signed with an
+   ephemeral debug key; workflow artifacts are retained for 7 days.
 
 That proves the app compiles, that its tests pass, and that a debug APK can be
 produced. If the job is red, none of that is true, whatever this file says.
@@ -75,7 +75,7 @@ real state bug (clearing the practice sheet did nothing, because the draft was a
 
 ## Run it
 
-Requires Flutter 3.29.x (Dart 3.3+), the Android SDK and a device or emulator.
+Requires Flutter 3.29.x (Dart 3.7+), the Android SDK and a device or emulator.
 
 The Android platform project is **generated, not committed** (it is in
 `.gitignore`). Generate it, then configure it:
@@ -96,22 +96,24 @@ Nothing else is needed — no account, no Firebase, no network.
 
 ### Get the APK
 
-CI builds the app and publishes the newest one as a release asset, so a phone can
-download it without a GitHub account:
+Each successful [Mobile pilot workflow run](https://github.com/mwijay12/Shule-Altra/actions/workflows/mobile-preview.yml)
+contains artifacts for that exact commit (GitHub sign-in may be required):
 
-<https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main>
+- `shule-altra-phone-preview-arm64`: the smaller `shule-altra-arm64-preview.apk`
+  (release-mode), an arm64 debug APK, `SHA256SUMS.txt` and `BUILD-INFO.txt`.
+- `shule-altra-prototype-debug-apk`: a universal debug APK for supported non-arm64
+  devices and emulators.
 
-Every branch publishes its own rolling tag (`apk-<branch>`), and `main` publishes
-`apk-main`; each push replaces that branch's tag with the build of the commit.
+Download the artifact ZIP, extract it, verify the checksum if possible, and install
+one APK on the Android device. Artifacts expire after 7 days. All are signed with
+an ephemeral debug key and contain **no school Firebase configuration**; updates
+from different runs may require uninstalling the previous APK. They are not
+production builds. Only pushes to `main` publish a rolling [main preview release](https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main);
+branch builds do not publish releases. The main release can be older than a branch.
 
-Take `shule-altra-<sha>-arm64.apk` — about 18 MB, a release build signed with a
-throwaway debug key. The `-debug` file beside it is the same app in debug mode
-(about 77 MB, for a `logcat` session) and the workflow artifact holds the
-universal APK for an older or emulated device. Android will ask you to allow
-installing from your browser; the app is not from the Play Store and has no
-publisher identity to show. To open it: **Continue** twice → **Explore the
-sample preview** → **Learners** → **Fill the demo credential** → **Sign in to
-the demo**.
+Open: **Skip introduction** → **Explore the sample preview** → **Learners** →
+**Fill the demo credential** → **Sign in to the demo**. Sample is fictional and
+works offline. Real-school sign-in requires a separately configured build below.
 
 ### The demo credential
 
@@ -144,9 +146,9 @@ What that credential can and cannot do, stated plainly:
   the phone.
 - A school that does not want it can build without it:
   `--dart-define=DISABLE_DEMO_SIGN_IN=true` removes the form and makes the
-  service refuse even if something calls it.
-- `test/demo_sign_in_test.dart` holds all of the above: wrong passwords, a
-  gateway that has no demo door, and the build flag.
+  service refuse that credential; the fictional preview can still open without it.
+- Tests cover wrong passwords and the separate live path; CI separately runs
+  `test/demo_disabled_test.dart` with the build flag enabled.
 
 ### The live path
 

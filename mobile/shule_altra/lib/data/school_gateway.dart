@@ -56,6 +56,9 @@ abstract class SchoolGateway {
   /// Reads the data source: 'live' or 'sample'. Shown in the UI, never assumed.
   String get sourceLabel;
 
+  /// True only for locally bundled fictional records, never a live school.
+  bool get fictionalData;
+
   /// The signed-in uid, or null. Emits on sign-in, sign-out and account change.
   Stream<String?> get sessionUid;
 

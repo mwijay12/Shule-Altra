@@ -401,7 +401,9 @@ class _SignedOut extends StatelessWidget {
         Text(
           session.acceptsDemoCredential
               ? 'A sample register,\nbehind a demo sign-in.'
-              : 'The register is behind\nyour school account.',
+              : session.gateway.fictionalData
+                  ? 'A fictional register,\nready to explore.'
+                  : 'The register is behind\nyour school account.',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: Space.sm),
@@ -409,8 +411,10 @@ class _SignedOut extends StatelessWidget {
           session.acceptsDemoCredential
               ? 'Six fictional learners, stored on this phone, with a credential printed '
                 'on the form. Nothing here is a real school and nothing is sent anywhere.'
-              : 'Sign in with the Google account your school already uses. Your school\'s '
-                'Firestore rules decide what you can read — the app does not widen that.',
+              : session.gateway.fictionalData
+                  ? 'Demo credentials are disabled in this build. Open the fictional sample without a school account.'
+                  : 'Sign in with the Google account your school already uses. Your school\'s '
+                    'Firestore rules decide what you can read — the app does not widen that.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
         ),
         const SizedBox(height: Space.lg),
@@ -420,7 +424,7 @@ class _SignedOut extends StatelessWidget {
           DemoSignInForm(session: session)
         else ...[
           GradientButton(
-            label: session.busy ? 'Signing in…' : 'Continue with Google',
+            label: session.busy ? 'Signing in…' : session.gateway.fictionalData ? 'Open fictional sample' : 'Continue with Google',
             onPressed: session.busy ? null : onSignIn,
             busy: session.busy,
             icon: Icons.login_rounded,
@@ -437,8 +441,8 @@ class _SignedOut extends StatelessWidget {
         const SizedBox(height: Space.lg),
         const Notice(
           title: 'Read-only pilot',
-          body: 'Learner and guardian details are readable on an approved account and a '
-              'trusted phone. Nothing can be edited, marked or paid from here.',
+          body: 'The register cannot edit learners, record attendance or take payments. '
+              'A live school account should only be used on a trusted phone.',
         ),
       ],
     );

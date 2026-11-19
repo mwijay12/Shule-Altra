@@ -113,6 +113,9 @@ class SampleGateway implements SchoolGateway {
   String? _email;
 
   @override
+  bool get fictionalData => true;
+
+  @override
   String get sourceLabel => 'Sample · fictional learners';
 
   @override
