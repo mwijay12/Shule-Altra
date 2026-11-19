@@ -246,6 +246,19 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Clear practice marks');
+    expect(find.text('Clear practice marks?'), findsOneWidget);
+    await tapText(tester, 'Keep marks');
+    await tapText(tester, 'Home');
+    await tapText(tester, 'Day');
+    await tester.scrollUntilVisible(
+      find.text('1 of 6 marked'), -200, scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('1 of 6 marked'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Clear practice marks'), 240, scrollable: find.byType(Scrollable).first,
+    );
+    await tapText(tester, 'Clear practice marks');
+    await tapText(tester, 'Clear marks');
     await tester.scrollUntilVisible(
       find.text('0 of 6 marked'),
       -200,
@@ -361,6 +374,27 @@ void main() {
       );
       expect(find.textContaining(statement), findsOneWidget, reason: statement);
     }
+    await gateway.close();
+  });
+
+  testWidgets('appearance follows system and allows an explicit choice', (tester) async {
+    usePhoneScreen(tester);
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(ShuleApp.withGateway(gateway: gateway, initialMode: AppMode.sample));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'More');
+    await tester.scrollUntilVisible(find.text('Follow system'), 250, scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.dark);
+    await tapText(tester, 'Light');
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.light);
+    await tapText(tester, 'Dark');
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.dark);
+    await tapText(tester, 'Follow system');
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+    await tester.pumpWidget(const SizedBox.shrink());
     await gateway.close();
   });
 

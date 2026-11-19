@@ -212,40 +212,50 @@ class _ShuleAppState extends State<ShuleApp> {
           session: session,
           isSample: mode == AppMode.sample,
           tab: _tab,
-          isDark: _themeMode == ThemeMode.dark,
+          themeMode: _themeMode,
           onTab: (value) => setState(() => _tab = value),
-          onToggleTheme: () => setState(
-            () => _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
-          ),
+          onThemeChanged: (mode) => setState(() => _themeMode = mode),
           onRestart: _restart,
         );
     }
   }
 }
 
-class _Shell extends StatelessWidget {
+class _Shell extends StatefulWidget {
   const _Shell({
     super.key,
     required this.session,
     required this.isSample,
     required this.tab,
-    required this.isDark,
+    required this.themeMode,
     required this.onTab,
-    required this.onToggleTheme,
+    required this.onThemeChanged,
     required this.onRestart,
   });
 
   final AppSession session;
   final bool isSample;
   final int tab;
-  final bool isDark;
+  final ThemeMode themeMode;
   final ValueChanged<int> onTab;
-  final VoidCallback onToggleTheme;
+  final ValueChanged<ThemeMode> onThemeChanged;
   final VoidCallback onRestart;
+
+  @override
+  State<_Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<_Shell> {
+  bool _visitedDay = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
+    final session = widget.session;
+    final isSample = widget.isSample;
+    final tab = widget.tab;
+    final onTab = widget.onTab;
+    if (tab == 2) _visitedDay = true;
 
     void openLearner(Learner learner) {
       showLearnerDetail(context, learner: learner, isSample: isSample, session: session);
@@ -256,31 +266,43 @@ class _Shell extends StatelessWidget {
         bottom: false,
         child: AnimatedBuilder(
           animation: session,
-          builder: (context, _) => switch (tab) {
-            0 => HomeScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-                onOpenDay: () => onTab(2),
-                onOpenMore: () => onTab(3),
-              ),
-            1 => RegisterScreen(
-                session: session,
-                onSignIn: session.signIn,
-                onOpenLearner: openLearner,
-              ),
-            2 => SchoolDayScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-              ),
-            _ => MoreScreen(
-                session: session,
-                isSample: isSample,
-                onSignOut: session.signOut,
-                onRestart: onRestart,
-                onToggleTheme: onToggleTheme,
-                isDark: isDark,
-              ),
-          },
+          builder: (context, _) => Stack(
+            children: [
+              if (tab != 2)
+                switch (tab) {
+                  0 => HomeScreen(
+                      session: session,
+                      onOpenRegister: () => onTab(1),
+                      onOpenDay: () => onTab(2),
+                      onOpenMore: () => onTab(3),
+                    ),
+                  1 => RegisterScreen(
+                      session: session,
+                      onSignIn: session.signIn,
+                      onOpenLearner: openLearner,
+                    ),
+                  _ => MoreScreen(
+                      session: session,
+                      isSample: isSample,
+                      onSignOut: session.signOut,
+                      onRestart: widget.onRestart,
+                      onThemeChanged: widget.onThemeChanged,
+                      themeMode: widget.themeMode,
+                    ),
+                },
+              if (_visitedDay)
+                Offstage(
+                  offstage: tab != 2,
+                  child: TickerMode(
+                    enabled: tab == 2,
+                    child: SchoolDayScreen(
+                      session: session,
+                      onOpenRegister: () => onTab(1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: DecoratedBox(

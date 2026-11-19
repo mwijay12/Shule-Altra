@@ -1,8 +1,7 @@
 /// The school day: practice attendance, and the words that keep it practice.
 ///
 /// This screen is the one place the SVGs implied an action, and the honest
-/// answer is that the action does not write. Marks live in memory for the length
-/// of the visit. The screen says so above the list, next to the count, and again
+/// answer is that the action does not write. Marks live in memory for the current app session. The screen says so above the list, next to the count, and again
 /// under the button — three places, because a person who misses one should meet
 /// it again.
 library;
@@ -44,6 +43,21 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   /// record exists.
   List<Learner> get _rows => SampleGateway.sampleLearners;
 
+  Future<void> _confirmClear() async {
+    final clear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear practice marks?'),
+        content: const Text('This removes the fictional marks from this session. No school records will be changed.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep marks')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Clear marks')),
+        ],
+      ),
+    );
+    if (clear == true && mounted) setState(() => _draft = PracticeDraft());
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
@@ -63,9 +77,9 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         const SizedBox(height: Space.xl),
         const Notice(
           title: 'Practice only, nothing saved',
-          body: 'These marks live in memory while this screen is open. They are not '
-              'attendance records, they never reach a school, and closing the app '
-              'discards them.',
+          body: 'These marks stay in memory when you change tabs. They are not '
+              'attendance records, they never reach a school, and returning to the start '
+              'or closing the app discards them.',
           tone: NoticeTone.caution,
         ),
         if (widget.session.gateway is TimetableReader) ...[
@@ -154,7 +168,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         Row(
           children: [
             TextButton.icon(
-              onPressed: _draft.isEmpty ? null : () => setState(() => _draft = PracticeDraft()),
+              onPressed: _draft.isEmpty ? null : _confirmClear,
               icon: const Icon(Icons.restart_alt_rounded, size: 20),
               label: const Text('Clear practice marks'),
             ),

@@ -16,16 +16,16 @@ class MoreScreen extends StatelessWidget {
     required this.isSample,
     required this.onSignOut,
     required this.onRestart,
-    required this.onToggleTheme,
-    required this.isDark,
+    required this.onThemeChanged,
+    required this.themeMode,
   });
 
   final AppSession session;
   final bool isSample;
   final VoidCallback onSignOut;
   final VoidCallback onRestart;
-  final VoidCallback onToggleTheme;
-  final bool isDark;
+  final ValueChanged<ThemeMode> onThemeChanged;
+  final ThemeMode themeMode;
 
   @override
   Widget build(BuildContext context) {
@@ -119,27 +119,25 @@ class MoreScreen extends StatelessWidget {
         const SectionHead(title: 'Appearance'),
         const SizedBox(height: Space.md),
         ShuleCard(
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(isDark ? 'Night theme' : 'Day theme', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Both themes are complete. Motion follows the phone\'s own '
-                      '"remove animations" setting.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+              Text('Choose your appearance', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: Space.sm),
+              Text('The system option follows your phone. Your choice lasts until the app closes. Motion follows your phone’s accessibility setting.',
+                  style: Theme.of(context).textTheme.bodySmall),
+              for (final option in <(ThemeMode, String)>[
+                (ThemeMode.system, 'Follow system'),
+                (ThemeMode.light, 'Light'),
+                (ThemeMode.dark, 'Dark'),
+              ])
+                RadioListTile<ThemeMode>(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(option.$2),
+                  value: option.$1,
+                  groupValue: themeMode,
+                  onChanged: (value) { if (value != null) onThemeChanged(value); },
                 ),
-              ),
-              const SizedBox(width: Space.md),
-              Switch(
-                value: isDark,
-                onChanged: (_) => onToggleTheme(),
-              ),
             ],
           ),
         ),

@@ -344,7 +344,14 @@ class _SignedOut extends StatelessWidget {
                 color: tokens.mutedSurface,
                 borderRadius: BorderRadius.circular(Corners.hero),
               ),
-              child: const Center(child: DoodleView(doodle: Doodle.building, size: 104)),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/connection_cutout.png',
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  errorBuilder: (context, error, stackTrace) => const DoodleView(doodle: Doodle.building, size: 104),
+                ),
+              ),
             ),
           ),
         ),
