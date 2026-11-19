@@ -59,6 +59,15 @@ void main() {
       expect(missing.attendanceStatus, isEmpty);
     });
 
+    test('non-finite balances are unavailable and Unicode initials stay intact', () {
+      for (final value in [double.nan, double.infinity, double.negativeInfinity, 'NaN', 'Infinity']) {
+        expect(Learner.fromDocument('bad', {'balance': value}).balance, isNull);
+      }
+      expect(formatTzs(double.infinity), 'No fee figures recorded');
+      expect(Learner.fromDocument('unicode', {'name': '😀 Asha'}).initials, '😀A');
+      expect(Learner.fromDocument('unicode', {'name': 'Ásha'}).initials, 'Á');
+    });
+
     test('a single-word name keeps one initial', () {
       expect(Learner.fromDocument('s-5', {'name': 'Madonna'}).initials, 'M');
     });

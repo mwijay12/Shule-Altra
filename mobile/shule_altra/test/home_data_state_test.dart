@@ -30,4 +30,31 @@ void main() {
     session.dispose();
     await gateway.close();
   });
+  testWidgets('sample copy and page sums do not imply school data or net credits', (tester) async {
+    final gateway = FakeGateway(rows: [
+      Learner.fromDocument('one', {'name': 'A', 'balance': 100}),
+      Learner.fromDocument('two', {'name': 'B', 'balance': -100}),
+      Learner.fromDocument('three', {'name': 'C', 'balance': 'Infinity'}),
+    ], pageSize: 3);
+    final session = AppSession(gateway);
+    await session.start();
+    await tester.pump();
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(
+      body: ListenableBuilder(listenable: session, builder: (context, child) => HomeScreen(
+        session: session, isSample: true, onOpenRegister: () {}, onOpenDay: () {}, onOpenMore: () {},
+      )),
+    )));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Fictional learners only'), findsOneWidget);
+    expect(find.textContaining('Use the Google account'), findsNothing);
+    await gateway.signIn(); await tester.pumpAndSettle();
+    await session.loadFirstPage(); await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('TZS 100 in positive balances'), 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('some balances unavailable'), findsOneWidget);
+    expect(find.text('No open balance on this page.'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose(); await gateway.close();
+  });
+
 }

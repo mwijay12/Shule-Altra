@@ -15,12 +15,14 @@ class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
     required this.session,
+    this.isSample = false,
     required this.onOpenRegister,
     required this.onOpenDay,
     required this.onOpenMore,
   });
 
   final AppSession session;
+  final bool isSample;
   final VoidCallback onOpenRegister;
   final VoidCallback onOpenDay;
   final VoidCallback onOpenMore;
@@ -33,7 +35,8 @@ class HomeScreen extends StatelessWidget {
     final unknownBalances = rows.where((row) => row.balance == null).length;
     final classes = <String>{for (final row in rows) row.className};
     final withFees = rows.where((row) => (row.balance ?? 0) > 0).length;
-    final owed = rows.fold<double>(0, (sum, row) => sum + (row.balance ?? 0));
+    // Sum positive recorded balances, not credits; this is a page-only figure.
+    final owed = rows.fold<double>(0, (sum, row) => sum + ((row.balance ?? 0) > 0 ? row.balance! : 0));
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
@@ -56,10 +59,12 @@ class HomeScreen extends StatelessWidget {
           index: 1,
           child: BrandPanel(
             eyebrow: session.signedIn ? 'YOUR REGISTER' : 'NOT SIGNED IN',
-            title: session.signedIn ? 'The register is\none tap away.' : 'Sign in to read\nyour school.',
-            body: session.signedIn
-                ? 'Read-only. Your school rules still decide which learners you can see.'
-                : 'Use the Google account your school already uses. Nothing is cached on the phone.',
+            title: session.signedIn ? 'The register is\none tap away.' : isSample ? 'Explore a fictional\nschool register.' : 'Sign in to read\nyour school.',
+            body: isSample
+                ? 'Fictional learners only. This preview does not connect to a school.'
+                : session.signedIn
+                    ? 'Read-only. Your school rules still decide which learners you can see.'
+                    : 'Use the Google account your school already uses. Nothing is cached on the phone.',
             actionLabel: session.signedIn ? 'Open the register' : 'Sign in',
             onAction: onOpenRegister,
           ),
@@ -200,7 +205,7 @@ class _Metrics extends StatelessWidget {
                     ? 'Balances are not recorded for this page.'
                     : owed == 0
                         ? (unknownBalances > 0 ? 'No recorded open balance; some balances are unavailable.' : 'No open balance on this page.')
-                        : '${formatTzs(owed)} outstanding on this page${unknownBalances > 0 ? ' · some balances unavailable' : ''}.',
+                        : '${formatTzs(owed)} in positive balances on this page${unknownBalances > 0 ? ' · some balances unavailable' : ''}.',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens.ink),
               ),
             ),

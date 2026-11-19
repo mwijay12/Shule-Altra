@@ -272,12 +272,14 @@ class _ShellState extends State<_Shell> {
                 switch (tab) {
                   0 => HomeScreen(
                       session: session,
+                      isSample: isSample,
                       onOpenRegister: () => onTab(1),
                       onOpenDay: () => onTab(2),
                       onOpenMore: () => onTab(3),
                     ),
                   1 => RegisterScreen(
                       session: session,
+                      isSample: isSample,
                       onSignIn: session.signIn,
                       onOpenLearner: openLearner,
                     ),

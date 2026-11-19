@@ -7,7 +7,7 @@ library;
 
 /// `45000` → `TZS 45,000`. Null or negative-unparseable → "No fee figures".
 String formatTzs(double? amount) {
-  if (amount == null || amount.isNaN) return 'No fee figures recorded';
+  if (amount == null || !amount.isFinite) return 'No fee figures recorded';
   final rounded = amount.round();
   final digits = rounded.abs().toString();
   final buffer = StringBuffer();

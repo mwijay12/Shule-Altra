@@ -20,11 +20,13 @@ class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
     super.key,
     required this.session,
+    this.isSample = false,
     required this.onSignIn,
     required this.onOpenLearner,
   });
 
   final AppSession session;
+  final bool isSample;
   final VoidCallback onSignIn;
   final ValueChanged<Learner> onOpenLearner;
 
@@ -112,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: Space.sm),
           Text(
             session.signedIn
-                ? 'Online · read-only · ${session.sourceLabel}'
+                ? '${widget.isSample ? 'Fictional sample' : 'Online'} · read-only · ${session.sourceLabel}'
                 : 'Sign in to read the register.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -133,13 +135,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final failure = session.failure;
 
     if (session.state == LoadState.loading && session.rows.isEmpty) {
-      return const <Widget>[
-        _Busy(label: 'Reading the register from the school…'),
-        SizedBox(height: Space.lg),
+      return <Widget>[
+        _Busy(label: widget.isSample ? 'Opening the fictional register…' : 'Reading the register from the school…'),
+        const SizedBox(height: Space.lg),
         Notice(
-          title: 'Server read, no cache',
-          body: 'Every page is a fresh server read. If the connection drops you get an '
-              'explanation, never yesterday\'s list.',
+          title: widget.isSample ? 'Fictional preview' : 'Server read, no cache',
+          body: widget.isSample
+              ? 'This page uses the sample on this device, not school records.'
+              : 'Every page is a fresh server read. If the connection drops you get an explanation, never yesterday’s list.',
         ),
       ];
     }
@@ -181,6 +184,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final reading = session.state == LoadState.loading;
 
     return [
+      Container(
+        padding: const EdgeInsets.all(Space.lg),
+        decoration: BoxDecoration(
+          color: tokens.mutedSurface,
+          borderRadius: BorderRadius.circular(Corners.panel),
+          border: Border.all(color: tokens.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.manage_search_rounded, color: tokens.primary),
+            const SizedBox(width: Space.md),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Find a learner', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: Space.xs),
+                Text('Search and filters only cover the loaded page, not the whole school.',
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+            )),
+          ],
+        ),
+      ),
+      const SizedBox(height: Space.md),
       TextField(
         controller: _search,
         onChanged: (value) => setState(() => _query = value.trim()),
@@ -439,7 +467,7 @@ class _LearnerRow extends StatelessWidget {
                     Text(learner.name, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text(
-                      learner.className,
+                      learner.stream.isEmpty ? learner.className : '${learner.className} · ${learner.stream}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -449,7 +477,7 @@ class _LearnerRow extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(right: Space.sm),
                   child: Text(
-                    'Balance',
+                    'Balance due',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning),
                   ),
                 ),
