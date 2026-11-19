@@ -158,6 +158,10 @@ Phases 2, 3, 6 and 7 remain **in progress**. The signed-out register now reuses 
 
 The audit observations above record the original review; this update supersedes the old findings about the theme toggle and discarded Day-tab drafts.
 
+### Implementation prompt 4/10 — learner register and data clarity (2026-11-09)
+
+This is the fourth implementation batch in the conversation, **not** a declaration that four of the ten phases have been completed. Phase 5 remains in progress. The register adds a clearer search-scope panel, source-specific sample/live labels and loading text, and clearer balance indicators that fit narrow screens. Learner detail displays stored stream and attendance with a date caveat. Home identifies the fictional sample and sums only positive recorded balances on the current page (not a school-wide metric or the web dashboard's net formula); unknown balances remain explicit. Malformed non-finite balances are treated as unavailable, and Unicode initials are handled by grapheme cluster. Automated regression tests were added. [Mobile CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44447960090) passed analysis, tests and debug/split APK builds; [Demo CI](https://github.com/mwijay12/Shule-Altra/actions/runs/44447960033) passed. Real-device appearance and real-school integration remain unverified; searching and filtering still cover the loaded page only.
+
 ### Phase completion rules
 
 Each phase closes only when its acceptance criteria and relevant tests pass, data source and remaining limitations are recorded, and any required external verification is explicitly passed or marked **blocked**. Related improvements are grouped into these batches; no artificial “phase complete” for a tiny change. Prioritize P0 trust and task completion over decorative motion.
