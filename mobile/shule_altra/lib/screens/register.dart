@@ -92,7 +92,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   /// synchronously, and notifying during a build would be a framework error.
   void _scheduleFirstLoad() {
     if (_requestedFirstPage || !widget.isActive || !widget.session.signedIn ||
-        widget.session.busy || widget.session.state != LoadState.idle) return;
+        widget.session.busy || widget.session.state != LoadState.idle) {
+      return;
+    }
     _requestedFirstPage = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
