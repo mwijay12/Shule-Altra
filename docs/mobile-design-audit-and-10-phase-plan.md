@@ -1,8 +1,16 @@
 # Shule Altra mobile: uchunguzi, design direction na mpango wa awamu 10
 
-> **Hali:** maandalizi ya ukaguzi yamefanyika kwa kusoma code na vyanzo; utekelezaji mpya bado haujaanza kwenye mpango huu. Hii si report ya screenshots, matumizi kwenye simu halisi, au uthibitisho wa Firebase live. Branch inaanzia `27fef99` (PR #35). Tarehe ya utafiti: 9 Novemba 2026.
+> **Hali:** maandalizi ya ukaguzi yamefanyika kwa kusoma code na vyanzo; Awamu 1 imeanza na mabadiliko yake ya code na tests yamepita CI, lakini uthibitisho wa Firebase na simu halisi bado unasubiriwa. Hii si report ya screenshots, matumizi kwenye simu halisi, au uthibitisho wa Firebase live. Branch inaanzia `27fef99` (PR #35). Tarehe ya utafiti: 9 Novemba 2026.
 >
 > **Maelekezo ya mmiliki:** app ya Android inayofanya kazi, iendane na data/logic ya dashboard ya web, iwe polished na ieleweke. Blue na white ndio msingi; illustrations ziwe cut-outs zenye transparency. Firebase itakamilishwa na mmiliki; usimwombe secrets. Tauri desktop baadaye. Usibadilishe ombi hili kuwa misururu ya vipande vidogo vinavyohitaji user kusema “go on” kila mara.
+
+## Update: Awamu 1 / 10
+
+- “Back to start” sasa inajaribu sign-out kabla ya kuacha session iliyoingia; ikishindwa hubaki kwenye screen na kuonyesha error/retry. Data ya ukurasa inaondolewa mara moja, na hatua hiyo haipatikani session ikiwa haijatatuliwa au auth ikiwa busy.
+- Learner sheet imefungwa kwa revision ya session: sign-out au mabadiliko ya akaunti hubadilisha maudhui kuwa ujumbe bila private data. Regression tests hutumia fake gateway, si Firebase live.
+- Home CTA ya mtu ambaye hajaingia inaenda Learners/sign-in; sample demo copy na offline wording vimesahihishwa.
+- Mobile analyzer, tests na APK build: https://github.com/mwijay12/Shule-Altra/actions/runs/44437324544; Demo CI: https://github.com/mwijay12/Shule-Altra/actions/runs/44437324519.
+- **Bado haijathibitishwa:** sign-out/Google token lifecycle kwenye Android halisi na Firebase live, gateway resource lifecycle, na usalama wa mazingira ya production. Kwa hiyo Awamu 1 ina code/test progress lakini live verification gate iko wazi. Ukaguzi wa chini unaeleza hali ya msingi kabla ya batch hii.
 
 ## 0. Ukweli wa sasa — usichanganye demo na product
 
@@ -125,7 +133,7 @@ Every live surface must have **signed-out, starting, loading, success, empty, of
 
 ---
 
-# Sehemu C — awamu 10 za implementation (NOT started by this audit)
+# Sehemu C — awamu 10 za implementation
 
 | # | Batch yenye uzito / files za msingi | Deliverables na gate ya kukubali | Dependencies / mipaka |
 |---|---|---|---|
