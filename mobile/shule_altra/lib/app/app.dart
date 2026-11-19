@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../data/appearance_store.dart';
 import '../data/firebase_gateway.dart';
 import '../data/learner.dart';
 import '../data/onboarding_store.dart';
@@ -32,6 +33,7 @@ class ShuleApp extends StatefulWidget {
       : initialMode = AppMode.onboarding,
         themeMode = null,
         textScale = null,
+        appearanceStore = null,
         _injected = null;
 
   /// A gateway may be injected by a test. When it is, the app starts in
@@ -44,13 +46,17 @@ class ShuleApp extends StatefulWidget {
     this.initialMode = AppMode.onboarding,
     this.themeMode,
     this.textScale,
+    this.appearanceStore,
   }) : _injected = gateway;
 
   final SchoolGateway? _injected;
   final AppMode initialMode;
 
-  /// Null means "follow the phone's setting", which is what ships.
+  /// Test override for the initial theme. Production restores the device setting.
   final ThemeMode? themeMode;
+
+  /// Optional injectable preference store for deterministic tests.
+  final AppearanceStore? appearanceStore;
 
   /// Tests pin the system font scale here. Null follows the phone.
   final double? textScale;
@@ -61,6 +67,11 @@ class ShuleApp extends StatefulWidget {
 
 class _ShuleAppState extends State<ShuleApp> {
   late ThemeMode _themeMode = widget.themeMode ?? ThemeMode.system;
+  late final AppearanceStore? _appearanceStore = widget.appearanceStore ??
+      (widget._injected == null ? const DeviceAppearanceStore() : null);
+  int _appearanceRevision = 0;
+  String? _appearanceNotice;
+  Future<void> _appearanceWrites = Future<void>.value();
 
   // Built once: a new ThemeData on every tab change would restart Flutter's
   // implicit theme animations and re-lay out the whole app.
@@ -75,11 +86,46 @@ class _ShuleAppState extends State<ShuleApp> {
   void initState() {
     super.initState();
     _mode = widget.initialMode;
+    if (_appearanceStore != null && widget.themeMode == null) {
+      unawaited(_restoreAppearance());
+    }
     final injected = widget._injected;
     // Onboarding has no data path yet, so no session is started for it.
     if (injected != null && widget.initialMode != AppMode.onboarding) {
       _startSession(injected);
     }
+  }
+
+  Future<void> _restoreAppearance() async {
+    final revision = _appearanceRevision;
+    try {
+      final mode = await _appearanceStore!.read();
+      if (!mounted || revision != _appearanceRevision) return;
+      setState(() => _themeMode = mode);
+    } catch (_) {
+      if (!mounted || revision != _appearanceRevision) return;
+      setState(() => _appearanceNotice = 'Could not load your saved appearance. The app follows the phone for now.');
+    }
+  }
+
+  void _changeAppearance(ThemeMode mode) {
+    final revision = ++_appearanceRevision;
+    setState(() { _themeMode = mode; _appearanceNotice = null; });
+    final store = _appearanceStore;
+    if (store == null) return;
+    // Serialize writes so a slow older choice cannot overwrite the newest one.
+    _appearanceWrites = _appearanceWrites.then((_) async {
+      try {
+        await store.write(mode);
+        if (mounted && revision == _appearanceRevision) {
+          setState(() => _appearanceNotice = null);
+        }
+      } catch (_) {
+        if (mounted && revision == _appearanceRevision) {
+          setState(() => _appearanceNotice = 'Could not save this appearance. It may reset when you reopen the app.');
+        }
+      }
+    });
   }
 
   void _startSession(SchoolGateway gateway) {
@@ -139,7 +185,13 @@ class _ShuleAppState extends State<ShuleApp> {
     });
   }
 
-  void _restart() {
+  Future<void> _restart() async {
+    final session = _session;
+    if (session != null) {
+      if (session.busy || !session.resolved) return;
+      if (session.signedIn && !await session.signOut()) return;
+      if (!mounted || _session != session) return;
+    }
     setState(() {
       _session?.dispose();
       _session = null;
@@ -192,6 +244,7 @@ class _ShuleAppState extends State<ShuleApp> {
           key: const ValueKey('liveUnavailable'),
           problem: _liveProblem ?? 'This build cannot connect to a school.',
           onSample: _useSample,
+          onRetry: _connectLive,
           onBack: _restart,
         );
       case AppMode.sample:
@@ -206,43 +259,61 @@ class _ShuleAppState extends State<ShuleApp> {
           session: session,
           isSample: mode == AppMode.sample,
           tab: _tab,
-          isDark: _themeMode == ThemeMode.dark,
+          themeMode: _themeMode,
           onTab: (value) => setState(() => _tab = value),
-          onToggleTheme: () => setState(
-            () => _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
-          ),
+          onThemeChanged: _changeAppearance,
+          appearanceNotice: _appearanceNotice,
+          appearancePersistent: _appearanceStore != null,
           onRestart: _restart,
         );
     }
   }
 }
 
-class _Shell extends StatelessWidget {
+class _Shell extends StatefulWidget {
   const _Shell({
     super.key,
     required this.session,
     required this.isSample,
     required this.tab,
-    required this.isDark,
+    required this.themeMode,
     required this.onTab,
-    required this.onToggleTheme,
+    required this.onThemeChanged,
+    required this.appearanceNotice,
+    required this.appearancePersistent,
     required this.onRestart,
   });
 
   final AppSession session;
   final bool isSample;
   final int tab;
-  final bool isDark;
+  final ThemeMode themeMode;
   final ValueChanged<int> onTab;
-  final VoidCallback onToggleTheme;
+  final ValueChanged<ThemeMode> onThemeChanged;
+  final String? appearanceNotice;
+  final bool appearancePersistent;
   final VoidCallback onRestart;
+
+  @override
+  State<_Shell> createState() => _ShellState();
+}
+
+class _ShellState extends State<_Shell> {
+  bool _visitedDay = false;
+  bool _visitedRegister = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
+    final session = widget.session;
+    final isSample = widget.isSample;
+    final tab = widget.tab;
+    final onTab = widget.onTab;
+    if (tab == 2) _visitedDay = true;
+    if (tab == 1) _visitedRegister = true;
 
     void openLearner(Learner learner) {
-      showLearnerDetail(context, learner: learner, isSample: isSample);
+      showLearnerDetail(context, learner: learner, isSample: isSample, session: session);
     }
 
     return Scaffold(
@@ -250,31 +321,56 @@ class _Shell extends StatelessWidget {
         bottom: false,
         child: AnimatedBuilder(
           animation: session,
-          builder: (context, _) => switch (tab) {
-            0 => HomeScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-                onOpenDay: () => onTab(2),
-                onOpenMore: () => onTab(3),
-              ),
-            1 => RegisterScreen(
-                session: session,
-                onSignIn: session.signIn,
-                onOpenLearner: openLearner,
-              ),
-            2 => SchoolDayScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-              ),
-            _ => MoreScreen(
-                session: session,
-                isSample: isSample,
-                onSignOut: session.signOut,
-                onRestart: onRestart,
-                onToggleTheme: onToggleTheme,
-                isDark: isDark,
-              ),
-          },
+          builder: (context, _) => Stack(
+            children: [
+              if (tab == 0)
+                HomeScreen(
+                  session: session,
+                  isSample: isSample,
+                  onOpenRegister: () => onTab(1),
+                  onOpenDay: () => onTab(2),
+                  onOpenMore: () => onTab(3),
+                )
+              else if (tab == 3)
+                MoreScreen(
+                  session: session,
+                  isSample: isSample,
+                  onSignOut: session.signOut,
+                  onRestart: widget.onRestart,
+                  onThemeChanged: widget.onThemeChanged,
+                  themeMode: widget.themeMode,
+                  appearanceNotice: widget.appearanceNotice,
+                  appearancePersistent: widget.appearancePersistent,
+                ),
+              if (_visitedRegister)
+                Offstage(
+                  key: const ValueKey('register-tab'),
+                  offstage: tab != 1,
+                  child: TickerMode(
+                    enabled: tab == 1,
+                    child: RegisterScreen(
+                      session: session,
+                      isSample: isSample,
+                      isActive: tab == 1,
+                      onSignIn: session.signIn,
+                      onOpenLearner: openLearner,
+                    ),
+                  ),
+                ),
+              if (_visitedDay)
+                Offstage(
+                  key: const ValueKey('day-tab'),
+                  offstage: tab != 2,
+                  child: TickerMode(
+                    enabled: tab == 2,
+                    child: SchoolDayScreen(
+                      session: session,
+                      onOpenRegister: () => onTab(1),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       bottomNavigationBar: DecoratedBox(
@@ -349,11 +445,13 @@ class _LiveUnavailable extends StatelessWidget {
     super.key,
     required this.problem,
     required this.onSample,
+    required this.onRetry,
     required this.onBack,
   });
 
   final String problem;
   final VoidCallback onSample;
+  final VoidCallback onRetry;
   final VoidCallback onBack;
 
   @override
@@ -377,10 +475,16 @@ class _LiveUnavailable extends StatelessWidget {
             ),
             const SizedBox(height: Space.xl),
             GradientButton(
-              label: 'Use the sample preview instead',
-              onPressed: onSample,
-              icon: Icons.visibility_outlined,
+              label: 'Try connecting again',
+              onPressed: onRetry,
+              icon: Icons.refresh_rounded,
             ),
+            const SizedBox(height: Space.sm),
+            SizedBox(width: double.infinity, child: OutlinedButton.icon(
+              onPressed: onSample,
+              icon: const Icon(Icons.visibility_outlined),
+              label: const Text('Use the sample preview instead'),
+            )),
             const SizedBox(height: Space.sm),
             SizedBox(
               width: double.infinity,

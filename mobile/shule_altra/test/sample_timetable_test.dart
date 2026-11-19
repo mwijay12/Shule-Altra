@@ -22,23 +22,34 @@ void main() {
       body: SchoolDayScreen(session: session, onOpenRegister: () {}),
     )));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Present').first, 150, scrollable: find.byType(Scrollable).first);
+    for (var step = 0; step < 10 && find.text('Present').evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Present').first); await tester.pumpAndSettle();
     await tester.tap(find.text('Present').first); await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Sample schedule only'), 300, scrollable: find.byType(Scrollable).first);
+    // The fictional timetable is reachable from the top without scrolling past the sheet.
+    tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('View fictional timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('View fictional timetable')); await tester.pumpAndSettle();
     expect(find.textContaining('not the saved school timetable'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Mathematics'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('Mathematics'), findsOneWidget);
     final dropdown = find.byType(DropdownButtonFormField<String>);
-    await tester.ensureVisible(dropdown); await tester.pumpAndSettle();
     await tester.tap(dropdown); await tester.pumpAndSettle();
     await tester.tap(find.text('Tuesday').last); await tester.pumpAndSettle();
     expect(find.text('History'), findsOneWidget);
     expect(find.text('Mathematics'), findsNothing);
-    tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
-    await tester.pumpAndSettle();
+    await tester.binding.handlePopRoute(); await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('1 of 6 marked'), 150, scrollable: find.byType(Scrollable).first);
     expect(find.text('1 of 6 marked'), findsOneWidget);
+    tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('View fictional timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('View fictional timetable')); await tester.pumpAndSettle();
+    expect(find.text('History'), findsOneWidget, reason: 'selected day is kept during this app session');
     expect(gateway.loadCalls, 0);
+    await tester.pumpWidget(const SizedBox.shrink());
     session.dispose();
     await gateway.close();
   });

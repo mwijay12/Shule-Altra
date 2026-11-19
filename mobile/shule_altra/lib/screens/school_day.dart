@@ -1,8 +1,7 @@
 /// The school day: practice attendance, and the words that keep it practice.
 ///
 /// This screen is the one place the SVGs implied an action, and the honest
-/// answer is that the action does not write. Marks live in memory for the length
-/// of the visit. The screen says so above the list, next to the count, and again
+/// answer is that the action does not write. Marks live in memory for the current app session. The screen says so above the list, next to the count, and again
 /// under the button — three places, because a person who misses one should meet
 /// it again.
 library;
@@ -12,14 +11,12 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/learner.dart';
 import '../data/sample_gateway.dart';
-import '../data/sample_timetable.dart';
 import '../data/saved_timetable.dart';
 import 'saved_timetable.dart';
-import '../design/doodles.dart';
+import 'sample_timetable.dart';
 import '../design/motion.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
-import '../format.dart';
 import '../practice.dart';
 
 class SchoolDayScreen extends StatefulWidget {
@@ -44,6 +41,21 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   /// record exists.
   List<Learner> get _rows => SampleGateway.sampleLearners;
 
+  Future<void> _confirmClear() async {
+    final clear = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Clear practice marks?'),
+        content: const Text('This removes the fictional marks from this session. No school records will be changed.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Keep marks')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Clear marks')),
+        ],
+      ),
+    );
+    if (clear == true && mounted) setState(() => _draft = PracticeDraft());
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
@@ -56,32 +68,71 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         const SizedBox(height: Space.xl),
         Text('The school day', style: Theme.of(context).textTheme.displaySmall),
         const SizedBox(height: Space.sm),
-        Text(
-          'A practice sheet. It looks and behaves like a register, and it is not one.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-        ),
+        Text('Choose a timetable or try the fictional attendance sheet below.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted)),
         const SizedBox(height: Space.xl),
         const Notice(
           title: 'Practice only, nothing saved',
-          body: 'These marks live in memory while this screen is open. They are not '
-              'attendance records, they never reach a school, and closing the app '
-              'discards them.',
+          body: 'These marks stay in memory when you change tabs. They are not '
+              'attendance records, they never reach a school, and returning to the start '
+              'or closing the app discards them.',
           tone: NoticeTone.caution,
         ),
-        if (widget.session.gateway is TimetableReader) ...[
-          const SizedBox(height: Space.md),
-          OutlinedButton.icon(
-            onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SavedTimetableScreen(
-              session: widget.session, reader: widget.session.gateway as TimetableReader,
-            ))),
-            icon: const Icon(Icons.calendar_month_outlined),
-            label: const Text('Open saved school timetable'),
+        const SizedBox(height: Space.xl),
+        Container(
+          padding: const EdgeInsets.all(Space.lg),
+          decoration: BoxDecoration(
+            gradient: tokens.washGradient,
+            border: Border.all(color: tokens.border),
+            borderRadius: BorderRadius.circular(Corners.hero),
           ),
-        ],
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(Icons.calendar_month_outlined, color: tokens.primary),
+              const SizedBox(width: Space.sm),
+              Expanded(child: Text('Timetables', style: Theme.of(context).textTheme.titleMedium)),
+            ]),
+            const SizedBox(height: Space.sm),
+            Text('Start with the fictional schedule, or open a saved school schedule where available.',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: Space.md),
+            SizedBox(width: double.infinity, child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                builder: (_) => SampleTimetableScreen(
+                  initialDay: _sampleDay,
+                  onDayChanged: (day) { if (mounted) setState(() => _sampleDay = day); },
+                ),
+              )),
+              icon: const Icon(Icons.auto_stories_outlined),
+              label: const Text('View fictional timetable'),
+            )),
+            if (widget.session.gateway is TimetableReader) ...[
+              const SizedBox(height: Space.sm),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SavedTimetableScreen(
+                  session: widget.session, reader: widget.session.gateway as TimetableReader,
+                ))),
+                icon: const Icon(Icons.school_outlined),
+                label: const Text('Open saved school timetable'),
+              )),
+            ],
+          ]),
+        ),
         const SizedBox(height: Space.xl),
         SectionHead(
           title: 'Sample attendance',
           trailing: '${_draft.marked} of ${rows.length} marked',
+        ),
+        const SizedBox(height: Space.sm),
+        Semantics(
+          label: 'Practice progress: ${_draft.marked} of ${rows.length} fictional learners marked',
+          child: ExcludeSemantics(child: LinearProgressIndicator(
+            value: _draft.marked / rows.length,
+            minHeight: 6,
+            borderRadius: BorderRadius.circular(Corners.pill),
+            backgroundColor: tokens.mutedSurface,
+            color: tokens.primary,
+          )),
         ),
         const SizedBox(height: Space.md),
         ...rows.asMap().entries.map((entry) {
@@ -122,13 +173,17 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                           ],
                         ),
                       ),
-                      if (mark != null)
-                        Text(
-                          'Marked ${mark.label.toLowerCase()}',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.success),
-                        ),
                     ],
                   ),
+                  if (mark != null) ...[
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      'Marked ${mark.label.toLowerCase()}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: mark == PracticeMark.present ? tokens.success :
+                            mark == PracticeMark.absent ? tokens.danger : tokens.warning),
+                    ),
+                  ],
                   const SizedBox(height: Space.md),
                   Wrap(
                     spacing: Space.sm,
@@ -152,7 +207,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         Row(
           children: [
             TextButton.icon(
-              onPressed: _draft.isEmpty ? null : () => setState(() => _draft = PracticeDraft()),
+              onPressed: _draft.isEmpty ? null : _confirmClear,
               icon: const Icon(Icons.restart_alt_rounded, size: 20),
               label: const Text('Clear practice marks'),
             ),
@@ -166,57 +221,15 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               'that exists in this pilot, so this screen practices and does not record.',
           tone: NoticeTone.info,
         ),
-        const SizedBox(height: Space.xl),
-        const SectionHead(title: 'Fictional timetable'),
-        const SizedBox(height: Space.sm),
-        const Notice(
-          title: 'Sample schedule only',
-          body: 'This is fictional even when signed in to a school. It is not the '
-              'saved school timetable. Practice marks do not change with the day.',
-          tone: NoticeTone.info,
-        ),
-        const SizedBox(height: Space.md),
-        DropdownButtonFormField<String>(
-          value: _sampleDay,
-          isExpanded: true,
-          decoration: const InputDecoration(labelText: 'Sample day'),
-          items: sampleTimetable.keys
-              .map((day) => DropdownMenuItem(value: day, child: Text(day)))
-              .toList(),
-          onChanged: (day) {
-            if (day != null) setState(() => _sampleDay = day);
-          },
-        ),
-        const SizedBox(height: Space.md),
-        for (final lesson in sampleTimetable[_sampleDay]!)
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.menu_book_outlined),
-              title: Text(lesson.subject),
-              subtitle: Text('${lesson.time} · ${lesson.teacher} · fictional'),
-            ),
-          ),
         const SizedBox(height: Space.lg),
-        OutlinedButton.icon(
+        SizedBox(width: double.infinity, child: OutlinedButton.icon(
           onPressed: widget.onOpenRegister,
           icon: const Icon(Icons.menu_book_outlined, size: 20),
-          label: const Text('Go to the real register'),
-        ),
+          label: const Text('Open learners register'),
+        )),
         const SizedBox(height: Space.md),
-        Text(
-          'The register is read-only too. This practice sheet always uses the same '
-          'fictional sample learners — ${countLabel(rows.length)} — whichever account '
-          'is signed in.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-        ExcludeSemantics(
-          child: Padding(
-            padding: const EdgeInsets.only(top: Space.lg),
-            child: Center(
-              child: DoodleView(doodle: Doodle.registers, size: 56, color: tokens.inkMuted),
-            ),
-          ),
-        ),
+        Text('The register uses the data path you chose. This practice sheet always uses fictional learners.',
+            style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }

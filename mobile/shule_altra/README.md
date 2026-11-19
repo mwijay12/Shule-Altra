@@ -9,31 +9,23 @@ A Flutter app with **two separate data paths** and no third one:
 
 The app opens on onboarding and asks which one you want. After completing or skipping
 the introduction, a device-only preference opens that choice directly on later starts.
-No school or personal data is stored in this preference. It never drifts from one
-into the other, and every register screen prints which one you are looking at.
+No school or personal data is stored in this preference. The separately stored
+appearance preference contains only system, light or dark. Sample and live paths
+never drift into one another, and every register screen says which one is in use.
 
 This replaces the three static SVGs in `design/`. The SVGs are the intent; this is
 the working thing.
 
 ---
 
-## The look is the website's look
+## Mobile design direction
 
-The palette is not invented here. `src/app/globals.css` owns it — #1F5BA6 blue,
-#7C5AE0 violet, the cool #F8FAFC workspace, the 1.25rem radius and the
-`135deg` brand ramp — and `lib/design/tokens.dart` carries the same values,
-converted from the same HSL triplets.
-
-Two tests hold that:
-
-- `test/palette_parity_test.dart` reads `globals.css` out of the repository and
-  fails if a token drifts from it, if the retired forest green comes back, or if
-  the ramp collapses to a flat colour. It also asserts the one deliberate
-  exception: the site's muted grey is 4.49:1 on its own background, so the app's
-  is a shade darker.
-- `test/palette_screen_test.dart` proves the ramp is actually **drawn** — the
-  onboarding hero, the primary buttons, both themes — because a palette in a file
-  is not a palette on a screen.
+The mobile palette follows the dashboard's blue, white and cool workspace, but
+intentionally uses a blue accent rather than the website's violet, as requested.
+Onboarding uses the bundled transparent cut-outs on a light blue/white surface;
+night mode uses an accessible dark surface. The labelled bottom navigation uses a
+blue selected indicator. Tests check the deliberate colour choice and contrast;
+they are not a substitute for screenshots or a real-phone design review.
 
 ---
 
@@ -54,8 +46,8 @@ merge commit of pull request #30 passed every step, in this order:
 4. `flutter test` — the whole suite: contrast (every text pair the app draws,
    in both themes), reduced motion, learner mapping, configuration guards,
    session behaviour, practice sheets and end-to-end widget flows at 390x844.
-5. `flutter build apk --debug` — an unsigned debug APK, uploaded as the artifact
-   `shule-altra-prototype-debug-apk` (7-day retention).
+5. Debug and split-ABI debug/release-mode APKs — test builds signed with an
+   ephemeral debug key; workflow artifacts are retained for 7 days.
 
 That proves the app compiles, that its tests pass, and that a debug APK can be
 produced. If the job is red, none of that is true, whatever this file says.
@@ -83,7 +75,7 @@ real state bug (clearing the practice sheet did nothing, because the draft was a
 
 ## Run it
 
-Requires Flutter 3.29.x (Dart 3.3+), the Android SDK and a device or emulator.
+Requires Flutter 3.29.x (Dart 3.7+), the Android SDK and a device or emulator.
 
 The Android platform project is **generated, not committed** (it is in
 `.gitignore`). Generate it, then configure it:
@@ -104,22 +96,24 @@ Nothing else is needed — no account, no Firebase, no network.
 
 ### Get the APK
 
-CI builds the app and publishes the newest one as a release asset, so a phone can
-download it without a GitHub account:
+Each successful [Mobile pilot workflow run](https://github.com/mwijay12/Shule-Altra/actions/workflows/mobile-preview.yml)
+contains artifacts for that exact commit (GitHub sign-in may be required):
 
-<https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main>
+- `shule-altra-phone-preview-arm64`: the smaller `shule-altra-arm64-preview.apk`
+  (release-mode), an arm64 debug APK, `SHA256SUMS.txt` and `BUILD-INFO.txt`.
+- `shule-altra-prototype-debug-apk`: a universal debug APK for supported non-arm64
+  devices and emulators.
 
-Every branch publishes its own rolling tag (`apk-<branch>`), and `main` publishes
-`apk-main`; each push replaces that branch's tag with the build of the commit.
+Download the artifact ZIP, extract it, verify the checksum if possible, and install
+one APK on the Android device. Artifacts expire after 7 days. All are signed with
+an ephemeral debug key and contain **no school Firebase configuration**; updates
+from different runs may require uninstalling the previous APK. They are not
+production builds. Only pushes to `main` publish a rolling [main preview release](https://github.com/mwijay12/Shule-Altra/releases/tag/apk-main);
+branch builds do not publish releases. The main release can be older than a branch.
 
-Take `shule-altra-<sha>-arm64.apk` — about 18 MB, a release build signed with a
-throwaway debug key. The `-debug` file beside it is the same app in debug mode
-(about 77 MB, for a `logcat` session) and the workflow artifact holds the
-universal APK for an older or emulated device. Android will ask you to allow
-installing from your browser; the app is not from the Play Store and has no
-publisher identity to show. To open it: **Continue** twice → **Explore the
-sample preview** → **Learners** → **Fill the demo credential** → **Sign in to
-the demo**.
+Open: **Skip introduction** → **Explore the sample preview** → **Learners** →
+**Fill the demo credential** → **Sign in to the demo**. Sample is fictional and
+works offline. Real-school sign-in requires a separately configured build below.
 
 ### The demo credential
 
@@ -152,9 +146,9 @@ What that credential can and cannot do, stated plainly:
   the phone.
 - A school that does not want it can build without it:
   `--dart-define=DISABLE_DEMO_SIGN_IN=true` removes the form and makes the
-  service refuse even if something calls it.
-- `test/demo_sign_in_test.dart` holds all of the above: wrong passwords, a
-  gateway that has no demo door, and the build flag.
+  service refuse that credential; the fictional preview can still open without it.
+- Tests cover wrong passwords and the separate live path; CI separately runs
+  `test/demo_disabled_test.dart` with the build flag enabled.
 
 ### The live path
 

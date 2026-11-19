@@ -36,6 +36,7 @@ void main() {
     expect(session.signedIn, isTrue);
     await session.loadFirstPage();
     expect(session.state, LoadState.ready);
+    expect(session.lastReadAt, isNotNull);
     expect(session.rows.length, 2);
     expect(session.canGoForward, isTrue);
     expect(session.canGoBack, isFalse);
@@ -67,6 +68,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(session.rows, isEmpty);
+    expect(session.lastReadAt, isNull);
     expect(session.state, LoadState.idle);
     expect(session.canGoForward, isFalse);
     expect(session.canGoBack, isFalse);
@@ -114,6 +116,28 @@ void main() {
     expect(session.rows, isEmpty);
     expect(session.failure, isNull);
     expect(session.state, LoadState.idle);
+    session.dispose();
+    await gateway.close();
+  });
+
+  test('failed sign out clears data but reports failure for a safe retry', () async {
+    final gateway = FakeGateway();
+    final session = AppSession(gateway);
+    await session.start();
+    await session.signIn();
+    await Future<void>.delayed(Duration.zero);
+    await session.loadFirstPage();
+    final revision = session.dataRevision;
+    gateway.signOutFailure = const GatewayFailure('Sign-out failed. Try again.');
+    expect(await session.signOut(), isFalse);
+    expect(session.rows, isEmpty);
+    expect(session.dataRevision, greaterThan(revision));
+    expect(session.signedIn, isTrue);
+    expect(session.failure, contains('Sign-out failed'));
+    gateway.signOutFailure = null;
+    expect(await session.signOut(), isTrue);
+    await Future<void>.delayed(Duration.zero);
+    expect(session.signedIn, isFalse);
     session.dispose();
     await gateway.close();
   });

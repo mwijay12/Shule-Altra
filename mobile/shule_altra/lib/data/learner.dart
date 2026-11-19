@@ -7,6 +7,7 @@
 /// [Learner.fromDocument] to prove the mapping.
 library;
 
+import 'package:characters/characters.dart';
 import 'package:flutter/foundation.dart';
 
 /// A learner row, read-only in this pilot.
@@ -64,7 +65,7 @@ class Learner {
     return Learner(
       id: id,
       name: rawName.isEmpty ? missingName : rawName,
-      className: className.isEmpty ? 'Class not recorded' : className,
+      className: className.isEmpty ? missingClass : className,
       status: text('status').isEmpty ? 'Status not recorded' : text('status'),
       guardianName: text('guardianName'),
       guardianPhone: text('guardianPhone'),
@@ -79,9 +80,8 @@ class Learner {
   }
 
   static double? _money(Object? value) {
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value.trim());
-    return null;
+    final parsed = value is num ? value.toDouble() : value is String ? double.tryParse(value.trim()) : null;
+    return parsed != null && parsed.isFinite ? parsed : null;
   }
 
   /// Initials for the avatar, without inventing a surname that is not there.
@@ -91,12 +91,13 @@ class Learner {
   String get initials {
     final parts = name.split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
     if (parts.isEmpty || name == missingName) return '?';
-    if (parts.length == 1) return parts.first.substring(0, 1).toUpperCase();
-    return (parts.first.substring(0, 1) + parts.last.substring(0, 1)).toUpperCase();
+    if (parts.length == 1) return parts.first.characters.first.toUpperCase();
+    return (parts.first.characters.first + parts.last.characters.first).toUpperCase();
   }
 
   /// The words shown when a stored record has no name.
   static const String missingName = 'Unnamed learner';
+  static const String missingClass = 'Class not recorded';
 
   /// True when the row matches a query across loaded name, class, stream or ID.
   bool matches(String query) {

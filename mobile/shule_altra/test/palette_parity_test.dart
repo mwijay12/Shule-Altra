@@ -108,9 +108,10 @@ void main() {
 
     test('the action, the accent and the ramp', () {
       expectSameColour('primary', ShuleTokens.day.primary, light['primary']!);
-      expectSameColour('accent', ShuleTokens.day.accent, light['accent']!);
+      expect(ShuleTokens.day.accent, const Color(0xFF17467F));
+      expect(ShuleTokens.day.accent, isNot(light['accent']));
       expectSameColour('gradientStart', ShuleTokens.day.gradientStart, light['primary']!);
-      expectSameColour('gradientEnd', ShuleTokens.day.gradientEnd, light['accent']!);
+      expect(ShuleTokens.day.gradientEnd, ShuleTokens.day.accent);
       expectSameColour('danger', ShuleTokens.day.danger, light['destructive']!);
     });
 
@@ -137,9 +138,10 @@ void main() {
       expectSameColour('mutedSurface', ShuleTokens.night.mutedSurface, dark['muted']!);
       expectSameColour('ink', ShuleTokens.night.ink, dark['foreground']!);
       expectSameColour('primary', ShuleTokens.night.primary, dark['primary']!);
-      expectSameColour('accent', ShuleTokens.night.accent, dark['accent']!);
+      expect(ShuleTokens.night.accent, const Color(0xFF9CC9FF));
+      expect(ShuleTokens.night.accent, isNot(dark['accent']));
       expectSameColour('gradientStart', ShuleTokens.night.gradientStart, dark['primary']!);
-      expectSameColour('gradientEnd', ShuleTokens.night.gradientEnd, dark['accent']!);
+      expect(ShuleTokens.night.gradientEnd, ShuleTokens.night.accent);
       expectSameColour('border', ShuleTokens.night.border, dark['border']!);
     });
 

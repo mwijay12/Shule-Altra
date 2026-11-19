@@ -8,7 +8,7 @@ name: Mobile pilot
 #   1. analyze  — any warning is a failure (`analysis_options.yaml` promotes the
 #                 lint set that would otherwise ship a broken screen).
 #   2. test     — contrast, mapping, session and widget tests.
-#   3. build    — a debug APK, unsigned and not for release.
+#   3. build    — debug and arm64 release-mode APKs signed with temporary debug keys, for testing only.
 
 on:
   pull_request:
@@ -97,6 +97,9 @@ jobs:
             exit 1
           fi
 
+      - name: Test preview with demo credential disabled
+        run: flutter test --no-pub --dart-define=DISABLE_DEMO_SIGN_IN=true test/demo_disabled_test.dart
+
       - name: Build debug APK (prototype only)
         run: |
           if ! flutter build apk --debug > "$RUNNER_TEMP/flutter-build.log" 2>&1; then
@@ -107,7 +110,7 @@ jobs:
 
       # A universal debug APK carries all three ABIs, which is a slow download on
       # a phone. The phone gets the arm64 split of the same code — every Android
-      # phone made since roughly 2015 is arm64 — and the universal APK stays
+      # phone is arm64 — and the universal APK stays
       # available as the workflow artifact for anything else.
       - name: Build a phone-sized APK (per-ABI split)
         run: |
@@ -123,6 +126,34 @@ jobs:
         with:
           name: shule-altra-prototype-debug-apk
           path: mobile/shule_altra/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
+      # Publish the smaller phone APK as a workflow artifact on every branch.
+      # These builds are not configured for a real school and use ephemeral
+      # debug signing, so they cannot provide a stable upgrade or production identity.
+      - name: Prepare phone preview and checksums
+        run: |
+          set -eu
+          out="${RUNNER_TEMP}/phone-preview"
+          mkdir -p "$out"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "$out/shule-altra-arm64-preview.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-debug.apk "$out/shule-altra-arm64-debug.apk"
+          cd "$out"
+          sha256sum shule-altra-arm64-preview.apk shule-altra-arm64-debug.apk > SHA256SUMS.txt
+          printf 'Commit: %s\nWorkflow run: %s\n\n' "$GITHUB_SHA" "$GITHUB_RUN_ID" > BUILD-INFO.txt
+          printf '%s\n' \
+            'arm64-preview: release-mode APK signed with an ephemeral debug key.' \
+            'arm64-debug: debug APK signed with an ephemeral debug key.' \
+            'No school Firebase dart-defines are supplied in this CI build.' \
+            'For fictional sample testing only; not production-signed.' \
+            'Use the universal debug artifact if the device is not arm64.' >> BUILD-INFO.txt
+
+      - name: Upload phone preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: shule-altra-phone-preview-arm64
+          path: ${{ runner.temp }}/phone-preview/
           if-no-files-found: error
           retention-days: 7
 
@@ -157,8 +188,8 @@ jobs:
 
           **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
 
-          - Email: \`demo@shule.test\`
-          - Password: \`shule-demo\`
+          The current demo credential is printed in the app and can be filled in
+          using the button on that form. It is defined by config/demo-account.json.
 
           That credential opens six fictional learners held on the phone. It is not a
           school account, it stores nothing, and it cannot read a real register — the
@@ -166,8 +197,7 @@ jobs:
           signed with a throwaway key and there is no update path from it.
           EOF
           )"
-          # The tag is rolling: one tag per branch, so old builds do not pile up and
-          # the newest link always works.
+          # The rolling main tag is updated only by main pushes.
           {
             gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
             gh release create "$tag" "$app" "$debug" \

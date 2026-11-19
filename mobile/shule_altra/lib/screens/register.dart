@@ -20,11 +20,16 @@ class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
     super.key,
     required this.session,
+    this.isSample = false,
+    this.isActive = true,
     required this.onSignIn,
     required this.onOpenLearner,
   });
 
   final AppSession session;
+  final bool isSample;
+  /// Inactive tabs keep UI state but must not initiate reads.
+  final bool isActive;
   final VoidCallback onSignIn;
   final ValueChanged<Learner> onOpenLearner;
 
@@ -42,10 +47,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _filterVersion = 0;
   String? _observedUid;
   LoadState _observedState = LoadState.idle;
+  late int _observedRevision;
 
   @override
   void initState() {
     super.initState();
+    _observedUid = widget.session.uid;
+    _observedRevision = widget.session.dataRevision;
     widget.session.addListener(_onSessionChanged);
   }
 
@@ -68,12 +76,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _onSessionChanged() {
     final session = widget.session;
     final changedAccount = _observedUid != session.uid;
+    final invalidated = _observedRevision != session.dataRevision;
+    _observedRevision = session.dataRevision;
     final startedRead = session.state == LoadState.loading && _observedState != LoadState.loading;
     _observedUid = session.uid;
     _observedState = session.state;
-    if (!session.signedIn) _requestedFirstPage = false;
+    if (!session.signedIn || invalidated) _requestedFirstPage = false;
     // Page-only controls cannot survive a new read or an account change.
-    if (changedAccount || startedRead) setState(_clearFilters);
+    if (changedAccount || invalidated || startedRead) setState(_clearFilters);
   }
 
   /// Loads the first page after the frame that first needs it.
@@ -81,12 +91,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   /// Deferred on purpose: [AppSession.loadFirstPage] notifies listeners
   /// synchronously, and notifying during a build would be a framework error.
   void _scheduleFirstLoad() {
-    if (_requestedFirstPage) return;
-    if (!widget.session.signedIn) return;
-    if (widget.session.state != LoadState.idle) return;
+    if (_requestedFirstPage || !widget.isActive || !widget.session.signedIn ||
+        widget.session.busy || widget.session.state != LoadState.idle) {
+      return;
+    }
     _requestedFirstPage = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (!widget.isActive || widget.session.busy || !widget.session.signedIn ||
+          widget.session.state != LoadState.idle) {
+        _requestedFirstPage = false;
+        return;
+      }
       widget.session.loadFirstPage();
     });
   }
@@ -112,7 +128,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           const SizedBox(height: Space.sm),
           Text(
             session.signedIn
-                ? 'Online · read-only · ${session.sourceLabel}'
+                ? '${widget.isSample ? 'Fictional sample' : 'Online'} · read-only · ${session.sourceLabel}'
                 : 'Sign in to read the register.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -133,13 +149,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final failure = session.failure;
 
     if (session.state == LoadState.loading && session.rows.isEmpty) {
-      return const <Widget>[
-        _Busy(label: 'Reading the register from the school…'),
-        SizedBox(height: Space.lg),
+      return <Widget>[
+        _Busy(label: widget.isSample ? 'Opening the fictional register…' : 'Reading the register from the school…'),
+        const SizedBox(height: Space.lg),
         Notice(
-          title: 'Server read, no cache',
-          body: 'Every page is a fresh server read. If the connection drops you get an '
-              'explanation, never yesterday\'s list.',
+          title: widget.isSample ? 'Fictional preview' : 'Server read, no cache',
+          body: widget.isSample
+              ? 'This page uses the sample on this device, not school records.'
+              : 'Every page is a fresh server read. If the connection drops you get an explanation, never yesterday’s list.',
         ),
       ];
     }
@@ -181,6 +198,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final reading = session.state == LoadState.loading;
 
     return [
+      Container(
+        padding: const EdgeInsets.all(Space.lg),
+        decoration: BoxDecoration(
+          color: tokens.mutedSurface,
+          borderRadius: BorderRadius.circular(Corners.panel),
+          border: Border.all(color: tokens.border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.manage_search_rounded, color: tokens.primary),
+            const SizedBox(width: Space.md),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Find a learner', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: Space.xs),
+                Text('Search and filters only cover the loaded page, not the whole school.',
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+            )),
+          ],
+        ),
+      ),
+      const SizedBox(height: Space.md),
       TextField(
         controller: _search,
         onChanged: (value) => setState(() => _query = value.trim()),
@@ -344,7 +386,14 @@ class _SignedOut extends StatelessWidget {
                 color: tokens.mutedSurface,
                 borderRadius: BorderRadius.circular(Corners.hero),
               ),
-              child: const Center(child: DoodleView(doodle: Doodle.building, size: 104)),
+              child: Center(
+                child: Image.asset(
+                  'assets/images/connection_cutout.png',
+                  fit: BoxFit.contain,
+                  excludeFromSemantics: true,
+                  errorBuilder: (context, error, stackTrace) => const DoodleView(doodle: Doodle.building, size: 104),
+                ),
+              ),
             ),
           ),
         ),
@@ -352,7 +401,9 @@ class _SignedOut extends StatelessWidget {
         Text(
           session.acceptsDemoCredential
               ? 'A sample register,\nbehind a demo sign-in.'
-              : 'The register is behind\nyour school account.',
+              : session.gateway.fictionalData
+                  ? 'A fictional register,\nready to explore.'
+                  : 'The register is behind\nyour school account.',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: Space.sm),
@@ -360,8 +411,10 @@ class _SignedOut extends StatelessWidget {
           session.acceptsDemoCredential
               ? 'Six fictional learners, stored on this phone, with a credential printed '
                 'on the form. Nothing here is a real school and nothing is sent anywhere.'
-              : 'Sign in with the Google account your school already uses. Your school\'s '
-                'Firestore rules decide what you can read — the app does not widen that.',
+              : session.gateway.fictionalData
+                  ? 'Demo credentials are disabled in this build. Open the fictional sample without a school account.'
+                  : 'Sign in with the Google account your school already uses. Your school\'s '
+                    'Firestore rules decide what you can read — the app does not widen that.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
         ),
         const SizedBox(height: Space.lg),
@@ -371,7 +424,7 @@ class _SignedOut extends StatelessWidget {
           DemoSignInForm(session: session)
         else ...[
           GradientButton(
-            label: session.busy ? 'Signing in…' : 'Continue with Google',
+            label: session.busy ? 'Signing in…' : session.gateway.fictionalData ? 'Open fictional sample' : 'Continue with Google',
             onPressed: session.busy ? null : onSignIn,
             busy: session.busy,
             icon: Icons.login_rounded,
@@ -388,8 +441,8 @@ class _SignedOut extends StatelessWidget {
         const SizedBox(height: Space.lg),
         const Notice(
           title: 'Read-only pilot',
-          body: 'Learner and guardian details are readable on an approved account and a '
-              'trusted phone. Nothing can be edited, marked or paid from here.',
+          body: 'The register cannot edit learners, record attendance or take payments. '
+              'A live school account should only be used on a trusted phone.',
         ),
       ],
     );
@@ -432,20 +485,15 @@ class _LearnerRow extends StatelessWidget {
                     Text(learner.name, style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 2),
                     Text(
-                      learner.className,
+                      learner.stream.isEmpty ? learner.className : '${learner.className} · ${learner.stream}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (owes)
+                      Text('Balance due',
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning)),
                   ],
                 ),
               ),
-              if (owes)
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.sm),
-                  child: Text(
-                    'Balance',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning),
-                  ),
-                ),
               Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
             ],
           ),

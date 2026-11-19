@@ -72,18 +72,39 @@ void main() {
     expect(gateway.loadCalls, 0);
 
     // First promise, in words, before anything is connected.
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
 
     await tapText(tester, 'Continue');
-    expect(find.textContaining('Not another'), findsOneWidget);
+    expect(find.textContaining('A clearer view'), findsOneWidget);
+    await tapText(tester, 'Previous');
+    expect(find.textContaining('Your register,'), findsOneWidget);
+    await tapText(tester, 'Continue');
 
     await tapText(tester, 'Continue');
-    expect(find.textContaining('Read-only'), findsOneWidget);
+    expect(find.textContaining('Choose how'), findsOneWidget);
 
     // The last page is where the two paths are chosen.
     expect(find.text('Connect my school'), findsOneWidget);
     expect(find.text('Explore the sample preview'), findsOneWidget);
     await gateway.close();
+  });
+
+  testWidgets('unconfigured live path retries honestly or opens the separate sample', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Connect my school');
+    expect(find.text('This build is not connected'), findsOneWidget);
+    expect(find.textContaining('no Firebase values'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tapText(tester, 'Try connecting again');
+    expect(find.text('This build is not connected'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tapText(tester, 'Use the sample preview instead');
+    expect(find.textContaining('Fictional learners only'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tester.pumpWidget(const SizedBox.shrink()); await gateway.close();
   });
 
   testWidgets('the register signs in, pages, searches and opens a learner', (tester) async {
@@ -101,7 +122,7 @@ void main() {
     // (The injected fake calls itself "Fake"; the shipped sample gateway says
     // "Sample · fictional learners".) The label is below the fold, and a lazily
     // built list does not create it until it is scrolled to.
-    expect(find.textContaining('A little more room'), findsOneWidget);
+    expect(find.textContaining('A clearer start'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.textContaining('Fake'),
       160,
@@ -233,8 +254,15 @@ void main() {
     );
     expect(find.text('0 of 6 marked'), findsOneWidget);
 
+    for (var step = 0; step < 10 && find.text('Present').evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Present').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Present').first);
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('1 of 6 marked'), -150, scrollable: find.byType(Scrollable).first);
     expect(find.text('1 of 6 marked'), findsOneWidget);
 
     await tester.scrollUntilVisible(
@@ -243,6 +271,19 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Clear practice marks');
+    expect(find.text('Clear practice marks?'), findsOneWidget);
+    await tapText(tester, 'Keep marks');
+    await tapText(tester, 'Home');
+    await tapText(tester, 'Day');
+    await tester.scrollUntilVisible(
+      find.text('1 of 6 marked'), -200, scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('1 of 6 marked'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Clear practice marks'), 240, scrollable: find.byType(Scrollable).first,
+    );
+    await tapText(tester, 'Clear practice marks');
+    await tapText(tester, 'Clear marks');
     await tester.scrollUntilVisible(
       find.text('0 of 6 marked'),
       -200,
@@ -269,7 +310,7 @@ void main() {
     await tapText(tester, 'Continue with Google');
 
     await tapText(tester, 'More');
-    expect(find.textContaining('Built with care'), findsOneWidget);
+    expect(find.text('Settings & account'), findsOneWidget);
 
     // Walk down the page the way a person does, and stop when the statement
     // appears: the list builds its children lazily, so nothing below the fold
@@ -291,6 +332,49 @@ void main() {
 
     await tapText(tester, 'Learners');
     expect(find.text('Continue with Google'), findsOneWidget);
+    await gateway.close();
+  });
+
+  testWidgets('back to start signs out and retains the screen when sign-out fails', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Explore the sample preview');
+    await tapText(tester, 'Learners');
+    await tapText(tester, 'Continue with Google');
+    await tapText(tester, 'More');
+    gateway.signOutFailure = const GatewayFailure('Sign-out failed. Try again.');
+    await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
+    await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Stay here');
+    expect(gateway.signOutCalls, 0);
+    await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Sign out and return');
+    expect(gateway.signOutCalls, 1);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Sign-out failed'), -200, scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Sign-out failed'), findsOneWidget);
+    gateway.signOutFailure = null;
+    await tester.scrollUntilVisible(find.text('Back to the start'), 220, scrollable: find.byType(Scrollable).first);
+    await tapText(tester, 'Back to the start');
+    await tapText(tester, 'Sign out and return');
+    expect(gateway.signOutCalls, 2);
+    expect(find.byType(NavigationBar), findsNothing);
+    expect(find.textContaining('Your register,'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await gateway.close();
+  });
+
+  testWidgets('signed out home sign-in action opens the register sign-in', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Explore the sample preview');
+    await tapText(tester, 'Sign in');
+    expect(find.text('Continue with Google'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
     await gateway.close();
   });
 
@@ -323,6 +407,27 @@ void main() {
     await gateway.close();
   });
 
+  testWidgets('appearance follows system and allows an explicit choice', (tester) async {
+    usePhoneScreen(tester);
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    addTearDown(tester.platformDispatcher.clearPlatformBrightnessTestValue);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(ShuleApp.withGateway(gateway: gateway, initialMode: AppMode.sample));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'More');
+    await tester.scrollUntilVisible(find.text('Follow system'), 250, scrollable: find.byType(Scrollable).first);
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.dark);
+    await tapText(tester, 'Light');
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.light);
+    await tapText(tester, 'Dark');
+    expect(Theme.of(tester.element(find.text('Follow system'))).brightness, Brightness.dark);
+    await tapText(tester, 'Follow system');
+    expect(tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode, ThemeMode.system);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await gateway.close();
+  });
+
   testWidgets('both themes render the same screens', (tester) async {
     usePhoneScreen(tester);
     for (final dark in [false, true]) {
@@ -341,7 +446,7 @@ void main() {
       final context = tester.element(find.byType(NavigationBar));
       final tokens = ShuleTokens.of(context);
       expect(tokens.brightness, dark ? Brightness.dark : Brightness.light);
-      expect(find.textContaining('A little more room'), findsOneWidget);
+      expect(find.textContaining('A clearer start'), findsOneWidget);
       await gateway.close();
       await tester.pumpWidget(const SizedBox.shrink());
     }

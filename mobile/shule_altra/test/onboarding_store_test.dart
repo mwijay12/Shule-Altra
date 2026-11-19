@@ -33,7 +33,7 @@ void main() {
     const store = DeviceOnboardingStore();
     await tester.pumpWidget(page(store));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
     await tapSkip(tester);
     expect(await store.hasSeenIntroduction(), isTrue);
 
@@ -42,7 +42,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Connect my school'), findsOneWidget);
     expect(find.text('Explore the sample preview'), findsOneWidget);
-    expect(find.textContaining('Every learner'), findsNothing);
+    expect(find.textContaining('Your register,'), findsNothing);
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getKeys(), {'introduction_seen_v1'});
   });
@@ -50,7 +50,7 @@ void main() {
   testWidgets('storage errors show introduction and do not block choices', (tester) async {
     await tester.pumpWidget(page(FailingStore()));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
     await tapSkip(tester);
     expect(find.text('Connect my school'), findsOneWidget);
     expect(find.text('Explore the sample preview'), findsOneWidget);

@@ -32,10 +32,13 @@ class AppSession extends ChangeNotifier {
   String? _uid;
   bool _resolved = false;
   bool _busy = false;
+  bool _authInFlight = false;
+  bool _signingOut = false;
   String? _lastFailure;
 
   LoadState _state = LoadState.idle;
   List<Learner> _rows = const [];
+  DateTime? _lastReadAt;
 
   /// The cursor that fetched the page on screen, and the cursor for the page
   /// after it. Two different values: paging backwards needs the cursor that
@@ -56,7 +59,16 @@ class AppSession extends ChangeNotifier {
   bool get signedIn => _uid != null;
 
   /// True while a sign-in, sign-out or page read is in flight.
-  bool get busy => _busy;
+  bool get busy => _busy || _authInFlight || _signingOut;
+
+  /// True from the moment sign-out starts until it succeeds or fails.
+  bool get signingOut => _signingOut;
+
+  /// A pending register read can be cancelled safely by signing out.
+  bool get canSignOut => signedIn && !_signingOut && !_authInFlight;
+
+  /// Changes whenever private page data becomes invalid, including sign-out.
+  int get dataRevision => _generation;
 
   /// A sentence to show the person, or null.
   String? get failure => _lastFailure;
@@ -64,6 +76,9 @@ class AppSession extends ChangeNotifier {
   LoadState get state => _state;
 
   List<Learner> get rows => _rows;
+
+  /// Time the current page finished loading, on this device. Not server freshness.
+  DateTime? get lastReadAt => _lastReadAt;
 
   bool get canGoBack => _history.isNotEmpty;
 
@@ -112,9 +127,25 @@ class AppSession extends ChangeNotifier {
   Future<void> signInWithDemo(String email, String password) =>
       _run(() => gateway.signInWithDemo(email, password));
 
-  Future<void> signOut() async {
+  /// Clear visible data first and only report success after the gateway signs out.
+  /// A failed sign-out keeps the current route open and can be retried.
+  Future<bool> signOut() async {
+    if (_signingOut || _authInFlight) return false;
+    _signingOut = true;
     _clearRows();
-    await _run(() => gateway.signOut());
+    try {
+      await gateway.signOut();
+      return true;
+    } on GatewayFailure catch (error) {
+      if (!_disposed) _lastFailure = error.message;
+      return false;
+    } catch (_) {
+      if (!_disposed) _lastFailure = 'Could not sign out. Try again.';
+      return false;
+    } finally {
+      _signingOut = false;
+      _notify();
+    }
   }
 
   void _clearRows() {
@@ -129,14 +160,16 @@ class AppSession extends ChangeNotifier {
     _generation++;
     _busy = false;
     _rows = const [];
+    _lastReadAt = null;
     _pageCursor = null;
     _forwardCursor = null;
     _history.clear();
   }
 
   Future<void> _run(Future<void> Function() action) async {
-    if (_busy) return;
+    if (busy) return;
     final generation = _generation;
+    _authInFlight = true;
     _busy = true;
     _lastFailure = null;
     _notify();
@@ -149,22 +182,21 @@ class AppSession extends ChangeNotifier {
         _lastFailure = 'That did not complete. Check the connection and try again.';
       }
     } finally {
-      if (!_disposed && generation == _generation) {
-        _busy = false;
-        _notify();
-      }
+      _authInFlight = false;
+      if (!_disposed && generation == _generation) _busy = false;
+      _notify();
     }
   }
 
   /// The first page. Called by the register when it opens and when it refreshes.
   Future<void> loadFirstPage() async {
-    if (_busy) return;
+    if (busy || !signedIn) return;
     _history.clear();
     await _load(after: null);
   }
 
   Future<void> loadNextPage() async {
-    if (_busy || _forwardCursor == null) return;
+    if (busy || !signedIn || _forwardCursor == null) return;
     final target = _forwardCursor;
     // Coming back means asking for the page that is on screen now, so remember
     // how *it* was fetched.
@@ -173,7 +205,7 @@ class AppSession extends ChangeNotifier {
   }
 
   Future<void> loadPreviousPage() async {
-    if (_busy || _history.isEmpty) return;
+    if (busy || !signedIn || _history.isEmpty) return;
     final cursor = _history.removeLast();
     await _load(after: cursor);
   }
@@ -191,15 +223,18 @@ class AppSession extends ChangeNotifier {
       _pageCursor = after;
       _forwardCursor = page.nextCursor;
       _rows = page.rows;
+      _lastReadAt = DateTime.now();
       _state = LoadState.ready;
     } on GatewayFailure catch (error) {
       if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
+      _lastReadAt = null;
       _state = LoadState.failed;
       _lastFailure = error.message;
     } catch (_) {
       if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
+      _lastReadAt = null;
       _state = LoadState.failed;
       _lastFailure = 'The register could not be read. Check the connection and try again.';
     } finally {

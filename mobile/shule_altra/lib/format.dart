@@ -7,7 +7,7 @@ library;
 
 /// `45000` → `TZS 45,000`. Null or negative-unparseable → "No fee figures".
 String formatTzs(double? amount) {
-  if (amount == null || amount.isNaN) return 'No fee figures recorded';
+  if (amount == null || !amount.isFinite) return 'No fee figures recorded';
   final rounded = amount.round();
   final digits = rounded.abs().toString();
   final buffer = StringBuffer();
@@ -28,4 +28,12 @@ String timeStamp(DateTime time) {
   final hour = local.hour.toString().padLeft(2, '0');
   final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
+}
+
+/// Local device time of a completed read; does not assert server update time.
+String localDateTime(DateTime time) {
+  final local = time.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  return '${local.year}-$month-$day ${timeStamp(local)} (local time)';
 }

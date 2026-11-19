@@ -19,6 +19,7 @@ import 'fake_gateway.dart';
 
 /// Logical sizes, with the pixel ratio a real device of that class reports.
 const _sizes = <({String name, Size size, double ratio})>[
+  (name: 'small phone 320x640', size: Size(320, 640), ratio: 2),
   (name: 'phone 390x844', size: Size(390, 844), ratio: 3),
   (name: 'tablet 820x1180', size: Size(820, 1180), ratio: 2),
   (name: 'large window 1440x900', size: Size(1440, 900), ratio: 1),
@@ -26,7 +27,7 @@ const _sizes = <({String name, Size size, double ratio})>[
 
 /// Android's font scale goes to 2.0; 1.3 is a common accessibility setting and
 /// the point where fixed-height rows usually start to break.
-const _scales = <double>[1.0, 1.3];
+const _scales = <double>[1.0, 1.3, 1.5];
 
 Future<void> _expectNoOverflow(WidgetTester tester, String where) async {
   await tester.pumpAndSettle();
@@ -75,6 +76,13 @@ void main() {
         // A learner's sheet. It is dismissed with the back gesture, not by
         // tapping a guessed coordinate: a tap that misses the barrier leaves the
         // sheet up, and every later tap lands on the barrier instead.
+        // The signed-out form may leave the list below the newly loaded rows.
+        await tester.drag(find.byType(ListView).first, const Offset(0, 2000));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.text('Amina Juma'), 180,
+          scrollable: find.descendant(of: find.byType(ListView), matching: find.byType(Scrollable)).first,
+        );
         await _tap(tester, 'Amina Juma');
         await _expectNoOverflow(tester, 'learner detail');
         await tester.binding.handlePopRoute();

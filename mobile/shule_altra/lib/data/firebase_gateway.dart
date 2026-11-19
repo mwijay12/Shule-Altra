@@ -52,6 +52,9 @@ class FirebaseSchoolGateway implements SchoolGateway, TimetableReader {
   final bool _googleReady;
 
   @override
+  bool get fictionalData => false;
+
+  @override
   String get sourceLabel => 'Live · ${_scope.schoolId}';
 
   @override

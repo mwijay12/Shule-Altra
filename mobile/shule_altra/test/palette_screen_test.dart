@@ -5,7 +5,7 @@
 /// `FilledButton`, so nothing drew the gradient. These tests fail in that case.
 ///
 /// What they check, and why each one is a real user-visible thing:
-///  * the onboarding hero is the brand ramp (the first thing a person sees);
+///  * the onboarding hero is a calm surface (the first thing a person sees);
 ///  * the primary action is a [GradientButton] and is still tappable (#2c2c2c);
 ///  * a disabled GradientButton does not draw the ramp, so it cannot look active;
 ///  * the header badge, the cards and the canvas all come from the tokens.
@@ -34,7 +34,7 @@ Gradient? _gradientOf(WidgetTester tester, Finder finder) {
 }
 
 void main() {
-  testWidgets('the first screen draws the brand ramp, not a grey box', (tester) async {
+  testWidgets('the first screen draws a calm light surface for the cut-out', (tester) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -44,9 +44,9 @@ void main() {
     await tester.pumpAndSettle();
 
     final ramp = _gradientOf(tester, find.byType(DecoratedBox));
-    expect(ramp, isA<LinearGradient>(), reason: 'the onboarding hero has no gradient at all');
+    expect(ramp, isA<LinearGradient>(), reason: 'the onboarding hero has no surface gradient');
     final gradient = ramp! as LinearGradient;
-    expect(gradient.colors, [ShuleTokens.day.gradientStart, ShuleTokens.day.gradientEnd]);
+    expect(gradient.colors, [ShuleTokens.day.surface, ShuleTokens.day.mutedSurface]);
     expect(gradient.begin, Alignment.topLeft);
     expect(gradient.end, Alignment.bottomRight);
 
@@ -154,7 +154,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('night mode keeps the ramp, with the light stops', (tester) async {
+  testWidgets('night mode keeps an adapted hero surface', (tester) async {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -166,7 +166,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final ramp = _gradientOf(tester, find.byType(DecoratedBox))! as LinearGradient;
-    expect(ramp.colors, [ShuleTokens.night.gradientStart, ShuleTokens.night.gradientEnd]);
+    expect(ramp.colors, [ShuleTokens.night.surface, ShuleTokens.night.mutedSurface]);
 
     await tester.pumpWidget(const SizedBox.shrink());
   });
