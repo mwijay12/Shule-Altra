@@ -33,6 +33,7 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
   final _password = TextEditingController();
   bool _showPassword = false;
   String? _localError;
+  bool _hideSessionError = false;
 
   @override
   void dispose() {
@@ -43,7 +44,7 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
 
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
-    setState(() => _localError = null);
+    setState(() { _localError = null; _hideSessionError = false; });
     if (_email.text.trim().isEmpty || _password.text.isEmpty) {
       setState(() => _localError = 'Both fields are needed before signing in.');
       return;
@@ -56,14 +57,21 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
       _email.text = DemoCredentials.demoEmail;
       _password.text = DemoCredentials.demoPassword;
       _localError = null;
+      _hideSessionError = true;
     });
+  }
+
+  void _edited(String value) {
+    if (_localError != null || (!_hideSessionError && widget.session.failure != null)) {
+      setState(() { _localError = null; _hideSessionError = true; });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final session = widget.session;
-    final error = _localError ?? session.failure;
+    final error = _localError ?? (_hideSessionError ? null : session.failure);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -75,6 +83,8 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
         const SizedBox(height: Space.sm),
         TextField(
           controller: _email,
+          onChanged: _edited,
+          autofillHints: const [AutofillHints.username],
           enabled: !session.busy,
           keyboardType: TextInputType.emailAddress,
           autocorrect: false,
@@ -88,6 +98,7 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
         const SizedBox(height: Space.md),
         TextField(
           controller: _password,
+          onChanged: _edited,
           enabled: !session.busy,
           obscureText: !_showPassword,
           autocorrect: false,

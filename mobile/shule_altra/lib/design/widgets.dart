@@ -72,8 +72,7 @@ class GradientButton extends StatelessWidget {
         Flexible(
           child: Text(
             label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: enabled ? tokens.onGradient : tokens.inkMuted,
               fontSize: 15,
@@ -106,9 +105,8 @@ class GradientButton extends StatelessWidget {
               borderRadius: radius,
               onTap: enabled ? onPressed : null,
               child: Container(
-                height: 54,
-                constraints: const BoxConstraints(minWidth: kMinTapTarget),
-                padding: const EdgeInsets.symmetric(horizontal: Space.xl),
+                constraints: const BoxConstraints(minWidth: kMinTapTarget, minHeight: 54),
+                padding: const EdgeInsets.symmetric(horizontal: Space.xl, vertical: Space.sm),
                 alignment: Alignment.center,
                 child: content,
               ),

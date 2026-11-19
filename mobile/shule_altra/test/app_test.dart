@@ -72,21 +72,39 @@ void main() {
     expect(gateway.loadCalls, 0);
 
     // First promise, in words, before anything is connected.
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
 
     await tapText(tester, 'Continue');
-    expect(find.textContaining('Not another'), findsOneWidget);
+    expect(find.textContaining('A clearer view'), findsOneWidget);
     await tapText(tester, 'Previous');
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
     await tapText(tester, 'Continue');
 
     await tapText(tester, 'Continue');
-    expect(find.textContaining('Read-only'), findsOneWidget);
+    expect(find.textContaining('Choose how'), findsOneWidget);
 
     // The last page is where the two paths are chosen.
     expect(find.text('Connect my school'), findsOneWidget);
     expect(find.text('Explore the sample preview'), findsOneWidget);
     await gateway.close();
+  });
+
+  testWidgets('unconfigured live path retries honestly or opens the separate sample', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway)); await tester.pumpAndSettle();
+    await tapText(tester, 'Skip introduction');
+    await tapText(tester, 'Connect my school');
+    expect(find.text('This build is not connected'), findsOneWidget);
+    expect(find.textContaining('no Firebase values'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tapText(tester, 'Try connecting again');
+    expect(find.text('This build is not connected'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tapText(tester, 'Use the sample preview instead');
+    expect(find.textContaining('Fictional learners only'), findsOneWidget);
+    expect(gateway.loadCalls, 0);
+    await tester.pumpWidget(const SizedBox.shrink()); await gateway.close();
   });
 
   testWidgets('the register signs in, pages, searches and opens a learner', (tester) async {
@@ -331,7 +349,7 @@ void main() {
     await tapText(tester, 'Back to the start');
     expect(gateway.signOutCalls, 2);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.textContaining('Every learner'), findsOneWidget);
+    expect(find.textContaining('Your register,'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
     await gateway.close();
   });

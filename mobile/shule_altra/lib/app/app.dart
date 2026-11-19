@@ -198,6 +198,7 @@ class _ShuleAppState extends State<ShuleApp> {
           key: const ValueKey('liveUnavailable'),
           problem: _liveProblem ?? 'This build cannot connect to a school.',
           onSample: _useSample,
+          onRetry: _connectLive,
           onBack: _restart,
         );
       case AppMode.sample:
@@ -390,11 +391,13 @@ class _LiveUnavailable extends StatelessWidget {
     super.key,
     required this.problem,
     required this.onSample,
+    required this.onRetry,
     required this.onBack,
   });
 
   final String problem;
   final VoidCallback onSample;
+  final VoidCallback onRetry;
   final VoidCallback onBack;
 
   @override
@@ -418,10 +421,16 @@ class _LiveUnavailable extends StatelessWidget {
             ),
             const SizedBox(height: Space.xl),
             GradientButton(
-              label: 'Use the sample preview instead',
-              onPressed: onSample,
-              icon: Icons.visibility_outlined,
+              label: 'Try connecting again',
+              onPressed: onRetry,
+              icon: Icons.refresh_rounded,
             ),
+            const SizedBox(height: Space.sm),
+            SizedBox(width: double.infinity, child: OutlinedButton.icon(
+              onPressed: onSample,
+              icon: const Icon(Icons.visibility_outlined),
+              label: const Text('Use the sample preview instead'),
+            )),
             const SizedBox(height: Space.sm),
             SizedBox(
               width: double.infinity,

@@ -195,6 +195,13 @@ void main() {
 
       expect(find.textContaining('do not match the demo account'), findsOneWidget);
       expect(find.text('Amina Juma'), findsNothing);
+      await tester.enterText(password, 'new-attempt');
+      await tester.pumpAndSettle();
+      expect(find.textContaining('do not match the demo account'), findsNothing,
+          reason: 'an old error must not remain after editing');
+      await _tap(tester, 'Fill the demo credential');
+      await _tap(tester, 'Sign in to the demo');
+      expect(find.text('Amina Juma'), findsOneWidget);
       await gateway.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     });
