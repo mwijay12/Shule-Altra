@@ -57,4 +57,36 @@ void main() {
     session.dispose(); await gateway.close();
   });
 
+  testWidgets('unrecorded class and fee figures are not presented as zero', (tester) async {
+    final gateway = FakeGateway(rows: [Learner.fromDocument('one', {'name': 'A'})]);
+    final session = AppSession(gateway);
+    await session.start(); await gateway.signIn(); await tester.pump();
+    await session.loadFirstPage();
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(
+      body: HomeScreen(session: session, onOpenRegister: () {}, onOpenDay: () {}, onOpenMore: () {}),
+    )));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Balances are not recorded for this page.'), 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('—'), findsNWidgets(2));
+    expect(find.text('1 learner has no recorded class.'), findsOneWidget);
+    expect(find.textContaining('Page read on this device'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink()); session.dispose(); await gateway.close();
+  });
+
+  testWidgets('an empty page does not assert zero school totals', (tester) async {
+    final gateway = FakeGateway(rows: []);
+    final session = AppSession(gateway);
+    await session.start(); await gateway.signIn(); await tester.pump();
+    await session.loadFirstPage();
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: Scaffold(
+      body: HomeScreen(session: session, onOpenRegister: () {}, onOpenDay: () {}, onOpenMore: () {}),
+    )));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('This page has no learners'), 150,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.text('No open balance on this page.'), findsNothing);
+    await tester.pumpWidget(const SizedBox.shrink()); session.dispose(); await gateway.close();
+  });
+
 }

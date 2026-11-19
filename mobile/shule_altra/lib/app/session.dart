@@ -38,6 +38,7 @@ class AppSession extends ChangeNotifier {
 
   LoadState _state = LoadState.idle;
   List<Learner> _rows = const [];
+  DateTime? _lastReadAt;
 
   /// The cursor that fetched the page on screen, and the cursor for the page
   /// after it. Two different values: paging backwards needs the cursor that
@@ -69,6 +70,9 @@ class AppSession extends ChangeNotifier {
   LoadState get state => _state;
 
   List<Learner> get rows => _rows;
+
+  /// Time the current page finished loading, on this device. Not server freshness.
+  DateTime? get lastReadAt => _lastReadAt;
 
   bool get canGoBack => _history.isNotEmpty;
 
@@ -150,6 +154,7 @@ class AppSession extends ChangeNotifier {
     _generation++;
     _busy = false;
     _rows = const [];
+    _lastReadAt = null;
     _pageCursor = null;
     _forwardCursor = null;
     _history.clear();
@@ -212,15 +217,18 @@ class AppSession extends ChangeNotifier {
       _pageCursor = after;
       _forwardCursor = page.nextCursor;
       _rows = page.rows;
+      _lastReadAt = DateTime.now();
       _state = LoadState.ready;
     } on GatewayFailure catch (error) {
       if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
+      _lastReadAt = null;
       _state = LoadState.failed;
       _lastFailure = error.message;
     } catch (_) {
       if (_disposed || generation != _generation || uid != _uid) return;
       _rows = const [];
+      _lastReadAt = null;
       _state = LoadState.failed;
       _lastFailure = 'The register could not be read. Check the connection and try again.';
     } finally {

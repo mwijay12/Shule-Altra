@@ -36,6 +36,7 @@ void main() {
     expect(session.signedIn, isTrue);
     await session.loadFirstPage();
     expect(session.state, LoadState.ready);
+    expect(session.lastReadAt, isNotNull);
     expect(session.rows.length, 2);
     expect(session.canGoForward, isTrue);
     expect(session.canGoBack, isFalse);
@@ -67,6 +68,7 @@ void main() {
     await Future<void>.delayed(Duration.zero);
 
     expect(session.rows, isEmpty);
+    expect(session.lastReadAt, isNull);
     expect(session.state, LoadState.idle);
     expect(session.canGoForward, isFalse);
     expect(session.canGoBack, isFalse);

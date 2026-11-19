@@ -29,3 +29,11 @@ String timeStamp(DateTime time) {
   final minute = local.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
 }
+
+/// Local device time of a completed read; does not assert server update time.
+String localDateTime(DateTime time) {
+  final local = time.toLocal();
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  return '${local.year}-$month-$day ${timeStamp(local)} (local time)';
+}

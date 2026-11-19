@@ -65,7 +65,7 @@ class Learner {
     return Learner(
       id: id,
       name: rawName.isEmpty ? missingName : rawName,
-      className: className.isEmpty ? 'Class not recorded' : className,
+      className: className.isEmpty ? missingClass : className,
       status: text('status').isEmpty ? 'Status not recorded' : text('status'),
       guardianName: text('guardianName'),
       guardianPhone: text('guardianPhone'),
@@ -97,6 +97,7 @@ class Learner {
 
   /// The words shown when a stored record has no name.
   static const String missingName = 'Unnamed learner';
+  static const String missingClass = 'Class not recorded';
 
   /// True when the row matches a query across loaded name, class, stream or ID.
   bool matches(String query) {
