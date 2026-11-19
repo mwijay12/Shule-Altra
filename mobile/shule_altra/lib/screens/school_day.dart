@@ -122,13 +122,15 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                           ],
                         ),
                       ),
-                      if (mark != null)
-                        Text(
-                          'Marked ${mark.label.toLowerCase()}',
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.success),
-                        ),
                     ],
                   ),
+                  if (mark != null) ...[
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      'Marked ${mark.label.toLowerCase()}',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.success),
+                    ),
+                  ],
                   const SizedBox(height: Space.md),
                   Wrap(
                     spacing: Space.sm,
