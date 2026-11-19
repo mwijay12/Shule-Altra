@@ -70,6 +70,8 @@ void main() {
         scrollable: find.byType(Scrollable).first);
     expect(find.text('—'), findsNWidgets(2));
     expect(find.text('1 learner has no recorded class.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Page read on this device'), 120,
+        scrollable: find.byType(Scrollable).first);
     expect(find.textContaining('Page read on this device'), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink()); session.dispose(); await gateway.close();
   });
