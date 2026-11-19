@@ -22,7 +22,11 @@ void main() {
       body: SchoolDayScreen(session: session, onOpenRegister: () {}),
     )));
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('Present').first, 150, scrollable: find.byType(Scrollable).first);
+    for (var step = 0; step < 10 && find.text('Present').evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Present').first); await tester.pumpAndSettle();
     await tester.tap(find.text('Present').first); await tester.pumpAndSettle();
     // The fictional timetable is reachable from the top without scrolling past the sheet.
     tester.state<ScrollableState>(find.byType(Scrollable).first).position.jumpTo(0);

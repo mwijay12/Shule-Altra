@@ -254,9 +254,15 @@ void main() {
     );
     expect(find.text('0 of 6 marked'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('Present').first, 180, scrollable: find.byType(Scrollable).first);
+    for (var step = 0; step < 10 && find.text('Present').evaluate().isEmpty; step++) {
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
+      await tester.pumpAndSettle();
+    }
+    await tester.ensureVisible(find.text('Present').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Present').first);
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('1 of 6 marked'), -150, scrollable: find.byType(Scrollable).first);
     expect(find.text('1 of 6 marked'), findsOneWidget);
 
     await tester.scrollUntilVisible(
