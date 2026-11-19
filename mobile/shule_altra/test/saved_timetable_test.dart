@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/session.dart';
 import 'package:shule_altra_mobile/data/saved_timetable.dart';
+import 'package:shule_altra_mobile/data/school_gateway.dart';
 import 'package:shule_altra_mobile/design/theme.dart';
 import 'package:shule_altra_mobile/screens/saved_timetable.dart';
 
@@ -83,4 +84,35 @@ void main() {
     session.dispose();
     await gateway.close();
   });
+  testWidgets('sign-out invalidation clears loaded and pending timetable even if sign-out fails', (tester) async {
+    final gateway = FakeGateway();
+    final session = AppSession(gateway);
+    await session.start();
+    await gateway.signIn();
+    await tester.pump();
+    final reader = FakeTimetableReader();
+    await tester.pumpWidget(MaterialApp(theme: buildTheme(Brightness.light), home: SavedTimetableScreen(session: session, reader: reader)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pump();
+    reader.pending.single.complete(const SavedTimetable({'monday_p1': TimetableSlot('Private lesson', '', '')}));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Private lesson'), 150, scrollable: find.byType(Scrollable).first);
+    expect(find.text('Private lesson'), findsOneWidget);
+    expect(find.textContaining('Read from the server at'), findsOneWidget);
+    gateway.signOutFailure = const GatewayFailure('Could not sign out');
+    expect(await session.signOut(), isFalse);
+    await tester.pumpAndSettle();
+    expect(find.text('Private lesson'), findsNothing);
+    await tester.ensureVisible(find.text('Load timetable')); await tester.pumpAndSettle();
+    await tester.tap(find.text('Load timetable')); await tester.pump();
+    expect(await session.signOut(), isFalse);
+    await tester.pump();
+    reader.pending.last.complete(const SavedTimetable({'monday_p1': TimetableSlot('Stale lesson', '', '')}));
+    await tester.pumpAndSettle();
+    expect(find.text('Stale lesson'), findsNothing);
+    expect(find.textContaining('Choose a class and stream'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    session.dispose(); await gateway.close();
+  });
+
 }

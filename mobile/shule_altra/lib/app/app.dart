@@ -247,6 +247,7 @@ class _Shell extends StatefulWidget {
 
 class _ShellState extends State<_Shell> {
   bool _visitedDay = false;
+  bool _visitedRegister = false;
 
   @override
   Widget build(BuildContext context) {
@@ -256,6 +257,7 @@ class _ShellState extends State<_Shell> {
     final tab = widget.tab;
     final onTab = widget.onTab;
     if (tab == 2) _visitedDay = true;
+    if (tab == 1) _visitedRegister = true;
 
     void openLearner(Learner learner) {
       showLearnerDetail(context, learner: learner, isSample: isSample, session: session);
@@ -268,32 +270,41 @@ class _ShellState extends State<_Shell> {
           animation: session,
           builder: (context, _) => Stack(
             children: [
-              if (tab != 2)
-                switch (tab) {
-                  0 => HomeScreen(
+              if (tab == 0)
+                HomeScreen(
+                  session: session,
+                  isSample: isSample,
+                  onOpenRegister: () => onTab(1),
+                  onOpenDay: () => onTab(2),
+                  onOpenMore: () => onTab(3),
+                )
+              else if (tab == 3)
+                MoreScreen(
+                  session: session,
+                  isSample: isSample,
+                  onSignOut: session.signOut,
+                  onRestart: widget.onRestart,
+                  onThemeChanged: widget.onThemeChanged,
+                  themeMode: widget.themeMode,
+                ),
+              if (_visitedRegister)
+                Offstage(
+                  key: const ValueKey('register-tab'),
+                  offstage: tab != 1,
+                  child: TickerMode(
+                    enabled: tab == 1,
+                    child: RegisterScreen(
                       session: session,
                       isSample: isSample,
-                      onOpenRegister: () => onTab(1),
-                      onOpenDay: () => onTab(2),
-                      onOpenMore: () => onTab(3),
-                    ),
-                  1 => RegisterScreen(
-                      session: session,
-                      isSample: isSample,
+                      isActive: tab == 1,
                       onSignIn: session.signIn,
                       onOpenLearner: openLearner,
                     ),
-                  _ => MoreScreen(
-                      session: session,
-                      isSample: isSample,
-                      onSignOut: session.signOut,
-                      onRestart: widget.onRestart,
-                      onThemeChanged: widget.onThemeChanged,
-                      themeMode: widget.themeMode,
-                    ),
-                },
+                  ),
+                ),
               if (_visitedDay)
                 Offstage(
+                  key: const ValueKey('day-tab'),
                   offstage: tab != 2,
                   child: TickerMode(
                     enabled: tab == 2,

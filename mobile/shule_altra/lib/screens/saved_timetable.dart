@@ -8,6 +8,7 @@ import '../data/saved_timetable.dart';
 import '../data/school_gateway.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../format.dart';
 
 class SavedTimetableScreen extends StatefulWidget {
   const SavedTimetableScreen({super.key, required this.session, required this.reader});
@@ -23,6 +24,8 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
   String _stream = timetableStreams.first;
   String _day = timetableDays.first;
   String? _uid;
+  late int _revision;
+  DateTime? _readAt;
   SavedTimetable? _schedule;
   String? _error;
   bool _loading = false;
@@ -33,6 +36,7 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
   void initState() {
     super.initState();
     _uid = widget.session.uid;
+    _revision = widget.session.dataRevision;
     widget.session.addListener(_sessionChanged);
   }
 
@@ -45,15 +49,17 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
   void _clear() {
     _generation++;
     _schedule = null;
+    _readAt = null;
     _error = null;
     _loading = false;
     _loaded = false;
   }
 
   void _sessionChanged() {
-    if (_uid != widget.session.uid) {
+    if (_uid != widget.session.uid || _revision != widget.session.dataRevision) {
       setState(() {
         _uid = widget.session.uid;
+        _revision = widget.session.dataRevision;
         _clear();
       });
     }
@@ -63,21 +69,22 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
     final uid = widget.session.uid;
     if (uid == null) return;
     final generation = ++_generation;
+    final revision = widget.session.dataRevision;
     final className = _className;
     final stream = _stream;
-    setState(() { _loading = true; _loaded = false; _schedule = null; _error = null; });
+    setState(() { _loading = true; _loaded = false; _schedule = null; _readAt = null; _error = null; });
     try {
       final value = await widget.reader.loadTimetable(className, stream);
-      if (!mounted || generation != _generation || uid != widget.session.uid) return;
-      setState(() { _schedule = value; _loaded = true; });
+      if (!mounted || generation != _generation || revision != widget.session.dataRevision || uid != widget.session.uid) return;
+      setState(() { _schedule = value; _loaded = true; _readAt = DateTime.now(); });
     } on GatewayFailure catch (error) {
-      if (!mounted || generation != _generation || uid != widget.session.uid) return;
+      if (!mounted || generation != _generation || revision != widget.session.dataRevision || uid != widget.session.uid) return;
       setState(() => _error = error.message);
     } catch (_) {
-      if (!mounted || generation != _generation || uid != widget.session.uid) return;
+      if (!mounted || generation != _generation || revision != widget.session.dataRevision || uid != widget.session.uid) return;
       setState(() => _error = 'The timetable could not be read. Check the connection and try again.');
     } finally {
-      if (mounted && generation == _generation && uid == widget.session.uid) {
+      if (mounted && generation == _generation && revision == widget.session.dataRevision && uid == widget.session.uid) {
         setState(() => _loading = false);
       }
     }
@@ -123,7 +130,15 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
           else if (_loaded && schedule == null) const Notice(title: 'No saved schedule', body: 'No schedule was found for this class and stream.')
           else if (schedule == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.')
           else ...[
-            Text('$_day · $_className $_stream', style: Theme.of(context).textTheme.titleLarge),
+            ShuleCard(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$_day · $_className $_stream', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: Space.xs),
+                Text('Read from the server at ${timeStamp(_readAt!)} · reload for newer changes',
+                    style: Theme.of(context).textTheme.bodySmall),
+              ],
+            )),
             const SizedBox(height: Space.sm),
             for (final period in timetablePeriods)
               Builder(builder: (context) {

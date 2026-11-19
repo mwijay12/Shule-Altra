@@ -21,12 +21,15 @@ class RegisterScreen extends StatefulWidget {
     super.key,
     required this.session,
     this.isSample = false,
+    this.isActive = true,
     required this.onSignIn,
     required this.onOpenLearner,
   });
 
   final AppSession session;
   final bool isSample;
+  /// Inactive tabs keep UI state but must not initiate reads.
+  final bool isActive;
   final VoidCallback onSignIn;
   final ValueChanged<Learner> onOpenLearner;
 
@@ -44,10 +47,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int _filterVersion = 0;
   String? _observedUid;
   LoadState _observedState = LoadState.idle;
+  late int _observedRevision;
 
   @override
   void initState() {
     super.initState();
+    _observedUid = widget.session.uid;
+    _observedRevision = widget.session.dataRevision;
     widget.session.addListener(_onSessionChanged);
   }
 
@@ -70,12 +76,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _onSessionChanged() {
     final session = widget.session;
     final changedAccount = _observedUid != session.uid;
+    final invalidated = _observedRevision != session.dataRevision;
+    _observedRevision = session.dataRevision;
     final startedRead = session.state == LoadState.loading && _observedState != LoadState.loading;
     _observedUid = session.uid;
     _observedState = session.state;
-    if (!session.signedIn) _requestedFirstPage = false;
+    if (!session.signedIn || invalidated) _requestedFirstPage = false;
     // Page-only controls cannot survive a new read or an account change.
-    if (changedAccount || startedRead) setState(_clearFilters);
+    if (changedAccount || invalidated || startedRead) setState(_clearFilters);
   }
 
   /// Loads the first page after the frame that first needs it.
@@ -83,12 +91,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   /// Deferred on purpose: [AppSession.loadFirstPage] notifies listeners
   /// synchronously, and notifying during a build would be a framework error.
   void _scheduleFirstLoad() {
-    if (_requestedFirstPage) return;
-    if (!widget.session.signedIn) return;
-    if (widget.session.state != LoadState.idle) return;
+    if (_requestedFirstPage || !widget.isActive || !widget.session.signedIn ||
+        widget.session.busy || widget.session.state != LoadState.idle) return;
     _requestedFirstPage = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      if (!widget.isActive || widget.session.busy || !widget.session.signedIn ||
+          widget.session.state != LoadState.idle) {
+        _requestedFirstPage = false;
+        return;
+      }
       widget.session.loadFirstPage();
     });
   }
