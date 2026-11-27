@@ -399,6 +399,7 @@ class _ShuleAppState extends State<ShuleApp> {
 /// destinations and pages to the signed-in staff role.
 class _AuthenticatedShell extends StatelessWidget {
   const _AuthenticatedShell({
+    super.key,
     required this.session,
     required this.workspace,
     required this.themeController,

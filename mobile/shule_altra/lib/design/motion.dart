@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 abstract final class Curves2 {
+  static const Curve standard = Curves.easeOutCubic;
   static const Curve enter = Curves.easeOutCubic;
   static const Curve exit = Curves.easeInCubic;
   static const Curve spring = Curves.easeOutBack;

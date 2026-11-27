@@ -21,6 +21,7 @@ abstract final class Space {
   static const double xl = 24;
   static const double xxl = 32;
   static const double xxxl = 48;
+  static const double gutter = 16;
 
   /// Bottom clearance so scrollable content clears the floating bottom dock.
   static const double dockClearance = 108;
@@ -33,6 +34,7 @@ abstract final class Corners {
   static const double button = 14;
   static const double card = 16;
   static const double glass = 20;
+  static const double panel = 20;
   static const double hero = 24;
   static const double dock = 28;
   static const double pill = 999;
