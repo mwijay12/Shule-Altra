@@ -33,14 +33,20 @@ void main() {
 
     expect(find.text('150 shown'), findsOneWidget);
 
-    // Filter to Form 3 + search for exact website top defaulter ALT-2026-107.
+    // Filter to Form 3 + search by ID for exact website top defaulter ALT-2026-107.
+    await tester.ensureVisible(find.text('Form 3'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Form 3'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'FARAJA MUSSA SHAYO');
+
+    await tester.enterText(find.byType(TextField).first, 'ALT-2026-107');
     await tester.pumpAndSettle();
     expect(find.text('FARAJA MUSSA SHAYO'), findsOneWidget);
+    expect(find.text('1 shown'), findsOneWidget);
 
     // Switch to Form 1 -> Form 3 student should no longer match.
+    await tester.ensureVisible(find.text('Form 1'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Form 1'));
     await tester.pumpAndSettle();
     expect(find.text('No matching learners'), findsOneWidget);
