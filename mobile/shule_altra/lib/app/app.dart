@@ -279,7 +279,7 @@ class _Shell extends StatelessWidget {
                 MaterialPageRoute<void>(
                   builder: (_) => SavedTimetableScreen(
                     session: session,
-                    reader: gateway,
+                    reader: gateway as TimetableReader,
                   ),
                 ),
               )
