@@ -64,13 +64,17 @@ void main() {
     expect(find.byType(ShuleLogoMark), findsWidgets);
     expect(find.text('Staff Portal Login'), findsOneWidget);
 
-    for (final email in const ['admin@shule.pro', 'teacher@shule.pro', 'bursar@shule.pro']) {
+    for (final label in const [
+      'Administrator · Head Master',
+      'Teacher · Academic Master',
+      'Bursar · School Bursar',
+    ]) {
       await tester.scrollUntilVisible(
-        find.textContaining(email),
+        find.text(label),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      expect(find.textContaining(email), findsWidgets);
+      expect(find.text(label), findsOneWidget);
     }
 
     await tester.scrollUntilVisible(

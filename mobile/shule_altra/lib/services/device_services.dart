@@ -32,6 +32,12 @@ abstract final class ShulePdfService {
   static final PdfColor _muted = PdfColor.fromHex('#506077');
   static final PdfColor _border = PdfColor.fromHex('#D8E2EE');
 
+  static String _ascii(String text) => text
+      .replaceAll('·', '|')
+      .replaceAll('–', '-')
+      .replaceAll('—', '-')
+      .replaceAll('−', '-');
+
   static pw.Widget _letterhead(String title, String subtitle) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -46,7 +52,7 @@ abstract final class ShulePdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Text(
-                SchoolProfile.schoolName.toUpperCase(),
+                _ascii(SchoolProfile.schoolName.toUpperCase()),
                 style: pw.TextStyle(
                   color: PdfColors.white,
                   fontSize: 15,
@@ -55,7 +61,7 @@ abstract final class ShulePdfService {
               ),
               pw.SizedBox(height: 3),
               pw.Text(
-                '${SchoolProfile.location} · ${SchoolProfile.motto}',
+                _ascii('${SchoolProfile.location} | ${SchoolProfile.motto}'),
                 style: const pw.TextStyle(color: PdfColors.white, fontSize: 9),
               ),
             ],
@@ -64,7 +70,7 @@ abstract final class ShulePdfService {
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
               pw.Text(
-                title,
+                _ascii(title),
                 style: pw.TextStyle(
                   color: PdfColors.white,
                   fontSize: 12,
@@ -73,7 +79,7 @@ abstract final class ShulePdfService {
               ),
               pw.SizedBox(height: 2),
               pw.Text(
-                subtitle,
+                _ascii(subtitle),
                 style: const pw.TextStyle(color: PdfColors.white, fontSize: 9),
               ),
             ],
@@ -359,7 +365,7 @@ abstract final class ShulePdfService {
               cellStyle: pw.TextStyle(fontSize: 9, color: _ink),
               border: pw.TableBorder.all(color: _border),
               headers: const ['Time', 'Subject', 'Teacher'],
-              data: entry.value.map((l) => [l.time, l.subject, l.teacher]).toList(),
+              data: entry.value.map((l) => [_ascii(l.time), _ascii(l.subject), _ascii(l.teacher)]).toList(),
             ),
             pw.SizedBox(height: 10),
           ],
