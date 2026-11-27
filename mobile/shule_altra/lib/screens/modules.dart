@@ -473,9 +473,16 @@ class AnalyticsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(entry.key, style: Theme.of(context).textTheme.titleSmall),
+                                  Expanded(
+                                    child: Text(
+                                      entry.key,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.titleSmall,
+                                    ),
+                                  ),
+                                  const SizedBox(width: Space.sm),
                                   Text(
                                     formatTzs(entry.value),
                                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
@@ -507,8 +514,10 @@ class AnalyticsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Wrap(
+                    spacing: Space.md,
+                    runSpacing: Space.xs,
+                    alignment: WrapAlignment.spaceBetween,
                     children: [
                       Text('Boarders · ${workspace.boarderCount}', style: Theme.of(context).textTheme.titleSmall),
                       Text('Day scholars · ${workspace.dayScholarCount}', style: Theme.of(context).textTheme.titleSmall),
@@ -539,9 +548,16 @@ class AnalyticsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(entry.key, style: Theme.of(context).textTheme.bodyMedium),
+                                  Expanded(
+                                    child: Text(
+                                      entry.key,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                  const SizedBox(width: Space.sm),
                                   Text(
                                     '${entry.value} students',
                                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
