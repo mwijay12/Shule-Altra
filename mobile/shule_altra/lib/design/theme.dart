@@ -193,6 +193,7 @@ ThemeData buildTheme(Brightness brightness) {
       backgroundColor: tokens.ink,
       contentTextStyle: TextStyle(color: tokens.canvas, fontSize: 14, height: 1.4),
       behavior: SnackBarBehavior.floating,
+      insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.pill)),
     ),
     progressIndicatorTheme: ProgressIndicatorThemeData(color: tokens.primary),
