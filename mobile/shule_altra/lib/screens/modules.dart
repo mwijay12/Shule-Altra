@@ -524,7 +524,7 @@ class AnalyticsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: Space.lg),
-            const SectionHead(title: 'NECTA CSEE divisions', trailing: '$total learners'),
+            SectionHead(title: 'NECTA CSEE divisions', trailing: '$total learners'),
             const SizedBox(height: Space.sm),
             ShuleGlassCard(
               child: Column(
