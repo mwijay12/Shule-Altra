@@ -1,35 +1,34 @@
-/// The app root: theme, gateway choice, onboarding, and the four screens.
+/// Single-school Shule Altra root: adaptive Auto/Light/Dark theme, official
+/// app icon onboarding, dedicated Staff Sign-In, and the 4-tab Blue Glass Shell.
 library;
 
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import '../data/firebase_gateway.dart';
-import '../data/learner.dart';
-import '../data/onboarding_store.dart';
+import '../data/demo_credentials.dart';
+import '../data/demo_school_store.dart';
 import '../data/sample_gateway.dart';
-import '../data/saved_timetable.dart';
 import '../data/school_gateway.dart';
 import '../design/dock.dart';
 import '../design/glass.dart';
 import '../design/motion.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
-import '../design/widgets.dart';
+import '../screens/campus.dart';
 import '../screens/home.dart';
-import '../screens/learner_detail.dart';
 import '../screens/more.dart';
 import '../screens/onboarding.dart';
 import '../screens/register.dart';
-import '../screens/saved_timetable.dart';
+import '../screens/reports.dart';
 import '../screens/school_day.dart';
+import '../screens/sign_in.dart';
+import '../services/device_services.dart';
 import 'session.dart';
+import 'theme_controller.dart';
 
-/// Which data path the app was started with. Chosen before the first frame, and
-/// never swapped at runtime: a person must always know whether they are looking
-/// at their school or at fictional learners.
-enum AppMode { onboarding, sample, live, liveUnavailable }
+enum AppMode { onboarding, signIn, sample, live, liveUnavailable }
 
 class ShuleApp extends StatefulWidget {
   const ShuleApp({super.key})
@@ -38,10 +37,6 @@ class ShuleApp extends StatefulWidget {
         textScale = null,
         _injected = null;
 
-  /// A gateway may be injected by a test. When it is, the app starts in
-  /// [initialMode] (onboarding unless the test says otherwise), uses that gateway
-  /// for the sample path too, and [themeMode] can pin the theme instead of
-  /// following the phone.
   const ShuleApp.withGateway({
     super.key,
     required SchoolGateway gateway,
@@ -53,7 +48,8 @@ class ShuleApp extends StatefulWidget {
   final SchoolGateway? _injected;
   final AppMode initialMode;
 
-  /// Null means "follow the phone's setting", which is what ships.
+  /// Null means follow the phone's setting (`ThemeMode.system`) with persisted
+  /// user overrides inside More & Settings.
   final ThemeMode? themeMode;
 
   /// Tests pin the system font scale here. Null follows the phone.
@@ -64,198 +60,298 @@ class ShuleApp extends StatefulWidget {
 }
 
 class _ShuleAppState extends State<ShuleApp> {
-  late ThemeMode _themeMode = widget.themeMode ?? ThemeMode.system;
-
-  // Built once: a new ThemeData on every tab change would restart Flutter's
-  // implicit theme animations and re-lay out the whole app.
+  late final ThemeController _themeController = ThemeController(
+    initial: widget.themeMode ?? ThemeMode.system,
+    persist: widget.themeMode == null,
+  );
   late final ThemeData _light = buildTheme(Brightness.light);
   late final ThemeData _dark = buildTheme(Brightness.dark);
-  AppMode? _mode;
+  late final SchoolWorkspace _workspace = SchoolWorkspace();
+
+  late AppMode _mode = widget.initialMode;
   AppSession? _session;
-  String? _liveProblem;
   int _tab = 0;
+  SchoolDayTab _schoolDayTab = SchoolDayTab.attendance;
 
   @override
   void initState() {
     super.initState();
-    _mode = widget.initialMode;
-    final injected = widget._injected;
-    // Onboarding has no data path yet, so no session is started for it.
-    if (injected != null && widget.initialMode != AppMode.onboarding) {
-      _startSession(injected);
+    if (widget.themeMode == null) {
+      unawaited(_themeController.load());
     }
+    unawaited(ShuleNotificationService.initialize());
+    _ensureSession();
   }
 
-  void _startSession(SchoolGateway gateway) {
+  AppSession _ensureSession() {
+    final existing = _session;
+    if (existing != null) return existing;
+    final gateway = widget._injected ?? SampleGateway();
     final session = AppSession(gateway);
-    session.start();
+    unawaited(session.start());
     _session = session;
+    return session;
   }
 
   @override
   void dispose() {
     _session?.dispose();
+    _workspace.dispose();
+    _themeController.dispose();
     super.dispose();
   }
 
-  Future<void> _connectLive() async {
-    setState(() {
-      _mode = AppMode.live;
-      _liveProblem = null;
-      _tab = 0;
-    });
-    try {
-      final live = await LiveSchool.boot();
-      // An async gap: this widget may be gone by now, and because _session was
-      // disposed with it, starting a session here would leak a change notifier.
-      if (!mounted) {
-        unawaited(live.gateway.dispose());
-        return;
-      }
-      setState(() => _startSession(live.gateway));
-    } on GatewayFailure catch (error) {
-      if (!mounted) return;
-      setState(() {
-        _mode = AppMode.liveUnavailable;
-        _liveProblem = error.message;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _mode = AppMode.liveUnavailable;
-        _liveProblem = 'Firebase could not start for a reason this build does not recognise. '
-            'Nothing was connected.';
-      });
-    }
+  void _openSignIn() {
+    _ensureSession();
+    setState(() => _mode = AppMode.signIn);
   }
 
-  void _useSample() {
-    // A test injects one gateway and both paths use it; the shipped app always
-    // gets the real sample gateway here.
-    final gateway = widget._injected ?? SampleGateway();
+  Future<void> _enterQuickDemo() async {
+    final session = _ensureSession();
+    _workspace.setActiveStaff(SchoolProfile.demoRoles.first);
+    if (session.acceptsDemoCredential) {
+      await session.signInWithDemo(
+        DemoCredentials.demoEmail,
+        DemoCredentials.demoPassword,
+      );
+    }
+    if (!mounted) return;
     setState(() {
       _mode = AppMode.sample;
-      _liveProblem = null;
       _tab = 0;
-      _session?.dispose();
-      _session = null;
-      _startSession(gateway);
     });
   }
 
-  void _restart() {
+  void _onAuthenticated() {
     setState(() {
-      _session?.dispose();
-      _session = null;
-      _mode = AppMode.onboarding;
-      _liveProblem = null;
+      _mode = AppMode.sample;
       _tab = 0;
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Shule Altra',
-      debugShowCheckedModeBanner: false,
-      theme: _light,
-      darkTheme: _dark,
-      themeMode: _themeMode,
-      // MaterialApp installs the theme; the switch below therefore reads motion
-      // preferences from a context that already has both themes available.
-      home: Builder(
-        builder: (context) {
-          final scaled = widget.textScale == null
-              ? _screen()
-              : MediaQuery(
-                  data: MediaQuery.of(context)
-                      .copyWith(textScaler: TextScaler.linear(widget.textScale!)),
-                  child: _screen(),
-                );
-          return AnimatedSwitcher(
-            duration: MotionPrefs.of(context).base,
-            child: scaled,
-          );
-        },
+  Future<void> _signOut() async {
+    final session = _session;
+    if (session != null) {
+      await session.signOut();
+    }
+    if (!mounted) return;
+    setState(() {
+      _mode = AppMode.signIn;
+      _tab = 0;
+    });
+  }
+
+  void _openSchoolDay(SchoolDayTab tab) {
+    setState(() {
+      _schoolDayTab = tab;
+      _tab = 2;
+    });
+  }
+
+  void _openQuickActionsSheet(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
+          color: tokens.canvas,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(Corners.hero)),
+          border: Border.all(color: tokens.glassBorder),
+        ),
+        padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.xl),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 42,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: tokens.border,
+                    borderRadius: BorderRadius.circular(Corners.pill),
+                  ),
+                ),
+              ),
+              const SizedBox(height: Space.md),
+              Text('Quick school actions', style: Theme.of(ctx).textTheme.headlineSmall),
+              const SizedBox(height: Space.md),
+              _QuickActionTile(
+                icon: Icons.groups_rounded,
+                title: 'Learners & Enrolment',
+                subtitle: 'Search directory, add photos & enrol students',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  setState(() => _tab = 1);
+                },
+              ),
+              const SizedBox(height: Space.xs),
+              _QuickActionTile(
+                icon: Icons.print_rounded,
+                title: 'Reports & PDF Printing',
+                subtitle: 'Print report cards, fee statements & registers',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => ReportsScreen(workspace: _workspace),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: Space.xs),
+              _QuickActionTile(
+                icon: Icons.domain_rounded,
+                title: 'Staff, Hostels & Transport',
+                subtitle: 'Campus contacts, wings & school bus routes',
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: Space.xs),
+              _QuickActionTile(
+                icon: Icons.brightness_6_rounded,
+                title: 'Theme: ${_themeLabel(_themeController.mode)}',
+                subtitle: 'Tap to cycle Auto (Phone) · Light · Dark',
+                onTap: () {
+                  final next = switch (_themeController.mode) {
+                    ThemeMode.system => ThemeMode.light,
+                    ThemeMode.light => ThemeMode.dark,
+                    ThemeMode.dark => ThemeMode.system,
+                  };
+                  _themeController.setMode(next);
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _screen() {
-    final mode = _mode ?? AppMode.onboarding;
-    switch (mode) {
-      case AppMode.onboarding:
-        return OnboardingPage(
-          key: const ValueKey('onboarding'),
-          store: widget._injected == null ? const DeviceOnboardingStore() : null,
-          onConnect: _connectLive,
-          onTrySample: _useSample,
+  String _themeLabel(ThemeMode mode) => switch (mode) {
+        ThemeMode.system => 'Auto (Phone)',
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: _themeController,
+      builder: (context, _) {
+        return MaterialApp(
+          title: 'Shule Altra',
+          debugShowCheckedModeBanner: false,
+          theme: _light,
+          darkTheme: _dark,
+          themeMode: _themeController.mode,
+          builder: (context, child) {
+            final media = MediaQuery.of(context);
+            final brightness = Theme.of(context).brightness;
+            final overlay = brightness == Brightness.dark
+                ? SystemUiOverlayStyle.light.copyWith(
+                    statusBarColor: Colors.transparent,
+                    systemNavigationBarColor: Colors.transparent,
+                  )
+                : SystemUiOverlayStyle.dark.copyWith(
+                    statusBarColor: Colors.transparent,
+                    systemNavigationBarColor: Colors.transparent,
+                  );
+            final body = AnnotatedRegion<SystemUiOverlayStyle>(
+              value: overlay,
+              child: child ?? const SizedBox.shrink(),
+            );
+            if (widget.textScale == null) return body;
+            return MediaQuery(
+              data: media.copyWith(textScaler: TextScaler.linear(widget.textScale!)),
+              child: body,
+            );
+          },
+          home: _buildCurrentRoute(),
         );
-      case AppMode.liveUnavailable:
-        return _LiveUnavailable(
-          key: const ValueKey('liveUnavailable'),
-          problem: _liveProblem ?? 'This build cannot connect to a school.',
-          onSample: _useSample,
-          onBack: _restart,
-        );
-      case AppMode.sample:
-      case AppMode.live:
-        final session = _session;
-        if (session == null) {
-          // Connecting: say so, and say which path is being tried.
-          return const _Connecting(key: ValueKey('connecting'));
-        }
-        return _Shell(
-          key: ValueKey('shell-${mode.name}'),
+      },
+    );
+  }
+
+  Widget _buildCurrentRoute() {
+    final session = _ensureSession();
+    return switch (_mode) {
+      AppMode.onboarding => OnboardingPage(
+          onSignIn: _openSignIn,
+          onQuickDemo: _enterQuickDemo,
+          themeController: _themeController,
+        ),
+      AppMode.signIn || AppMode.liveUnavailable => SignInScreen(
           session: session,
-          isSample: mode == AppMode.sample,
+          workspace: _workspace,
+          onAuthenticated: _onAuthenticated,
+          onBack: () => setState(() => _mode = AppMode.onboarding),
+          themeController: _themeController,
+        ),
+      AppMode.sample || AppMode.live => _AuthenticatedShell(
+          session: session,
+          workspace: _workspace,
+          themeController: _themeController,
           tab: _tab,
-          isDark: _themeMode == ThemeMode.dark,
-          onTab: (value) => setState(() => _tab = value),
-          onToggleTheme: () => setState(
-            () => _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark,
-          ),
-          onRestart: _restart,
-        );
-    }
+          schoolDayTab: _schoolDayTab,
+          onSelectTab: (next) => setState(() => _tab = next),
+          onOpenSchoolDay: _openSchoolDay,
+          onOpenQuickActions: _openQuickActionsSheet,
+          onSignOut: _signOut,
+          onReplayOnboarding: () => setState(() => _mode = AppMode.onboarding),
+        ),
+    };
   }
 }
 
-class _Shell extends StatelessWidget {
-  const _Shell({
-    super.key,
+class _AuthenticatedShell extends StatelessWidget {
+  const _AuthenticatedShell({
     required this.session,
-    required this.isSample,
+    required this.workspace,
+    required this.themeController,
     required this.tab,
-    required this.isDark,
-    required this.onTab,
-    required this.onToggleTheme,
-    required this.onRestart,
+    required this.schoolDayTab,
+    required this.onSelectTab,
+    required this.onOpenSchoolDay,
+    required this.onOpenQuickActions,
+    required this.onSignOut,
+    required this.onReplayOnboarding,
   });
 
   final AppSession session;
-  final bool isSample;
+  final SchoolWorkspace workspace;
+  final ThemeController themeController;
   final int tab;
-  final bool isDark;
-  final ValueChanged<int> onTab;
-  final VoidCallback onToggleTheme;
-  final VoidCallback onRestart;
+  final SchoolDayTab schoolDayTab;
+  final ValueChanged<int> onSelectTab;
+  final ValueChanged<SchoolDayTab> onOpenSchoolDay;
+  final void Function(BuildContext) onOpenQuickActions;
+  final VoidCallback onSignOut;
+  final VoidCallback onReplayOnboarding;
 
-  static const _dockItems = <ShuleDockItem>[
+  static const _destinations = <ShuleDockItem>[
     ShuleDockItem(
       label: 'Home',
-      icon: Icons.grid_view_outlined,
-      activeIcon: Icons.grid_view_rounded,
+      icon: Icons.home_outlined,
+      activeIcon: Icons.home_rounded,
     ),
     ShuleDockItem(
       label: 'Learners',
-      icon: Icons.people_outline_rounded,
-      activeIcon: Icons.people_rounded,
+      icon: Icons.groups_outlined,
+      activeIcon: Icons.groups_rounded,
     ),
     ShuleDockItem(
-      label: 'Day',
-      icon: Icons.event_note_outlined,
-      activeIcon: Icons.event_note_rounded,
+      label: 'School Day',
+      icon: Icons.calendar_today_outlined,
+      activeIcon: Icons.calendar_today_rounded,
     ),
     ShuleDockItem(
       label: 'More',
@@ -266,172 +362,137 @@ class _Shell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveDark = Theme.of(context).brightness == Brightness.dark;
+    final tokens = ShuleTokens.of(context);
+    final prefs = MotionPrefs.of(context);
+    final wide = MediaQuery.sizeOf(context).width >= 960;
 
-    void openLearner(Learner learner) {
-      showLearnerDetail(context, learner: learner, isSample: isSample);
-    }
-
-    void openQuickSheet() {
-      final gateway = session.gateway;
-      final openTimetable = gateway is TimetableReader
-          ? () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => SavedTimetableScreen(
-                    session: session,
-                    reader: gateway as TimetableReader,
-                  ),
-                ),
-              )
-          : null;
-      showShuleQuickSheet(
-        context,
-        sourceLabel: session.sourceLabel,
-        isDark: effectiveDark,
-        onOpenRegister: () => onTab(1),
-        onOpenDay: () => onTab(2),
-        onOpenMore: () => onTab(3),
-        onToggleTheme: onToggleTheme,
-        onOpenSavedTimetable: openTimetable,
-      );
-    }
-
-    return ShuleBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          bottom: false,
-          child: AnimatedBuilder(
-            animation: session,
-            builder: (context, _) => switch (tab) {
-              0 => HomeScreen(
-                  session: session,
-                  onOpenRegister: () => onTab(1),
-                  onOpenDay: () => onTab(2),
-                  onOpenMore: () => onTab(3),
-                ),
-              1 => RegisterScreen(
-                  session: session,
-                  onSignIn: session.signIn,
-                  onOpenLearner: openLearner,
-                ),
-              2 => SchoolDayScreen(
-                  session: session,
-                  onOpenRegister: () => onTab(1),
-                ),
-              _ => MoreScreen(
-                  session: session,
-                  isSample: isSample,
-                  onSignOut: session.signOut,
-                  onRestart: onRestart,
-                  onToggleTheme: onToggleTheme,
-                  isDark: isDark,
-                ),
-            },
-          ),
+    final page = switch (tab) {
+      0 => HomeScreen(
+          session: session,
+          workspace: workspace,
+          onOpenLearners: () => onSelectTab(1),
+          onOpenSchoolDay: onOpenSchoolDay,
+          onOpenMore: () => onSelectTab(3),
         ),
-        bottomNavigationBar: ShuleGlassDock(
-          items: _dockItems,
-          selectedIndex: tab,
-          onSelected: onTab,
-          onQuickAction: openQuickSheet,
-          quickActionTooltip: 'Quick school actions',
+      1 => RegisterScreen(
+          session: session,
+          workspace: workspace,
         ),
-      ),
+      2 => SchoolDayScreen(
+          session: session,
+          workspace: workspace,
+          initialTab: schoolDayTab,
+        ),
+      _ => MoreScreen(
+          session: session,
+          workspace: workspace,
+          themeController: themeController,
+          onSignOut: onSignOut,
+          onShowOnboarding: onReplayOnboarding,
+        ),
+    };
+
+    final body = AnimatedSwitcher(
+      duration: prefs.fast,
+      child: KeyedSubtree(key: ValueKey<int>(tab), child: page),
     );
-  }
-}
 
-class _Connecting extends StatelessWidget {
-  const _Connecting({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: ShuleBackdrop(
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(Space.gutter),
-              child: ShuleGlassCard(
-                padding: const EdgeInsets.symmetric(horizontal: Space.xl, vertical: Space.xxl),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const SizedBox.square(
-                      dimension: 28,
-                      child: CircularProgressIndicator(strokeWidth: 2.6),
-                    ),
-                    const SizedBox(height: Space.lg),
-                    Text(
-                      'Starting Firebase and checking the connection…',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+    if (wide) {
+      return Scaffold(
+        backgroundColor: tokens.canvas,
+        body: ShuleBackdrop(
+          child: SafeArea(
+            child: Row(
+              children: [
+                NavigationRail(
+                  selectedIndex: tab,
+                  onDestinationSelected: onSelectTab,
+                  labelType: NavigationRailLabelType.all,
+                  backgroundColor: Colors.transparent,
+                  destinations: [
+                    for (final d in _destinations)
+                      NavigationRailDestination(
+                        icon: Icon(d.icon),
+                        selectedIcon: Icon(d.activeIcon),
+                        label: Text(d.label),
+                      ),
                   ],
                 ),
-              ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 960),
+                      child: body,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+      );
+    }
+
+    return Scaffold(
+      backgroundColor: tokens.canvas,
+      body: ShuleBackdrop(
+        child: Stack(
+          children: [
+            SafeArea(bottom: false, child: body),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: ShuleGlassDock(
+                items: _destinations,
+                selectedIndex: tab,
+                onSelected: onSelectTab,
+                quickActionTooltip: 'Quick school actions',
+                onQuickAction: () => onOpenQuickActions(context),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _LiveUnavailable extends StatelessWidget {
-  const _LiveUnavailable({
-    super.key,
-    required this.problem,
-    required this.onSample,
-    required this.onBack,
+class _QuickActionTile extends StatelessWidget {
+  const _QuickActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
   });
 
-  final String problem;
-  final VoidCallback onSample;
-  final VoidCallback onBack;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    return Scaffold(
-      body: ShuleBackdrop(
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxl),
-            children: [
-              const BrandBar(),
-              const SizedBox(height: Space.xl),
-              Text('Connecting to your school', style: Theme.of(context).textTheme.displaySmall),
-              const SizedBox(height: Space.lg),
-              Notice(title: 'This build is not connected', body: problem, tone: NoticeTone.danger),
-              const SizedBox(height: Space.lg),
-              ShuleGlassCard(
-                child: Text(
-                  'The live path needs Firebase values that match your school\'s project, an '
-                  'Android app registered for this package name, and a Google sign-in client for '
-                  'the same signing key. Until all three exist, nothing here will pretend to '
-                  'reach a school.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-                ),
-              ),
-              const SizedBox(height: Space.xl),
-              GradientButton(
-                label: 'Use the sample preview instead',
-                onPressed: onSample,
-                icon: Icons.visibility_outlined,
-              ),
-              const SizedBox(height: Space.sm),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: onBack,
-                  child: const Text('Back to the start'),
-                ),
-              ),
-            ],
+    return ShuleGlassCard(
+      padding: const EdgeInsets.all(Space.md),
+      onTap: onTap,
+      child: Row(
+        children: [
+          ShuleGlyph(icon: icon, size: 40),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
+                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
           ),
-        ),
+          Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+        ],
       ),
     );
   }

@@ -122,42 +122,117 @@ class GradientButton extends StatelessWidget {
   }
 }
 
-/// Editorial app header: blue rounded mark, wordmark, and status pill.
+/// Official Shule Altra blue shield-with-checkmark app icon.
 ///
-/// Uses a solid blue mark (never a gradient [DecoratedBox]) so the onboarding
-/// screen's first gradient remains its hero card.
+/// Renders the bundled `assets/images/shule_icon.png` (matching the website's
+/// `src/app/icon2.png` and the Android launcher icon) with a crisp vector
+/// shield fallback so it looks identical everywhere, including in tests.
+class ShuleLogoMark extends StatelessWidget {
+  const ShuleLogoMark({super.key, this.size = 40, this.radius});
+
+  final double size;
+  final double? radius;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    final corner = radius ?? (size * 0.28).clamp(10.0, 26.0);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(corner),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.primary.withValues(alpha: 0.30),
+            blurRadius: size * 0.36,
+            offset: Offset(0, size * 0.14),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(corner),
+        child: Image.asset(
+          'assets/images/shule_icon.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => CustomPaint(
+            size: Size.square(size),
+            painter: const _ShuleShieldFallbackPainter(),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShuleShieldFallbackPainter extends CustomPainter {
+  const _ShuleShieldFallbackPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF1256C4), Color(0xFF0B87C1)],
+        ).createShader(rect),
+    );
+    final w = size.width;
+    final h = size.height;
+    final shield = Path()
+      ..moveTo(w * 0.50, h * 0.16)
+      ..lineTo(w * 0.78, h * 0.27)
+      ..lineTo(w * 0.78, h * 0.52)
+      ..cubicTo(w * 0.78, h * 0.69, w * 0.65, h * 0.80, w * 0.50, h * 0.85)
+      ..cubicTo(w * 0.35, h * 0.80, w * 0.22, h * 0.69, w * 0.22, h * 0.52)
+      ..lineTo(w * 0.22, h * 0.27)
+      ..close();
+    canvas.drawPath(
+      shield,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (w * 0.065).clamp(2.0, 6.0)
+        ..strokeJoin = StrokeJoin.round,
+    );
+    final check = Path()
+      ..moveTo(w * 0.36, h * 0.51)
+      ..lineTo(w * 0.46, h * 0.62)
+      ..lineTo(w * 0.65, h * 0.41);
+    canvas.drawPath(
+      check,
+      Paint()
+        ..color = Colors.white
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (w * 0.075).clamp(2.2, 6.5)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Editorial app header: official Shule Altra icon, wordmark, and status pill.
 class BrandBar extends StatelessWidget {
-  const BrandBar({super.key, this.trailing});
+  const BrandBar({super.key, this.trailing, this.subtitle});
 
   final Widget? trailing;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     return Row(
       children: [
-        ExcludeSemantics(
-          child: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: tokens.primary,
-              borderRadius: BorderRadius.circular(13),
-              boxShadow: [
-                BoxShadow(
-                  color: tokens.primary.withValues(alpha: 0.30),
-                  blurRadius: 14,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.school_rounded,
-              size: 20,
-              color: tokens.onPrimary,
-            ),
-          ),
+        const ExcludeSemantics(
+          child: ShuleLogoMark(size: 40),
         ),
         const SizedBox(width: Space.md),
         Expanded(
@@ -174,10 +249,12 @@ class BrandBar extends StatelessWidget {
                     ),
               ),
               Text(
-                'SCHOOL, IN SYNC',
+                subtitle ?? 'MWALIMU NYERERE SEC.',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       fontSize: 9.5,
-                      letterSpacing: 1.15,
+                      letterSpacing: 1.1,
                     ),
               ),
             ],
@@ -185,7 +262,7 @@ class BrandBar extends StatelessWidget {
         ),
         trailing ??
             StatusPill(
-              label: 'PILOT',
+              label: 'TERM 2',
               background: tokens.blueWash,
               foreground: tokens.blueInk,
               uppercase: true,

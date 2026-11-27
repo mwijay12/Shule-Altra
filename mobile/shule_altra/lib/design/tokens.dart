@@ -378,6 +378,9 @@ abstract final class Space {
 
   /// Screen gutter. 20 keeps a 390 px phone airy while giving glass cards room.
   static const double gutter = 20;
+
+  /// Bottom scroll padding so the last item clears the floating glass dock.
+  static const double dockClearance = 108;
 }
 
 /// Radii, uniting the website's 1.25rem (`20px`) base with the editorial glass

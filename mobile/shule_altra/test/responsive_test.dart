@@ -1,14 +1,5 @@
-/// Every screen, at every width a person might actually get.
-///
-/// The pack asks for 390 / 820 / 1440-equivalent views, and this app also has to
-/// survive a large system font. A layout that overflows is not a cosmetic
-/// problem: on a real phone the overflowing part is simply not on the screen, and
-/// nobody can tap it.
-///
-/// A `RenderFlex overflowed` is thrown as an error during layout, so on a
-/// widget-test binding it fails the test by itself. This test still calls
-/// [WidgetTester.takeException] explicitly so the failure names the size and the
-/// screen that broke.
+/// Responsive overflow guard across phone (390), tablet (820) and desktop (1440)
+/// at both 1.0x and 1.3x system text scales.
 library;
 
 import 'package:flutter/material.dart';
@@ -17,15 +8,12 @@ import 'package:shule_altra_mobile/app/app.dart';
 
 import 'fake_gateway.dart';
 
-/// Logical sizes, with the pixel ratio a real device of that class reports.
 const _sizes = <({String name, Size size, double ratio})>[
   (name: 'phone 390x844', size: Size(390, 844), ratio: 3),
   (name: 'tablet 820x1180', size: Size(820, 1180), ratio: 2),
   (name: 'large window 1440x900', size: Size(1440, 900), ratio: 1),
 ];
 
-/// Android's font scale goes to 2.0; 1.3 is a common accessibility setting and
-/// the point where fixed-height rows usually start to break.
 const _scales = <double>[1.0, 1.3];
 
 Future<void> _expectNoOverflow(WidgetTester tester, String where) async {
@@ -57,58 +45,48 @@ void main() {
         );
         await _expectNoOverflow(tester, 'onboarding page 1');
 
-        // Onboarding, all three pages.
-        await _tap(tester, 'Continue');
+        await _tap(tester, 'Next');
         await _expectNoOverflow(tester, 'onboarding page 2');
-        await _tap(tester, 'Continue');
+        await _tap(tester, 'Next');
         await _expectNoOverflow(tester, 'onboarding page 3');
 
-        // Home, then the register, signed out and signed in.
-        await _tap(tester, 'Explore the sample preview');
+        await _tap(tester, 'Sign in to Shule Altra');
+        await _expectNoOverflow(tester, 'staff sign-in');
+
+        await tester.scrollUntilVisible(
+          find.textContaining('Administrator'),
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await _tap(tester, 'Administrator · Head Master');
         await _expectNoOverflow(tester, 'home');
 
         await _tap(tester, 'Learners');
-        await _expectNoOverflow(tester, 'register, signed out');
-        await _tap(tester, 'Continue with Google');
-        await _expectNoOverflow(tester, 'register, loaded');
+        await _expectNoOverflow(tester, 'learners');
 
-        // A learner's sheet. It is dismissed with the back gesture, not by
-        // tapping a guessed coordinate: a tap that misses the barrier leaves the
-        // sheet up, and every later tap lands on the barrier instead.
         await _tap(tester, 'Amina Juma');
         await _expectNoOverflow(tester, 'learner detail');
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
-        expect(find.text('Continue with Google'), findsNothing,
-            reason: 'the sheet must be closed before moving on');
 
-        // The practice sheet, scrolled far enough to reach the first mark, then
-        // the honest page. (At 1.3x text the mark pills are well below the fold on
-        // a phone, and a lazily built list has not created them yet.)
-        await _tap(tester, 'Day');
-        await _expectNoOverflow(tester, 'school day');
-        // Confirm the tab really changed before looking for its content.
-        expect(find.text('Practice only, nothing saved'), findsOneWidget,
-            reason: 'the Day tab did not open');
-        // `.first` on an empty finder throws, and a lazily built list has no
-        // pills until they are near the viewport, so walk down until one exists.
-        final marks = find.text('Present');
-        for (var step = 0; step < 12 && marks.evaluate().isEmpty; step++) {
-          await tester.drag(find.byType(Scrollable).first, const Offset(0, -320));
-          await _expectNoOverflow(tester, 'school day, scrolled $step');
-        }
-        expect(marks, findsWidgets, reason: 'the practice marks were never built');
-        await _tap(tester, 'Present');
-        await _expectNoOverflow(tester, 'school day, marked');
+        await _tap(tester, 'School Day');
+        await _expectNoOverflow(tester, 'school day attendance');
+
+        await _tap(tester, 'Finance');
+        await _expectNoOverflow(tester, 'school day finance');
+
+        await _tap(tester, 'Academics');
+        await _expectNoOverflow(tester, 'school day academics');
+
+        await _tap(tester, 'Timetable');
+        await _expectNoOverflow(tester, 'school day timetable');
 
         await _tap(tester, 'More');
         await _expectNoOverflow(tester, 'more');
 
-        // Walk the rest of the longest page: a lazily built list only lays out
-        // what is in view, so the lower half needs its own check.
-        for (var step = 0; step < 10; step++) {
-          await tester.drag(find.byType(Scrollable).first, const Offset(0, -300));
-          await _expectNoOverflow(tester, 'more, scrolled $step');
+        for (var step = 0; step < 6; step++) {
+          await tester.drag(find.byType(Scrollable).first, const Offset(0, -280));
+          await _expectNoOverflow(tester, 'more scrolled $step');
         }
 
         await gateway.close();

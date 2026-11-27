@@ -1,216 +1,387 @@
-/// The honest page: what this build is, what it is not, and how to leave it.
+/// Settings, Appearance (Auto / Light / Dark), Device Permissions
+/// (Notifications, Gallery/Photos, Camera, Printing), Role Switcher & Account.
 library;
 
 import 'package:flutter/material.dart';
 
 import '../app/session.dart';
-import '../data/school_config.dart';
-import '../design/doodles.dart';
+import '../app/theme_controller.dart';
+import '../data/demo_school_store.dart';
 import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../services/device_services.dart';
+import 'campus.dart';
+import 'reports.dart';
 
-class MoreScreen extends StatelessWidget {
+class MoreScreen extends StatefulWidget {
   const MoreScreen({
     super.key,
     required this.session,
-    required this.isSample,
+    required this.workspace,
+    required this.themeController,
     required this.onSignOut,
-    required this.onRestart,
-    required this.onToggleTheme,
-    required this.isDark,
+    this.onShowOnboarding,
   });
 
   final AppSession session;
-  final bool isSample;
+  final SchoolWorkspace workspace;
+  final ThemeController themeController;
   final VoidCallback onSignOut;
-  final VoidCallback onRestart;
-  final VoidCallback onToggleTheme;
-  final bool isDark;
+  final VoidCallback? onShowOnboarding;
+
+  @override
+  State<MoreScreen> createState() => _MoreScreenState();
+}
+
+class _MoreScreenState extends State<MoreScreen> {
+  DevicePermissionSnapshot _perms = DevicePermissionSnapshot.initial;
+  String? _deviceFeedback;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshPermissions();
+  }
+
+  Future<void> _refreshPermissions() async {
+    final snap = await ShuleMediaService.readStatus();
+    if (!mounted) return;
+    setState(() => _perms = snap);
+  }
+
+  Future<void> _requestNotificationPerm() async {
+    final status = await ShuleMediaService.requestNotifications();
+    await _refreshPermissions();
+    if (!mounted) return;
+    setState(() => _deviceFeedback = 'Notifications permission: $status');
+  }
+
+  Future<void> _sendTestAlert() async {
+    await ShuleMediaService.requestNotifications();
+    final sent = await ShuleNotificationService.sendAlert(
+      title: 'Shule Altra Notification Test',
+      body: '${SchoolProfile.schoolName} alerts are active on this phone.',
+    );
+    await _refreshPermissions();
+    if (!mounted) return;
+    setState(
+      () => _deviceFeedback = sent
+          ? 'Test school notification sent to your status bar.'
+          : 'Notification queued (native status-bar banners appear on Android phones).',
+    );
+  }
+
+  Future<void> _requestGalleryPerm() async {
+    final status = await ShuleMediaService.requestPhotos();
+    await _refreshPermissions();
+    if (!mounted) return;
+    setState(() => _deviceFeedback = 'Gallery & Photos permission: $status');
+  }
+
+  Future<void> _requestCameraPerm() async {
+    final status = await ShuleMediaService.requestCamera();
+    await _refreshPermissions();
+    if (!mounted) return;
+    setState(() => _deviceFeedback = 'Camera permission: $status');
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    const config = SchoolFirebaseConfig.fromEnvironment;
+    return ListenableBuilder(
+      listenable: Listenable.merge([widget.workspace, widget.themeController, widget.session]),
+      builder: (context, _) {
+        final staff = widget.workspace.activeStaff;
+        final currentMode = widget.themeController.mode;
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
-      children: [
-        const BrandBar(),
-        const SizedBox(height: Space.xl),
-        Text('Built with care,\nand with limits.', style: Theme.of(context).textTheme.displaySmall),
-        const SizedBox(height: Space.sm),
-        Text(
-          'Shule Altra mobile is an early read-only pilot. This page is the whole list of '
-          'what it does and does not do, so nobody has to discover it by accident.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-        ),
-        const SizedBox(height: Space.xl),
-        SectionHead(title: 'Connection', trailing: session.sourceLabel),
-        const SizedBox(height: Space.md),
-        ShuleGlassCard(
-          glowCorner: true,
-          padding: const EdgeInsets.all(Space.md + 2),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ShuleInnerTile(
-                padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.xs),
-                child: Column(
-                  children: [
-                    FactRow(
-                      label: 'Mode',
-                      value: isSample ? 'Sample preview (fictional data)' : 'Live school read',
-                    ),
-                    const Divider(),
-                    FactRow(
-                      label: 'Account',
-                      value: !session.signedIn
-                          ? 'Not signed in'
-                          : session.demoIdentity != null
-                              ? 'Demo · ${session.demoIdentity!.email}'
-                              : (isSample ? 'Sample staff session' : 'Signed in'),
-                    ),
-                    const Divider(),
-                    FactRow(
-                      label: 'Firebase',
-                      value: config.isComplete
-                          ? (config.projectMatches
-                              ? 'Configured · ${config.projectId}'
-                              : 'Project id mismatch')
-                          : 'No values in this build',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Space.md),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.xs),
-                child: Text(
-                  isSample
-                      ? 'The sample preview reads fictional learners from this phone. It never '
-                          'contacts Firebase, and switching to the live register starts a new '
-                          'sign-in.'
-                      : 'Live reads go to the school project over the network. No learner data '
-                          'is written to the phone.',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              if (session.signedIn) ...[
-                const SizedBox(height: Space.lg),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: session.busy ? null : onSignOut,
-                    child: const Text('Sign out'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: Space.xl),
-        const SectionHead(title: 'What is not here'),
-        const SizedBox(height: Space.md),
-        const Notice(
-          title: 'No writes, no payments, no offline',
-          body: 'Attendance cannot be recorded, fees cannot be paid, and nothing works '
-              'without a connection. Those are not switched off in this build; they do not '
-              'exist in it yet.',
-          tone: NoticeTone.caution,
-        ),
-        const SizedBox(height: Space.md),
-        const Notice(
-          title: 'No notifications',
-          body: 'The app sends nothing and schedules nothing. If something needs your '
-              'attention, you will only see it when you open the app.',
-        ),
-        const SizedBox(height: Space.md),
-        const Notice(
-          title: 'No caching of learner data',
-          body: 'Each register page is read from the school when you ask for it. A signed-out '
-              'or offline phone shows a message, not a stored copy of the register.',
-          tone: NoticeTone.done,
-        ),
-        const SizedBox(height: Space.xl),
-        const SectionHead(title: 'Appearance'),
-        const SizedBox(height: Space.md),
-        ShuleGlassCard(
-          padding: const EdgeInsets.all(Space.md + 2),
-          child: ShuleInnerTile(
-            padding: const EdgeInsets.symmetric(horizontal: Space.md + 2, vertical: Space.md),
-            child: Row(
-              children: [
-                ShuleGlyph(
-                  icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                  size: 40,
-                ),
-                const SizedBox(width: Space.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.dockClearance),
+          children: [
+            Text(
+              'More & Settings',
+              style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28),
+            ),
+            Text(
+              '${SchoolProfile.schoolName} · Single-school mobile app',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: Space.lg),
+            // Signed-in staff card + quick role switcher
+            ShuleGlassCard(
+              glowCorner: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Text(
-                        isDark ? 'Night theme' : 'Day theme',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Both themes are complete. Motion follows the phone\'s own '
-                        '"remove animations" setting.',
-                        style: Theme.of(context).textTheme.bodySmall,
+                      const ShuleLogoMark(size: 46),
+                      const SizedBox(width: Space.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              staff.fullName,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
+                            ),
+                            Text(
+                              '${staff.title} · ${staff.email}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: Space.sm),
-                Switch(
-                  value: isDark,
-                  onChanged: (_) => onToggleTheme(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: Space.xl),
-        const SectionHead(title: 'Start again'),
-        const SizedBox(height: Space.md),
-        ShuleGlassCard(
-          padding: const EdgeInsets.all(Space.lg),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Returns to the school or sample choice and clears this session. The introduction '
-                'preference remains on this device.',
-                style: Theme.of(context).textTheme.bodySmall,
+                  const SizedBox(height: Space.md),
+                  Text('Switch staff role', style: Theme.of(context).textTheme.labelMedium),
+                  const SizedBox(height: Space.xs),
+                  Wrap(
+                    spacing: Space.xs,
+                    runSpacing: Space.xs,
+                    children: [
+                      for (final role in SchoolProfile.demoRoles)
+                        ChoicePill(
+                          label: role.label,
+                          selected: staff.email == role.email,
+                          onSelected: () => widget.workspace.setActiveStaff(role),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: Space.md),
+                  OutlinedButton.icon(
+                    onPressed: widget.onSignOut,
+                    icon: const Icon(Icons.logout_rounded, size: 18),
+                    label: const Text('Sign out'),
+                  ),
+                ],
               ),
-              const SizedBox(height: Space.md),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: onRestart,
-                  icon: const Icon(Icons.restart_alt_rounded, size: 20),
-                  label: const Text('Back to the start'),
+            ),
+            const SizedBox(height: Space.xl),
+            const SectionHead(title: 'Appearance', trailing: 'Adapts to phone'),
+            const SizedBox(height: Space.sm),
+            ShuleGlassCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Choose Auto to follow your phone\'s light or dark theme automatically, or pick Light / Dark manually.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: Space.md),
+                  Wrap(
+                    spacing: Space.sm,
+                    runSpacing: Space.sm,
+                    children: [
+                      ChoicePill(
+                        label: 'Auto (Phone)',
+                        selected: currentMode == ThemeMode.system,
+                        onSelected: () => widget.themeController.setMode(ThemeMode.system),
+                      ),
+                      ChoicePill(
+                        label: 'Light',
+                        selected: currentMode == ThemeMode.light,
+                        onSelected: () => widget.themeController.setMode(ThemeMode.light),
+                      ),
+                      ChoicePill(
+                        label: 'Dark',
+                        selected: currentMode == ThemeMode.dark,
+                        onSelected: () => widget.themeController.setMode(ThemeMode.dark),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: Space.xl),
+            const SectionHead(title: 'Device permissions', trailing: 'Android ready'),
+            const SizedBox(height: Space.sm),
+            if (_deviceFeedback != null) ...[
+              Notice(
+                tone: NoticeTone.done,
+                title: 'Device capability',
+                body: _deviceFeedback!,
+              ),
+              const SizedBox(height: Space.sm),
+            ],
+            _PermissionRow(
+              icon: Icons.notifications_active_outlined,
+              title: 'Notifications',
+              subtitle: 'School notices, attendance reminders & fee alerts',
+              status: _perms.notifications,
+              onAllow: _requestNotificationPerm,
+              extraActionLabel: 'Test alert',
+              onExtraAction: _sendTestAlert,
+            ),
+            const SizedBox(height: Space.sm),
+            _PermissionRow(
+              icon: Icons.photo_library_outlined,
+              title: 'Gallery & Photos',
+              subtitle: 'Pick learner passport photos from phone gallery',
+              status: _perms.photos,
+              onAllow: _requestGalleryPerm,
+            ),
+            const SizedBox(height: Space.sm),
+            _PermissionRow(
+              icon: Icons.photo_camera_outlined,
+              title: 'Camera',
+              subtitle: 'Capture student ID photos on campus',
+              status: _perms.camera,
+              onAllow: _requestCameraPerm,
+            ),
+            const SizedBox(height: Space.sm),
+            ShuleGlassCard(
+              padding: const EdgeInsets.all(Space.md),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ReportsScreen(workspace: widget.workspace),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const ShuleGlyph(icon: Icons.print_rounded, size: 42),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Printing & Official PDFs', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15)),
+                        Text(
+                          'Report cards, fee statements, ID cards & class registers',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+                ],
+              ),
+            ),
+            const SizedBox(height: Space.xl),
+            const SectionHead(title: 'School directory & tools'),
+            const SizedBox(height: Space.sm),
+            ShuleGlassCard(
+              padding: const EdgeInsets.all(Space.md),
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
+              ),
+              child: Row(
+                children: [
+                  const ShuleGlyph(icon: Icons.domain_rounded, size: 40),
+                  const SizedBox(width: Space.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Staff, Hostels & Transport', style: Theme.of(context).textTheme.titleSmall),
+                        Text('Contacts, boarding wings & bus routes', style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+                ],
+              ),
+            ),
+            const SizedBox(height: Space.sm),
+            if (widget.onShowOnboarding != null) ...[
+              const SizedBox(height: Space.sm),
+              ShuleGlassCard(
+                padding: const EdgeInsets.all(Space.md),
+                onTap: widget.onShowOnboarding,
+                child: Row(
+                  children: [
+                    const ShuleGlyph(icon: Icons.slideshow_rounded, size: 40),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Replay welcome tour', style: Theme.of(context).textTheme.titleSmall),
+                          Text('View the Shule Altra onboarding screens again', style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+                  ],
                 ),
               ),
             ],
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _PermissionRow extends StatelessWidget {
+  const _PermissionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.status,
+    required this.onAllow,
+    this.extraActionLabel,
+    this.onExtraAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String status;
+  final VoidCallback onAllow;
+  final String? extraActionLabel;
+  final VoidCallback? onExtraAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    final allowed = status == 'Allowed';
+    return ShuleGlassCard(
+      padding: const EdgeInsets.all(Space.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ShuleGlyph(icon: icon, size: 40),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleSmall),
+                    Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                  ],
+                ),
+              ),
+              StatusPill(
+                label: status,
+                background: allowed
+                    ? tokens.success.withValues(alpha: 0.14)
+                    : tokens.blueWash,
+                foreground: allowed ? tokens.success : tokens.blueInk,
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: Space.xl),
-        ExcludeSemantics(
-          child: Center(
-            child: DoodleView(doodle: Doodle.mark, size: 52, color: tokens.blueInk),
+          const SizedBox(height: Space.sm),
+          Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.xs,
+            children: [
+              OutlinedButton(
+                onPressed: onAllow,
+                child: Text(allowed ? 'Recheck permission' : 'Allow $title'),
+              ),
+              if (extraActionLabel != null && onExtraAction != null)
+                FilledButton.tonal(
+                  onPressed: onExtraAction,
+                  child: Text(extraActionLabel!),
+                ),
+            ],
           ),
-        ),
-        const SizedBox(height: Space.sm),
-        Center(
-          child: Text(
-            'Shule Altra · mobile pilot · read-only',
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

@@ -1,314 +1,204 @@
-/// The first thing anyone sees.
-///
-/// Three pages, one promise on each, and a fourth button that is not a promise:
-/// the sample preview. The last page is where a school is actually connected, so
-/// the two paths — real account and fictional sample — are chosen here, once, in
-/// the open, and the app can never drift from one into the other later.
+/// Single-school Shule Altra onboarding — showcases the official Shule Altra
+/// app icon, adaptive Day/Night theme toggle, and leads into dedicated staff
+/// sign-in (with zero "Connect my school" multi-tenant clutter).
 library;
-
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../data/onboarding_store.dart';
-import '../design/doodles.dart';
+import '../app/theme_controller.dart';
+import '../data/demo_school_store.dart';
 import '../design/glass.dart';
 import '../design/motion.dart';
-import '../design/theme.dart' show shuleShadow;
+import '../design/theme.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({
     super.key,
-    required this.onConnect,
-    required this.onTrySample,
-    this.store,
+    required this.onSignIn,
+    required this.onQuickDemo,
+    this.themeController,
   });
 
-  /// "Connect my school": try the live gateway.
-  final VoidCallback onConnect;
+  /// Opens the dedicated single-school Staff Sign-In screen.
+  final VoidCallback onSignIn;
 
-  /// "Explore the sample preview": the labelled fictional preview.
-  final VoidCallback onTrySample;
+  /// Enters immediately with the Administrator demo session.
+  final VoidCallback onQuickDemo;
 
-  /// Null disables persistence for injected test apps.
-  final OnboardingStore? store;
+  /// Optional theme controller for quick Auto / Light / Dark switching.
+  final ThemeController? themeController;
 
   @override
   State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
 class _OnboardingPageState extends State<OnboardingPage> {
+  final PageController _pages = PageController();
   int _index = 0;
-  bool _loading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    if (widget.store != null) {
-      _loading = true;
-      unawaited(_loadIntroduction());
-    }
-  }
-
-  Future<void> _loadIntroduction() async {
-    var seen = false;
-    try {
-      seen = await widget.store!.hasSeenIntroduction();
-    } catch (_) {
-      // If local preferences are unavailable, show the introduction again.
-    }
-    if (!mounted) return;
-    setState(() {
-      _index = seen ? _pages.length - 1 : 0;
-      _loading = false;
-    });
-  }
-
-  Future<void> _rememberIntroduction() async {
-    try {
-      await widget.store?.markIntroductionSeen();
-    } catch (_) {
-      // A storage failure must not block the user's choice or connection.
-    }
-  }
-
-  void _goTo(int index) {
-    setState(() => _index = index);
-    if (index == _pages.length - 1) unawaited(_rememberIntroduction());
-  }
-
-  static const _pages = <({
-    String lead,
-    String title,
-    String body,
-    Doodle doodle,
-    IconData icon,
-  })>[
-    (
-      lead: 'YOUR SCHOOL, CLOSER',
-      title: 'Every learner,\nwhere you can see them.',
-      body: 'The register you already keep on the web, on the phone in your pocket. '
-          'Classes, guardians and balances, without a laptop.',
-      doodle: Doodle.book,
-      icon: Icons.school_outlined,
+  static const _slides = <_Slide>[
+    _Slide(
+      eyebrow: 'SINGLE SCHOOL · SHULE ALTRA',
+      title: 'Your school,\nin your pocket',
+      body:
+          'Manage Mwalimu Nyerere Secondary School learners, guardians, daily attendance and TZS fees in one calm blue workspace.',
+      image: 'assets/images/school_cutout.png',
+      icon: Icons.school_rounded,
+      badge: 'Form 1 – 4 · Live Workspace',
     ),
-    (
-      lead: 'BUILT FOR THE DAY',
-      title: 'Not another\ndashboard to learn.',
-      body: 'One screen for the register, one for the school day, one for the '
-          'details. If you can read a class list, you can use this.',
-      doodle: Doodle.registers,
-      icon: Icons.event_note_outlined,
+    _Slide(
+      eyebrow: 'ACADEMICS · FINANCE · PRINTING',
+      title: 'Grades, fees &\ninstant PDF print',
+      body:
+          'Compute NECTA CSEE divisions, record mobile money or bank payments, and print report cards, fee statements and student IDs.',
+      image: 'assets/images/learning_cutout.png',
+      icon: Icons.print_rounded,
+      badge: 'Android Print & PDF Ready',
     ),
-    (
-      lead: 'HONEST BY DEFAULT',
-      title: 'Read-only,\nand it says so.',
-      body: 'This pilot reads the register and writes nothing. Attendance here is '
-          'practice. Offline recording is not built yet, and the app will never '
-          'pretend otherwise.',
-      doodle: Doodle.reportCard,
-      icon: Icons.verified_user_outlined,
+    _Slide(
+      eyebrow: 'PHOTOS · ALERTS · STAFF ROLES',
+      title: 'Built for daily\nschool operations',
+      body:
+          'Attach learner passport photos from your gallery or camera, receive school notifications, and sign in as Admin, Teacher or Bursar.',
+      image: 'assets/images/connection_cutout.png',
+      icon: Icons.notifications_active_rounded,
+      badge: 'Gallery · Camera · Alerts',
     ),
   ];
 
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
   void _next() {
-    if (_index == _pages.length - 1) {
-      widget.onConnect();
-      return;
+    final prefs = MotionPrefs.of(context);
+    if (_index < _slides.length - 1) {
+      if (prefs.reduced) {
+        _pages.jumpToPage(_index + 1);
+      } else {
+        _pages.nextPage(duration: prefs.base, curve: Curves2.enter);
+      }
+    } else {
+      widget.onSignIn();
     }
-    _goTo(_index + 1);
+  }
+
+  void _cycleTheme() {
+    final controller = widget.themeController;
+    if (controller == null) return;
+    final next = switch (controller.mode) {
+      ThemeMode.system => ThemeMode.light,
+      ThemeMode.light => ThemeMode.dark,
+      ThemeMode.dark => ThemeMode.system,
+    };
+    controller.setMode(next);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return const Scaffold(
-        body: ShuleBackdrop(
-          child: Center(
-            child: CircularProgressIndicator(semanticsLabel: 'Loading introduction'),
-          ),
-        ),
-      );
-    }
     final tokens = ShuleTokens.of(context);
-    final prefs = MotionPrefs.of(context);
-    final page = _pages[_index];
-    final last = _index == _pages.length - 1;
+    final last = _index == _slides.length - 1;
+    final currentMode = widget.themeController?.mode ?? ThemeMode.system;
+    final modeLabel = switch (currentMode) {
+      ThemeMode.system => 'Auto',
+      ThemeMode.light => 'Light',
+      ThemeMode.dark => 'Dark',
+    };
+    final modeIcon = switch (currentMode) {
+      ThemeMode.system => Icons.brightness_auto_rounded,
+      ThemeMode.light => Icons.light_mode_rounded,
+      ThemeMode.dark => Icons.dark_mode_rounded,
+    };
 
     return Scaffold(
+      backgroundColor: tokens.canvas,
       body: ShuleBackdrop(
         child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - Space.xxl),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 520),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.lg),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const BrandBar(),
-                    const SizedBox(height: Space.xl),
-                    StickerPop(
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: AspectRatio(
-                          aspectRatio: 1.24,
-                          child: DecoratedBox(
-                            // First gradient DecoratedBox on screen: the brand ramp.
-                            decoration: BoxDecoration(
-                              gradient: tokens.brandGradient,
-                              borderRadius: BorderRadius.circular(Corners.hero),
-                              boxShadow: shuleShadow(tokens, raised: true),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(Corners.hero),
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  IgnorePointer(
-                                    child: CustomPaint(
-                                      painter: _HeroRingsPainter(color: tokens.onGradient),
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: const EdgeInsets.all(Space.lg),
-                                    child: Center(
-                                      child: AnimatedSwitcher(
-                                        duration: prefs.base,
-                                        transitionBuilder: (child, animation) => FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        ),
-                                        child: Image.asset(
-                                          const [
-                                            'assets/images/school_cutout.png',
-                                            'assets/images/learning_cutout.png',
-                                            'assets/images/connection_cutout.png',
-                                          ][_index],
-                                          key: ValueKey(_index),
-                                          fit: BoxFit.contain,
-                                          excludeFromSemantics: true,
-                                          errorBuilder: (context, error, stackTrace) => DoodleView(
-                                            doodle: page.doodle,
-                                            size: 132,
-                                            strokeWidth: 3.4,
-                                            color: tokens.onGradient,
-                                            fillColor: tokens.onGradient.withValues(alpha: 0.18),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: Space.xl),
-                    ShuleGlassCard(
-                      padding: const EdgeInsets.all(Space.xl),
-                      glowCorner: true,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    BrandBar(
+                      subtitle: SchoolProfile.schoolName.toUpperCase(),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          AnimatedSwitcher(
-                            duration: prefs.base,
-                            switchInCurve: Curves2.enter,
-                            transitionBuilder: (child, animation) => FadeTransition(
-                              opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0, 0.05),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
-                            ),
-                            child: Column(
-                              key: ValueKey(_index),
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                StatusPill(
-                                  label: page.lead,
-                                  icon: page.icon,
-                                  uppercase: true,
-                                ),
-                                const SizedBox(height: Space.md),
-                                Text(
-                                  page.title,
-                                  style: Theme.of(context).textTheme.displaySmall,
-                                ),
-                                const SizedBox(height: Space.sm + 2),
-                                Text(
-                                  page.body,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(color: tokens.inkMuted),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: Space.xl),
-                          Semantics(
-                            label: 'Page ${_index + 1} of ${_pages.length}',
-                            child: Row(
-                              children: [
-                                for (var i = 0; i < _pages.length; i++)
-                                  AnimatedContainer(
-                                    duration: prefs.fast,
-                                    curve: Curves2.standard,
-                                    margin: const EdgeInsets.only(right: Space.sm),
-                                    height: 8,
-                                    width: i == _index ? 28 : 8,
-                                    decoration: BoxDecoration(
-                                      color: i == _index ? tokens.primary : tokens.border,
-                                      borderRadius: BorderRadius.circular(Corners.pill),
-                                    ),
+                          if (widget.themeController != null)
+                            Semantics(
+                              button: true,
+                              label: 'Theme mode $modeLabel. Tap to switch.',
+                              child: PressableScale(
+                                onTap: _cycleTheme,
+                                child: Container(
+                                  height: 36,
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                  decoration: BoxDecoration(
+                                    color: tokens.blueWash,
+                                    borderRadius: BorderRadius.circular(Corners.pill),
+                                    border: Border.all(color: tokens.border),
                                   ),
-                              ],
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(modeIcon, size: 15, color: tokens.blueInk),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        modeLabel,
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                              color: tokens.blueInk,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: Space.xl),
-                          GradientButton(
-                            label: last ? 'Connect my school' : 'Continue',
-                            onPressed: _next,
-                            icon: last ? Icons.school_outlined : Icons.arrow_forward_rounded,
-                          ),
                           if (!last) ...[
-                            const SizedBox(height: Space.xs),
-                            Center(
-                              child: TextButton(
-                                onPressed: () => _goTo(_pages.length - 1),
-                                child: const Text('Skip introduction'),
+                            const SizedBox(width: Space.xs),
+                            TextButton(
+                              onPressed: widget.onSignIn,
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(kMinTapTarget, 40),
+                                foregroundColor: tokens.blueInk,
                               ),
-                            ),
-                          ],
-                          if (last) ...[
-                            const SizedBox(height: Space.sm + 2),
-                            SizedBox(
-                              width: double.infinity,
-                              child: OutlinedButton.icon(
-                                onPressed: widget.onTrySample,
-                                icon: const Icon(Icons.visibility_outlined, size: 18),
-                                label: const Text('Explore the sample preview'),
-                              ),
+                              child: const Text('Skip'),
                             ),
                           ],
                         ],
                       ),
                     ),
+                    const SizedBox(height: Space.md),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pages,
+                        itemCount: _slides.length,
+                        onPageChanged: (i) => setState(() => _index = i),
+                        itemBuilder: (context, i) => _SlideView(slide: _slides[i]),
+                      ),
+                    ),
+                    const SizedBox(height: Space.md),
+                    _PageDots(count: _slides.length, active: _index),
                     const SizedBox(height: Space.lg),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Space.xs),
-                      child: Text(
-                        'The sample preview uses fictional learners. This pilot has no '
-                        'payments, no offline capture and no writes.',
-                        style: Theme.of(context).textTheme.bodySmall,
+                    GradientButton(
+                      label: last ? 'Sign in to Shule Altra' : 'Next',
+                      icon: last ? Icons.login_rounded : Icons.arrow_forward_rounded,
+                      onPressed: _next,
+                    ),
+                    const SizedBox(height: Space.sm),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: widget.onQuickDemo,
+                        icon: const Icon(Icons.bolt_rounded, size: 18),
+                        label: const Text('Explore with demo account'),
                       ),
                     ),
                   ],
@@ -322,35 +212,235 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-class _HeroRingsPainter extends CustomPainter {
-  const _HeroRingsPainter({required this.color});
+class _Slide {
+  const _Slide({
+    required this.eyebrow,
+    required this.title,
+    required this.body,
+    required this.image,
+    required this.icon,
+    required this.badge,
+  });
 
-  final Color color;
+  final String eyebrow;
+  final String title;
+  final String body;
+  final String image;
+  final IconData icon;
+  final String badge;
+}
+
+class _SlideView extends StatelessWidget {
+  const _SlideView({required this.slide});
+
+  final _Slide slide;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width * 0.82, size.height * 0.22);
-    final radius = size.shortestSide * 0.42;
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.1;
-    canvas.drawCircle(center, radius, stroke..color = color.withValues(alpha: 0.14));
-    canvas.drawCircle(center, radius * 1.38, stroke..color = color.withValues(alpha: 0.08));
-    canvas.drawCircle(
-      Offset(size.width * 0.14, size.height * 0.86),
-      radius * 0.72,
-      Paint()
-        ..shader = RadialGradient(
-          colors: [color.withValues(alpha: 0.14), color.withValues(alpha: 0)],
-        ).createShader(
-          Rect.fromCircle(
-            center: Offset(size.width * 0.14, size.height * 0.86),
-            radius: radius * 0.72,
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Flagship sapphire glass hero frame with prominent Shule Altra app icon.
+                Container(
+                  height: 236,
+                  decoration: BoxDecoration(
+                    gradient: tokens.brandGradient,
+                    borderRadius: BorderRadius.circular(Corners.hero),
+                    border: Border.all(color: tokens.onGradient.withValues(alpha: 0.18)),
+                    boxShadow: shuleShadow(tokens, raised: true),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(Corners.hero),
+                    child: Stack(
+                      children: [
+                        Positioned(
+                          right: -28,
+                          top: -28,
+                          child: Container(
+                            width: 170,
+                            height: 170,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.11),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: -34,
+                          bottom: -44,
+                          child: Container(
+                            width: 150,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(Space.lg),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                flex: 6,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withValues(alpha: 0.18),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                          color: Colors.white.withValues(alpha: 0.28),
+                                        ),
+                                      ),
+                                      child: const ShuleLogoMark(size: 56, radius: 15),
+                                    ),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Shule Altra',
+                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                color: tokens.onGradient,
+                                                fontWeight: FontWeight.w800,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withValues(alpha: 0.18),
+                                            borderRadius: BorderRadius.circular(Corners.pill),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                slide.icon,
+                                                size: 13,
+                                                color: tokens.onGradient,
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Flexible(
+                                                child: Text(
+                                                  slide.badge,
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .labelSmall
+                                                      ?.copyWith(
+                                                        color: tokens.onGradient,
+                                                        fontWeight: FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: Space.sm),
+                              Expanded(
+                                flex: 5,
+                                child: Center(
+                                  child: Image.asset(
+                                    slide.image,
+                                    height: 170,
+                                    fit: BoxFit.contain,
+                                    errorBuilder: (_, __, ___) => Icon(
+                                      slide.icon,
+                                      size: 72,
+                                      color: tokens.onGradient.withValues(alpha: 0.9),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Space.xl),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: StatusPill(
+                    label: slide.eyebrow,
+                    background: tokens.blueWash,
+                    foreground: tokens.blueInk,
+                    uppercase: true,
+                  ),
+                ),
+                const SizedBox(height: Space.md),
+                Text(
+                  slide.title,
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                        height: 1.08,
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: Space.md),
+                Text(
+                  slide.body,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: tokens.inkMuted,
+                        height: 1.5,
+                      ),
+                ),
+              ],
+            ),
           ),
-        ),
+        );
+      },
     );
   }
+}
+
+class _PageDots extends StatelessWidget {
+  const _PageDots({required this.count, required this.active});
+
+  final int count;
+  final int active;
 
   @override
-  bool shouldRepaint(_HeroRingsPainter old) => old.color != color;
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    final prefs = MotionPrefs.of(context);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final on = i == active;
+        return AnimatedContainer(
+          duration: prefs.fast,
+          curve: Curves2.standard,
+          width: on ? 26 : 8,
+          height: 8,
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: on ? tokens.primary : tokens.border,
+            borderRadius: BorderRadius.circular(Corners.pill),
+          ),
+        );
+      }),
+    );
+  }
 }
