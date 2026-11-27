@@ -1,4 +1,4 @@
-/// Shule Altra mobile entry point — single-school companion for Mwalimu Nyerere
+/// Shule Altra mobile entry point — companion app for Shule Altra.
 /// Secondary School with adaptive light/dark theming, PDF printing, gallery
 /// passport photos, and native notifications.
 library;

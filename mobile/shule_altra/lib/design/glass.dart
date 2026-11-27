@@ -329,11 +329,11 @@ class ShuleGlassBlur extends StatelessWidget {
         color: solid
             ? tokens.surface
             : (dark
-                ? tokens.surface.withValues(alpha: 0.80)
-                : tokens.surface.withValues(alpha: 0.78)),
+                ? tokens.surface.withValues(alpha: 0.84)
+                : tokens.surface.withValues(alpha: 0.92)),
         border: Border.all(
           color: solid ? tokens.border : tokens.glassBorder,
-          width: 1.2,
+          width: 1.25,
         ),
       ),
       child: Padding(padding: padding, child: child),

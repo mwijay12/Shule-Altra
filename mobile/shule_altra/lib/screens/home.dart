@@ -318,6 +318,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: Space.lg),
+            // Animated Fee Collections chart right on the Command Deck
+            AnimatedFeeTrendCard(workspace: workspace),
             const SizedBox(height: Space.xl),
             // Exact Follow-Up Queue matching live website top 6 balances
             SectionHead(

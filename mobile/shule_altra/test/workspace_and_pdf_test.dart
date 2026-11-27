@@ -107,13 +107,24 @@ void main() {
     workspace.dispose();
   });
 
-  test('ThemeController defaults to system and switches modes cleanly', () {
+  test('ThemeController defaults to Light theme and switches modes cleanly', () {
     final controller = ThemeController(persist: false);
-    expect(controller.mode, ThemeMode.system);
+    expect(controller.mode, ThemeMode.light);
     controller.setMode(ThemeMode.dark);
     expect(controller.mode, ThemeMode.dark);
-    controller.setMode(ThemeMode.light);
-    expect(controller.mode, ThemeMode.light);
+    controller.setMode(ThemeMode.system);
+    expect(controller.mode, ThemeMode.system);
+  });
+
+  test('SchoolProfile is strictly branded Shule Altra with 6 staff roles', () {
+    expect(SchoolProfile.schoolName, 'Shule Altra');
+    expect(SchoolProfile.schoolName.contains('Mwalimu'), isFalse);
+    expect(SchoolProfile.schoolName.contains('Nyerere'), isFalse);
+    expect(SchoolProfile.demoRoles.length, 6);
+    expect(
+      SchoolProfile.demoRoles.map((r) => r.role),
+      containsAll(['ADMIN', 'HOSTEL', 'TEACHER', 'BURSAR', 'TRANSPORT', 'CANTEEN']),
+    );
   });
 
   test('ShulePdfService builds non-empty vector PDFs for report cards, fees & IDs', () async {

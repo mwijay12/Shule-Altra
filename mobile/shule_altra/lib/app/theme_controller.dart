@@ -1,7 +1,4 @@
-/// Persistent 3-way theme controller: Auto (Phone), Day (Light), Night (Dark).
-///
-/// Defaults to [ThemeMode.system] so the app automatically adapts to the
-/// phone's light/dark setting, while letting staff override it anytime.
+/// Persistent 3-way theme controller: Light (default), Dark, and Auto (Phone).
 library;
 
 import 'dart:async';
@@ -10,11 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeController extends ChangeNotifier {
-  ThemeController({ThemeMode initial = ThemeMode.system, bool persist = true})
+  ThemeController({ThemeMode initial = ThemeMode.light, bool persist = true})
       : _mode = initial,
         _persist = persist;
 
-  static const String _storageKey = 'shule_altra_theme_mode_v1';
+  static const String _storageKey = 'shule_altra_theme_mode_v2';
 
   final bool _persist;
   ThemeMode _mode;

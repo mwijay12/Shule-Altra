@@ -172,10 +172,10 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     glowDeep: Color(0xFF2563EB), // royal cobalt orb & highlight
     blueWash: Color(0xFFEAF3FF), // soft ice-blue badge/avatar fill
     blueInk: Color(0xFF15458A), // 8.34:1 on blueWash, 9.33:1 on white
-    glassStart: Color(0xDEFFFFFF), // 87% crisp frosted white
-    glassEnd: Color(0xB8EEF5FF), // 72% cool ice-blue translucent sheen
-    glassBorder: Color(0xD9FFFFFF), // 85% luminous white glass edge
-    innerSurface: Color(0xF5FFFFFF), // 96% pure white nested inner row
+    glassStart: Color(0xF5FFFFFF), // 96% crisp frosted white
+    glassEnd: Color(0xEAF0F6FF), // 92% cool sky-ice translucent sheen
+    glassBorder: Color(0xFFCCDDF2), // crisp cool-blue rim visible on light canvas
+    innerSurface: Color(0xFFF1F6FD), // soft cool-blue inner row & field well
     blueHeroStart: Color(0xFF164385), // 9.65:1 with white onGradient
     blueHeroEnd: Color(0xFF256CC9), // 5.16:1 with white onGradient
   );

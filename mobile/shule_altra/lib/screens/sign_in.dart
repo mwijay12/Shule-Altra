@@ -1,12 +1,11 @@
-/// Dedicated Single-School Staff Sign-In screen matching `src/app/login/page.tsx`.
+/// Dedicated Staff Sign-In screen matching `src/app/login/page.tsx`.
 ///
 /// Offers:
-///  * Official Shule Altra shield icon & Mwalimu Nyerere Secondary School header
-///  * Email + Password sign-in (`admin@shule.pro`, `teacher@shule.pro`,
-///    `bursar@shule.pro`, password `demo2026`, or live Firebase when configured)
-///  * One-tap Demo Role cards matching the web dashboard (`Administrator`,
-///    `Teacher`, `Bursar`)
-///  * Optional Google sign-in button when Firebase Auth is configured
+///  * Official Shule Altra shield icon & Elimu Kwanza header
+///  * Email + Password sign-in (`admin@shule.pro`, `warden@shule.pro`,
+///    `teacher@shule.pro`, `bursar@shule.pro`, `transport@shule.pro`,
+///    `canteen@shule.pro`, password `demo2026`, or live Firebase)
+///  * Role-based one-tap staff sign-in adapting the entire bottom navigation bar
 library;
 
 import 'package:flutter/material.dart';
@@ -96,7 +95,7 @@ class _SignInScreenState extends State<SignInScreen> {
     setState(() {
       _busy = false;
       _error =
-          'Use one of the Mwalimu Nyerere demo accounts (password: ${DemoCredentials.demoPassword}) or tap a role below.';
+          'Use one of the Shule Altra staff demo accounts (password: ${DemoCredentials.demoPassword}) or tap a role below.';
     });
   }
 
@@ -123,7 +122,7 @@ class _SignInScreenState extends State<SignInScreen> {
     if (widget.session.acceptsDemoCredential) {
       setState(
         () => _error =
-            'Google sign-in requires live Firebase configuration. Use a staff role below to open Mwalimu Nyerere Secondary School immediately.',
+            'Google sign-in requires live Firebase configuration. Pick a Shule Altra staff role below to sign in immediately.',
       );
       return;
     }
@@ -144,7 +143,7 @@ class _SignInScreenState extends State<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    final mode = widget.themeController?.mode ?? ThemeMode.system;
+    final mode = widget.themeController?.mode ?? ThemeMode.light;
 
     return Scaffold(
       backgroundColor: tokens.canvas,
@@ -295,7 +294,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     const SizedBox(height: Space.sm),
                     Text(
-                      'Matches the Shule Altra website login. Pick any staff role to open Mwalimu Nyerere Secondary School immediately.',
+                      'Role-based staff login. Pick a role to launch Shule Altra with tailored navigation for that department.',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: Space.md),
@@ -308,7 +307,10 @@ class _SignInScreenState extends State<SignInScreen> {
                             ShuleGlyph(
                               icon: switch (role.role) {
                                 'ADMIN' => Icons.admin_panel_settings_rounded,
+                                'HOSTEL' => Icons.bed_rounded,
                                 'BURSAR' => Icons.account_balance_wallet_rounded,
+                                'TRANSPORT' => Icons.directions_bus_rounded,
+                                'CANTEEN' => Icons.restaurant_rounded,
                                 _ => Icons.menu_book_rounded,
                               },
                               size: 44,

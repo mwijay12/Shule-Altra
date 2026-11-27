@@ -249,7 +249,7 @@ class BrandBar extends StatelessWidget {
                     ),
               ),
               Text(
-                subtitle ?? 'MWALIMU NYERERE SEC.',
+                subtitle ?? 'ELIMU KWANZA',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -720,15 +720,23 @@ class BrandPanel extends StatelessWidget {
                     style: FilledButton.styleFrom(
                       backgroundColor: tokens.surface,
                       foregroundColor: tokens.primary,
+                      iconColor: tokens.primary,
                       minimumSize: const Size(0, kMinTapTarget),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(Corners.pill),
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: Space.xl),
                     ),
-                    icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                    icon: Icon(Icons.arrow_forward_rounded, size: 18, color: tokens.primary),
                     iconAlignment: IconAlignment.end,
-                    label: Text(actionLabel),
+                    label: Text(
+                      actionLabel,
+                      style: TextStyle(
+                        fontFamily: 'PlusJakartaSans',
+                        color: tokens.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                 ],
               ),

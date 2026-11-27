@@ -400,10 +400,12 @@ abstract final class NectaGrading {
 /// Exact website institutional identity & demo accounts.
 abstract final class SchoolProfile {
   static const String schoolId = DemoAccount.schoolId;
-  static const String brandName = 'SHule Altra';
+  static const String brandName = 'Shule Altra';
   static const String brandTagline = 'Elimu Kwanza';
-  static const String schoolName = DemoAccount.schoolName;
+  static const String schoolName = 'Shule Altra';
   static const String location = 'Kinondoni, Dar es Salaam · TZ';
+  static const String contacts = 'info@shulealtra.ac.tz · +255 712 410 100';
+  static const String registration = 'Reg. TZ-SHULE-ALTRA-2026';
   static const String motto = 'Elimu Kwanza · Excellence & Discipline';
   static const String termLabel = '2026 Academic Year';
 
@@ -423,7 +425,17 @@ abstract final class SchoolProfile {
       label: 'Administrator',
       title: 'Head Master',
       department: 'Administration',
-      scope: 'Full institutional control',
+      scope: 'Full Command Deck · All 17 modules',
+    ),
+    DemoRoleAccount(
+      uid: 'demo-hostel',
+      email: 'warden@shule.pro',
+      fullName: 'MWL. ELIZABETH MUSHI',
+      role: 'HOSTEL',
+      label: 'Hostel Warden',
+      title: 'Boarding Master',
+      department: 'Boarding & Hostels',
+      scope: '5 hostel wings · 101 boarders · Roll call',
     ),
     DemoRoleAccount(
       uid: 'demo-teacher',
@@ -433,7 +445,7 @@ abstract final class SchoolProfile {
       label: 'Teacher',
       title: 'Academic Master',
       department: 'Sciences',
-      scope: 'Students · Attendance · Academics',
+      scope: 'Academics · Attendance · Timetable',
     ),
     DemoRoleAccount(
       uid: 'demo-bursar',
@@ -443,7 +455,27 @@ abstract final class SchoolProfile {
       label: 'Bursar',
       title: 'School Bursar',
       department: 'Accounts',
-      scope: 'Finance · Fees · Reconciliation',
+      scope: 'Finance · Balances · Revenue analytics',
+    ),
+    DemoRoleAccount(
+      uid: 'demo-transport',
+      email: 'transport@shule.pro',
+      fullName: 'BAKARI SAID',
+      role: 'TRANSPORT',
+      label: 'Transport',
+      title: 'Fleet Coordinator',
+      department: 'Campus Transport',
+      scope: '5 school bus routes · 49 day riders',
+    ),
+    DemoRoleAccount(
+      uid: 'demo-canteen',
+      email: 'canteen@shule.pro',
+      fullName: 'MARIAM HASSAN',
+      role: 'CANTEEN',
+      label: 'Canteen',
+      title: 'Canteen Manager',
+      department: 'Catering & POS',
+      scope: 'Student cards · Baskets · Daily sales',
     ),
   ];
 

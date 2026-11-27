@@ -25,10 +25,14 @@ class RegisterScreen extends StatefulWidget {
     super.key,
     required this.session,
     required this.workspace,
+    this.initialStatusFilter = 'All',
+    this.headerTitle = 'Learners',
   });
 
   final AppSession session;
   final SchoolWorkspace workspace;
+  final String initialStatusFilter;
+  final String headerTitle;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -37,10 +41,18 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _search = TextEditingController();
   String _selectedClass = 'All';
-  String _statusFilter = 'All';
+  late String _statusFilter = widget.initialStatusFilter;
 
   static const _classFilters = <String>['All', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
   static const _statusFilters = <String>['All', 'Owes fees', 'Cleared', 'Boarder', 'Day', 'Absent / Late'];
+
+  @override
+  void didUpdateWidget(covariant RegisterScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialStatusFilter != widget.initialStatusFilter) {
+      _statusFilter = widget.initialStatusFilter;
+    }
+  }
 
   @override
   void dispose() {
@@ -266,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (created == true && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Learner enrolled into Mwalimu Nyerere Secondary School.')),
+        const SnackBar(content: Text('Learner enrolled into Shule Altra.')),
       );
     }
   }
@@ -307,7 +319,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Learners',
+                                widget.headerTitle,
                                 style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28),
                               ),
                               Text(

@@ -1,5 +1,7 @@
-/// Single-school Shule Altra root: adaptive Auto/Light/Dark theme, official
-/// app icon onboarding, dedicated Staff Sign-In, and the 4-tab Blue Glass Shell.
+/// Shule Altra mobile root: Light theme default (with Light / Dark / Auto toggle),
+/// official app icon onboarding, dedicated Staff Sign-In, and Role-Based Dynamic
+/// Blue Glass Bottom Navigation adapting to Admin, Hostel Warden, Bursar,
+/// Teacher, Transport Coordinator, and Canteen Manager.
 library;
 
 import 'dart:async';
@@ -18,6 +20,7 @@ import '../design/theme.dart';
 import '../design/tokens.dart';
 import '../screens/campus.dart';
 import '../screens/home.dart';
+import '../screens/modules.dart';
 import '../screens/more.dart';
 import '../screens/onboarding.dart';
 import '../screens/register.dart';
@@ -48,8 +51,8 @@ class ShuleApp extends StatefulWidget {
   final SchoolGateway? _injected;
   final AppMode initialMode;
 
-  /// Null means follow the phone's setting (`ThemeMode.system`) with persisted
-  /// user overrides inside More & Settings.
+  /// Null defaults to crisp Light theme (`ThemeMode.light`) with persisted
+  /// user overrides (Light / Dark / Auto) inside More & Settings.
   final ThemeMode? themeMode;
 
   /// Tests pin the system font scale here. Null follows the phone.
@@ -61,7 +64,7 @@ class ShuleApp extends StatefulWidget {
 
 class _ShuleAppState extends State<ShuleApp> {
   late final ThemeController _themeController = ThemeController(
-    initial: widget.themeMode ?? ThemeMode.system,
+    initial: widget.themeMode ?? ThemeMode.light,
     persist: widget.themeMode == null,
   );
   late final ThemeData _light = buildTheme(Brightness.light);
@@ -150,6 +153,8 @@ class _ShuleAppState extends State<ShuleApp> {
 
   void _openQuickActionsSheet(BuildContext context) {
     final tokens = ShuleTokens.of(context);
+    final role = _workspace.activeStaff.role;
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -181,21 +186,62 @@ class _ShuleAppState extends State<ShuleApp> {
                 ),
                 const SizedBox(height: Space.md),
                 Text('Quick school actions', style: Theme.of(ctx).textTheme.headlineSmall),
+                Text(
+                  'Tailored for ${_workspace.activeStaff.label} (${_workspace.activeStaff.department})',
+                  style: Theme.of(ctx).textTheme.bodySmall,
+                ),
                 const SizedBox(height: Space.md),
+                if (role == 'HOSTEL') ...[
+                  _QuickActionTile(
+                    icon: Icons.bed_rounded,
+                    title: 'Boarding Wings & Capacity',
+                    subtitle: '5 wings · ${_workspace.boarderCount} boarders housed',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _tab = 0);
+                    },
+                  ),
+                  const SizedBox(height: Space.xs),
+                  _QuickActionTile(
+                    icon: Icons.groups_rounded,
+                    title: 'Boarders Directory',
+                    subtitle: 'Inspect wing assignments, guardians & conduct',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _tab = 1);
+                    },
+                  ),
+                  const SizedBox(height: Space.xs),
+                ] else ...[
+                  _QuickActionTile(
+                    icon: Icons.groups_rounded,
+                    title: 'Learners & Enrolment',
+                    subtitle: 'Search directory, add photos & enrol students',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => _tab = 1);
+                    },
+                  ),
+                  const SizedBox(height: Space.xs),
+                ],
                 _QuickActionTile(
-                  icon: Icons.groups_rounded,
-                  title: 'Learners & Enrolment',
-                  subtitle: 'Search directory, add photos & enrol students',
+                  icon: Icons.analytics_outlined,
+                  title: 'Animated Analytics',
+                  subtitle: 'Collection rings, 7D–TERM trend chart & NECTA divisions',
                   onTap: () {
                     Navigator.pop(ctx);
-                    setState(() => _tab = 1);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AnalyticsScreen(workspace: _workspace),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: Space.xs),
                 _QuickActionTile(
                   icon: Icons.print_rounded,
                   title: 'Reports & PDF Printing',
-                  subtitle: 'Print report cards, fee statements & registers',
+                  subtitle: 'Print Shule Altra report cards, fee statements & registers',
                   onTap: () {
                     Navigator.pop(ctx);
                     Navigator.of(context).push(
@@ -223,12 +269,12 @@ class _ShuleAppState extends State<ShuleApp> {
                 _QuickActionTile(
                   icon: Icons.brightness_6_rounded,
                   title: 'Theme: ${_themeLabel(_themeController.mode)}',
-                  subtitle: 'Tap to cycle Auto (Phone) · Light · Dark',
+                  subtitle: 'Tap to switch Light · Dark · Auto (Phone)',
                   onTap: () {
                     final next = switch (_themeController.mode) {
-                      ThemeMode.system => ThemeMode.light,
                       ThemeMode.light => ThemeMode.dark,
                       ThemeMode.dark => ThemeMode.system,
+                      ThemeMode.system => ThemeMode.light,
                     };
                     _themeController.setMode(next);
                     Navigator.pop(ctx);
@@ -243,9 +289,9 @@ class _ShuleAppState extends State<ShuleApp> {
   }
 
   String _themeLabel(ThemeMode mode) => switch (mode) {
-        ThemeMode.system => 'Auto (Phone)',
         ThemeMode.light => 'Light',
         ThemeMode.dark => 'Dark',
+        ThemeMode.system => 'Auto (Phone)',
       };
 
   @override
@@ -318,6 +364,8 @@ class _ShuleAppState extends State<ShuleApp> {
   }
 }
 
+/// Role-based navigation shell — automatically adapts the bottom glass dock
+/// destinations and pages to the signed-in staff role.
 class _AuthenticatedShell extends StatelessWidget {
   const _AuthenticatedShell({
     required this.session,
@@ -343,28 +391,257 @@ class _AuthenticatedShell extends StatelessWidget {
   final VoidCallback onSignOut;
   final VoidCallback onReplayOnboarding;
 
-  static const _destinations = <ShuleDockItem>[
-    ShuleDockItem(
-      label: 'Home',
-      icon: Icons.home_outlined,
-      activeIcon: Icons.home_rounded,
-    ),
-    ShuleDockItem(
-      label: 'Learners',
-      icon: Icons.groups_outlined,
-      activeIcon: Icons.groups_rounded,
-    ),
-    ShuleDockItem(
-      label: 'School Day',
-      icon: Icons.calendar_today_outlined,
-      activeIcon: Icons.calendar_today_rounded,
-    ),
-    ShuleDockItem(
-      label: 'More',
-      icon: Icons.tune_outlined,
-      activeIcon: Icons.tune_rounded,
-    ),
-  ];
+  List<ShuleDockItem> _destinationsFor(String role) => switch (role) {
+        'HOSTEL' => const [
+            ShuleDockItem(
+              label: 'Hostels',
+              icon: Icons.bed_outlined,
+              activeIcon: Icons.bed_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Boarders',
+              icon: Icons.groups_outlined,
+              activeIcon: Icons.groups_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Roll Call',
+              icon: Icons.fact_check_outlined,
+              activeIcon: Icons.fact_check_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+        'BURSAR' => const [
+            ShuleDockItem(
+              label: 'Finance',
+              icon: Icons.account_balance_wallet_outlined,
+              activeIcon: Icons.account_balance_wallet_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Balances',
+              icon: Icons.receipt_long_outlined,
+              activeIcon: Icons.receipt_long_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Analytics',
+              icon: Icons.analytics_outlined,
+              activeIcon: Icons.analytics_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+        'TEACHER' => const [
+            ShuleDockItem(
+              label: 'Academics',
+              icon: Icons.workspace_premium_outlined,
+              activeIcon: Icons.workspace_premium_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Attendance',
+              icon: Icons.fact_check_outlined,
+              activeIcon: Icons.fact_check_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Timetable',
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+        'TRANSPORT' => const [
+            ShuleDockItem(
+              label: 'Routes',
+              icon: Icons.directions_bus_outlined,
+              activeIcon: Icons.directions_bus_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Riders',
+              icon: Icons.groups_outlined,
+              activeIcon: Icons.groups_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Roll Call',
+              icon: Icons.fact_check_outlined,
+              activeIcon: Icons.fact_check_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+        'CANTEEN' => const [
+            ShuleDockItem(
+              label: 'POS',
+              icon: Icons.restaurant_outlined,
+              activeIcon: Icons.restaurant_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Cards',
+              icon: Icons.badge_outlined,
+              activeIcon: Icons.badge_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Analytics',
+              icon: Icons.analytics_outlined,
+              activeIcon: Icons.analytics_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+        _ => const [
+            ShuleDockItem(
+              label: 'Home',
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home_rounded,
+            ),
+            ShuleDockItem(
+              label: 'Learners',
+              icon: Icons.groups_outlined,
+              activeIcon: Icons.groups_rounded,
+            ),
+            ShuleDockItem(
+              label: 'School Day',
+              icon: Icons.calendar_today_outlined,
+              activeIcon: Icons.calendar_today_rounded,
+            ),
+            ShuleDockItem(
+              label: 'More',
+              icon: Icons.tune_outlined,
+              activeIcon: Icons.tune_rounded,
+            ),
+          ],
+      };
+
+  Widget _pageFor(String role) {
+    if (tab == 3) {
+      return MoreScreen(
+        session: session,
+        workspace: workspace,
+        themeController: themeController,
+        onSignOut: onSignOut,
+        onShowOnboarding: onReplayOnboarding,
+      );
+    }
+
+    return switch (role) {
+      'HOSTEL' => switch (tab) {
+          0 => HostelHubView(
+              workspace: workspace,
+              onOpenBoarders: () => onSelectTab(1),
+              onOpenRollCall: () => onSelectTab(2),
+            ),
+          1 => RegisterScreen(
+              session: session,
+              workspace: workspace,
+              initialStatusFilter: 'Boarder',
+              headerTitle: 'Boarders',
+            ),
+          _ => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.attendance,
+            ),
+        },
+      'BURSAR' => switch (tab) {
+          0 => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.finance,
+            ),
+          1 => RegisterScreen(
+              session: session,
+              workspace: workspace,
+              initialStatusFilter: 'Owes fees',
+              headerTitle: 'Fee Balances',
+            ),
+          _ => AnalyticsScreen(
+              workspace: workspace,
+              embedded: true,
+            ),
+        },
+      'TEACHER' => switch (tab) {
+          0 => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.academics,
+            ),
+          1 => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.attendance,
+            ),
+          _ => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.timetable,
+            ),
+        },
+      'TRANSPORT' => switch (tab) {
+          0 => TransportHubView(
+              workspace: workspace,
+              onOpenRiders: () => onSelectTab(1),
+            ),
+          1 => RegisterScreen(
+              session: session,
+              workspace: workspace,
+              initialStatusFilter: 'Day',
+              headerTitle: 'Bus Riders',
+            ),
+          _ => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: SchoolDayTab.attendance,
+            ),
+        },
+      'CANTEEN' => switch (tab) {
+          0 => CanteenScreen(
+              workspace: workspace,
+              embedded: true,
+            ),
+          1 => RegisterScreen(
+              session: session,
+              workspace: workspace,
+              headerTitle: 'Student Cards',
+            ),
+          _ => AnalyticsScreen(
+              workspace: workspace,
+              embedded: true,
+            ),
+        },
+      _ => switch (tab) {
+          0 => HomeScreen(
+              session: session,
+              workspace: workspace,
+              onOpenLearners: () => onSelectTab(1),
+              onOpenSchoolDay: onOpenSchoolDay,
+              onOpenMore: () => onSelectTab(3),
+            ),
+          1 => RegisterScreen(
+              session: session,
+              workspace: workspace,
+            ),
+          _ => SchoolDayScreen(
+              session: session,
+              workspace: workspace,
+              initialTab: schoolDayTab,
+            ),
+        },
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -372,95 +649,78 @@ class _AuthenticatedShell extends StatelessWidget {
     final prefs = MotionPrefs.of(context);
     final wide = MediaQuery.sizeOf(context).width >= 960;
 
-    final page = switch (tab) {
-      0 => HomeScreen(
-          session: session,
-          workspace: workspace,
-          onOpenLearners: () => onSelectTab(1),
-          onOpenSchoolDay: onOpenSchoolDay,
-          onOpenMore: () => onSelectTab(3),
-        ),
-      1 => RegisterScreen(
-          session: session,
-          workspace: workspace,
-        ),
-      2 => SchoolDayScreen(
-          session: session,
-          workspace: workspace,
-          initialTab: schoolDayTab,
-        ),
-      _ => MoreScreen(
-          session: session,
-          workspace: workspace,
-          themeController: themeController,
-          onSignOut: onSignOut,
-          onShowOnboarding: onReplayOnboarding,
-        ),
-    };
+    return ListenableBuilder(
+      listenable: workspace,
+      builder: (context, _) {
+        final role = workspace.activeStaff.role;
+        final destinations = _destinationsFor(role);
+        final page = _pageFor(role);
 
-    final body = AnimatedSwitcher(
-      duration: prefs.fast,
-      child: KeyedSubtree(key: ValueKey<int>(tab), child: page),
-    );
+        final body = AnimatedSwitcher(
+          duration: prefs.fast,
+          child: KeyedSubtree(key: ValueKey<String>('$role-$tab'), child: page),
+        );
 
-    if (wide) {
-      return Scaffold(
-        backgroundColor: tokens.canvas,
-        body: ShuleBackdrop(
-          child: SafeArea(
-            child: Row(
-              children: [
-                NavigationRail(
-                  selectedIndex: tab,
-                  onDestinationSelected: onSelectTab,
-                  labelType: NavigationRailLabelType.all,
-                  backgroundColor: Colors.transparent,
-                  destinations: [
-                    for (final d in _destinations)
-                      NavigationRailDestination(
-                        icon: Icon(d.icon),
-                        selectedIcon: Icon(d.activeIcon),
-                        label: Text(d.label),
+        if (wide) {
+          return Scaffold(
+            backgroundColor: tokens.canvas,
+            body: ShuleBackdrop(
+              child: SafeArea(
+                child: Row(
+                  children: [
+                    NavigationRail(
+                      selectedIndex: tab,
+                      onDestinationSelected: onSelectTab,
+                      labelType: NavigationRailLabelType.all,
+                      backgroundColor: Colors.transparent,
+                      destinations: [
+                        for (final d in destinations)
+                          NavigationRailDestination(
+                            icon: Icon(d.icon),
+                            selectedIcon: Icon(d.activeIcon),
+                            label: Text(d.label),
+                          ),
+                      ],
+                    ),
+                    const VerticalDivider(width: 1),
+                    Expanded(
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 960),
+                          child: body,
+                        ),
                       ),
+                    ),
                   ],
                 ),
-                const VerticalDivider(width: 1),
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 960),
-                      child: body,
-                    ),
+              ),
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: tokens.canvas,
+          body: ShuleBackdrop(
+            child: Stack(
+              children: [
+                SafeArea(bottom: false, child: body),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: ShuleGlassDock(
+                    items: destinations,
+                    selectedIndex: tab,
+                    onSelected: onSelectTab,
+                    quickActionTooltip: 'Quick school actions',
+                    onQuickAction: () => onOpenQuickActions(context),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: tokens.canvas,
-      body: ShuleBackdrop(
-        child: Stack(
-          children: [
-            SafeArea(bottom: false, child: body),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: ShuleGlassDock(
-                items: _destinations,
-                selectedIndex: tab,
-                onSelected: onSelectTab,
-                quickActionTooltip: 'Quick school actions',
-                onQuickAction: () => onOpenQuickActions(context),
-              ),
-            ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 }

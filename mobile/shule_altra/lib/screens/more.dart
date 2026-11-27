@@ -139,7 +139,7 @@ class _MoreScreenState extends State<MoreScreen> {
                     ],
                   ),
                   const SizedBox(height: Space.md),
-                  Text('Switch staff role', style: Theme.of(context).textTheme.labelMedium),
+                  Text('Switch staff role (adapts bottom bar)', style: Theme.of(context).textTheme.labelMedium),
                   const SizedBox(height: Space.xs),
                   Wrap(
                     spacing: Space.xs,
@@ -149,7 +149,16 @@ class _MoreScreenState extends State<MoreScreen> {
                         ChoicePill(
                           label: role.label,
                           selected: staff.email == role.email,
-                          onSelected: () => widget.workspace.setActiveStaff(role),
+                          onSelected: () {
+                            widget.workspace.setActiveStaff(role);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Switched to ${role.label} — bottom navigation updated for ${role.department}.',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                     ],
                   ),
@@ -170,7 +179,7 @@ class _MoreScreenState extends State<MoreScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choose Auto to follow your phone\'s light or dark theme automatically, or pick Light / Dark manually.',
+                    'Light theme is enabled by default for crisp readability. Switch to Dark or Auto (Phone) anytime.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: Space.md),
@@ -178,11 +187,6 @@ class _MoreScreenState extends State<MoreScreen> {
                     spacing: Space.sm,
                     runSpacing: Space.sm,
                     children: [
-                      ChoicePill(
-                        label: 'Auto (Phone)',
-                        selected: currentMode == ThemeMode.system,
-                        onSelected: () => widget.themeController.setMode(ThemeMode.system),
-                      ),
                       ChoicePill(
                         label: 'Light',
                         selected: currentMode == ThemeMode.light,
@@ -192,6 +196,11 @@ class _MoreScreenState extends State<MoreScreen> {
                         label: 'Dark',
                         selected: currentMode == ThemeMode.dark,
                         onSelected: () => widget.themeController.setMode(ThemeMode.dark),
+                      ),
+                      ChoicePill(
+                        label: 'Auto (Phone)',
+                        selected: currentMode == ThemeMode.system,
+                        onSelected: () => widget.themeController.setMode(ThemeMode.system),
                       ),
                     ],
                   ),
@@ -408,8 +417,15 @@ class _PermissionRow extends StatelessWidget {
               ),
               if (extraActionLabel != null && onExtraAction != null)
                 FilledButton.tonal(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: tokens.blueWash,
+                    foregroundColor: tokens.blueInk,
+                  ),
                   onPressed: onExtraAction,
-                  child: Text(extraActionLabel!),
+                  child: Text(
+                    extraActionLabel!,
+                    style: TextStyle(color: tokens.blueInk, fontWeight: FontWeight.w700),
+                  ),
                 ),
             ],
           ),

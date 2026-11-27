@@ -35,14 +35,18 @@ Future<void> tapText(WidgetTester tester, String text) async {
 }
 
 void main() {
-  testWidgets('onboarding displays Shule Altra icon and never asks to connect a school', (tester) async {
+  testWidgets('onboarding displays Shule Altra icon in default Light theme with zero Mwalimu Nyerere branding', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
     await tester.pumpAndSettle();
 
+    final tokens = ShuleTokens.of(tester.element(find.byType(ShuleLogoMark).first));
+    expect(tokens.brightness, Brightness.light);
     expect(find.byType(ShuleLogoMark), findsWidgets);
     expect(find.text('Connect my school'), findsNothing);
+    expect(find.textContaining('Mwalimu'), findsNothing);
+    expect(find.textContaining('Nyerere'), findsNothing);
     expect(find.textContaining('Your school,'), findsOneWidget);
 
     await tapText(tester, 'Next');
@@ -52,6 +56,52 @@ void main() {
     expect(find.textContaining('school operations'), findsOneWidget);
     expect(find.text('Sign in to Shule Altra'), findsOneWidget);
     expect(find.text('Explore with demo account'), findsOneWidget);
+    await gateway.close();
+  });
+
+  testWidgets('role-based navigation adapts bottom dock for Hostel Warden and Bursar Analytics', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(_app(gateway));
+    await tester.pumpAndSettle();
+
+    await tapText(tester, 'Skip');
+    expect(find.text('Staff Portal Login'), findsOneWidget);
+
+    // Sign in directly as Hostel Warden -> bottom bar morphs to Hostels / Boarders / Roll Call / More
+    await tester.scrollUntilVisible(
+      find.text('Hostel Warden · Boarding Master'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tapText(tester, 'Hostel Warden · Boarding Master');
+
+    final dock = find.byType(ShuleGlassDock);
+    expect(find.descendant(of: dock, matching: find.text('Hostels')), findsOneWidget);
+    expect(find.descendant(of: dock, matching: find.text('Boarders')), findsOneWidget);
+    expect(find.descendant(of: dock, matching: find.text('Roll Call')), findsOneWidget);
+    expect(find.text('Boarding Wings & Occupancy'), findsOneWidget);
+
+    // Tap Boarders tab in the bottom dock -> pre-filtered to 101 boarders
+    await tester.tap(find.descendant(of: dock, matching: find.text('Boarders')));
+    await tester.pumpAndSettle();
+    expect(find.text('101 shown'), findsOneWidget);
+
+    // Switch role to Bursar inside More -> bottom bar morphs to Finance / Balances / Analytics / More
+    await tester.tap(find.descendant(of: dock, matching: find.text('More')));
+    await tester.pumpAndSettle();
+    await tapText(tester, 'Bursar');
+    expect(find.descendant(of: dock, matching: find.text('Finance')), findsOneWidget);
+    expect(find.descendant(of: dock, matching: find.text('Balances')), findsOneWidget);
+    expect(find.descendant(of: dock, matching: find.text('Analytics')), findsOneWidget);
+
+    // Open animated Analytics tab from the bottom dock and switch chart range from 30D to 90D
+    await tester.tap(find.descendant(of: dock, matching: find.text('Analytics')));
+    await tester.pumpAndSettle();
+    expect(find.text('Fee Collection'), findsOneWidget);
+    expect(find.text('Fee collections trend'), findsOneWidget);
+    await tapText(tester, '90D');
+    expect(find.textContaining('90D window'), findsOneWidget);
     await gateway.close();
   });
 

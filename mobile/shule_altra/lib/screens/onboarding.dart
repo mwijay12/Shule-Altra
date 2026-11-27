@@ -40,10 +40,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   static const _slides = <_Slide>[
     _Slide(
-      eyebrow: 'SINGLE SCHOOL · SHULE ALTRA',
+      eyebrow: 'SHULE ALTRA · ELIMU KWANZA',
       title: 'Your school,\nin your pocket',
       body:
-          'Manage Mwalimu Nyerere Secondary School learners, guardians, daily attendance and TZS fees in one calm blue workspace.',
+          'Manage Shule Altra learners, guardians, daily attendance, boarding hostels and TZS fees in one crisp workspace.',
       image: 'assets/images/school_cutout.png',
       icon: Icons.school_rounded,
       badge: 'Form 1 – 4 · Live Workspace',
@@ -102,7 +102,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final last = _index == _slides.length - 1;
-    final currentMode = widget.themeController?.mode ?? ThemeMode.system;
+    final currentMode = widget.themeController?.mode ?? ThemeMode.light;
     final modeLabel = switch (currentMode) {
       ThemeMode.system => 'Auto',
       ThemeMode.light => 'Light',

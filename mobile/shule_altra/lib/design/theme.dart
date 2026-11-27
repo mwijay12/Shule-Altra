@@ -96,18 +96,24 @@ ThemeData buildTheme(Brightness brightness) {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: ButtonStyle(
-        minimumSize: const WidgetStatePropertyAll(Size(0, 52)),
-        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: Space.xl)),
+        minimumSize: const WidgetStatePropertyAll(Size(0, 50)),
+        padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: Space.lg)),
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.pill)),
         ),
-        side: WidgetStatePropertyAll(BorderSide(color: tokens.border)),
+        side: WidgetStatePropertyAll(
+          BorderSide(
+            color: dark ? tokens.border : tokens.primary.withValues(alpha: 0.30),
+            width: 1.2,
+          ),
+        ),
         foregroundColor: WidgetStatePropertyAll(tokens.blueInk),
         backgroundColor: WidgetStatePropertyAll(tokens.innerSurface),
+        iconColor: WidgetStatePropertyAll(tokens.blueInk),
         textStyle: const WidgetStatePropertyAll(
           TextStyle(
             fontFamily: 'PlusJakartaSans',
-            fontSize: 14.5,
+            fontSize: 14,
             fontWeight: FontWeight.w700,
             letterSpacing: -0.1,
           ),
@@ -204,6 +210,18 @@ ThemeData buildTheme(Brightness brightness) {
     dialogTheme: DialogThemeData(
       backgroundColor: tokens.surface,
       surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        color: tokens.ink,
+      ),
+      contentTextStyle: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: tokens.ink,
+      ),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.panel)),
     ),
     bottomSheetTheme: BottomSheetThemeData(
@@ -216,8 +234,24 @@ ThemeData buildTheme(Brightness brightness) {
     chipTheme: ChipThemeData(
       backgroundColor: tokens.blueWash,
       selectedColor: tokens.primary,
-      labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: tokens.blueInk),
-      side: BorderSide.none,
+      checkmarkColor: tokens.onPrimary,
+      iconTheme: IconThemeData(color: tokens.blueInk, size: 16),
+      labelStyle: WidgetStateTextStyle.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TextStyle(
+          fontFamily: 'PlusJakartaSans',
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          color: selected ? tokens.onPrimary : tokens.blueInk,
+        );
+      }),
+      secondaryLabelStyle: TextStyle(
+        fontFamily: 'PlusJakartaSans',
+        fontSize: 12.5,
+        fontWeight: FontWeight.w700,
+        color: tokens.onPrimary,
+      ),
+      side: BorderSide(color: tokens.border),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Corners.pill)),
     ),
     switchTheme: SwitchThemeData(
