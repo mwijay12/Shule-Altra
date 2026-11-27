@@ -134,7 +134,7 @@ jobs:
       # Paths here are relative to `mobile/shule_altra` (the job's working
       # directory), not the repository root.
       - name: Publish the APK as a release asset
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -157,8 +157,8 @@ jobs:
 
           **Demo sign-in.** Open the app → *Continue* twice → *Explore the sample preview* → *Learners* → *Fill the demo credential* → *Sign in to the demo*.
 
-          - Email: \`demo@shule.test\`
-          - Password: \`shule-demo\`
+          - Email: \`admin@shule.pro\`
+          - Password: \`demo2026\`
 
           That credential opens six fictional learners held on the phone. It is not a
           school account, it stores nothing, and it cannot read a real register — the
