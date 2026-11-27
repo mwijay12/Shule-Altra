@@ -45,7 +45,6 @@ class GradientButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final enabled = onPressed != null && !busy;
-    final radius = BorderRadius.circular(Corners.pill);
 
     final content = Row(
       mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
@@ -85,29 +84,25 @@ class GradientButton extends StatelessWidget {
       ],
     );
 
-    final button = Opacity(
-      opacity: enabled ? 1 : 0.9,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: enabled ? tokens.brandGradient : null,
-          color: enabled ? null : tokens.mutedSurface,
-          borderRadius: radius,
-          border: enabled ? null : Border.all(color: tokens.border),
-          boxShadow: enabled ? shuleShadow(tokens) : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: radius,
-          child: InkWell(
-            borderRadius: radius,
-            onTap: enabled ? onPressed : null,
-            child: Container(
-              height: 54,
-              constraints: const BoxConstraints(minWidth: kMinTapTarget),
-              padding: const EdgeInsets.symmetric(horizontal: Space.xl),
-              alignment: Alignment.center,
-              child: content,
-            ),
+    final button = PressScale(
+      onTap: enabled ? onPressed : null,
+      child: Opacity(
+        opacity: enabled ? 1 : 0.85,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            // Solid cobalt / subtle same-hue tonal step — zero purple/violet.
+            gradient: enabled ? tokens.brandGradient : null,
+            color: enabled ? null : tokens.mutedSurface,
+            borderRadius: BorderRadius.circular(Corners.button),
+            border: enabled ? null : Border.all(color: tokens.border),
+            boxShadow: enabled ? shuleShadow(tokens) : null,
+          ),
+          child: Container(
+            height: 54,
+            constraints: const BoxConstraints(minWidth: kMinTapTarget),
+            padding: const EdgeInsets.symmetric(horizontal: Space.xl),
+            alignment: Alignment.center,
+            child: content,
           ),
         ),
       ),
@@ -120,6 +115,160 @@ class GradientButton extends StatelessWidget {
       child: button,
     );
   }
+}
+
+/// Signature Shule Altra vector Shield + Checkmark brand mark.
+///
+/// Supports animated stroke drawing (`shieldProgress` 0..1) and spring
+/// checkmark reveal (`checkProgress` 0..1, `checkScale`) for the Splash screen,
+/// and renders in its crisp completed state (default 1.0) for Hero hand-offs
+/// into Onboarding and Staff Sign-In.
+class ShuleShieldMark extends StatelessWidget {
+  const ShuleShieldMark({
+    super.key,
+    this.size = 64,
+    this.shieldProgress = 1.0,
+    this.fillOpacity = 1.0,
+    this.checkProgress = 1.0,
+    this.checkScale = 1.0,
+  });
+
+  final double size;
+  final double shieldProgress;
+  final double fillOpacity;
+  final double checkProgress;
+  final double checkScale;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    return SizedBox.square(
+      dimension: size,
+      child: CustomPaint(
+        painter: _AnimatedShieldPainter(
+          primary: tokens.primary,
+          deep: tokens.blueHeroStart,
+          azure: tokens.glowDeep,
+          checkColor: tokens.onPrimary,
+          shieldProgress: shieldProgress,
+          fillOpacity: fillOpacity,
+          checkProgress: checkProgress,
+          checkScale: checkScale,
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedShieldPainter extends CustomPainter {
+  const _AnimatedShieldPainter({
+    required this.primary,
+    required this.deep,
+    required this.azure,
+    required this.checkColor,
+    required this.shieldProgress,
+    required this.fillOpacity,
+    required this.checkProgress,
+    required this.checkScale,
+  });
+
+  final Color primary;
+  final Color deep;
+  final Color azure;
+  final Color checkColor;
+  final double shieldProgress;
+  final double fillOpacity;
+  final double checkProgress;
+  final double checkScale;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final shield = Path()
+      ..moveTo(w * 0.50, h * 0.08)
+      ..lineTo(w * 0.86, h * 0.21)
+      ..lineTo(w * 0.86, h * 0.50)
+      ..cubicTo(w * 0.86, h * 0.72, w * 0.69, h * 0.86, w * 0.50, h * 0.93)
+      ..cubicTo(w * 0.31, h * 0.86, w * 0.14, h * 0.72, w * 0.14, h * 0.50)
+      ..lineTo(w * 0.14, h * 0.21)
+      ..close();
+
+    // 1. Subtle tonal cobalt fill (same-hue, ~8% lightness step — zero purple)
+    if (fillOpacity > 0) {
+      final fillPaint = Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            deep.withValues(alpha: fillOpacity.clamp(0.0, 1.0)),
+            primary.withValues(alpha: fillOpacity.clamp(0.0, 1.0)),
+          ],
+        ).createShader(Offset.zero & size);
+      canvas.drawPath(shield, fillPaint);
+
+      // Subtle top-left architectural highlight plane (flat duotone craft)
+      final innerHighlight = Path()
+        ..moveTo(w * 0.50, h * 0.14)
+        ..lineTo(w * 0.80, h * 0.25)
+        ..lineTo(w * 0.80, h * 0.46)
+        ..lineTo(w * 0.50, h * 0.46)
+        ..close();
+      canvas.drawPath(
+        innerHighlight,
+        Paint()..color = azure.withValues(alpha: 0.22 * fillOpacity.clamp(0.0, 1.0)),
+      );
+    }
+
+    // 2. Crisp stroke-by-stroke shield outline draw-in
+    if (shieldProgress > 0) {
+      final strokePaint = Paint()
+        ..color = fillOpacity > 0.7 ? azure : primary
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (w * 0.055).clamp(2.0, 4.5)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      for (final metric in shield.computeMetrics()) {
+        final extract = metric.extractPath(0, metric.length * shieldProgress.clamp(0.0, 1.0));
+        canvas.drawPath(extract, strokePaint);
+      }
+    }
+
+    // 3. Spring-popped checkmark
+    if (checkProgress > 0) {
+      canvas.save();
+      final pivot = Offset(w * 0.50, h * 0.52);
+      canvas.translate(pivot.dx, pivot.dy);
+      canvas.scale(checkScale);
+      canvas.translate(-pivot.dx, -pivot.dy);
+
+      final check = Path()
+        ..moveTo(w * 0.34, h * 0.51)
+        ..lineTo(w * 0.46, h * 0.63)
+        ..lineTo(w * 0.68, h * 0.39);
+      final checkPaint = Paint()
+        ..color = checkColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (w * 0.085).clamp(2.6, 7.0)
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round;
+      for (final metric in check.computeMetrics()) {
+        final extract = metric.extractPath(0, metric.length * checkProgress.clamp(0.0, 1.0));
+        canvas.drawPath(extract, checkPaint);
+      }
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AnimatedShieldPainter old) =>
+      old.shieldProgress != shieldProgress ||
+      old.fillOpacity != fillOpacity ||
+      old.checkProgress != checkProgress ||
+      old.checkScale != checkScale ||
+      old.primary != primary ||
+      old.checkColor != checkColor;
 }
 
 /// Official Shule Altra blue shield-with-checkmark app icon.

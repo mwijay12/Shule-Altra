@@ -180,7 +180,10 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: Space.sm),
                   Column(
                     children: [
-                      const ShuleLogoMark(size: 74, radius: 22),
+                      const Hero(
+                        tag: 'shule-brand-shield',
+                        child: ShuleLogoMark(size: 74, radius: 22),
+                      ),
                       const SizedBox(height: Space.md),
                       Text(
                         'Shule Altra',

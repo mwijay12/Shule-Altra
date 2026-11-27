@@ -35,6 +35,25 @@ Future<void> tapText(WidgetTester tester, String text) async {
 }
 
 void main() {
+  testWidgets('animated brand shield splash draws and hands off smoothly to onboarding', (tester) async {
+    usePhoneScreen(tester);
+    final gateway = FakeGateway();
+    await tester.pumpWidget(
+      ShuleApp.withGateway(gateway: gateway, initialMode: AppMode.splash),
+    );
+    await tester.pump();
+    expect(find.byType(ShuleShieldMark), findsOneWidget);
+    expect(find.text('Shule Altra'), findsOneWidget);
+
+    // Let the shield draw-in, spring checkmark pop, and hold timer complete.
+    await tester.pump(const Duration(milliseconds: 1400));
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Your school,'), findsOneWidget);
+    await gateway.close();
+  });
+
   testWidgets('onboarding displays Shule Altra icon in default Light theme with zero Mwalimu Nyerere branding', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
@@ -50,10 +69,10 @@ void main() {
     expect(find.textContaining('Your school,'), findsOneWidget);
 
     await tapText(tester, 'Next');
-    expect(find.textContaining('instant PDF print'), findsOneWidget);
+    expect(find.textContaining('Instant PDF print'), findsOneWidget);
 
     await tapText(tester, 'Next');
-    expect(find.textContaining('school operations'), findsOneWidget);
+    expect(find.textContaining('Tailored to every'), findsOneWidget);
     expect(find.text('Sign in to Shule Altra'), findsOneWidget);
     expect(find.text('Explore with demo account'), findsOneWidget);
     await gateway.close();

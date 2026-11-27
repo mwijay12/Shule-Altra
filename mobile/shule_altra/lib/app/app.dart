@@ -27,15 +27,16 @@ import '../screens/register.dart';
 import '../screens/reports.dart';
 import '../screens/school_day.dart';
 import '../screens/sign_in.dart';
+import '../screens/splash.dart';
 import '../services/device_services.dart';
 import 'session.dart';
 import 'theme_controller.dart';
 
-enum AppMode { onboarding, signIn, sample, live, liveUnavailable }
+enum AppMode { splash, onboarding, signIn, sample, live, liveUnavailable }
 
 class ShuleApp extends StatefulWidget {
   const ShuleApp({super.key})
-      : initialMode = AppMode.onboarding,
+      : initialMode = AppMode.splash,
         themeMode = null,
         textScale = null,
         _injected = null;
@@ -335,13 +336,19 @@ class _ShuleAppState extends State<ShuleApp> {
 
   Widget _buildCurrentRoute() {
     final session = _ensureSession();
-    return switch (_mode) {
+    final page = switch (_mode) {
+      AppMode.splash => SplashScreen(
+          key: const ValueKey<AppMode>(AppMode.splash),
+          onComplete: () => setState(() => _mode = AppMode.onboarding),
+        ),
       AppMode.onboarding => OnboardingPage(
+          key: const ValueKey<AppMode>(AppMode.onboarding),
           onSignIn: _openSignIn,
           onQuickDemo: _enterQuickDemo,
           themeController: _themeController,
         ),
       AppMode.signIn || AppMode.liveUnavailable => SignInScreen(
+          key: const ValueKey<AppMode>(AppMode.signIn),
           session: session,
           workspace: _workspace,
           onAuthenticated: _onAuthenticated,
@@ -349,6 +356,7 @@ class _ShuleAppState extends State<ShuleApp> {
           themeController: _themeController,
         ),
       AppMode.sample || AppMode.live => _AuthenticatedShell(
+          key: const ValueKey<AppMode>(AppMode.sample),
           session: session,
           workspace: _workspace,
           themeController: _themeController,
@@ -361,6 +369,29 @@ class _ShuleAppState extends State<ShuleApp> {
           onReplayOnboarding: () => setState(() => _mode = AppMode.onboarding),
         ),
     };
+
+    return Builder(
+      builder: (context) {
+        final prefs = MotionPrefs.of(context);
+        return AnimatedSwitcher(
+          duration: prefs.base,
+          switchInCurve: Curves2.enter,
+          switchOutCurve: Curves2.exit,
+          transitionBuilder: (child, animation) {
+            if (prefs.reduced) return child;
+            final slide = Tween<Offset>(
+              begin: const Offset(0.04, 0),
+              end: Offset.zero,
+            ).animate(animation);
+            return FadeTransition(
+              opacity: animation,
+              child: SlideTransition(position: slide, child: child),
+            );
+          },
+          child: page,
+        );
+      },
+    );
   }
 }
 

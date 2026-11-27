@@ -28,11 +28,11 @@ bool get _isMobilePlatform =>
 
 /// Vector PDF builders matching `src/lib/pdf/*.ts` on the live website.
 abstract final class ShulePdfService {
-  // Exact website PDF palette (`src/lib/pdf/kit.ts` COLORS & CREST)
-  static final PdfColor _navy = PdfColor.fromHex('#12315E'); // shade(primary, 0.55)
-  static final PdfColor _primary = PdfColor.fromHex('#1F5AA8'); // --primary
-  static final PdfColor _accent = PdfColor.fromHex('#7D5CE0'); // --accent
-  static final PdfColor _gold = PdfColor.fromHex('#D4B04F'); // CREST.gold
+  // Blue-only Shule Altra mobile PDF palette (zero purple/violet)
+  static final PdfColor _navy = PdfColor.fromHex('#0F172A'); // Deep Navy Slate
+  static final PdfColor _primary = PdfColor.fromHex('#1D4ED8'); // Brand Cobalt
+  static final PdfColor _accent = PdfColor.fromHex('#3B82F6'); // Accent Azure
+  static final PdfColor _gold = PdfColor.fromHex('#D4B04F'); // Crest Gold Rim
   static final PdfColor _ink = PdfColor.fromHex('#1F1F1F');
   static final PdfColor _muted = PdfColor.fromHex('#666666');
   static final PdfColor _line = PdfColor.fromHex('#DEDEDE');
