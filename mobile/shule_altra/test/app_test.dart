@@ -63,13 +63,19 @@ void main() {
     await tapText(tester, 'Skip');
     expect(find.byType(ShuleLogoMark), findsWidgets);
     expect(find.text('Staff Portal Login'), findsOneWidget);
-    expect(find.textContaining('admin@shule.pro'), findsWidgets);
-    expect(find.textContaining('teacher@shule.pro'), findsWidgets);
-    expect(find.textContaining('bursar@shule.pro'), findsWidgets);
+
+    for (final email in const ['admin@shule.pro', 'teacher@shule.pro', 'bursar@shule.pro']) {
+      await tester.scrollUntilVisible(
+        find.textContaining(email),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.textContaining(email), findsWidgets);
+    }
 
     await tester.scrollUntilVisible(
-      find.textContaining('Administrator'),
-      180,
+      find.text('Administrator · Head Master'),
+      -200,
       scrollable: find.byType(Scrollable).first,
     );
     await tapText(tester, 'Administrator · Head Master');

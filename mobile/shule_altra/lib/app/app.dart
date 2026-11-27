@@ -152,6 +152,8 @@ class _ShuleAppState extends State<ShuleApp> {
     final tokens = ShuleTokens.of(context);
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         decoration: BoxDecoration(
@@ -162,74 +164,76 @@ class _ShuleAppState extends State<ShuleApp> {
         padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.xl),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: tokens.border,
-                    borderRadius: BorderRadius.circular(Corners.pill),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: tokens.border,
+                      borderRadius: BorderRadius.circular(Corners.pill),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: Space.md),
-              Text('Quick school actions', style: Theme.of(ctx).textTheme.headlineSmall),
-              const SizedBox(height: Space.md),
-              _QuickActionTile(
-                icon: Icons.groups_rounded,
-                title: 'Learners & Enrolment',
-                subtitle: 'Search directory, add photos & enrol students',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  setState(() => _tab = 1);
-                },
-              ),
-              const SizedBox(height: Space.xs),
-              _QuickActionTile(
-                icon: Icons.print_rounded,
-                title: 'Reports & PDF Printing',
-                subtitle: 'Print report cards, fee statements & registers',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => ReportsScreen(workspace: _workspace),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: Space.xs),
-              _QuickActionTile(
-                icon: Icons.domain_rounded,
-                title: 'Staff, Hostels & Transport',
-                subtitle: 'Campus contacts, wings & school bus routes',
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
-                  );
-                },
-              ),
-              const SizedBox(height: Space.xs),
-              _QuickActionTile(
-                icon: Icons.brightness_6_rounded,
-                title: 'Theme: ${_themeLabel(_themeController.mode)}',
-                subtitle: 'Tap to cycle Auto (Phone) · Light · Dark',
-                onTap: () {
-                  final next = switch (_themeController.mode) {
-                    ThemeMode.system => ThemeMode.light,
-                    ThemeMode.light => ThemeMode.dark,
-                    ThemeMode.dark => ThemeMode.system,
-                  };
-                  _themeController.setMode(next);
-                  Navigator.pop(ctx);
-                },
-              ),
-            ],
+                const SizedBox(height: Space.md),
+                Text('Quick school actions', style: Theme.of(ctx).textTheme.headlineSmall),
+                const SizedBox(height: Space.md),
+                _QuickActionTile(
+                  icon: Icons.groups_rounded,
+                  title: 'Learners & Enrolment',
+                  subtitle: 'Search directory, add photos & enrol students',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    setState(() => _tab = 1);
+                  },
+                ),
+                const SizedBox(height: Space.xs),
+                _QuickActionTile(
+                  icon: Icons.print_rounded,
+                  title: 'Reports & PDF Printing',
+                  subtitle: 'Print report cards, fee statements & registers',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => ReportsScreen(workspace: _workspace),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: Space.xs),
+                _QuickActionTile(
+                  icon: Icons.domain_rounded,
+                  title: 'Staff, Hostels & Transport',
+                  subtitle: 'Campus contacts, wings & school bus routes',
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
+                    );
+                  },
+                ),
+                const SizedBox(height: Space.xs),
+                _QuickActionTile(
+                  icon: Icons.brightness_6_rounded,
+                  title: 'Theme: ${_themeLabel(_themeController.mode)}',
+                  subtitle: 'Tap to cycle Auto (Phone) · Light · Dark',
+                  onTap: () {
+                    final next = switch (_themeController.mode) {
+                      ThemeMode.system => ThemeMode.light,
+                      ThemeMode.light => ThemeMode.dark,
+                      ThemeMode.dark => ThemeMode.system,
+                    };
+                    _themeController.setMode(next);
+                    Navigator.pop(ctx);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),

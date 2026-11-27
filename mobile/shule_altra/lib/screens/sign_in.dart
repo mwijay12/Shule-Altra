@@ -166,9 +166,15 @@ class _SignInScreenState extends State<SignInScreen> {
                         ),
                       const Spacer(),
                       if (widget.themeController != null)
-                        _MiniThemePill(
-                          mode: mode,
-                          onSelect: widget.themeController!.setMode,
+                        Flexible(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: _MiniThemePill(
+                              mode: mode,
+                              onSelect: widget.themeController!.setMode,
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -214,11 +220,14 @@ class _SignInScreenState extends State<SignInScreen> {
                                 style: Theme.of(context).textTheme.titleMedium,
                               ),
                             ),
-                            StatusPill(
-                              label: 'SINGLE SCHOOL',
-                              background: tokens.blueWash,
-                              foreground: tokens.blueInk,
-                              uppercase: true,
+                            const SizedBox(width: Space.xs),
+                            Flexible(
+                              child: StatusPill(
+                                label: 'SINGLE SCHOOL',
+                                background: tokens.blueWash,
+                                foreground: tokens.blueInk,
+                                uppercase: true,
+                              ),
                             ),
                           ],
                         ),
