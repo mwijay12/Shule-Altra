@@ -1,14 +1,7 @@
 /// The demo sign-in form.
 ///
-/// This is the screen that lets someone open the app on a phone without a
-/// Firebase project. Two decisions make it honest:
-///
-///  * the credential is printed on the form, before anything is typed, with a
-///    button that fills it in. A preview whose password a reviewer has to find in
-///    a README is a preview most people never see;
-///  * the form does not exist on the live path at all. It is built only when the
-///    gateway says it accepts a demo credential, and this build only says that
-///    for the sample data in a debug APK.
+/// Prints the demo credential openly with a one-tap fill button, and is only
+/// built on the fictional sample gateway.
 library;
 
 import 'package:flutter/material.dart';
@@ -16,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/demo_credentials.dart';
 import '../design/doodles.dart';
+import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
@@ -68,95 +62,97 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'DEMO SIGN-IN',
-          style: Theme.of(context).textTheme.labelSmall,
-        ),
-        const SizedBox(height: Space.sm),
-        TextField(
-          controller: _email,
-          enabled: !session.busy,
-          keyboardType: TextInputType.emailAddress,
-          autocorrect: false,
-          textInputAction: TextInputAction.next,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            hintText: DemoCredentials.demoEmail,
-            prefixIcon: Icon(Icons.alternate_email_rounded),
-          ),
-        ),
-        const SizedBox(height: Space.md),
-        TextField(
-          controller: _password,
-          enabled: !session.busy,
-          obscureText: !_showPassword,
-          autocorrect: false,
-          enableSuggestions: false,
-          textInputAction: TextInputAction.done,
-          onSubmitted: (_) {
-            if (!session.busy) _submit();
-          },
-          decoration: InputDecoration(
-            labelText: 'Password',
-            prefixIcon: const Icon(Icons.lock_outline_rounded),
-            suffixIcon: IconButton(
-              tooltip: _showPassword ? 'Hide password' : 'Show password',
-              icon: Icon(
-                _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              ),
-              onPressed: () => setState(() => _showPassword = !_showPassword),
-            ),
-          ),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: Space.md),
-          Notice(
-            title: session.busy ? 'Signing in' : 'Could not sign in',
-            body: error,
-            tone: NoticeTone.danger,
-          ),
-        ],
-        const SizedBox(height: Space.lg),
-        GradientButton(
-          label: session.busy ? 'Signing in…' : 'Sign in to the demo',
-          onPressed: session.busy ? null : _submit,
-          busy: session.busy,
-          icon: Icons.login_rounded,
-        ),
-        const SizedBox(height: Space.xl),
-        // The credential itself, in the open.
-        Container(
-          width: double.infinity,
+        ShuleGlassCard(
           padding: const EdgeInsets.all(Space.lg),
-          decoration: BoxDecoration(
-            color: tokens.mutedSurface,
-            borderRadius: BorderRadius.circular(Corners.panel),
-            border: Border.all(color: tokens.border),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  ExcludeSemantics(
-                    child: Icon(Icons.badge_outlined, size: 18, color: tokens.ink),
-                  ),
-                  const SizedBox(width: Space.sm),
-                  Expanded(
-                    child: Text(
-                      'DEMO CREDENTIAL',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.ink),
-                    ),
-                  ),
-                ],
+              const StatusPill(
+                label: 'DEMO SIGN-IN',
+                icon: Icons.key_outlined,
+                uppercase: true,
               ),
               const SizedBox(height: Space.md),
-              SelectableText(
-                '${DemoCredentials.demoEmail}\n${DemoCredentials.demoPassword}',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                      height: 1.6,
+              TextField(
+                controller: _email,
+                enabled: !session.busy,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                textInputAction: TextInputAction.next,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  hintText: DemoCredentials.demoEmail,
+                  prefixIcon: Icon(Icons.alternate_email_rounded, color: tokens.blueInk),
+                ),
+              ),
+              const SizedBox(height: Space.md),
+              TextField(
+                controller: _password,
+                enabled: !session.busy,
+                obscureText: !_showPassword,
+                autocorrect: false,
+                enableSuggestions: false,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) {
+                  if (!session.busy) _submit();
+                },
+                decoration: InputDecoration(
+                  labelText: 'Password',
+                  prefixIcon: Icon(Icons.lock_outline_rounded, color: tokens.blueInk),
+                  suffixIcon: IconButton(
+                    tooltip: _showPassword ? 'Hide password' : 'Show password',
+                    icon: Icon(
+                      _showPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     ),
+                    onPressed: () => setState(() => _showPassword = !_showPassword),
+                  ),
+                ),
+              ),
+              if (error != null) ...[
+                const SizedBox(height: Space.md),
+                Notice(
+                  title: session.busy ? 'Signing in' : 'Could not sign in',
+                  body: error,
+                  tone: NoticeTone.danger,
+                ),
+              ],
+              const SizedBox(height: Space.lg),
+              GradientButton(
+                label: session.busy ? 'Signing in…' : 'Sign in to the demo',
+                onPressed: session.busy ? null : _submit,
+                busy: session.busy,
+                icon: Icons.login_rounded,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.lg),
+        // The credential itself, in the open.
+        ShuleGlassCard(
+          glowCorner: true,
+          padding: const EdgeInsets.all(Space.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const StatusPill(
+                label: 'DEMO CREDENTIAL',
+                icon: Icons.badge_outlined,
+                uppercase: true,
+              ),
+              const SizedBox(height: Space.md),
+              ShuleInnerTile(
+                padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: SelectableText(
+                    '${DemoCredentials.demoEmail}\n${DemoCredentials.demoPassword}',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                          height: 1.65,
+                        ),
+                  ),
+                ),
               ),
               const SizedBox(height: Space.md),
               SizedBox(
@@ -180,7 +176,7 @@ class _DemoSignInFormState extends State<DemoSignInForm> {
         Row(
           children: [
             ExcludeSemantics(
-              child: DoodleView(doodle: Doodle.sparkles, size: 28, color: tokens.inkMuted),
+              child: DoodleView(doodle: Doodle.sparkles, size: 28, color: tokens.blueInk),
             ),
             const SizedBox(width: Space.sm),
             Expanded(

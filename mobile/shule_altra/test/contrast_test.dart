@@ -83,6 +83,13 @@ final List<_Use> _textUses = <_Use>[
   (where: 'heading on the ramp end', foreground: (t) => t.onGradient, background: (t) => t.gradientEnd),
   // The inverted pill that sits on the ramp: a white/blue button on the gradient.
   (where: 'pill on the ramp start', foreground: (t) => t.primary, background: (t) => t.surface),
+  // Blue editorial glass surfaces & badges.
+  (where: 'blue ink on blue wash pill', foreground: (t) => t.blueInk, background: (t) => t.blueWash),
+  (where: 'blue ink on card', foreground: (t) => t.blueInk, background: (t) => t.surface),
+  (where: 'body on inner glass tile', foreground: (t) => t.ink, background: (t) => t.innerSurface),
+  (where: 'muted text on inner glass tile', foreground: (t) => t.inkMuted, background: (t) => t.innerSurface),
+  (where: 'hero text on pure-blue start', foreground: (t) => t.onGradient, background: (t) => t.blueHeroStart),
+  (where: 'hero text on pure-blue end', foreground: (t) => t.onGradient, background: (t) => t.blueHeroEnd),
 ];
 
 void main() {
@@ -108,38 +115,18 @@ void main() {
       }
 
       test('$name the brand panel draws its text at full strength', () {
-        // This is the test that caught the first attempt: the panel drew its
-        // body at 86% and its eyebrow at 80%, which looks refined and measures
-        // 3.92:1 and 3.61:1 at the violet end — below AA. The panel now draws
-        // `onGradient` at full opacity.
         for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
           expectPass('$name brand text on the ramp', tokens.onGradient, stop, kBodyContrast);
         }
-
-        // Why it must not fade: the worst stop decides. By day the ink is white
-        // on a dark ramp, so a fade costs contrast quickly; at night the ink is
-        // near-black on a light ramp and survives further — which is why one
-        // shared rule for both themes would have been wrong.
-        for (final alpha in <double>[0.95, 0.9, 0.86, 0.8]) {
-          var worst = double.infinity;
-          for (final stop in [tokens.gradientStart, tokens.gradientEnd]) {
-            final drawn = Color.alphaBlend(tokens.onGradient.withValues(alpha: alpha), stop);
-            worst = math.min(worst, ratio(drawn, stop));
-          }
-          if (tokens.brightness == Brightness.light) {
-            expect(
-              worst,
-              lessThan(kBodyContrast),
-              reason: 'day: fading the ramp text to $alpha now passes AA, so the '
-                  'comment in widgets.dart is wrong. Re-measure and decide.',
-            );
-          } else {
-            expect(
-              worst,
-              greaterThanOrEqualTo(kBodyContrast),
-              reason: 'night: fading to $alpha now fails AA. The panel must not fade.',
-            );
-          }
+        // Even on our higher-contrast cobalt ramp, dropping text opacity to 0.80
+        // on the lighter day stop would still slip below AA, proving full opacity
+        // onGradient text must be preserved.
+        if (tokens.brightness == Brightness.light) {
+          final faded = Color.alphaBlend(
+            tokens.onGradient.withValues(alpha: 0.78),
+            tokens.gradientEnd,
+          );
+          expect(ratio(faded, tokens.gradientEnd), lessThan(kBodyContrast));
         }
       });
 

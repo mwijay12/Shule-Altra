@@ -1,31 +1,48 @@
-/// Design tokens for the Shule Altra mobile app.
+/// Blue-only visual identity tokens for Shule Altra mobile.
 ///
-/// One place for every colour, radius, space and duration. Screens read these
-/// through [ShuleTokens] (a ThemeExtension) so a widget never hard-codes a hex
-/// value, and the contrast test can check every pair without rendering a page.
-///
-/// **The palette is the website's palette.** `src/app/globals.css` defines the
-/// hub: #1F5BA6 blue carrying the action, #7C5AE0 violet carrying the warmth, a
-/// cool #F8FAFC workspace and a 1.25rem radius. The app reads the same values
-/// here, converted from the same HSL triplets, so a button on the phone and a
-/// button in the dashboard are the same button. A test
-/// (`test/palette_parity_test.dart`) reads `globals.css` and fails if these drift.
-///
-/// One place the app is stricter than the site: the site's muted grey
-/// (hsl 215 16% 47%) measures 4.49:1 on its own background, a hair under AA. The
-/// app uses hsl(215 20% 39%) — the same hue, 5.6–6.4:1 everywhere it is drawn.
-///
-/// Ratios in the comments are measured, not estimated; `test/contrast_test.dart`
-/// re-measures them and fails the build if a pair slips below its floor.
+/// Design rules (anti-AI-slop, cobalt/azure brand system):
+///  * One brand hue: Cobalt (`#1D4ED8`) & Azure (`#2563EB` / `#3B82F6`).
+///  * ZERO purple/violet/magenta hues anywhere in Light or Dark themes.
+///  * Neutrals: deep navy slate (`#0F172A` / `#0B1120`) and crisp slate
+///    (`#F8FAFC` / `#F1F5F9`) — never pure black (`#000000`).
+///  * Semantic discipline: amber only for warnings, green only for success,
+///    red only for destructive/error states.
+///  * Every foreground/background text pair passes WCAG 2.1 AA (>= 4.5:1).
 library;
 
 import 'package:flutter/material.dart';
 
-/// Minimum text contrast (WCAG 2.1 AA): body 4.5:1, large 3:1.
+/// Strict 4/8px spacing rhythm (`mobile-visual-design`).
+abstract final class Space {
+  static const double xs = 4;
+  static const double sm = 8;
+  static const double md = 12;
+  static const double lg = 16;
+  static const double xl = 24;
+  static const double xxl = 32;
+  static const double xxxl = 48;
+  static const double gutter = 16;
+
+  /// Bottom clearance so scrollable content clears the floating bottom dock.
+  static const double dockClearance = 108;
+}
+
+/// Intentional radius hierarchy — a chip, a card, and a hero panel are distinct.
+abstract final class Corners {
+  static const double chip = 10;
+  static const double field = 12;
+  static const double button = 14;
+  static const double card = 16;
+  static const double glass = 20;
+  static const double panel = 20;
+  static const double hero = 24;
+  static const double dock = 28;
+  static const double pill = 999;
+}
+
+/// WCAG 2.1 AA floors, enforced by `test/contrast_test.dart`.
 const double kBodyContrast = 4.5;
 const double kLargeContrast = 3.0;
-
-/// Anything a finger has to hit is at least this big.
 const double kMinTapTarget = 48;
 
 @immutable
@@ -50,169 +67,162 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     required this.gradientStart,
     required this.gradientEnd,
     required this.onGradient,
+    required this.glowSoft,
+    required this.glowDeep,
+    required this.blueWash,
+    required this.blueInk,
+    required this.glassStart,
+    required this.glassEnd,
+    required this.glassBorder,
+    required this.innerSurface,
+    required this.blueHeroStart,
+    required this.blueHeroEnd,
     required this.shadow,
   });
 
   final Brightness brightness;
-
-  /// Page background.
   final Color canvas;
-
-  /// Cards and sheets.
   final Color surface;
-
-  /// Secondary blocks: notices, empty states.
   final Color mutedSurface;
-
-  /// Body text and headings.
   final Color ink;
-
-  /// Secondary text. Still readable: 5.5:1 (day), 9.2:1 (night).
   final Color inkMuted;
-
-  /// The background of the "brand" card: a filled block, not a text surface.
-  ///
-  /// It is separate from [primary] because they play different roles: by day the
-  /// card is the deep green, at night it is the dark green, and [accent] and
-  /// [onPrimary] are the only things drawn on it. Measured, not guessed: 9.59:1
-  /// day, 13.01:1 night for accent on brand.
   final Color brandSurface;
-
-  /// Text on [brandSurface]. By day this is white; at night it is the light ink,
-  /// because the card is a dark green there too (14.12:1).
   final Color onBrand;
-
-  /// The primary action colour: a filled button by day, a light green button at
-  /// night. Never a background for body text.
   final Color primary;
-
-  /// Text and icons on [primary].
   final Color onPrimary;
-
-  /// The soft lime highlight; buttons on the dark brand card, marks on charts.
   final Color accent;
-
-  /// Text on [accent].
   final Color onAccent;
-
-  /// Hairlines. Decorative only, so it is not held to a text ratio.
   final Color border;
-
   final Color danger;
   final Color success;
   final Color warning;
-
-  /// First stop of the brand ramp: every filled call to action. On the website
-  /// this is `.colorful-gradient`, `linear-gradient(135deg, primary, accent)`.
   final Color gradientStart;
-
-  /// Second stop of the same ramp — the site's `--accent` violet.
   final Color gradientEnd;
-
-  /// Text drawn **on** the ramp. White by day (6.8:1 at the blue end, 4.69:1 at
-  /// the violet end); near-black at night, where both stops are light.
   final Color onGradient;
 
-  /// The elevation colour: the site's soft blue-tinted card shadow, not
-  /// Material's neutral grey.
+  /// Soft azure ambient highlight (`#DBEAFE` day, `#1E3A8A` night).
+  final Color glowSoft;
+
+  /// Rich cobalt highlight (`#3B82F6` day, `#60A5FA` night).
+  final Color glowDeep;
+
+  /// Soft cobalt/ice badge & icon well fill (`#EFF6FF` day, `#172554` night).
+  final Color blueWash;
+
+  /// High-contrast cobalt ink on `blueWash` & cards (`#1E40AF` day, `#93C5FD` night).
+  final Color blueInk;
+
+  /// Surface card gradient start & end (subtle tonal crispness).
+  final Color glassStart;
+  final Color glassEnd;
+
+  /// Crisp hairline border for cards & panels.
+  final Color glassBorder;
+
+  /// Nested tile / input well surface.
+  final Color innerSurface;
+
+  /// Same-hue cobalt tonal hero gradient stops (~10% lightness shift, zero purple).
+  final Color blueHeroStart;
+  final Color blueHeroEnd;
+
+  /// Subtle cool navy elevation shadow.
   final Color shadow;
 
-  /// Day: the hub's workspace — cool off-white, white cards, blue action.
-  ///
-  /// Every value is the website's: `--background 210 40% 98%`,
-  /// `--card 0 0% 100%`, `--primary 214 69% 39%`, `--accent 255 68% 62%`,
-  /// `--muted 210 40% 94%`, `--border 214 32% 91%`.
-  static const ShuleTokens day = ShuleTokens(
-    brightness: Brightness.light,
-    canvas: Color(0xFFF8FAFC), // --background. 17.02:1 with ink
-    surface: Color(0xFFFFFFFF), // --card
-    mutedSurface: Color(0xFFEAF0F6), // --muted 210 40% 94%
-    ink: Color(0xFF131820), // --foreground. 17.02:1 on canvas
-    inkMuted: Color(0xFF506077), // hsl(215 20% 39%), 6.12:1 on canvas
-    brandSurface: Color(0xFF1F5AA8), // --primary; onBrand on it 6.80:1
-    onBrand: Color(0xFFFFFFFF),
-    primary: Color(0xFF1F5AA8), // --primary; onPrimary on it 6.80:1
-    onPrimary: Color(0xFFFFFFFF),
-    accent: Color(0xFF7D5CE0), // --accent violet; onAccent on it 4.69:1
-    onAccent: Color(0xFFFFFFFF),
-    border: Color(0xFFE1E7EF), // --border, hairlines only
-    danger: Color(0xFFCC1E1E), // --destructive; 5.56:1 on canvas
-    success: Color(0xFF1B6247), // 6.80:1 on canvas
-    warning: Color(0xFF8A5200), // 5.90:1 on canvas
-    gradientStart: Color(0xFF1F5AA8), // --primary
-    gradientEnd: Color(0xFF7D5CE0), // --accent
-    onGradient: Color(0xFFFFFFFF), // 6.80:1 at the blue end, 4.69:1 at the violet
-    shadow: Color(0x1A1F5AA8), // the site's blue-tinted card shadow
-  );
-
-  /// Night: the site's `.dark` block — #090E1A canvas, #111827 cards, and both
-  /// ramp stops lightened so the gradient carries dark text.
-  ///
-  /// `danger` is the one value lightened past the site's: `.dark
-  /// --destructive` (#DF3A3A) measures 3.55:1 on the notice surface, below AA,
-  /// and a warning line nobody can read is not a warning.
-  static const ShuleTokens night = ShuleTokens(
-    brightness: Brightness.dark,
-    canvas: Color(0xFF090E1A), // .dark --background 222 47% 7%
-    surface: Color(0xFF111827), // .dark --card 222 40% 11%
-    mutedSurface: Color(0xFF1D2434), // .dark --muted 222 28% 16%
-    ink: Color(0xFFF1F5F9), // .dark --foreground; 17.60:1 on canvas
-    inkMuted: Color(0xFF97A5BA), // .dark --muted-foreground; 7.72:1 on canvas
-    brandSurface: Color(0xFF111827),
-    onBrand: Color(0xFFF1F5F9),
-    primary: Color(0xFF4C93F0), // .dark --primary 214 85% 62%
-    onPrimary: Color(0xFF0B111E), // onPrimary on it 6.05:1
-    accent: Color(0xFFA58DEC), // .dark --accent 255 72% 74%
-    onAccent: Color(0xFF0B111E), // onAccent on it 6.85:1
-    border: Color(0xFF262E40), // .dark --border
-    danger: Color(0xFFFF8080), // the site's destructive lightened: 6.39:1 on notice
-    success: Color(0xFF6FD3A6), // 10.04:1 on canvas
-    warning: Color(0xFFF0C67D), // 11.60:1 on canvas
-    gradientStart: Color(0xFF4C93F0),
-    gradientEnd: Color(0xFFA58DEC),
-    onGradient: Color(0xFF0B111E), // 6.05:1 at the blue end, 6.85:1 at the violet
-    shadow: Color(0x66000000),
-  );
-
-  static ShuleTokens of(BuildContext context) {
-    final tokens = Theme.of(context).extension<ShuleTokens>();
-    assert(tokens != null, 'ShuleTokens is missing from the ThemeData');
-    return tokens ?? day;
-  }
-
-  /// The backgrounds a person can read text on, named the way they are used.
-  ///
-  /// `primary` is deliberately absent: it is the fill of a button, so the only
-  /// text that may sit on it is [onPrimary] (a large, bold label). Body text on a
-  /// primary fill is 1.17:1 by day, and the test below must not pretend
-  /// otherwise.
-  /// The brand ramp, exactly as the website draws it: `135deg, primary → accent`.
-  ///
-  /// Linear, two stops, no third colour. A screen that wants "the Shule Altra
-  /// look" asks for this rather than building its own gradient, so the hero, the
-  /// login card and the active tab all move together.
+  /// Same-hue tonal cobalt gradient (<=10% lightness shift, zero hue shift).
   LinearGradient get brandGradient => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [gradientStart, gradientEnd],
       );
 
-  /// The same ramp, washed out, for a page background behind cards.
-  LinearGradient get washGradient => LinearGradient(
+  /// Deep cobalt hero gradient for primary identity headers & shields.
+  LinearGradient get blueHeroGradient => LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          gradientStart.withValues(alpha: brightness == Brightness.dark ? 0.22 : 0.10),
-          gradientEnd.withValues(alpha: brightness == Brightness.dark ? 0.18 : 0.09),
-        ],
+        colors: [blueHeroStart, blueHeroEnd],
       );
 
-  Map<String, Color> get surfacesForTest => {
-        'canvas': canvas,
-        'surface': surface,
-        'mutedSurface': mutedSurface,
-        'brandSurface': brandSurface,
-      };
+  /// Clean surface gradient for elevated cards.
+  LinearGradient get glassGradient => LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [glassStart, glassEnd],
+      );
+
+  /// Light palette — crisp slate canvas, pure white cards, cobalt brand primary.
+  static const ShuleTokens day = ShuleTokens(
+    brightness: Brightness.light,
+    canvas: Color(0xFFF8FAFC), // Slate 50
+    surface: Color(0xFFFFFFFF), // Pure white card
+    mutedSurface: Color(0xFFF1F5F9), // Slate 100
+    ink: Color(0xFF0F172A), // Deep navy Slate 900 (17.06:1 on canvas)
+    inkMuted: Color(0xFF475569), // Slate 600 (7.24:1 on canvas)
+    brandSurface: Color(0xFF1D4ED8), // Brand Cobalt 700
+    onBrand: Color(0xFFFFFFFF),
+    primary: Color(0xFF1D4ED8), // Cobalt 700 (6.70:1 with white)
+    onPrimary: Color(0xFFFFFFFF),
+    accent: Color(0xFF2563EB), // Cobalt 600 (5.17:1 with white, same-hue tonal step)
+    onAccent: Color(0xFFFFFFFF),
+    border: Color(0xFFE2E8F0), // Slate 200 hairline
+    danger: Color(0xFFB91C1C), // Red 700 (6.18:1 on canvas)
+    success: Color(0xFF15803D), // Green 700 (5.02:1 on white)
+    warning: Color(0xFF92400E), // Amber 800 (7.09:1 on white)
+    gradientStart: Color(0xFF1D4ED8), // Cobalt 700
+    gradientEnd: Color(0xFF2563EB), // Cobalt 600 (~8% tonal shift, zero purple)
+    onGradient: Color(0xFFFFFFFF),
+    glowSoft: Color(0xFFDBEAFE), // Blue 100
+    glowDeep: Color(0xFF3B82F6), // Azure 500 (illustrations & non-text accents)
+    blueWash: Color(0xFFEFF6FF), // Blue 50
+    blueInk: Color(0xFF1E40AF), // Blue 800 (8.01:1 on blueWash)
+    glassStart: Color(0xFFFFFFFF),
+    glassEnd: Color(0xFFF8FBFF),
+    glassBorder: Color(0xFFCBD5E1), // Slate 300 crisp card border
+    innerSurface: Color(0xFFEFF6FF), // Blue 50 inner well
+    blueHeroStart: Color(0xFF1E3A8A), // Deep Cobalt 900 (10.36:1 with white)
+    blueHeroEnd: Color(0xFF1D4ED8), // Cobalt 700 (6.70:1 with white)
+    shadow: Color(0x140F172A),
+  );
+
+  /// Dark palette — deep navy slate surfaces (never pure black), crisp azure actions.
+  static const ShuleTokens night = ShuleTokens(
+    brightness: Brightness.dark,
+    canvas: Color(0xFF0B1120), // Deep Navy Slate (never #000000)
+    surface: Color(0xFF111827), // Slate 900
+    mutedSurface: Color(0xFF1E293B), // Slate 800
+    ink: Color(0xFFF8FAFC), // Slate 50 (18.00:1 on canvas)
+    inkMuted: Color(0xFF94A3B8), // Slate 400 (7.34:1 on canvas)
+    brandSurface: Color(0xFF111827),
+    onBrand: Color(0xFFF8FAFC),
+    primary: Color(0xFF60A5FA), // Azure 400 (7.41:1 with #0B1120)
+    onPrimary: Color(0xFF0B1120),
+    accent: Color(0xFF93C5FD), // Azure 300 (10.44:1 with #0B1120)
+    onAccent: Color(0xFF0B1120),
+    border: Color(0xFF1E293B), // Slate 800 hairline
+    danger: Color(0xFFF87171), // Red 400 (5.29:1 on mutedSurface)
+    success: Color(0xFF4ADE80), // Green 400 (10.18:1 on surface)
+    warning: Color(0xFFFBBF24), // Amber 400 (10.63:1 on surface)
+    gradientStart: Color(0xFF3B82F6), // Azure 500 (5.12:1 with #0B1120)
+    gradientEnd: Color(0xFF60A5FA), // Azure 400 (7.41:1 with #0B1120)
+    onGradient: Color(0xFF0B1120),
+    glowSoft: Color(0xFF1E3A8A),
+    glowDeep: Color(0xFF3B82F6),
+    blueWash: Color(0xFF172554), // Blue 950
+    blueInk: Color(0xFF93C5FD), // Azure 300 (8.15:1 on blueWash)
+    glassStart: Color(0xFF111827),
+    glassEnd: Color(0xFF162033),
+    glassBorder: Color(0xFF26354D),
+    innerSurface: Color(0xFF172554),
+    blueHeroStart: Color(0xFF3B82F6),
+    blueHeroEnd: Color(0xFF60A5FA),
+    shadow: Color(0x4D020617),
+  );
+
+  static ShuleTokens of(BuildContext context) {
+    final ext = Theme.of(context).extension<ShuleTokens>();
+    assert(ext != null, 'ShuleTokens missing from ThemeData. Use buildTheme().');
+    return ext ?? day;
+  }
 
   @override
   ShuleTokens copyWith({
@@ -235,6 +245,16 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
     Color? gradientStart,
     Color? gradientEnd,
     Color? onGradient,
+    Color? glowSoft,
+    Color? glowDeep,
+    Color? blueWash,
+    Color? blueInk,
+    Color? glassStart,
+    Color? glassEnd,
+    Color? glassBorder,
+    Color? innerSurface,
+    Color? blueHeroStart,
+    Color? blueHeroEnd,
     Color? shadow,
   }) {
     return ShuleTokens(
@@ -257,6 +277,16 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
       gradientStart: gradientStart ?? this.gradientStart,
       gradientEnd: gradientEnd ?? this.gradientEnd,
       onGradient: onGradient ?? this.onGradient,
+      glowSoft: glowSoft ?? this.glowSoft,
+      glowDeep: glowDeep ?? this.glowDeep,
+      blueWash: blueWash ?? this.blueWash,
+      blueInk: blueInk ?? this.blueInk,
+      glassStart: glassStart ?? this.glassStart,
+      glassEnd: glassEnd ?? this.glassEnd,
+      glassBorder: glassBorder ?? this.glassBorder,
+      innerSurface: innerSurface ?? this.innerSurface,
+      blueHeroStart: blueHeroStart ?? this.blueHeroStart,
+      blueHeroEnd: blueHeroEnd ?? this.blueHeroEnd,
       shadow: shadow ?? this.shadow,
     );
   }
@@ -264,97 +294,38 @@ class ShuleTokens extends ThemeExtension<ShuleTokens> {
   @override
   ShuleTokens lerp(ThemeExtension<ShuleTokens>? other, double t) {
     if (other is! ShuleTokens) return this;
+    Color mix(Color a, Color b) => Color.lerp(a, b, t) ?? a;
     return ShuleTokens(
       brightness: t < 0.5 ? brightness : other.brightness,
-      canvas: Color.lerp(canvas, other.canvas, t)!,
-      surface: Color.lerp(surface, other.surface, t)!,
-      mutedSurface: Color.lerp(mutedSurface, other.mutedSurface, t)!,
-      ink: Color.lerp(ink, other.ink, t)!,
-      inkMuted: Color.lerp(inkMuted, other.inkMuted, t)!,
-      brandSurface: Color.lerp(brandSurface, other.brandSurface, t)!,
-      onBrand: Color.lerp(onBrand, other.onBrand, t)!,
-      primary: Color.lerp(primary, other.primary, t)!,
-      onPrimary: Color.lerp(onPrimary, other.onPrimary, t)!,
-      accent: Color.lerp(accent, other.accent, t)!,
-      onAccent: Color.lerp(onAccent, other.onAccent, t)!,
-      border: Color.lerp(border, other.border, t)!,
-      danger: Color.lerp(danger, other.danger, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
-      gradientStart: Color.lerp(gradientStart, other.gradientStart, t)!,
-      gradientEnd: Color.lerp(gradientEnd, other.gradientEnd, t)!,
-      onGradient: Color.lerp(onGradient, other.onGradient, t)!,
-      shadow: Color.lerp(shadow, other.shadow, t)!,
+      canvas: mix(canvas, other.canvas),
+      surface: mix(surface, other.surface),
+      mutedSurface: mix(mutedSurface, other.mutedSurface),
+      ink: mix(ink, other.ink),
+      inkMuted: mix(inkMuted, other.inkMuted),
+      brandSurface: mix(brandSurface, other.brandSurface),
+      onBrand: mix(onBrand, other.onBrand),
+      primary: mix(primary, other.primary),
+      onPrimary: mix(onPrimary, other.onPrimary),
+      accent: mix(accent, other.accent),
+      onAccent: mix(onAccent, other.onAccent),
+      border: mix(border, other.border),
+      danger: mix(danger, other.danger),
+      success: mix(success, other.success),
+      warning: mix(warning, other.warning),
+      gradientStart: mix(gradientStart, other.gradientStart),
+      gradientEnd: mix(gradientEnd, other.gradientEnd),
+      onGradient: mix(onGradient, other.onGradient),
+      glowSoft: mix(glowSoft, other.glowSoft),
+      glowDeep: mix(glowDeep, other.glowDeep),
+      blueWash: mix(blueWash, other.blueWash),
+      blueInk: mix(blueInk, other.blueInk),
+      glassStart: mix(glassStart, other.glassStart),
+      glassEnd: mix(glassEnd, other.glassEnd),
+      glassBorder: mix(glassBorder, other.glassBorder),
+      innerSurface: mix(innerSurface, other.innerSurface),
+      blueHeroStart: mix(blueHeroStart, other.blueHeroStart),
+      blueHeroEnd: mix(blueHeroEnd, other.blueHeroEnd),
+      shadow: mix(shadow, other.shadow),
     );
   }
-}
-
-/// Spacing scale. Nothing in the app uses a number that is not on this scale.
-abstract final class Space {
-  static const double xs = 4;
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 22;
-  static const double xxl = 30;
-  static const double xxxl = 44;
-
-  /// Screen gutter. 22 keeps a 390 px phone comfortable with 16 px content.
-  static const double gutter = 22;
-}
-
-/// Radii, on the website's scale.
-///
-/// The site's `--radius` is `1.25rem` = 20 px: buttons and inputs use it as-is,
-/// cards double it, chips halve it. The same numbers on the phone are what make a
-/// phone screenshot read as the same product as a dashboard screenshot.
-abstract final class Corners {
-  /// Half the base: tags, small labels, dense table chips.
-  static const double chip = 10;
-
-  /// The site's inner blocks: `calc(var(--radius) - 4px)`.
-  static const double field = 16;
-
-  /// `--radius`, 1.25rem. Buttons and inputs.
-  static const double card = 20;
-
-  /// `calc(var(--radius) * 2)`, the big dashboard cards.
-  static const double panel = 32;
-
-  /// The landing page's hero block: `2.5rem`.
-  static const double hero = 40;
-
-  static const double pill = 999;
-}
-
-/// Durations. Motion uses these and nothing else, so the app has one tempo.
-abstract final class Motion {
-  /// A control answering a touch.
-  static const Duration fast = Duration(milliseconds: 140);
-
-  /// A small element arriving.
-  static const Duration base = Duration(milliseconds: 220);
-
-  /// A screen or a large block arriving.
-  static const Duration slow = Duration(milliseconds: 340);
-
-  /// The sticker pop. Long enough to read as elastic, short enough to ignore.
-  static const Duration pop = Duration(milliseconds: 620);
-
-  /// Stagger step between two siblings.
-  static const Duration stagger = Duration(milliseconds: 55);
-}
-
-abstract final class Curves2 {
-  /// Overlays, chips, anything that must not look springy.
-  static const Curve standard = Curves.easeOutCubic;
-
-  /// Content arriving from below. No overshoot: text must not wobble.
-  static const Curve enter = Curves.easeOutQuart;
-
-  /// The sticker only. A little overshoot is what makes it feel like paper.
-  static const Curve pop = Curves.easeOutBack;
-
-  /// Leaving. Faster than arriving so the eye is not left waiting.
-  static const Curve exit = Curves.easeInCubic;
 }

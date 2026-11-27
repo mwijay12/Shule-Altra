@@ -1,478 +1,594 @@
-/// The learner register: the screen the SVGs were drawing.
+/// Full 150-Student Directory screen — mirrors `https://shule-direct-pro.vercel.app/dashboard/students`.
 ///
-/// It has to carry four states honestly — signed out, loading, failed, and a
-/// page of learners — plus search and paging. Every one of them says what is
-/// happening in words; none of them shows a stale row.
+/// Uses `ListView.builder` for silky 60fps scrolling over all 150 O-Level
+/// learners (`ALT-2026-001` – `ALT-2026-150`), showing Boarder/Day split,
+/// conduct points, hostel wing / bus route tags, live search & filters,
+/// learner enrolment with passport photo, and one-tap PDF register printing.
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app/session.dart';
+import '../data/demo_school_store.dart';
 import '../data/learner.dart';
-import '../design/doodles.dart';
-import '../design/motion.dart';
+import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../format.dart';
-import 'demo_sign_in.dart';
+import '../services/device_services.dart';
+import 'learner_detail.dart';
+import 'modules.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
     super.key,
     required this.session,
-    required this.onSignIn,
-    required this.onOpenLearner,
+    required this.workspace,
+    this.initialStatusFilter = 'All',
+    this.headerTitle = 'Learners',
   });
 
   final AppSession session;
-  final VoidCallback onSignIn;
-  final ValueChanged<Learner> onOpenLearner;
+  final SchoolWorkspace workspace;
+  final String initialStatusFilter;
+  final String headerTitle;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _search = TextEditingController();
-  String _query = '';
-  bool _requestedFirstPage = false;
-  String? _classFilter;
-  String? _streamFilter;
-  String _attendanceFilter = 'All';
-  int _filterVersion = 0;
-  String? _observedUid;
-  LoadState _observedState = LoadState.idle;
+  final TextEditingController _search = TextEditingController();
+  String _selectedClass = 'All';
+  late String _statusFilter = widget.initialStatusFilter;
+
+  static const _classFilters = <String>['All', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
+  static const _statusFilters = <String>['All', 'Owes fees', 'Cleared', 'Boarder', 'Day', 'Absent / Late'];
 
   @override
-  void initState() {
-    super.initState();
-    widget.session.addListener(_onSessionChanged);
+  void didUpdateWidget(covariant RegisterScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialStatusFilter != widget.initialStatusFilter) {
+      _statusFilter = widget.initialStatusFilter;
+    }
   }
 
   @override
   void dispose() {
-    widget.session.removeListener(_onSessionChanged);
     _search.dispose();
     super.dispose();
   }
 
-  void _clearFilters() {
-    _search.clear();
-    _query = '';
-    _classFilter = null;
-    _streamFilter = null;
-    _attendanceFilter = 'All';
-    _filterVersion++;
-  }
-
-  void _onSessionChanged() {
-    final session = widget.session;
-    final changedAccount = _observedUid != session.uid;
-    final startedRead = session.state == LoadState.loading && _observedState != LoadState.loading;
-    _observedUid = session.uid;
-    _observedState = session.state;
-    if (!session.signedIn) _requestedFirstPage = false;
-    // Page-only controls cannot survive a new read or an account change.
-    if (changedAccount || startedRead) setState(_clearFilters);
-  }
-
-  /// Loads the first page after the frame that first needs it.
-  ///
-  /// Deferred on purpose: [AppSession.loadFirstPage] notifies listeners
-  /// synchronously, and notifying during a build would be a framework error.
-  void _scheduleFirstLoad() {
-    if (_requestedFirstPage) return;
-    if (!widget.session.signedIn) return;
-    if (widget.session.state != LoadState.idle) return;
-    _requestedFirstPage = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      widget.session.loadFirstPage();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    _scheduleFirstLoad();
-    final session = widget.session;
-    final tokens = ShuleTokens.of(context);
-
-    return RefreshIndicator(
-      onRefresh: session.signedIn ? session.loadFirstPage : () async {},
-      color: tokens.primary,
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        // Room to scroll the demo password field above the keyboard.
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
-        children: [
-          const BrandBar(),
-          const SizedBox(height: Space.xl),
-          Text('Learners', style: Theme.of(context).textTheme.displaySmall),
-          const SizedBox(height: Space.sm),
-          Text(
-            session.signedIn
-                ? 'Online · read-only · ${session.sourceLabel}'
-                : 'Sign in to read the register.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: Space.xl),
-          if (!session.resolved)
-            const _Busy(label: 'Checking your session…')
-          else if (!session.signedIn)
-            _SignedOut(session: session, onSignIn: widget.onSignIn)
-          else
-            ..._body(context, session),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _body(BuildContext context, AppSession session) {
-    final tokens = ShuleTokens.of(context);
-    final failure = session.failure;
-
-    if (session.state == LoadState.loading && session.rows.isEmpty) {
-      return const <Widget>[
-        _Busy(label: 'Reading the register from the school…'),
-        SizedBox(height: Space.lg),
-        Notice(
-          title: 'Server read, no cache',
-          body: 'Every page is a fresh server read. If the connection drops you get an '
-              'explanation, never yesterday\'s list.',
-        ),
-      ];
-    }
-
-    if (failure != null && session.rows.isEmpty) {
-      return [
-        Notice(title: 'Could not load learners', body: failure, tone: NoticeTone.danger),
-        const SizedBox(height: Space.lg),
-        Row(
-          children: [
-            Expanded(
-              child: GradientButton(
-                label: 'Try again',
-                onPressed: session.busy ? null : session.loadFirstPage,
-              ),
-            ),
-            const SizedBox(width: Space.md),
-            OutlinedButton(
-              onPressed: session.busy ? null : session.signOut,
-              child: const Text('Sign out'),
-            ),
-          ],
-        ),
-      ];
-    }
-
-    final classes = session.rows.map((row) => row.className).toSet().toList()..sort();
-    final streams = session.rows.map((row) => row.stream).where((value) => value.isNotEmpty).toSet().toList()..sort();
-    final filtersActive = (_query.isNotEmpty ? 1 : 0) + (_classFilter == null ? 0 : 1) +
-        (_streamFilter == null ? 0 : 1) + (_attendanceFilter == 'All' ? 0 : 1);
-    final shown = session.rows.where((row) {
-      final attendance = row.attendanceStatus.toLowerCase();
-      final known = ['present', 'absent', 'late'].contains(attendance);
-      return row.matches(_query) &&
-          (_classFilter == null || row.className == _classFilter) &&
-          (_streamFilter == null || (_streamFilter == 'missing' ? row.stream.isEmpty : 'value:${row.stream}' == _streamFilter)) &&
-          (_attendanceFilter == 'All' || (_attendanceFilter == 'Other or not set' ? !known : attendance == _attendanceFilter.toLowerCase()));
+  List<Learner> _filter(List<Learner> source) {
+    final q = _search.text.trim().toLowerCase();
+    return source.where((l) {
+      if (_selectedClass != 'All' && l.className != _selectedClass) return false;
+      final att = widget.workspace.attendanceFor(l.id);
+      if (_statusFilter == 'Owes fees' && (l.balance ?? 0) <= 0) return false;
+      if (_statusFilter == 'Cleared' && (l.balance ?? 0) > 0) return false;
+      if (_statusFilter == 'Boarder' && l.type != 'Boarder') return false;
+      if (_statusFilter == 'Day' && l.type == 'Boarder') return false;
+      if (_statusFilter == 'Absent / Late' && att == 'Present') return false;
+      if (q.isNotEmpty) {
+        final extra = widget.workspace.extraFor(l.id);
+        final hay =
+            '${l.name} ${l.id} ${l.className} ${l.stream} ${l.guardianName} ${extra.hostel} ${extra.route}'
+                .toLowerCase();
+        if (!hay.contains(q)) return false;
+      }
+      return true;
     }).toList();
-    final reading = session.state == LoadState.loading;
+  }
 
-    return [
-      TextField(
-        controller: _search,
-        onChanged: (value) => setState(() => _query = value.trim()),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Search name, class, stream or ID',
-          helperText: 'Loaded page only',
-          prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _query.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _search.clear();
-                    setState(() => _query = '');
-                  },
+  Future<void> _openEnrolSheet() async {
+    final nameCtrl = TextEditingController();
+    final guardianCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController(text: '+255 7');
+    final emailCtrl = TextEditingController();
+    var cls = 'Form 1';
+    var stream = 'A';
+    var type = 'Boarder';
+    Uint8List? photoBytes;
+
+    final created = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final tokens = ShuleTokens.of(ctx);
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: tokens.canvas,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(Corners.hero)),
+                  border: Border.all(color: tokens.glassBorder),
                 ),
-        ),
-      ),
-      const SizedBox(height: Space.sm),
-      Card(
-        child: ExpansionTile(
-          title: const Text('Refine this page'),
-          subtitle: Text(filtersActive == 0 ? 'Class, stream and stored attendance' :
-              '$filtersActive page filter${filtersActive == 1 ? '' : 's'} active'),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey('class-$_filterVersion'),
-              value: _classFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Class · this page only'),
-              items: [const DropdownMenuItem(value: null, child: Text('All classes on page')),
-                ...classes.map((value) => DropdownMenuItem(value: value, child: Text(value)))],
-              onChanged: (value) => setState(() => _classFilter = value),
-            ),
-            const SizedBox(height: Space.md),
-            DropdownButtonFormField<String>(
-              key: ValueKey('stream-$_filterVersion'),
-              value: _streamFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Stream · this page only'),
-              items: [const DropdownMenuItem(value: null, child: Text('All streams on page')),
-                const DropdownMenuItem(value: 'missing', child: Text('Stream not recorded')),
-                ...streams.map((value) => DropdownMenuItem(value: 'value:$value', child: Text(value)))],
-              onChanged: (value) => setState(() => _streamFilter = value),
-            ),
-            const SizedBox(height: Space.md),
-            DropdownButtonFormField<String>(
-              key: ValueKey('attendance-$_filterVersion'),
-              value: _attendanceFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Stored attendance · this page only'),
-              items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set']
-                  .map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-              onChanged: (value) { if (value != null) setState(() => _attendanceFilter = value); },
-            ),
-            const SizedBox(height: Space.sm),
-            const Text('Latest stored status only; it has no date and may not be from today.'),
-          ],
-        ),
-      ),
-      if (filtersActive > 0)
-        Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-          onPressed: () => setState(_clearFilters),
-          icon: const Icon(Icons.filter_alt_off_outlined), label: const Text('Clear all page filters'),
-        )),
-      const SizedBox(height: Space.sm),
-      Text(
-        filtersActive == 0
-            ? '${countLabel(session.rows.length)} on this page'
-            : '${shown.length} of ${countLabel(session.rows.length)} match page filters',
-        style: Theme.of(context).textTheme.bodySmall,
-      ),
-      const SizedBox(height: Space.lg),
-      if (shown.isEmpty)
-        EmptyState(
-          title: filtersActive == 0 ? 'This page is empty' : 'No learner on this page matches',
-          body: filtersActive == 0
-              ? 'The school may have no learners, or your account may only see a part of '
-                  'the register. Pull down to read again.'
-              : 'Filters only cover the page you have loaded. Change them or move to another page.',
-          doodle: Doodle.sparkles,
-        )
-      else
-        ...shown.asMap().entries.map(
-              (entry) => Rise(
-                index: entry.key,
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: Space.sm),
-                  child: _LearnerRow(
-                    learner: entry.value,
-                    onTap: () => widget.onOpenLearner(entry.value),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.xl),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 42,
+                          height: 4.5,
+                          decoration: BoxDecoration(
+                            color: tokens.border,
+                            borderRadius: BorderRadius.circular(Corners.pill),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: Space.md),
+                      Text('Enrol new learner', style: Theme.of(ctx).textTheme.headlineSmall),
+                      const SizedBox(height: Space.xs),
+                      Text(
+                        'Adds directly to ${SchoolProfile.schoolName} with optional passport photo.',
+                        style: Theme.of(ctx).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: Space.md),
+                      Row(
+                        children: [
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              color: tokens.blueWash,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: tokens.border),
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            alignment: Alignment.center,
+                            child: photoBytes != null
+                                ? Image.memory(photoBytes!, width: 60, height: 60, fit: BoxFit.cover)
+                                : Icon(Icons.person_outline_rounded, color: tokens.blueInk, size: 28),
+                          ),
+                          const SizedBox(width: Space.md),
+                          Expanded(
+                            child: Wrap(
+                              spacing: Space.xs,
+                              runSpacing: Space.xs,
+                              children: [
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await ShuleMediaService.requestPhotos();
+                                    final bytes = await ShuleMediaService.pickPhoto(fromCamera: false);
+                                    if (bytes != null) setSheetState(() => photoBytes = bytes);
+                                  },
+                                  icon: const Icon(Icons.photo_library_outlined, size: 17),
+                                  label: const Text('Gallery'),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: () async {
+                                    await ShuleMediaService.requestCamera();
+                                    final bytes = await ShuleMediaService.pickPhoto(fromCamera: true);
+                                    if (bytes != null) setSheetState(() => photoBytes = bytes);
+                                  },
+                                  icon: const Icon(Icons.photo_camera_outlined, size: 17),
+                                  label: const Text('Camera'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Space.md),
+                      TextField(
+                        controller: nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Learner full name',
+                          hintText: 'e.g. Asha Ramadhani',
+                        ),
+                      ),
+                      const SizedBox(height: Space.sm),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: cls,
+                              decoration: const InputDecoration(labelText: 'Form'),
+                              items: const ['Form 1', 'Form 2', 'Form 3', 'Form 4']
+                                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                  .toList(),
+                              onChanged: (v) => setSheetState(() => cls = v ?? cls),
+                            ),
+                          ),
+                          const SizedBox(width: Space.sm),
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              value: stream,
+                              decoration: const InputDecoration(labelText: 'Stream'),
+                              items: const ['A', 'B']
+                                  .map((s) => DropdownMenuItem(value: s, child: Text('Stream $s')))
+                                  .toList(),
+                              onChanged: (v) => setSheetState(() => stream = v ?? stream),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: Space.sm),
+                      DropdownButtonFormField<String>(
+                        value: type,
+                        decoration: const InputDecoration(labelText: 'Category'),
+                        items: const ['Boarder', 'Day']
+                            .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                            .toList(),
+                        onChanged: (v) => setSheetState(() => type = v ?? type),
+                      ),
+                      const SizedBox(height: Space.sm),
+                      TextField(
+                        controller: guardianCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Guardian name',
+                          hintText: 'e.g. Ramadhani Ally',
+                        ),
+                      ),
+                      const SizedBox(height: Space.sm),
+                      TextField(
+                        controller: phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        decoration: const InputDecoration(labelText: 'Guardian phone'),
+                      ),
+                      const SizedBox(height: Space.sm),
+                      TextField(
+                        controller: emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Guardian email (optional)',
+                          hintText: 'parent@example.com',
+                        ),
+                      ),
+                      const SizedBox(height: Space.lg),
+                      GradientButton(
+                        label: 'Save & enrol learner',
+                        icon: Icons.person_add_alt_1_rounded,
+                        onPressed: () {
+                          if (nameCtrl.text.trim().isEmpty) return;
+                          widget.workspace.enrolLearner(
+                            name: nameCtrl.text,
+                            className: cls,
+                            stream: stream,
+                            type: type,
+                            guardianName: guardianCtrl.text.trim().isEmpty
+                                ? 'Parent / Guardian'
+                                : guardianCtrl.text,
+                            guardianPhone: phoneCtrl.text,
+                            guardianEmail: emailCtrl.text,
+                            photoBytes: photoBytes,
+                          );
+                          Navigator.pop(ctx, true);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-      const SizedBox(height: Space.lg),
-      if (reading)
-        const _Busy(label: 'Reading…')
-      else
-        // Both buttons flex and their labels shrink to fit, so a long label or a
-        // large text setting cannot push either one off the screen.
-        Row(
-          children: [
-            Flexible(
-              child: OutlinedButton(
-                onPressed: session.canGoBack ? session.loadPreviousPage : null,
-                child: const FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text('Previous'),
-                ),
-              ),
-            ),
-            const SizedBox(width: Space.md),
-            Flexible(
-              child: GradientButton(
-                label: session.canGoForward ? 'Next page' : 'End of register',
-                onPressed: session.canGoForward ? session.loadNextPage : null,
-                expand: false,
-              ),
-            ),
-          ],
-        ),
-      const SizedBox(height: Space.lg),
-      Notice(
-        title: 'Read-only register',
-        body: 'Names, classes and guardian contacts come from the page you just loaded and '
-            'can change at the school while you read them. Nothing on this screen is saved '
-            'to the phone.',
-        tone: NoticeTone.info,
-      ),
-      if (session.busy)
-        Padding(
-          padding: const EdgeInsets.only(top: Space.md),
-          child: Text(
-            'A read is in progress; the page buttons are disabled until it finishes.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens.inkMuted),
-          ),
-        ),
-    ];
+            );
+          },
+        );
+      },
+    );
+
+    if (created == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Learner enrolled into Shule Altra.')),
+      );
+    }
   }
-}
 
-class _SignedOut extends StatelessWidget {
-  const _SignedOut({required this.session, required this.onSignIn});
-
-  final AppSession session;
-  final VoidCallback onSignIn;
+  Future<void> _printRegister(List<Learner> visible) async {
+    final title = _selectedClass == 'All' ? 'School Learners Register' : '$_selectedClass Register';
+    await ShulePdfService.printDocument(
+      name: '${title.replaceAll(' ', '_')}.pdf',
+      build: () => ShulePdfService.buildClassRegisterPdf(
+        title: title,
+        learners: visible,
+        attendanceOf: widget.workspace.attendanceFor,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        StickerPop(
-          child: SizedBox(
-            height: 168,
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: tokens.mutedSurface,
-                borderRadius: BorderRadius.circular(Corners.hero),
+    return ListenableBuilder(
+      listenable: Listenable.merge([widget.workspace, widget.session]),
+      builder: (context, _) {
+        final all = widget.workspace.learners;
+        final visible = _filter(all);
+
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.sm),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.headerTitle,
+                                style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28),
+                              ),
+                              Text(
+                                '${SchoolProfile.schoolName} · ${all.length} O-Level learners',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _openEnrolSheet,
+                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                          label: const Text('Enrol'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Space.md),
+                    ShuleGlassCard(
+                      padding: const EdgeInsets.all(Space.md),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: MetricBlock(
+                              value: '${all.length}',
+                              label: 'Enrolled',
+                              caption: '${widget.workspace.boarderCount} boarders',
+                            ),
+                          ),
+                          Expanded(
+                            child: MetricBlock(
+                              value: '${widget.workspace.attendanceRate.toStringAsFixed(1)}%',
+                              label: 'Present',
+                              caption: '${widget.workspace.absentCount} absent',
+                            ),
+                          ),
+                          Expanded(
+                            child: MetricBlock(
+                              value: formatCompactTzs(widget.workspace.totalOutstandingFees),
+                              label: 'Outstanding',
+                              caption: '${widget.workspace.learnersWithBalanceCount} owing',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.md),
+                    TextField(
+                      controller: _search,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search name, ALT-2026 ID, wing, route or guardian',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _search.text.isEmpty
+                            ? IconButton(
+                                tooltip: 'Print filtered register PDF',
+                                onPressed: () => _printRegister(visible),
+                                icon: const Icon(Icons.print_rounded),
+                              )
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  _search.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(height: Space.md),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final cls in _classFilters) ...[
+                            ChoicePill(
+                              label: cls,
+                              selected: _selectedClass == cls,
+                              onSelected: () => setState(() => _selectedClass = cls),
+                            ),
+                            const SizedBox(width: Space.xs),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.sm),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final filter in _statusFilters) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(right: Space.xs),
+                              child: FilterChip(
+                                label: Text(filter),
+                                selected: _statusFilter == filter,
+                                onSelected: (_) => setState(() => _statusFilter = filter),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SectionHead(
+                            title: _selectedClass == 'All' ? 'Directory' : _selectedClass,
+                            trailing: '${visible.length} shown',
+                          ),
+                        ),
+                        const SizedBox(width: Space.xs),
+                        TextButton.icon(
+                          onPressed: () => _printRegister(visible),
+                          icon: const Icon(Icons.print_outlined, size: 18),
+                          label: const Text('Print PDF'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              child: const Center(child: DoodleView(doodle: Doodle.building, size: 104)),
             ),
-          ),
-        ),
-        const SizedBox(height: Space.xl),
-        Text(
-          session.acceptsDemoCredential
-              ? 'A sample register,\nbehind a demo sign-in.'
-              : 'The register is behind\nyour school account.',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: Space.sm),
-        Text(
-          session.acceptsDemoCredential
-              ? 'Six fictional learners, stored on this phone, with a credential printed '
-                'on the form. Nothing here is a real school and nothing is sent anywhere.'
-              : 'Sign in with the Google account your school already uses. Your school\'s '
-                'Firestore rules decide what you can read — the app does not widen that.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-        ),
-        const SizedBox(height: Space.lg),
-        if (session.acceptsDemoCredential)
-          // The sample register, opened with the demo credential that is printed
-          // on the form itself.
-          DemoSignInForm(session: session)
-        else ...[
-          GradientButton(
-            label: session.busy ? 'Signing in…' : 'Continue with Google',
-            onPressed: session.busy ? null : onSignIn,
-            busy: session.busy,
-            icon: Icons.login_rounded,
-          ),
-          if (session.failure != null) ...[
-            const SizedBox(height: Space.md),
-            Notice(
-              title: 'Sign-in did not complete',
-              body: session.failure!,
-              tone: NoticeTone.danger,
-            ),
+            if (visible.isEmpty)
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.lg, Space.dockClearance),
+                sliver: SliverToBoxAdapter(
+                  child: EmptyState(
+                    title: 'No matching learners',
+                    body: 'Try clearing the search query or choosing a different class filter.',
+                    action: OutlinedButton(
+                      onPressed: () {
+                        _search.clear();
+                        setState(() {
+                          _selectedClass = 'All';
+                          _statusFilter = 'All';
+                        });
+                      },
+                      child: const Text('Reset filters'),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.dockClearance),
+                sliver: SliverList.separated(
+                  itemCount: visible.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+                  itemBuilder: (context, index) {
+                    final learner = visible[index];
+                    return _LearnerRowCard(
+                      learner: learner,
+                      extra: widget.workspace.extraFor(learner.id),
+                      photo: widget.workspace.photoFor(learner.id),
+                      attendance: widget.workspace.attendanceFor(learner.id),
+                      onTap: () => showLearnerDetail(
+                        context: context,
+                        workspace: widget.workspace,
+                        learnerId: learner.id,
+                      ),
+                    );
+                  },
+                ),
+              ),
           ],
-        ],
-        const SizedBox(height: Space.lg),
-        const Notice(
-          title: 'Read-only pilot',
-          body: 'Learner and guardian details are readable on an approved account and a '
-              'trusted phone. Nothing can be edited, marked or paid from here.',
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _LearnerRow extends StatelessWidget {
-  const _LearnerRow({required this.learner, required this.onTap});
+class _LearnerRowCard extends StatelessWidget {
+  const _LearnerRowCard({
+    required this.learner,
+    required this.extra,
+    required this.photo,
+    required this.attendance,
+    required this.onTap,
+  });
 
   final Learner learner;
+  final LearnerExtra extra;
+  final Uint8List? photo;
+  final String attendance;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final owes = (learner.balance ?? 0) > 0;
-    return Material(
-      color: tokens.surface,
-      borderRadius: BorderRadius.circular(Corners.panel),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Corners.panel),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(Space.lg),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: tokens.mutedSurface,
-                child: Text(
-                  learner.initials,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens.ink),
+    final tag = extra.hostel.isNotEmpty ? extra.hostel : extra.route;
+    return ShuleGlassCard(
+      padding: const EdgeInsets.all(Space.md),
+      onTap: onTap,
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: tokens.blueHeroGradient,
+              borderRadius: BorderRadius.circular(15),
+            ),
+            clipBehavior: Clip.antiAlias,
+            alignment: Alignment.center,
+            child: photo != null
+                ? Image.memory(photo!, width: 48, height: 48, fit: BoxFit.cover)
+                : Text(
+                    learner.initials,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          color: tokens.onGradient,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+          ),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  learner.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
                 ),
-              ),
-              const SizedBox(width: Space.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 2),
+                Text(
+                  '${learner.id} · ${learner.className} · ${tag.isNotEmpty ? tag : learner.type}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 5),
+                Wrap(
+                  spacing: Space.xs,
+                  runSpacing: Space.xs,
                   children: [
-                    Text(learner.name, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      learner.className,
-                      style: Theme.of(context).textTheme.bodySmall,
+                    StatusPill(
+                      label: attendance,
+                      background: attendance == 'Present'
+                          ? tokens.success.withValues(alpha: 0.14)
+                          : attendance == 'Absent'
+                              ? tokens.danger.withValues(alpha: 0.14)
+                              : tokens.warning.withValues(alpha: 0.16),
+                      foreground: attendance == 'Present'
+                          ? tokens.success
+                          : attendance == 'Absent'
+                              ? tokens.danger
+                              : tokens.warning,
+                    ),
+                    StatusPill(
+                      label: owes ? formatTzs(learner.balance) : 'Cleared',
+                      background: owes ? tokens.blueWash : tokens.success.withValues(alpha: 0.12),
+                      foreground: owes ? tokens.blueInk : tokens.success,
+                    ),
+                    StatusPill(
+                      label: '${extra.conductPoints} PTS',
+                      background: tokens.innerSurface,
+                      foreground: tokens.inkMuted,
                     ),
                   ],
                 ),
-              ),
-              if (owes)
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.sm),
-                  child: Text(
-                    'Balance',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning),
-                  ),
-                ),
-              Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Busy extends StatelessWidget {
-  const _Busy({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Space.xxl),
-      child: Column(
-        children: [
-          SizedBox.square(
-            dimension: 26,
-            child: CircularProgressIndicator(strokeWidth: 2.6, color: tokens.primary),
-          ),
-          const SizedBox(height: Space.md),
-          Text(label, textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(width: Space.xs),
+          Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
         ],
       ),
     );

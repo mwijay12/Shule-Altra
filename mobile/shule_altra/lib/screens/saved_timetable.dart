@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/saved_timetable.dart';
 import '../data/school_gateway.dart';
+import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
@@ -65,17 +66,27 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
     final generation = ++_generation;
     final className = _className;
     final stream = _stream;
-    setState(() { _loading = true; _loaded = false; _schedule = null; _error = null; });
+    setState(() {
+      _loading = true;
+      _loaded = false;
+      _schedule = null;
+      _error = null;
+    });
     try {
       final value = await widget.reader.loadTimetable(className, stream);
       if (!mounted || generation != _generation || uid != widget.session.uid) return;
-      setState(() { _schedule = value; _loaded = true; });
+      setState(() {
+        _schedule = value;
+        _loaded = true;
+      });
     } on GatewayFailure catch (error) {
       if (!mounted || generation != _generation || uid != widget.session.uid) return;
       setState(() => _error = error.message);
     } catch (_) {
       if (!mounted || generation != _generation || uid != widget.session.uid) return;
-      setState(() => _error = 'The timetable could not be read. Check the connection and try again.');
+      setState(
+        () => _error = 'The timetable could not be read. Check the connection and try again.',
+      );
     } finally {
       if (mounted && generation == _generation && uid == widget.session.uid) {
         setState(() => _loading = false);
@@ -85,61 +96,185 @@ class _SavedTimetableScreenState extends State<SavedTimetableScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
     final schedule = _schedule;
-    return Scaffold(
-      appBar: AppBar(title: const Text('School timetable')),
-      body: ListView(padding: const EdgeInsets.all(Space.gutter), children: [
-        const Notice(title: 'Saved school schedule · read-only',
-          body: 'Online server read. Reload to see newer changes; school permissions apply.'),
-        const SizedBox(height: Space.lg),
-        if (_uid == null)
-          const Notice(title: 'Sign in required', body: 'Return to Learners and sign in to read your school timetable.')
-        else ...[
-          DropdownButtonFormField<String>(
-            value: _className, isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Class'),
-            items: timetableClasses.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-            onChanged: (value) { if (value != null) setState(() { _className = value; _clear(); }); },
-          ),
-          const SizedBox(height: Space.md),
-          DropdownButtonFormField<String>(
-            value: _stream, isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Stream'),
-            items: timetableStreams.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-            onChanged: (value) { if (value != null) setState(() { _stream = value; _clear(); }); },
-          ),
-          const SizedBox(height: Space.md),
-          DropdownButtonFormField<String>(
-            value: _day, isExpanded: true,
-            decoration: const InputDecoration(labelText: 'Day'),
-            items: timetableDays.map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-            onChanged: (value) { if (value != null) setState(() => _day = value); },
-          ),
-          const SizedBox(height: Space.md),
-          FilledButton.icon(onPressed: _loading ? null : _load, icon: const Icon(Icons.refresh), label: const Text('Load timetable')),
-          const SizedBox(height: Space.md),
-          if (_loading) const Center(child: CircularProgressIndicator())
-          else if (_error != null) Notice(title: 'Could not load timetable', body: _error!, tone: NoticeTone.danger)
-          else if (_loaded && schedule == null) const Notice(title: 'No saved schedule', body: 'No schedule was found for this class and stream.')
-          else if (schedule == null) const Text('Choose a class and stream, then load its saved timetable. Changing the day does not require another read.')
-          else ...[
-            Text('$_day · $_className $_stream', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: Space.sm),
-            for (final period in timetablePeriods)
-              Builder(builder: (context) {
-                final slot = period.isBreak ? null : schedule.slot(_day, period.id);
-                final title = period.isBreak ? period.label :
-                    (slot?.subject.trim().isNotEmpty == true ? slot!.subject : 'Not scheduled');
-                final detail = slot == null ? '' : [slot.teacher, slot.room].where((value) => value.trim().isNotEmpty).join(' · ');
-                return Card(child: ListTile(
-                  leading: Icon(period.isBreak ? Icons.free_breakfast_outlined : Icons.menu_book_outlined),
-                  title: Text(title),
-                  subtitle: Text('${period.label} · ${period.time}${detail.isEmpty ? '' : ' · $detail'}'),
-                ));
-              }),
+    return ShuleBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(title: const Text('School timetable')),
+        body: ListView(
+          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
+          children: [
+            const Notice(
+              title: 'Saved school schedule · read-only',
+              body: 'Online server read. Reload to see newer changes; school permissions apply.',
+            ),
+            const SizedBox(height: Space.lg),
+            if (_uid == null)
+              const Notice(
+                title: 'Sign in required',
+                body: 'Return to Learners and sign in to read your school timetable.',
+              )
+            else ...[
+              ShuleGlassCard(
+                padding: const EdgeInsets.all(Space.lg),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _className,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Class'),
+                      items: timetableClasses
+                          .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _className = value;
+                            _clear();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: Space.md),
+                    DropdownButtonFormField<String>(
+                      value: _stream,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Stream'),
+                      items: timetableStreams
+                          .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _stream = value;
+                            _clear();
+                          });
+                        }
+                      },
+                    ),
+                    const SizedBox(height: Space.md),
+                    DropdownButtonFormField<String>(
+                      value: _day,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Day'),
+                      items: timetableDays
+                          .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _day = value);
+                      },
+                    ),
+                    const SizedBox(height: Space.lg),
+                    FilledButton.icon(
+                      onPressed: _loading ? null : _load,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Load timetable'),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Space.lg),
+              if (_loading)
+                const ShuleGlassCard(
+                  padding: EdgeInsets.all(Space.xl),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_error != null)
+                Notice(title: 'Could not load timetable', body: _error!, tone: NoticeTone.danger)
+              else if (_loaded && schedule == null)
+                const Notice(
+                  title: 'No saved schedule',
+                  body: 'No schedule was found for this class and stream.',
+                )
+              else if (schedule == null)
+                ShuleGlassCard(
+                  child: Text(
+                    'Choose a class and stream, then load its saved timetable. '
+                    'Changing the day does not require another read.',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                )
+              else ...[
+                SectionHead(title: '$_day · $_className $_stream', trailing: 'Read-only'),
+                const SizedBox(height: Space.md),
+                ShuleGlassCard(
+                  glowCorner: true,
+                  padding: const EdgeInsets.all(Space.md),
+                  child: Column(
+                    children: [
+                      for (final period in timetablePeriods)
+                        Builder(
+                          builder: (context) {
+                            final slot = period.isBreak ? null : schedule.slot(_day, period.id);
+                            final title = period.isBreak
+                                ? period.label
+                                : (slot?.subject.trim().isNotEmpty == true
+                                    ? slot!.subject
+                                    : 'Not scheduled');
+                            final detail = slot == null
+                                ? ''
+                                : [slot.teacher, slot.room]
+                                    .where((value) => value.trim().isNotEmpty)
+                                    .join(' · ');
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: Space.sm),
+                              child: ShuleInnerTile(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: Space.md,
+                                  vertical: Space.md,
+                                ),
+                                child: Row(
+                                  children: [
+                                    ShuleGlyph(
+                                      icon: period.isBreak
+                                          ? Icons.free_breakfast_outlined
+                                          : Icons.menu_book_outlined,
+                                      size: 38,
+                                      background: period.isBreak
+                                          ? tokens.mutedSurface
+                                          : tokens.blueWash,
+                                      foreground: period.isBreak
+                                          ? tokens.inkMuted
+                                          : tokens.blueInk,
+                                    ),
+                                    const SizedBox(width: Space.md),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            title,
+                                            style: Theme.of(context).textTheme.titleMedium,
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            '${period.label} · ${period.time}'
+                                            '${detail.isEmpty ? '' : ' · $detail'}',
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                  fontFeatures: const [
+                                                    FontFeature.tabularFigures(),
+                                                  ],
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
           ],
-        ],
-      ]),
+        ),
+      ),
     );
   }
 }

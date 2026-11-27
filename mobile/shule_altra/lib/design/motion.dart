@@ -1,63 +1,136 @@
-/// Motion, held to one rule: the OS decides whether anything moves.
+/// Shule Altra Motion Spec — disciplined, responsive, reduced-motion safe.
 ///
-/// [MotionPrefs] reads `MediaQuery.disableAnimationsOf`, which is true when the
-/// phone's "Remove animations" / "Reduce motion" setting is on. When it is true
-/// every duration here becomes zero and every reveal starts already finished,
-/// so nothing is hidden waiting for an animation that will not run.
+/// Motion rules:
+///  * Micro-feedback (press scale, haptics): 150ms (`Curves.easeOutCubic`)
+///  * State & tab transitions: 240ms (`Curves.easeOutCubic`)
+///  * Screen & staggered card reveals: 340ms (`Curves.easeOutCubic`)
+///  * Brand shield / checkmark spring pop: 380ms (`Curves.easeOutBack`)
+///  * Transform & opacity first (60fps), plus intentional animated values for
+///    vector path drawing, count-up figures, and morphing page indicators.
+///  * Always honours `MediaQuery.disableAnimationsOf(context)`.
 library;
 
-import 'package:flutter/material.dart';
+import 'dart:async';
 
-import 'tokens.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+abstract final class Curves2 {
+  static const Curve standard = Curves.easeOutCubic;
+  static const Curve enter = Curves.easeOutCubic;
+  static const Curve exit = Curves.easeInCubic;
+  static const Curve spring = Curves.easeOutBack;
+  static const Curve bounce = Curves.easeOutBack;
+}
 
 @immutable
 class MotionPrefs {
   const MotionPrefs({required this.reduced});
 
-  /// Read the current setting. Do not cache this across frames: the setting can
-  /// change while the app is open.
   factory MotionPrefs.of(BuildContext context) {
     return MotionPrefs(reduced: MediaQuery.disableAnimationsOf(context));
   }
 
-  /// True when the OS asks for no animation.
   final bool reduced;
 
-  Duration get fast => reduced ? Duration.zero : Motion.fast;
-  Duration get base => reduced ? Duration.zero : Motion.base;
-  Duration get slow => reduced ? Duration.zero : Motion.slow;
-  Duration get pop => reduced ? Duration.zero : Motion.pop;
-  Duration get stagger => reduced ? Duration.zero : Motion.stagger;
+  /// Micro interaction (press-scale, pill morph).
+  Duration get micro => reduced ? Duration.zero : const Duration(milliseconds: 150);
 
-  /// Stagger index `i`, clamped so a long list does not take seconds to appear.
+  /// Fast state transition (tab swap, chip selection).
+  Duration get fast => reduced ? Duration.zero : const Duration(milliseconds: 220);
+
+  /// Standard reveal (text & card entrance).
+  Duration get base => reduced ? Duration.zero : const Duration(milliseconds: 320);
+
+  /// Deliberate emphasis (splash completion, hero hand-off).
+  Duration get slow => reduced ? Duration.zero : const Duration(milliseconds: 380);
+
+  /// Spring pop (checkmark / badge confirmation).
+  Duration get pop => reduced ? Duration.zero : const Duration(milliseconds: 380);
+
+  /// Stagger interval between sibling elements.
+  Duration get stagger => reduced ? Duration.zero : const Duration(milliseconds: 45);
+
+  /// Stagger delay clamped at 6 items so long lists stay immediate.
   Duration delay(int index) {
-    if (reduced) return Duration.zero;
-    return Motion.stagger * index.clamp(0, 6);
+    if (reduced || index <= 0) return Duration.zero;
+    final capped = index > 6 ? 6 : index;
+    return stagger * capped;
   }
 }
 
-/// Fades and lifts a child in once, on first build.
-///
-/// Geometry only ever moves on `transform` and the fade on `opacity`, which is
-/// what keeps a list of these cheap on a low-end phone. The stagger is done by
-/// widening the animation and holding still through an [Interval], not by
-/// scheduling a timer: a pending timer would outlive a test frame and make
-/// `pumpAndSettle` unreliable.
+/// Tactile press-scale wrapper (`0.97` scale over 150ms + optional light haptic).
+/// Respects reduced motion cleanly.
+class PressScale extends StatefulWidget {
+  const PressScale({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scale = 0.97,
+    this.haptic = true,
+  });
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+  final bool haptic;
+
+  @override
+  State<PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<PressScale> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value) return;
+    setState(() => _pressed = value);
+  }
+
+  void _handleTap() {
+    if (widget.onTap == null) return;
+    if (widget.haptic) {
+      HapticFeedback.lightImpact();
+    }
+    widget.onTap!();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = MotionPrefs.of(context);
+    final activeScale = (!prefs.reduced && _pressed && widget.onTap != null)
+        ? widget.scale
+        : 1.0;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: widget.onTap == null ? null : (_) => _setPressed(true),
+      onTapUp: widget.onTap == null ? null : (_) => _setPressed(false),
+      onTapCancel: widget.onTap == null ? null : () => _setPressed(false),
+      onTap: widget.onTap == null ? null : _handleTap,
+      child: AnimatedScale(
+        scale: activeScale,
+        duration: prefs.micro,
+        curve: Curves2.enter,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Subtle staggered entrance: slides up `12px` and fades in once.
+/// Under reduced motion, returns `child` directly with zero controller cost.
 class Rise extends StatefulWidget {
   const Rise({
     super.key,
     required this.child,
-    this.index = 0,
-    this.distance = 14,
+    this.delay = Duration.zero,
+    this.offsetY = 12,
   });
 
   final Widget child;
-
-  /// Position in a group, used for the stagger.
-  final int index;
-
-  /// How far it travels. Kept small: content that flies in is a distraction.
-  final double distance;
+  final Duration delay;
+  final double offsetY;
 
   @override
   State<Rise> createState() => _RiseState();
@@ -65,6 +138,7 @@ class Rise extends StatefulWidget {
 
 class _RiseState extends State<Rise> with SingleTickerProviderStateMixin {
   AnimationController? _controller;
+  Timer? _timer;
   bool _started = false;
 
   @override
@@ -72,21 +146,23 @@ class _RiseState extends State<Rise> with SingleTickerProviderStateMixin {
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-
     final prefs = MotionPrefs.of(context);
-    if (prefs.reduced) return; // nothing to animate; build() draws it at rest
+    if (prefs.reduced) return;
 
-    final delay = prefs.delay(widget.index);
-    final controller = AnimationController(
-      vsync: this,
-      duration: delay + Motion.slow,
-    );
+    final controller = AnimationController(vsync: this, duration: prefs.base);
     _controller = controller;
-    controller.forward();
+    if (widget.delay == Duration.zero) {
+      controller.forward();
+    } else {
+      _timer = Timer(widget.delay, () {
+        if (mounted) controller.forward();
+      });
+    }
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     _controller?.dispose();
     super.dispose();
   }
@@ -96,53 +172,42 @@ class _RiseState extends State<Rise> with SingleTickerProviderStateMixin {
     final controller = _controller;
     if (controller == null) return widget.child;
 
-    final begin = controller.duration == Duration.zero
-        ? 0.0
-        : MotionPrefs.of(context).delay(widget.index).inMicroseconds /
-            controller.duration!.inMicroseconds;
-
-    final curve = CurvedAnimation(
-      parent: controller,
-      curve: Interval(begin, 1, curve: Curves2.enter),
-    );
-
+    final curved = CurvedAnimation(parent: controller, curve: Curves2.enter);
     return AnimatedBuilder(
-      animation: curve,
+      animation: curved,
+      child: widget.child,
       builder: (context, child) {
-        final t = curve.value;
+        final t = curved.value;
         return Opacity(
-          opacity: t,
+          opacity: t.clamp(0.0, 1.0),
           child: Transform.translate(
-            offset: Offset(0, widget.distance * (1 - t)),
+            offset: Offset(0, widget.offsetY * (1 - t)),
             child: child,
           ),
         );
       },
-      child: widget.child,
     );
   }
 }
 
-/// The small "ink draws on paper" pop for a doodle.
-///
-/// Under reduced motion it is simply there, at rest, with no scale change: the
-/// drawing itself is never hidden behind a script or an animation.
+/// Subtle spring pop for completion badges & checkmarks.
 class StickerPop extends StatefulWidget {
-  const StickerPop({super.key, required this.child, this.alignment = Alignment.center});
+  const StickerPop({
+    super.key,
+    required this.child,
+    this.delay = Duration.zero,
+  });
 
   final Widget child;
-  final Alignment alignment;
+  final Duration delay;
 
   @override
   State<StickerPop> createState() => _StickerPopState();
 }
 
 class _StickerPopState extends State<StickerPop> with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: Motion.pop,
-    value: 0,
-  );
+  AnimationController? _controller;
+  Timer? _timer;
   bool _started = false;
 
   @override
@@ -150,32 +215,43 @@ class _StickerPopState extends State<StickerPop> with SingleTickerProviderStateM
     super.didChangeDependencies();
     if (_started) return;
     _started = true;
-    if (MotionPrefs.of(context).reduced || MediaQuery.of(context).disableAnimations) {
-      _controller.value = 1;
+    final prefs = MotionPrefs.of(context);
+    if (prefs.reduced) return;
+
+    final controller = AnimationController(vsync: this, duration: prefs.pop);
+    _controller = controller;
+    if (widget.delay == Duration.zero) {
+      controller.forward();
     } else {
-      _controller.forward();
+      _timer = Timer(widget.delay, () {
+        if (mounted) controller.forward();
+      });
     }
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _timer?.cancel();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final animation = CurvedAnimation(parent: _controller, curve: Curves2.pop);
+    final controller = _controller;
+    if (controller == null) return widget.child;
+
+    final curved = CurvedAnimation(parent: controller, curve: Curves2.spring);
     return AnimatedBuilder(
-      animation: animation,
+      animation: curved,
+      child: widget.child,
       builder: (context, child) {
-        final scale = 0.86 + 0.14 * animation.value;
+        final scale = 0.84 + 0.16 * curved.value;
         return Opacity(
-          opacity: animation.value.clamp(0.0, 1.0),
-          child: Transform.scale(scale: scale, alignment: widget.alignment, child: child),
+          opacity: controller.value.clamp(0.0, 1.0),
+          child: Transform.scale(scale: scale, child: child),
         );
       },
-      child: widget.child,
     );
   }
 }

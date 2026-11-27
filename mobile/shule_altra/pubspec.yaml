@@ -1,7 +1,7 @@
 name: shule_altra_mobile
-description: Shule Altra mobile early read-only Firebase pilot.
+description: Shule Altra mobile — role-based blue glassmorphism school companion.
 publish_to: none
-version: 0.1.0+1
+version: 0.2.0+2
 
 environment:
   # google_sign_in 7.x and firebase_* 3.x/5.x both need Dart 3.7 or newer.
@@ -10,16 +10,19 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # The live, read-only Firebase path. These three move together; the test
-  # suite never touches them because the gateway is injected.
+  # Optional live Firebase path when build defines are supplied.
   firebase_core: ^3.13.0
   firebase_auth: ^5.5.4
   cloud_firestore: ^5.6.7
-  # Google Sign-In on Android (v7 API: `GoogleSignIn.instance` + `authenticate()`).
-  # Firebase Auth cannot call `signInWithProvider` here: that is web-only and
-  # throws on Android.
   google_sign_in: ^7.2.0
   shared_preferences: ^2.3.3
+  # Native capabilities: PDF generation, Android printing, gallery/camera,
+  # runtime permissions, and local school notifications.
+  pdf: ^3.11.3
+  printing: ^5.14.2
+  image_picker: ^1.1.2
+  permission_handler: ^11.4.0
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +32,29 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/images/shule_icon.png
     - assets/images/school_cutout.png
     - assets/images/learning_cutout.png
     - assets/images/connection_cutout.png
+    - assets/fonts/OFL.txt
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Outfit-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Outfit-ExtraBold.ttf
+          weight: 800
+    - family: PlusJakartaSans
+      fonts:
+        - asset: assets/fonts/PlusJakartaSans-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PlusJakartaSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PlusJakartaSans-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PlusJakartaSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/PlusJakartaSans-ExtraBold.ttf
+          weight: 800
