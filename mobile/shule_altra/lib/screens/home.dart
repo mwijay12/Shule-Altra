@@ -278,42 +278,42 @@ class HomeScreen extends StatelessWidget {
                 final tileWidth = (constraints.maxWidth - spacing * (columns - 1)) / columns;
                 final tiles = <Widget>[
                   FeatureTile(
-                    doodle: Doodle.backpack,
+                    doodle: Doodle.building,
                     icon: Icons.groups_rounded,
                     title: 'Learners',
                     caption: 'Directory, enrolment, photos & IDs',
                     onTap: onOpenLearners,
                   ),
                   FeatureTile(
-                    doodle: Doodle.pencil,
+                    doodle: Doodle.book,
                     icon: Icons.fact_check_rounded,
                     title: 'Attendance',
                     caption: 'Form 1–4 daily roll call',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.attendance),
                   ),
                   FeatureTile(
-                    doodle: Doodle.book,
+                    doodle: Doodle.receipt,
                     icon: Icons.account_balance_wallet_rounded,
                     title: 'Finance',
                     caption: 'TZS payments & defaulters',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
                   ),
                   FeatureTile(
-                    doodle: Doodle.sparkles,
+                    doodle: Doodle.reportCard,
                     icon: Icons.workspace_premium_rounded,
                     title: 'Academics',
                     caption: 'NECTA grades & divisions',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.academics),
                   ),
                   FeatureTile(
-                    doodle: Doodle.paperPlane,
+                    doodle: Doodle.sparkles,
                     icon: Icons.calendar_today_rounded,
                     title: 'Timetable',
                     caption: 'Weekly Form 1–4 schedule',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.timetable),
                   ),
                   FeatureTile(
-                    doodle: Doodle.sparkles,
+                    doodle: Doodle.reportCard,
                     icon: Icons.print_rounded,
                     title: 'Reports & Print',
                     caption: 'Official PDF report cards & registers',
