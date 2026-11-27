@@ -164,12 +164,7 @@ void main() {
     await tester.tap(find.text('Learners & Enrolment'));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.text('Amina Juma'),
-      180,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('150 shown'), findsOneWidget);
     await gateway.close();
     await tester.pumpWidget(const SizedBox.shrink());
   });

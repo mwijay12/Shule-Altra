@@ -209,11 +209,13 @@ class _ShuleAppState extends State<ShuleApp> {
                 _QuickActionTile(
                   icon: Icons.domain_rounded,
                   title: 'Staff, Hostels & Transport',
-                  subtitle: 'Campus contacts, wings & school bus routes',
+                  subtitle: '16 staff, 5 wings & 5 school bus routes',
                   onTap: () {
                     Navigator.pop(ctx);
                     Navigator.of(context).push(
-                      MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
+                      MaterialPageRoute<void>(
+                        builder: (_) => CampusScreen(workspace: _workspace),
+                      ),
                     );
                   },
                 ),

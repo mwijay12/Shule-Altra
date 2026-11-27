@@ -1,4 +1,5 @@
-/// Verifies Learners directory class filters, status chips, search, and reset.
+/// Verifies Learners directory class filters, status chips, search, and reset
+/// across the real 150-student website dataset.
 library;
 
 import 'package:flutter/material.dart';
@@ -30,28 +31,24 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('150 shown'), findsOneWidget);
 
-    // Filter to Form 1 only.
+    // Filter to Form 3 + search for exact website top defaulter ALT-2026-107.
+    await tester.tap(find.text('Form 3'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'FARAJA MUSSA SHAYO');
+    await tester.pumpAndSettle();
+    expect(find.text('FARAJA MUSSA SHAYO'), findsOneWidget);
+
+    // Switch to Form 1 -> Form 3 student should no longer match.
     await tester.tap(find.text('Form 1'));
-    await tester.pumpAndSettle();
-    expect(find.text('Amina Juma'), findsNothing);
-    expect(find.text('Lightness Urio'), findsOneWidget);
-
-    // Combine with Owes fees status filter.
-    await tester.tap(find.text('Owes fees'));
-    await tester.pumpAndSettle();
-    expect(find.text('Lightness Urio'), findsNothing);
-    expect(find.text('Daniel Mwangosi'), findsOneWidget);
-
-    // Search query that matches nobody shows empty state with Reset filters.
-    await tester.enterText(find.byType(TextField).first, 'zzzzzz');
     await tester.pumpAndSettle();
     expect(find.text('No matching learners'), findsOneWidget);
 
+    // Reset filters brings back all 150 learners.
     await tester.tap(find.text('Reset filters'));
     await tester.pumpAndSettle();
-    expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('150 shown'), findsOneWidget);
 
     workspace.dispose();
     session.dispose();

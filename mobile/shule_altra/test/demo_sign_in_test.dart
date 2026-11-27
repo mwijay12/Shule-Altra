@@ -119,7 +119,7 @@ void main() {
       await tester.pumpAndSettle();
       await _tap(tester, 'Sign in');
 
-      expect(find.text('Mwalimu Nyerere Secondary School'), findsOneWidget);
+      expect(find.textContaining('Habari za asubuhi'), findsOneWidget);
       await gateway.dispose();
       await tester.pumpWidget(const SizedBox.shrink());
     });

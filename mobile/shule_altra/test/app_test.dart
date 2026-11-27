@@ -2,9 +2,10 @@
 ///  * official Shule Altra app icon on onboarding & sign-in
 ///  * NO "Connect my school" multi-school selector
 ///  * dedicated Staff Sign-In (Admin / Teacher / Bursar demo roles)
-///  * Learners directory (NO login buried inside Learners tab), search, enrol & dossier
+///  * Command Deck website parity (150 learners, Follow-up queue, ledger stream)
+///  * Learners directory (NO login buried inside Learners tab), search & dossier
 ///  * School Day operational tabs (Attendance, Finance, Academics, Timetable)
-///  * More & Settings (Auto/Light/Dark adaptive theme, device permissions, sign out)
+///  * More & Settings (Auto/Light/Dark adaptive theme, permissions, modules & sign out)
 library;
 
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ void main() {
     await gateway.close();
   });
 
-  testWidgets('dedicated staff sign-in matches website roles and enters the app', (tester) async {
+  testWidgets('dedicated staff sign-in matches website roles and enters the Command Deck', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
@@ -85,11 +86,12 @@ void main() {
     await tapText(tester, 'Administrator · Head Master');
 
     expect(find.byType(ShuleGlassDock), findsOneWidget);
-    expect(find.text('Mwalimu Nyerere Secondary School'), findsOneWidget);
+    expect(find.textContaining('Habari za asubuhi'), findsOneWidget);
+    expect(find.text('150'), findsOneWidget);
     await gateway.close();
   });
 
-  testWidgets('Learners tab opens directly without login gate, searches and opens dossier', (tester) async {
+  testWidgets('Learners tab opens directly without login gate, searches real 150-student register and opens dossier', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
@@ -98,21 +100,17 @@ void main() {
     await tapText(tester, 'Explore with demo account');
     await tapText(tester, 'Learners');
 
-    // No login gate inside Learners tab; learners are immediately visible.
+    // No login gate inside Learners tab; 150 learners immediately visible.
     expect(find.text('Staff Portal Login'), findsNothing);
-    expect(find.text('Amina Juma'), findsOneWidget);
+    expect(find.text('150'), findsOneWidget);
 
-    // Search filter works immediately.
-    await tester.enterText(find.byType(TextField).first, 'Baraka');
+    // Search for exact website follow-up #1 learner.
+    await tester.enterText(find.byType(TextField).first, 'ALT-2026-107');
     await tester.pumpAndSettle();
-    expect(find.text('Baraka John'), findsOneWidget);
-    expect(find.text('Amina Juma'), findsNothing);
-
-    await tester.enterText(find.byType(TextField).first, '');
-    await tester.pumpAndSettle();
+    expect(find.text('FARAJA MUSSA SHAYO'), findsOneWidget);
 
     // Tapping a learner opens the full profile sheet with photo & PDF actions.
-    await tapText(tester, 'Amina Juma');
+    await tapText(tester, 'FARAJA MUSSA SHAYO');
     expect(find.text('Gallery photo'), findsOneWidget);
     expect(find.text('Take photo'), findsOneWidget);
     expect(find.text('Report card'), findsOneWidget);
@@ -133,7 +131,7 @@ void main() {
     expect(find.text('Form 4 Roll Call'), findsOneWidget);
 
     await tapText(tester, 'Finance');
-    expect(find.text('Pending balances'), findsOneWidget);
+    expect(find.text('Global balances'), findsOneWidget);
 
     await tapText(tester, 'Academics');
     expect(find.text('Form 4 NECTA Ranking'), findsOneWidget);
@@ -143,7 +141,7 @@ void main() {
     await gateway.close();
   });
 
-  testWidgets('More supports Auto/Light/Dark switching, permissions and sign out', (tester) async {
+  testWidgets('More supports Auto/Light/Dark switching, permissions, modules and sign out', (tester) async {
     usePhoneScreen(tester);
     final gateway = FakeGateway();
     await tester.pumpWidget(_app(gateway));
@@ -173,11 +171,11 @@ void main() {
     expect(find.text('Notifications'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('Gallery & Photos'),
-      220,
+      find.text('Shule Guide'),
+      240,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('Gallery & Photos'), findsOneWidget);
+    expect(find.text('Shule Guide'), findsOneWidget);
 
     // Scroll back up to Sign out.
     await tester.scrollUntilVisible(

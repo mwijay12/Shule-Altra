@@ -64,7 +64,9 @@ void main() {
         await _tap(tester, 'Learners');
         await _expectNoOverflow(tester, 'learners');
 
-        await _tap(tester, 'Amina Juma');
+        await tester.enterText(find.byType(TextField).first, 'ALT-2026-107');
+        await tester.pumpAndSettle();
+        await _tap(tester, 'FARAJA MUSSA SHAYO');
         await _expectNoOverflow(tester, 'learner detail');
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();

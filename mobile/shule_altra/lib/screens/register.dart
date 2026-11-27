@@ -1,14 +1,12 @@
-/// Full Learners Directory screen — website feature parity for mobile.
+/// Full 150-Student Directory screen — mirrors `https://shule-direct-pro.vercel.app/dashboard/students`.
 ///
-/// NO login or "Connect my school" gate lives here. Staff can immediately:
-///  * search & filter learners by Form 1–4, fee status, attendance, or Boarding/Day
-///  * enrol a new learner (with gallery/camera passport photo)
-///  * print the filtered class register as a real PDF
-///  * open any learner's dossier (grades, fees, photo picker, report card & ID PDF)
+/// Uses `ListView.builder` for silky 60fps scrolling over all 150 O-Level
+/// learners (`ALT-2026-001` – `ALT-2026-150`), showing Boarder/Day split,
+/// conduct points, hostel wing / bus route tags, live search & filters,
+/// learner enrolment with passport photo, and one-tap PDF register printing.
 library;
 
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app/session.dart';
@@ -20,6 +18,7 @@ import '../design/widgets.dart';
 import '../format.dart';
 import '../services/device_services.dart';
 import 'learner_detail.dart';
+import 'modules.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({
@@ -41,7 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _statusFilter = 'All';
 
   static const _classFilters = <String>['All', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
-  static const _statusFilters = <String>['All', 'Owes fees', 'Cleared', 'Boarding', 'Absent / Late'];
+  static const _statusFilters = <String>['All', 'Owes fees', 'Cleared', 'Boarder', 'Day', 'Absent / Late'];
 
   @override
   void dispose() {
@@ -56,10 +55,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final att = widget.workspace.attendanceFor(l.id);
       if (_statusFilter == 'Owes fees' && (l.balance ?? 0) <= 0) return false;
       if (_statusFilter == 'Cleared' && (l.balance ?? 0) > 0) return false;
-      if (_statusFilter == 'Boarding' && l.type != 'Boarding') return false;
+      if (_statusFilter == 'Boarder' && l.type != 'Boarder') return false;
+      if (_statusFilter == 'Day' && l.type == 'Boarder') return false;
       if (_statusFilter == 'Absent / Late' && att == 'Present') return false;
       if (q.isNotEmpty) {
-        final hay = '${l.name} ${l.id} ${l.className} ${l.stream} ${l.guardianName}'.toLowerCase();
+        final extra = widget.workspace.extraFor(l.id);
+        final hay =
+            '${l.name} ${l.id} ${l.className} ${l.stream} ${l.guardianName} ${extra.hostel} ${extra.route}'
+                .toLowerCase();
         if (!hay.contains(q)) return false;
       }
       return true;
@@ -73,7 +76,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final emailCtrl = TextEditingController();
     var cls = 'Form 1';
     var stream = 'A';
-    var type = 'Day';
+    var type = 'Boarder';
     Uint8List? photoBytes;
 
     final created = await showModalBottomSheet<bool>(
@@ -201,7 +204,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       DropdownButtonFormField<String>(
                         value: type,
                         decoration: const InputDecoration(labelText: 'Category'),
-                        items: const ['Day', 'Boarding']
+                        items: const ['Boarder', 'Day']
                             .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                             .toList(),
                         onChanged: (v) => setSheetState(() => type = v ?? type),
@@ -282,188 +285,194 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge([widget.workspace, widget.session]),
       builder: (context, _) {
         final all = widget.workspace.learners;
         final visible = _filter(all);
-        final cleared = all.where((l) => (l.balance ?? 0) == 0).length;
 
-        return ListView(
-          padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.dockClearance),
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Learners', style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28)),
-                      Text(
-                        '${SchoolProfile.schoolName} · ${all.length} active',
-                        style: Theme.of(context).textTheme.bodySmall,
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.sm),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Learners',
+                                style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28),
+                              ),
+                              Text(
+                                '${SchoolProfile.schoolName} · ${all.length} O-Level learners',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _openEnrolSheet,
+                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
+                          label: const Text('Enrol'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Space.md),
+                    ShuleGlassCard(
+                      padding: const EdgeInsets.all(Space.md),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: MetricBlock(
+                              value: '${all.length}',
+                              label: 'Enrolled',
+                              caption: '${widget.workspace.boarderCount} boarders',
+                            ),
+                          ),
+                          Expanded(
+                            child: MetricBlock(
+                              value: '${widget.workspace.attendanceRate.toStringAsFixed(1)}%',
+                              label: 'Present',
+                              caption: '${widget.workspace.absentCount} absent',
+                            ),
+                          ),
+                          Expanded(
+                            child: MetricBlock(
+                              value: formatCompactTzs(widget.workspace.totalOutstandingFees),
+                              label: 'Outstanding',
+                              caption: '${widget.workspace.learnersWithBalanceCount} owing',
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                FilledButton.icon(
-                  onPressed: _openEnrolSheet,
-                  icon: const Icon(Icons.person_add_alt_1_rounded, size: 18),
-                  label: const Text('Enrol'),
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.md),
-            // Summary glass strip
-            ShuleGlassCard(
-              padding: const EdgeInsets.all(Space.md),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: MetricBlock(
-                      value: '${all.length}',
-                      label: 'Enrolled',
                     ),
-                  ),
-                  Expanded(
-                    child: MetricBlock(
-                      value: '${widget.workspace.presentCount}',
-                      label: 'Present',
-                    ),
-                  ),
-                  Expanded(
-                    child: MetricBlock(
-                      value: '$cleared',
-                      label: 'Fees cleared',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: Space.md),
-            TextField(
-              controller: _search,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search learner, ID, class or guardian',
-                prefixIcon: const Icon(Icons.search_rounded),
-                suffixIcon: _search.text.isEmpty
-                    ? IconButton(
-                        tooltip: 'Print filtered register PDF',
-                        onPressed: () => _printRegister(visible),
-                        icon: const Icon(Icons.print_rounded),
-                      )
-                    : IconButton(
-                        tooltip: 'Clear search',
-                        onPressed: () {
-                          _search.clear();
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.close_rounded),
+                    const SizedBox(height: Space.md),
+                    TextField(
+                      controller: _search,
+                      onChanged: (_) => setState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Search name, ALT-2026 ID, wing, route or guardian',
+                        prefixIcon: const Icon(Icons.search_rounded),
+                        suffixIcon: _search.text.isEmpty
+                            ? IconButton(
+                                tooltip: 'Print filtered register PDF',
+                                onPressed: () => _printRegister(visible),
+                                icon: const Icon(Icons.print_rounded),
+                              )
+                            : IconButton(
+                                tooltip: 'Clear search',
+                                onPressed: () {
+                                  _search.clear();
+                                  setState(() {});
+                                },
+                                icon: const Icon(Icons.close_rounded),
+                              ),
                       ),
-              ),
-            ),
-            const SizedBox(height: Space.md),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final cls in _classFilters) ...[
-                    ChoicePill(
-                      label: cls,
-                      selected: _selectedClass == cls,
-                      onSelected: () => setState(() => _selectedClass = cls),
                     ),
-                    const SizedBox(width: Space.xs),
+                    const SizedBox(height: Space.md),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final cls in _classFilters) ...[
+                            ChoicePill(
+                              label: cls,
+                              selected: _selectedClass == cls,
+                              onSelected: () => setState(() => _selectedClass = cls),
+                            ),
+                            const SizedBox(width: Space.xs),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.sm),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          for (final filter in _statusFilters) ...[
+                            Padding(
+                              padding: const EdgeInsets.only(right: Space.xs),
+                              child: FilterChip(
+                                label: Text(filter),
+                                selected: _statusFilter == filter,
+                                onSelected: (_) => setState(() => _statusFilter = filter),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Space.md),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SectionHead(
+                            title: _selectedClass == 'All' ? 'Directory' : _selectedClass,
+                            trailing: '${visible.length} shown',
+                          ),
+                        ),
+                        const SizedBox(width: Space.xs),
+                        TextButton.icon(
+                          onPressed: () => _printRegister(visible),
+                          icon: const Icon(Icons.print_outlined, size: 18),
+                          label: const Text('Print PDF'),
+                        ),
+                      ],
+                    ),
                   ],
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: Space.sm),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final filter in _statusFilters) ...[
-                    Padding(
-                      padding: const EdgeInsets.only(right: Space.xs),
-                      child: FilterChip(
-                        label: Text(filter),
-                        selected: _statusFilter == filter,
-                        onSelected: (_) => setState(() => _statusFilter = filter),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: Space.md),
-            Row(
-              children: [
-                Expanded(
-                  child: SectionHead(
-                    title: _selectedClass == 'All' ? 'Directory' : _selectedClass,
-                    trailing: '${visible.length} shown',
-                  ),
-                ),
-                const SizedBox(width: Space.xs),
-                TextButton.icon(
-                  onPressed: () => _printRegister(visible),
-                  icon: const Icon(Icons.print_outlined, size: 18),
-                  label: const Text('Print PDF'),
-                ),
-              ],
-            ),
-            const SizedBox(height: Space.sm),
             if (visible.isEmpty)
-              EmptyState(
-                title: 'No matching learners',
-                body: 'Try clearing the search query or choosing a different class filter.',
-                action: OutlinedButton(
-                  onPressed: () {
-                    _search.clear();
-                    setState(() {
-                      _selectedClass = 'All';
-                      _statusFilter = 'All';
-                    });
-                  },
-                  child: const Text('Reset filters'),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(Space.lg, Space.sm, Space.lg, Space.dockClearance),
+                sliver: SliverToBoxAdapter(
+                  child: EmptyState(
+                    title: 'No matching learners',
+                    body: 'Try clearing the search query or choosing a different class filter.',
+                    action: OutlinedButton(
+                      onPressed: () {
+                        _search.clear();
+                        setState(() {
+                          _selectedClass = 'All';
+                          _statusFilter = 'All';
+                        });
+                      },
+                      child: const Text('Reset filters'),
+                    ),
+                  ),
                 ),
               )
             else
-              for (final learner in visible) ...[
-                _LearnerRowCard(
-                  learner: learner,
-                  photo: widget.workspace.photoFor(learner.id),
-                  attendance: widget.workspace.attendanceFor(learner.id),
-                  division: widget.workspace.resultFor(learner.id).division,
-                  onTap: () => showLearnerDetail(
-                    context: context,
-                    workspace: widget.workspace,
-                    learnerId: learner.id,
-                  ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(Space.lg, 0, Space.lg, Space.dockClearance),
+                sliver: SliverList.separated(
+                  itemCount: visible.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: Space.sm),
+                  itemBuilder: (context, index) {
+                    final learner = visible[index];
+                    return _LearnerRowCard(
+                      learner: learner,
+                      extra: widget.workspace.extraFor(learner.id),
+                      photo: widget.workspace.photoFor(learner.id),
+                      attendance: widget.workspace.attendanceFor(learner.id),
+                      onTap: () => showLearnerDetail(
+                        context: context,
+                        workspace: widget.workspace,
+                        learnerId: learner.id,
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: Space.sm),
-              ],
-            if (!widget.session.acceptsDemoCredential && widget.session.rows.isNotEmpty) ...[
-              const SizedBox(height: Space.md),
-              Notice(
-                tone: NoticeTone.info,
-                title: 'Live Firestore connected',
-                body:
-                    '${widget.session.rows.length} synced records available from ${widget.session.sourceLabel}.',
               ),
-            ],
-            const SizedBox(height: Space.sm),
-            Center(
-              child: Text(
-                'Tap any learner for passport photo, NECTA grades, payments & PDF printing.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens.inkMuted),
-              ),
-            ),
           ],
         );
       },
@@ -474,22 +483,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
 class _LearnerRowCard extends StatelessWidget {
   const _LearnerRowCard({
     required this.learner,
+    required this.extra,
     required this.photo,
     required this.attendance,
-    required this.division,
     required this.onTap,
   });
 
   final Learner learner;
+  final LearnerExtra extra;
   final Uint8List? photo;
   final String attendance;
-  final String division;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     final owes = (learner.balance ?? 0) > 0;
+    final tag = extra.hostel.isNotEmpty ? extra.hostel : extra.route;
     return ShuleGlassCard(
       padding: const EdgeInsets.all(Space.md),
       onTap: onTap,
@@ -523,11 +533,11 @@ class _LearnerRowCard extends StatelessWidget {
                   learner.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${learner.className} ${learner.stream} · ${learner.type} · $division',
+                  '${learner.id} · ${learner.className} · ${tag.isNotEmpty ? tag : learner.type}',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall,
@@ -541,13 +551,24 @@ class _LearnerRowCard extends StatelessWidget {
                       label: attendance,
                       background: attendance == 'Present'
                           ? tokens.success.withValues(alpha: 0.14)
-                          : tokens.warning.withValues(alpha: 0.16),
-                      foreground: attendance == 'Present' ? tokens.success : tokens.warning,
+                          : attendance == 'Absent'
+                              ? tokens.danger.withValues(alpha: 0.14)
+                              : tokens.warning.withValues(alpha: 0.16),
+                      foreground: attendance == 'Present'
+                          ? tokens.success
+                          : attendance == 'Absent'
+                              ? tokens.danger
+                              : tokens.warning,
                     ),
                     StatusPill(
-                      label: owes ? formatTzs(learner.balance) : 'Fees cleared',
+                      label: owes ? formatTzs(learner.balance) : 'Cleared',
                       background: owes ? tokens.blueWash : tokens.success.withValues(alpha: 0.12),
                       foreground: owes ? tokens.blueInk : tokens.success,
+                    ),
+                    StatusPill(
+                      label: '${extra.conductPoints} PTS',
+                      background: tokens.innerSurface,
+                      foreground: tokens.inkMuted,
                     ),
                   ],
                 ),

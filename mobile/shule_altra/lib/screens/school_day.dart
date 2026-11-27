@@ -1,6 +1,6 @@
-/// Daily Operations Hub — brings the Shule Altra website's four operational
-/// workspaces (Attendance, Finance, Academics, Timetable) into one tabbed
-/// mobile view with live state updates and native Android PDF printing.
+/// Daily Operations Hub — mirrors Attendance, Finance (with ClickPesa ledger,
+/// Verify/Dispute controls, Outstanding by Class & Petty Cash Expenses),
+/// Academics (NECTA CSEE), and Timetable from `shule-direct-pro.vercel.app`.
 library;
 
 import 'package:flutter/material.dart';
@@ -15,6 +15,7 @@ import '../design/widgets.dart';
 import '../format.dart';
 import '../services/device_services.dart';
 import 'learner_detail.dart';
+import 'modules.dart';
 
 enum SchoolDayTab { attendance, finance, academics, timetable }
 
@@ -38,6 +39,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   late SchoolDayTab _tab;
   String _selectedClass = 'Form 4';
   String _selectedDay = 'Monday';
+  String _ledgerFilter = 'All';
 
   @override
   void initState() {
@@ -71,7 +73,6 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: Space.md),
-            // 4-way frosted pill switcher matching website modules
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -105,12 +106,15 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
     );
   }
 
-  Widget _classBar() {
+  Widget _classBar({bool includeAll = false}) {
+    final classes = includeAll
+        ? const ['All', 'Form 4', 'Form 3', 'Form 2', 'Form 1']
+        : const ['Form 4', 'Form 3', 'Form 2', 'Form 1'];
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          for (final cls in const ['Form 1', 'Form 2', 'Form 3', 'Form 4']) ...[
+          for (final cls in classes) ...[
             Padding(
               padding: const EdgeInsets.only(right: Space.xs),
               child: FilterChip(
@@ -126,8 +130,10 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   }
 
   Widget _buildAttendance(BuildContext context, ShuleTokens tokens) {
-    final classLearners =
-        widget.workspace.learners.where((l) => l.className == _selectedClass).toList();
+    final activeClass = _selectedClass;
+    final classLearners = activeClass == 'All'
+        ? widget.workspace.learners
+        : widget.workspace.learners.where((l) => l.className == activeClass).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -140,8 +146,8 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                 children: [
                   Expanded(
                     child: MetricBlock(
-                      value: '${widget.workspace.attendanceRate.toStringAsFixed(0)}%',
-                      label: 'Today\'s rate',
+                      value: '${widget.workspace.attendanceRate.toStringAsFixed(1)}%',
+                      label: 'Presence',
                     ),
                   ),
                   Expanded(
@@ -152,8 +158,9 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                   ),
                   Expanded(
                     child: MetricBlock(
-                      value: '${widget.workspace.absentCount + widget.workspace.lateCount}',
-                      label: 'Absent / Late',
+                      value: '${widget.workspace.absentCount}',
+                      label: 'Absent',
+                      caption: '${widget.workspace.lateCount} late',
                     ),
                   ),
                 ],
@@ -165,19 +172,19 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                 children: [
                   FilledButton.icon(
                     onPressed: () {
-                      widget.workspace.markClassPresent(_selectedClass);
+                      widget.workspace.markClassPresent(activeClass);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Marked all $_selectedClass learners present.')),
+                        SnackBar(content: Text('Marked all $activeClass learners present.')),
                       );
                     },
                     icon: const Icon(Icons.done_all_rounded, size: 18),
-                    label: Text('Mark $_selectedClass present'),
+                    label: Text('Mark $activeClass present'),
                   ),
                   OutlinedButton.icon(
                     onPressed: () => ShulePdfService.printDocument(
-                      name: 'Attendance_${_selectedClass.replaceAll(' ', '_')}.pdf',
+                      name: 'Attendance_${activeClass.replaceAll(' ', '_')}.pdf',
                       build: () => ShulePdfService.buildClassRegisterPdf(
-                        title: '$_selectedClass Attendance Sheet',
+                        title: '$activeClass Attendance Sheet',
                         learners: classLearners,
                         attendanceOf: widget.workspace.attendanceFor,
                       ),
@@ -191,9 +198,9 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
           ),
         ),
         const SizedBox(height: Space.md),
-        _classBar(),
+        _classBar(includeAll: true),
         const SizedBox(height: Space.md),
-        SectionHead(title: '$_selectedClass Roll Call', trailing: '${classLearners.length} learners'),
+        SectionHead(title: '$activeClass Roll Call', trailing: '${classLearners.length} learners'),
         const SizedBox(height: Space.sm),
         for (final learner in classLearners) ...[
           _AttendanceTile(
@@ -213,6 +220,11 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
         .toList()
       ..sort((a, b) => (b.balance ?? 0).compareTo(a.balance ?? 0));
 
+    final filteredTx = _ledgerFilter == 'All'
+        ? widget.workspace.transactions
+        : widget.workspace.transactions.where((t) => t.status == _ledgerFilter).toList();
+    final byClass = widget.workspace.outstandingByClass;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -225,21 +237,34 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                 children: [
                   Expanded(
                     child: MetricBlock(
-                      value: '${widget.workspace.feeCollectionRate.toStringAsFixed(0)}%',
-                      label: 'Collected',
+                      value: '${widget.workspace.feeCollectionRate.toStringAsFixed(1)}%',
+                      label: 'Collection rate',
+                      caption: formatCompactTzs(widget.workspace.totalCollectedFees),
                     ),
                   ),
                   Expanded(
                     child: MetricBlock(
-                      value: '${defaulters.length}',
-                      label: 'With balance',
+                      value: formatCompactTzs(widget.workspace.totalOutstandingFees),
+                      label: 'Outstanding',
+                      caption: '${defaulters.length} learners',
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: Space.sm),
-              FactRow(label: 'Collected', value: formatTzs(widget.workspace.totalCollectedFees)),
-              FactRow(label: 'Outstanding', value: formatTzs(widget.workspace.totalOutstandingFees)),
+              FactRow(
+                label: 'Verified receipts',
+                value: '${widget.workspace.verifiedReceiptCount}',
+              ),
+              FactRow(
+                label: 'Awaiting confirmation',
+                value:
+                    '${widget.workspace.pendingReceiptCount} (${formatTzs(widget.workspace.pendingPaymentsAmount)})',
+              ),
+              FactRow(
+                label: 'Audit disputes',
+                value: '${widget.workspace.disputedReceiptCount}',
+              ),
               const SizedBox(height: Space.sm),
               OutlinedButton.icon(
                 onPressed: () => ShulePdfService.printDocument(
@@ -257,7 +282,18 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
           ),
         ),
         const SizedBox(height: Space.lg),
-        SectionHead(title: 'Pending balances', trailing: '${defaulters.length} learners'),
+        const SectionHead(title: 'Outstanding by class', trailing: 'Form 1–4'),
+        const SizedBox(height: Space.sm),
+        ShuleGlassCard(
+          child: Column(
+            children: [
+              for (final entry in byClass.entries)
+                FactRow(label: entry.key, value: formatTzs(entry.value)),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.lg),
+        SectionHead(title: 'Global balances', trailing: 'Top ${defaulters.take(8).length} of ${defaulters.length}'),
         const SizedBox(height: Space.sm),
         for (final learner in defaulters.take(8)) ...[
           ShuleGlassCard(
@@ -273,14 +309,22 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(learner.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15)),
                       Text(
-                        '${learner.className} ${learner.stream} · ${learner.guardianName}',
+                        learner.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
+                      ),
+                      Text(
+                        '${learner.id} · ${learner.className} · Paid ${formatTzs(widget.workspace.paidFor(learner))}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: Space.xs),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -300,32 +344,132 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
           const SizedBox(height: Space.sm),
         ],
         const SizedBox(height: Space.md),
-        SectionHead(title: 'Recent payments', trailing: '${widget.workspace.transactions.length} receipts'),
+        SectionHead(
+          title: 'Payment ledger',
+          trailing: '${filteredTx.length} of ${widget.workspace.transactions.length}',
+        ),
+        const SizedBox(height: Space.xs),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final status in const ['All', 'Verified', 'Pending', 'Disputed']) ...[
+                ChoicePill(
+                  label: status,
+                  selected: _ledgerFilter == status,
+                  onSelected: () => setState(() => _ledgerFilter = status),
+                ),
+                const SizedBox(width: Space.xs),
+              ],
+            ],
+          ),
+        ),
         const SizedBox(height: Space.sm),
-        for (final tx in widget.workspace.transactions.take(6)) ...[
+        for (final tx in filteredTx.take(15)) ...[
+          ShuleGlassCard(
+            padding: const EdgeInsets.all(Space.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const ShuleGlyph(icon: Icons.receipt_long_rounded, size: 38),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tx.studentName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            '${tx.controlNumber} · ${tx.paymentMethod} · ${tx.recordedBy}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      formatTzs(tx.amount),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: tx.status == 'Disputed' ? tokens.danger : tokens.success,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: Space.xs),
+                Wrap(
+                  spacing: Space.xs,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    StatusPill(
+                      label: tx.status,
+                      background: tx.status == 'Verified'
+                          ? tokens.success.withValues(alpha: 0.14)
+                          : tx.status == 'Disputed'
+                              ? tokens.danger.withValues(alpha: 0.14)
+                              : tokens.warning.withValues(alpha: 0.16),
+                      foreground: tx.status == 'Verified'
+                          ? tokens.success
+                          : tx.status == 'Disputed'
+                              ? tokens.danger
+                              : tokens.warning,
+                    ),
+                    Text(tx.dateLabel, style: Theme.of(context).textTheme.labelSmall),
+                    if (tx.status != 'Verified')
+                      TextButton(
+                        onPressed: () => widget.workspace.setTransactionStatus(tx.id, 'Verified'),
+                        child: const Text('Verify'),
+                      ),
+                    if (tx.status != 'Disputed')
+                      TextButton(
+                        onPressed: () => widget.workspace.setTransactionStatus(tx.id, 'Disputed'),
+                        child: const Text('Dispute'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: Space.sm),
+        ],
+        const SizedBox(height: Space.lg),
+        SectionHead(
+          title: 'Petty cash & expenses',
+          trailing: '${widget.workspace.pettyCash.length} entries',
+        ),
+        const SizedBox(height: Space.sm),
+        for (final exp in widget.workspace.pettyCash.take(6)) ...[
           ShuleGlassCard(
             padding: const EdgeInsets.all(Space.md),
             child: Row(
               children: [
-                const ShuleGlyph(icon: Icons.receipt_long_rounded, size: 40),
+                const ShuleGlyph(icon: Icons.payments_outlined, size: 38),
                 const SizedBox(width: Space.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(tx.studentName, style: Theme.of(context).textTheme.titleSmall),
+                      Text(exp.description, style: Theme.of(context).textTheme.titleSmall),
                       Text(
-                        '${tx.paymentMethod} · Ref ${tx.controlNumber} · ${tx.dateLabel}',
+                        '${exp.department} · ${exp.category} · ${exp.status} · ${exp.dateLabel}',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
                 ),
                 Text(
-                  formatTzs(tx.amount),
+                  formatTzs(exp.amount),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: tokens.success,
-                        fontWeight: FontWeight.w800,
+                        color: tokens.blueInk,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ],
@@ -338,8 +482,9 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   }
 
   Widget _buildAcademics(BuildContext context, ShuleTokens tokens) {
+    final activeClass = _selectedClass == 'All' ? 'Form 4' : _selectedClass;
     final classLearners = widget.workspace.learners
-        .where((l) => l.className == _selectedClass)
+        .where((l) => l.className == activeClass)
         .toList()
       ..sort(
         (a, b) => widget.workspace
@@ -368,7 +513,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
               Expanded(
                 child: MetricBlock(
                   value: '${classAvg.toStringAsFixed(1)}%',
-                  label: '$_selectedClass avg',
+                  label: '$activeClass avg',
                 ),
               ),
               Expanded(
@@ -387,7 +532,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
           ),
         ),
         const SizedBox(height: Space.md),
-        SectionHead(title: '$_selectedClass NECTA Ranking', trailing: 'Tap for report card'),
+        SectionHead(title: '$activeClass NECTA Ranking', trailing: 'Tap for report card'),
         const SizedBox(height: Space.sm),
         for (var i = 0; i < classLearners.length; i++) ...[
           Builder(
@@ -424,7 +569,12 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(learner.name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15)),
+                          Text(
+                            learner.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
+                          ),
                           Text(
                             '${res.division} · ${res.points} pts · Avg ${res.average.toStringAsFixed(1)}%',
                             style: Theme.of(context).textTheme.bodySmall,
@@ -456,6 +606,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
   }
 
   Widget _buildTimetable(BuildContext context, ShuleTokens tokens) {
+    final activeClass = _selectedClass == 'All' ? 'Form 4' : _selectedClass;
     final lessons = sampleTimetable[_selectedDay] ?? const [];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -466,9 +617,9 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
             IconButton(
               tooltip: 'Print class timetable PDF',
               onPressed: () => ShulePdfService.printDocument(
-                name: 'Timetable_${_selectedClass.replaceAll(' ', '_')}.pdf',
+                name: 'Timetable_${activeClass.replaceAll(' ', '_')}.pdf',
                 build: () => ShulePdfService.buildTimetablePdf(
-                  className: _selectedClass,
+                  className: activeClass,
                   stream: 'A',
                 ),
               ),
@@ -493,7 +644,7 @@ class _SchoolDayScreenState extends State<SchoolDayScreen> {
           ),
         ),
         const SizedBox(height: Space.md),
-        SectionHead(title: '$_selectedClass · $_selectedDay', trailing: '${lessons.length} periods'),
+        SectionHead(title: '$activeClass · $_selectedDay', trailing: '${lessons.length} periods'),
         const SizedBox(height: Space.sm),
         for (final lesson in lessons) ...[
           ShuleGlassCard(
@@ -561,10 +712,10 @@ class _AttendanceTile extends StatelessWidget {
                   learner.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 14.5),
                 ),
                 Text(
-                  '${learner.id} · Stream ${learner.stream}',
+                  '${learner.id} · ${learner.className} · ${learner.type}',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

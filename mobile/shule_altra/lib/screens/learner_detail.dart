@@ -1,11 +1,10 @@
 /// Full Learner Profile modal sheet — parity with the Shule Altra website's
 /// student dossier: passport photo (Gallery/Camera), attendance status,
-/// guardian info, fee account & payment recording, NECTA CSEE grades, and
-/// one-tap native Android PDF printing (Report Card, Fee Statement, ID Card).
+/// conduct points, hostel wing / bus route, guardian info, fee account &
+/// ClickPesa payment recording, NECTA CSEE grades, and native Android PDF printing.
 library;
 
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../data/demo_school_store.dart';
@@ -123,7 +122,7 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
     final amountCtrl = TextEditingController(
       text: ((learner.balance ?? 0) > 0 ? (learner.balance ?? 0).round() : 100000).toString(),
     );
-    var method = 'M-Pesa';
+    var method = 'ClickPesa';
     var feeType = 'Tuition';
 
     final confirmed = await showDialog<bool>(
@@ -146,7 +145,7 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
               DropdownButtonFormField<String>(
                 value: method,
                 decoration: const InputDecoration(labelText: 'Payment method'),
-                items: const ['M-Pesa', 'NMB Bank', 'CRDB Bank', 'Tigo Pesa', 'Cash']
+                items: const ['ClickPesa', 'M-Pesa', 'CRDB Bank', 'NMB Bank', 'Airtel Money', 'Cash']
                     .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                     .toList(),
                 onChanged: (v) => setDialogState(() => method = v ?? method),
@@ -197,6 +196,7 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
           (l) => l.id == widget.learnerId,
           orElse: () => widget.workspace.learners.first,
         );
+        final extra = widget.workspace.extraFor(learner.id);
         final photo = widget.workspace.photoFor(learner.id);
         final attendance = widget.workspace.attendanceFor(learner.id);
         final scores = widget.workspace.scoresFor(learner.id);
@@ -250,7 +250,7 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              '${learner.id} · ${learner.className} ${learner.stream} · ${learner.type}',
+                              '${learner.id} · ${learner.className} · ${learner.type} · ${extra.conductPoints} PTS',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 6),
@@ -267,9 +267,14 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
                                   label: attendance,
                                   background: attendance == 'Present'
                                       ? tokens.success.withValues(alpha: 0.14)
-                                      : tokens.warning.withValues(alpha: 0.16),
-                                  foreground:
-                                      attendance == 'Present' ? tokens.success : tokens.warning,
+                                      : attendance == 'Absent'
+                                          ? tokens.danger.withValues(alpha: 0.14)
+                                          : tokens.warning.withValues(alpha: 0.16),
+                                  foreground: attendance == 'Present'
+                                      ? tokens.success
+                                      : attendance == 'Absent'
+                                          ? tokens.danger
+                                          : tokens.warning,
                                 ),
                               ],
                             ),
@@ -279,7 +284,6 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
                     ],
                   ),
                   const SizedBox(height: Space.md),
-                  // Passport Photo buttons (Gallery & Camera permissions)
                   Wrap(
                     spacing: Space.sm,
                     runSpacing: Space.sm,
@@ -368,6 +372,8 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
                         ),
                         const SizedBox(height: Space.xs),
                         FactRow(label: 'Annual fee', value: formatTzs(annual)),
+                        if (extra.arrears > 0)
+                          FactRow(label: 'Prior arrears', value: formatTzs(extra.arrears)),
                         FactRow(label: 'Paid to date', value: formatTzs(paid)),
                         FactRow(
                           label: 'Balance due',
@@ -381,11 +387,15 @@ class _LearnerDetailSheetState extends State<_LearnerDetailSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Guardian contact', style: Theme.of(context).textTheme.titleMedium),
+                        Text('Guardian & campus', style: Theme.of(context).textTheme.titleMedium),
                         const SizedBox(height: Space.xs),
                         FactRow(label: 'Guardian', value: learner.guardianName),
                         FactRow(label: 'Phone', value: learner.guardianPhone),
                         FactRow(label: 'Email', value: learner.guardianEmail),
+                        if (extra.hostel.isNotEmpty)
+                          FactRow(label: 'Hostel wing', value: extra.hostel),
+                        if (extra.route.isNotEmpty)
+                          FactRow(label: 'Bus route', value: extra.route),
                       ],
                     ),
                   ),

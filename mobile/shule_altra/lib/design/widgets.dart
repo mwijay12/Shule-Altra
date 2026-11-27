@@ -794,12 +794,17 @@ class MetricBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: tokens.blueInk,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            value,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: tokens.blueInk,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+          ),
         ),
         const SizedBox(height: 2),
         Text(

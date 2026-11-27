@@ -1,5 +1,6 @@
 /// Settings, Appearance (Auto / Light / Dark), Device Permissions
-/// (Notifications, Gallery/Photos, Camera, Printing), Role Switcher & Account.
+/// (Notifications, Gallery/Photos, Camera, Printing), Role Switcher &
+/// full website module launchers.
 library;
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import '../design/tokens.dart';
 import '../design/widgets.dart';
 import '../services/device_services.dart';
 import 'campus.dart';
+import 'modules.dart';
 import 'reports.dart';
 
 class MoreScreen extends StatefulWidget {
@@ -86,9 +88,12 @@ class _MoreScreenState extends State<MoreScreen> {
     setState(() => _deviceFeedback = 'Camera permission: $status');
   }
 
+  void _push(Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
     return ListenableBuilder(
       listenable: Listenable.merge([widget.workspace, widget.themeController, widget.session]),
       builder: (context, _) {
@@ -103,11 +108,10 @@ class _MoreScreenState extends State<MoreScreen> {
               style: Theme.of(context).textTheme.displayMedium?.copyWith(fontSize: 28),
             ),
             Text(
-              '${SchoolProfile.schoolName} · Single-school mobile app',
+              '${SchoolProfile.schoolName} · Full website parity',
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: Space.lg),
-            // Signed-in staff card + quick role switcher
             ShuleGlassCard(
               glowCorner: true,
               child: Column(
@@ -230,86 +234,115 @@ class _MoreScreenState extends State<MoreScreen> {
               status: _perms.camera,
               onAllow: _requestCameraPerm,
             ),
-            const SizedBox(height: Space.sm),
-            ShuleGlassCard(
-              padding: const EdgeInsets.all(Space.md),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ReportsScreen(workspace: widget.workspace),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const ShuleGlyph(icon: Icons.print_rounded, size: 42),
-                  const SizedBox(width: Space.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Printing & Official PDFs', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15)),
-                        Text(
-                          'Report cards, fee statements, ID cards & class registers',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
-                ],
-              ),
-            ),
             const SizedBox(height: Space.xl),
-            const SectionHead(title: 'School directory & tools'),
+            const SectionHead(title: 'All school modules', trailing: 'Website parity'),
             const SizedBox(height: Space.sm),
-            ShuleGlassCard(
-              padding: const EdgeInsets.all(Space.md),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
-              ),
-              child: Row(
-                children: [
-                  const ShuleGlyph(icon: Icons.domain_rounded, size: 40),
-                  const SizedBox(width: Space.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Staff, Hostels & Transport', style: Theme.of(context).textTheme.titleSmall),
-                        Text('Contacts, boarding wings & bus routes', style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
-                ],
-              ),
+            _ModuleRow(
+              icon: Icons.analytics_outlined,
+              title: 'Analytics & Forecasts',
+              subtitle: 'Outstanding by class, boarders/day split & NECTA divisions',
+              onTap: () => _push(AnalyticsScreen(workspace: widget.workspace)),
             ),
             const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.campaign_outlined,
+              title: 'Communications',
+              subtitle: 'Guardian & staff notices with live notifications',
+              onTap: () => _push(CommunicationsScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.restaurant_rounded,
+              title: 'Canteen Cards & Baskets',
+              subtitle: 'POS checkout & recent canteen sales',
+              onTap: () => _push(CanteenScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.inventory_2_outlined,
+              title: 'Inventory & Assets',
+              subtitle: '${widget.workspace.assets.length} tracked institutional assets',
+              onTap: () => _push(InventoryScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.domain_rounded,
+              title: 'Staff, Hostels & Transport',
+              subtitle: '16 staff · 5 boarding wings · 5 school bus routes',
+              onTap: () => _push(CampusScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.auto_awesome_rounded,
+              title: 'Shule Guide',
+              subtitle: 'Ask live questions about balances, attendance & hostels',
+              onTap: () => _push(ShuleGuideScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.print_rounded,
+              title: 'Printing & Official PDFs',
+              subtitle: 'Report cards, fee statements, ID cards & class registers',
+              onTap: () => _push(ReportsScreen(workspace: widget.workspace)),
+            ),
+            const SizedBox(height: Space.sm),
+            _ModuleRow(
+              icon: Icons.history_rounded,
+              title: 'Audit Trail',
+              subtitle: '${widget.workspace.auditTrail.length} logged institutional actions',
+              onTap: () => _push(AuditTrailScreen(workspace: widget.workspace)),
+            ),
             if (widget.onShowOnboarding != null) ...[
               const SizedBox(height: Space.sm),
-              ShuleGlassCard(
-                padding: const EdgeInsets.all(Space.md),
-                onTap: widget.onShowOnboarding,
-                child: Row(
-                  children: [
-                    const ShuleGlyph(icon: Icons.slideshow_rounded, size: 40),
-                    const SizedBox(width: Space.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Replay welcome tour', style: Theme.of(context).textTheme.titleSmall),
-                          Text('View the Shule Altra onboarding screens again', style: Theme.of(context).textTheme.bodySmall),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
-                  ],
-                ),
+              _ModuleRow(
+                icon: Icons.slideshow_rounded,
+                title: 'Replay welcome tour',
+                subtitle: 'View the Shule Altra onboarding screens again',
+                onTap: widget.onShowOnboarding!,
               ),
             ],
           ],
         );
       },
+    );
+  }
+}
+
+class _ModuleRow extends StatelessWidget {
+  const _ModuleRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = ShuleTokens.of(context);
+    return ShuleGlassCard(
+      padding: const EdgeInsets.all(Space.md),
+      onTap: onTap,
+      child: Row(
+        children: [
+          ShuleGlyph(icon: icon, size: 40),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
+                Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+        ],
+      ),
     );
   }
 }

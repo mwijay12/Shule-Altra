@@ -1,6 +1,6 @@
-/// Command Deck home screen — mirrors the Shule Altra web dashboard for
-/// Mwalimu Nyerere Secondary School with live KPIs, notifications bell,
-/// full website module navigation, and announcements.
+/// Command Deck home screen — mirrors `https://shule-direct-pro.vercel.app/dashboard`
+/// with exact 150-learner KPIs, disputed ledger alert, top-6 Follow-Up Queue,
+/// latest ClickPesa/Accounts office ledger stream, and all 17 website modules.
 library;
 
 import 'package:flutter/material.dart';
@@ -11,8 +11,11 @@ import '../design/doodles.dart';
 import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
+import '../format.dart';
 import '../services/device_services.dart';
 import 'campus.dart';
+import 'learner_detail.dart';
+import 'modules.dart';
 import 'reports.dart';
 import 'school_day.dart';
 
@@ -48,98 +51,104 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.xl),
         child: ListenableBuilder(
           listenable: workspace,
-          builder: (ctx, _) => Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Center(
-                child: Container(
-                  width: 42,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: tokens.border,
-                    borderRadius: BorderRadius.circular(Corners.pill),
+          builder: (ctx, _) => SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4.5,
+                    decoration: BoxDecoration(
+                      color: tokens.border,
+                      borderRadius: BorderRadius.circular(Corners.pill),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: Space.md),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text('School notifications', style: Theme.of(ctx).textTheme.headlineSmall),
-                  ),
-                  TextButton(
-                    onPressed: workspace.markAllAnnouncementsRead,
-                    child: const Text('Mark read'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Space.sm),
-              for (final item in workspace.announcements.take(5)) ...[
-                ShuleGlassCard(
-                  padding: const EdgeInsets.all(Space.md),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.title,
-                              style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                            ),
-                          ),
-                          if (item.unread)
-                            StatusPill(
-                              label: 'NEW',
-                              background: tokens.blueWash,
-                              foreground: tokens.blueInk,
-                              uppercase: true,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(item.body, style: Theme.of(ctx).textTheme.bodySmall),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${item.audience} · ${item.timeLabel}',
-                        style: Theme.of(ctx).textTheme.labelSmall,
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: Space.md),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('School notifications', style: Theme.of(ctx).textTheme.headlineSmall),
+                    ),
+                    TextButton(
+                      onPressed: workspace.markAllAnnouncementsRead,
+                      child: const Text('Mark read'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: Space.sm),
-              ],
-              const SizedBox(height: Space.sm),
-              GradientButton(
-                label: 'Send test phone notification',
-                icon: Icons.notifications_active_rounded,
-                onPressed: () async {
-                  await ShuleMediaService.requestNotifications();
-                  final sent = await ShuleNotificationService.sendAlert(
-                    title: 'Shule Altra · ${SchoolProfile.schoolName}',
-                    body:
-                        'Attendance is at ${workspace.attendanceRate.toStringAsFixed(0)}% today with ${workspace.learners.length} active learners.',
-                  );
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        sent
-                            ? 'Sent Android notification.'
-                            : 'Notification triggered (native alerts appear on Android devices).',
-                      ),
+                for (final item in workspace.announcements.take(5)) ...[
+                  ShuleGlassCard(
+                    padding: const EdgeInsets.all(Space.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item.title,
+                                style: Theme.of(ctx).textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                              ),
+                            ),
+                            if (item.unread)
+                              StatusPill(
+                                label: 'NEW',
+                                background: tokens.blueWash,
+                                foreground: tokens.blueInk,
+                                uppercase: true,
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(item.body, style: Theme.of(ctx).textTheme.bodySmall),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${item.audience} · ${item.timeLabel}',
+                          style: Theme.of(ctx).textTheme.labelSmall,
+                        ),
+                      ],
                     ),
-                  );
-                },
-              ),
-            ],
+                  ),
+                  const SizedBox(height: Space.sm),
+                ],
+                const SizedBox(height: Space.sm),
+                GradientButton(
+                  label: 'Send test phone notification',
+                  icon: Icons.notifications_active_rounded,
+                  onPressed: () async {
+                    await ShuleMediaService.requestNotifications();
+                    final sent = await ShuleNotificationService.sendAlert(
+                      title: 'Shule Altra · ${SchoolProfile.schoolName}',
+                      body:
+                          'Register presence ${workspace.attendanceRate.toStringAsFixed(1)}% · ${workspace.learners.length} learners · ${formatCompactTzs(workspace.totalOutstandingFees)} outstanding.',
+                    );
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          sent
+                              ? 'Sent Android notification.'
+                              : 'Notification triggered (native alerts appear on Android devices).',
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  void _push(BuildContext context, Widget screen) {
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
   }
 
   @override
@@ -150,6 +159,8 @@ class HomeScreen extends StatelessWidget {
       builder: (context, _) {
         final staff = workspace.activeStaff;
         final unread = workspace.unreadAnnouncements;
+        final followUp = workspace.topFollowUpQueue;
+        final disputed = workspace.disputedReceiptCount;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.lg, Space.dockClearance),
@@ -220,15 +231,38 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: Space.lg),
             BrandPanel(
-              eyebrow: '${SchoolProfile.termLabel.toUpperCase()} · ${staff.title.toUpperCase()}',
-              title: SchoolProfile.schoolName,
+              eyebrow: 'COMMAND DECK · ${SchoolProfile.termLabel.toUpperCase()}',
+              title: 'Habari za asubuhi, ${staff.label}',
               body:
-                  'Welcome back, ${staff.fullName}. ${workspace.learners.length} learners enrolled, ${workspace.attendanceRate.toStringAsFixed(0)}% present today and ${workspace.feeCollectionRate.toStringAsFixed(0)}% of Term 2 fees collected.',
+                  '${SchoolProfile.schoolName} · ${workspace.learners.length} learners (${workspace.boarderCount} boarders, ${workspace.dayScholarCount} day), ${workspace.attendanceRate.toStringAsFixed(1)}% register presence, ${formatCompactTzs(workspace.totalOutstandingFees)} outstanding.',
               actionLabel: 'Open Learners',
               onAction: onOpenLearners,
             ),
+            if (disputed > 0) ...[
+              const SizedBox(height: Space.md),
+              ShuleGlassCard(
+                padding: const EdgeInsets.all(Space.md),
+                onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
+                child: Row(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: tokens.warning, size: 22),
+                    const SizedBox(width: Space.sm),
+                    Expanded(
+                      child: Text(
+                        '$disputed disputed ledger ${disputed == 1 ? 'entry' : 'entries'} awaiting finance review',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              color: tokens.warning,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                    Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: Space.lg),
-            // Live KPI trio matching web Command Deck
+            // Exact 4 Command Deck KPIs matching shule-direct-pro.vercel.app
             Row(
               children: [
                 Expanded(
@@ -237,8 +271,8 @@ class HomeScreen extends StatelessWidget {
                     onTap: onOpenLearners,
                     child: MetricBlock(
                       value: '${workspace.learners.length}',
-                      label: 'Learners',
-                      caption: 'Form 1–4',
+                      label: 'Enrolled',
+                      caption: '${workspace.boarderCount} boarders · ${workspace.dayScholarCount} day',
                     ),
                   ),
                 ),
@@ -248,9 +282,25 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(Space.md),
                     onTap: () => onOpenSchoolDay(SchoolDayTab.attendance),
                     child: MetricBlock(
-                      value: '${workspace.attendanceRate.toStringAsFixed(0)}%',
-                      label: 'Present',
-                      caption: '${workspace.presentCount} today',
+                      value: '${workspace.attendanceRate.toStringAsFixed(1)}%',
+                      label: 'Presence',
+                      caption: '${workspace.absentCount} absent today',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.sm),
+            Row(
+              children: [
+                Expanded(
+                  child: ShuleGlassCard(
+                    padding: const EdgeInsets.all(Space.md),
+                    onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
+                    child: MetricBlock(
+                      value: formatCompactTzs(workspace.totalOutstandingFees),
+                      label: 'Outstanding',
+                      caption: '${workspace.learnersWithBalanceCount} learners',
                     ),
                   ),
                 ),
@@ -260,16 +310,118 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(Space.md),
                     onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
                     child: MetricBlock(
-                      value: '${workspace.feeCollectionRate.toStringAsFixed(0)}%',
-                      label: 'Fees paid',
-                      caption: 'Term 2',
+                      value: '${workspace.feeCollectionRate.toStringAsFixed(1)}%',
+                      label: 'Fee Collection',
+                      caption: '${workspace.verifiedReceiptCount} verified receipts',
                     ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: Space.xl),
-            const SectionHead(title: 'School workspace', trailing: 'Website parity'),
+            // Exact Follow-Up Queue matching live website top 6 balances
+            SectionHead(
+              title: 'Follow-up queue',
+              trailing: 'Top ${followUp.length} balances',
+            ),
+            const SizedBox(height: Space.sm),
+            for (final learner in followUp.take(6)) ...[
+              ShuleGlassCard(
+                padding: const EdgeInsets.all(Space.md),
+                onTap: () => showLearnerDetail(
+                  context: context,
+                  workspace: workspace,
+                  learnerId: learner.id,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            learner.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${learner.id} · ${learner.className} · Paid ${formatTzs(workspace.paidFor(learner))}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: Space.xs),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          formatTzs(learner.balance),
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                color: tokens.blueInk,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        Text('Fee statement', style: Theme.of(context).textTheme.labelSmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Space.xs),
+            ],
+            const SizedBox(height: Space.lg),
+            // Latest Ledger Stream matching website CP-2026-* receipts
+            SectionHead(
+              title: 'Latest ledger stream',
+              trailing: '${workspace.transactions.length} receipts',
+            ),
+            const SizedBox(height: Space.sm),
+            for (final tx in workspace.transactions.take(4)) ...[
+              ShuleGlassCard(
+                padding: const EdgeInsets.all(Space.md),
+                onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
+                child: Row(
+                  children: [
+                    const ShuleGlyph(icon: Icons.receipt_long_rounded, size: 38),
+                    const SizedBox(width: Space.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            tx.studentName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          Text(
+                            '${tx.controlNumber} · ${tx.paymentMethod} · ${tx.status}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Text(
+                      formatTzs(tx.amount),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: tx.status == 'Disputed' ? tokens.danger : tokens.success,
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Space.xs),
+            ],
+            const SizedBox(height: Space.xl),
+            const SectionHead(title: 'All school modules', trailing: 'Full website parity'),
             const SizedBox(height: Space.md),
             LayoutBuilder(
               builder: (context, constraints) {
@@ -280,48 +432,86 @@ class HomeScreen extends StatelessWidget {
                   FeatureTile(
                     doodle: Doodle.building,
                     icon: Icons.groups_rounded,
-                    title: 'Learners',
-                    caption: 'Directory, enrolment, photos & IDs',
+                    title: 'Students',
+                    caption: '${workspace.learners.length} O-Level · Form 1–4',
                     onTap: onOpenLearners,
                   ),
                   FeatureTile(
                     doodle: Doodle.book,
                     icon: Icons.fact_check_rounded,
                     title: 'Attendance',
-                    caption: 'Form 1–4 daily roll call',
+                    caption: '${workspace.attendanceRate.toStringAsFixed(1)}% daily roll call',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.attendance),
                   ),
                   FeatureTile(
                     doodle: Doodle.receipt,
                     icon: Icons.account_balance_wallet_rounded,
                     title: 'Finance',
-                    caption: 'TZS payments & defaulters',
+                    caption: 'Ledger, ClickPesa & expenses',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.finance),
                   ),
                   FeatureTile(
                     doodle: Doodle.reportCard,
                     icon: Icons.workspace_premium_rounded,
                     title: 'Academics',
-                    caption: 'NECTA grades & divisions',
+                    caption: 'NECTA scores & divisions',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.academics),
                   ),
                   FeatureTile(
                     doodle: Doodle.sparkles,
                     icon: Icons.calendar_today_rounded,
                     title: 'Timetable',
-                    caption: 'Weekly Form 1–4 schedule',
+                    caption: 'Weekly Form 1–4 lessons',
                     onTap: () => onOpenSchoolDay(SchoolDayTab.timetable),
                   ),
                   FeatureTile(
                     doodle: Doodle.reportCard,
+                    icon: Icons.analytics_outlined,
+                    title: 'Analytics',
+                    caption: 'By-class balances & trends',
+                    onTap: () => _push(context, AnalyticsScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.sparkles,
+                    icon: Icons.campaign_outlined,
+                    title: 'Communications',
+                    caption: 'Guardian & staff notices',
+                    onTap: () => _push(context, CommunicationsScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.receipt,
+                    icon: Icons.restaurant_rounded,
+                    title: 'Canteen POS',
+                    caption: 'Student cards & baskets',
+                    onTap: () => _push(context, CanteenScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.building,
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Inventory',
+                    caption: '${workspace.assets.length} school assets & stock',
+                    onTap: () => _push(context, InventoryScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.building,
+                    icon: Icons.domain_rounded,
+                    title: 'Hostels & Fleet',
+                    caption: '5 wings · 5 bus routes · 16 staff',
+                    onTap: () => _push(context, CampusScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.sparkles,
+                    icon: Icons.auto_awesome_rounded,
+                    title: 'Shule Guide',
+                    caption: 'Ask live school register',
+                    onTap: () => _push(context, ShuleGuideScreen(workspace: workspace)),
+                  ),
+                  FeatureTile(
+                    doodle: Doodle.reportCard,
                     icon: Icons.print_rounded,
-                    title: 'Reports & Print',
-                    caption: 'Official PDF report cards & registers',
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => ReportsScreen(workspace: workspace),
-                      ),
-                    ),
+                    title: 'Reports & Audit',
+                    caption: 'Official PDFs & audit trail',
+                    onTap: () => _push(context, ReportsScreen(workspace: workspace)),
                   ),
                 ];
 
@@ -337,20 +527,18 @@ class HomeScreen extends StatelessWidget {
             const SizedBox(height: Space.lg),
             ShuleGlassCard(
               padding: const EdgeInsets.all(Space.md),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const CampusScreen()),
-              ),
+              onTap: () => _push(context, AuditTrailScreen(workspace: workspace)),
               child: Row(
                 children: [
-                  const ShuleGlyph(icon: Icons.domain_rounded, size: 42),
+                  const ShuleGlyph(icon: Icons.history_rounded, size: 40),
                   const SizedBox(width: Space.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Staff, Hostels & Transport', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 15)),
+                        Text('Audit trail', style: Theme.of(context).textTheme.titleSmall),
                         Text(
-                          '8 staff · 4 boarding wings · 4 school bus routes',
+                          '${workspace.auditTrail.length} logged events · Who changed what, and when',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -360,29 +548,6 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: Space.xl),
-            SectionHead(
-              title: 'Announcements',
-              trailing: unread > 0 ? '$unread new' : 'All read',
-            ),
-            const SizedBox(height: Space.sm),
-            for (final ann in workspace.announcements.take(2)) ...[
-              ShuleGlassCard(
-                padding: const EdgeInsets.all(Space.md),
-                onTap: () => _openNotificationsSheet(context),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(ann.title, style: Theme.of(context).textTheme.titleSmall),
-                    const SizedBox(height: 3),
-                    Text(ann.body, style: Theme.of(context).textTheme.bodySmall),
-                    const SizedBox(height: 4),
-                    Text('${ann.audience} · ${ann.timeLabel}', style: Theme.of(context).textTheme.labelSmall),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Space.sm),
-            ],
           ],
         );
       },
