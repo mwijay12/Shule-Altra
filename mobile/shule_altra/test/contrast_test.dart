@@ -83,6 +83,13 @@ final List<_Use> _textUses = <_Use>[
   (where: 'heading on the ramp end', foreground: (t) => t.onGradient, background: (t) => t.gradientEnd),
   // The inverted pill that sits on the ramp: a white/blue button on the gradient.
   (where: 'pill on the ramp start', foreground: (t) => t.primary, background: (t) => t.surface),
+  // Blue editorial glass surfaces & badges.
+  (where: 'blue ink on blue wash pill', foreground: (t) => t.blueInk, background: (t) => t.blueWash),
+  (where: 'blue ink on card', foreground: (t) => t.blueInk, background: (t) => t.surface),
+  (where: 'body on inner glass tile', foreground: (t) => t.ink, background: (t) => t.innerSurface),
+  (where: 'muted text on inner glass tile', foreground: (t) => t.inkMuted, background: (t) => t.innerSurface),
+  (where: 'hero text on pure-blue start', foreground: (t) => t.onGradient, background: (t) => t.blueHeroStart),
+  (where: 'hero text on pure-blue end', foreground: (t) => t.onGradient, background: (t) => t.blueHeroEnd),
 ];
 
 void main() {

@@ -14,6 +14,8 @@ library;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/app.dart';
+import 'package:shule_altra_mobile/design/dock.dart';
+import 'package:shule_altra_mobile/design/glass.dart';
 import 'package:shule_altra_mobile/design/tokens.dart';
 import 'package:shule_altra_mobile/design/widgets.dart';
 
@@ -168,6 +170,35 @@ void main() {
     final ramp = _gradientOf(tester, find.byType(DecoratedBox))! as LinearGradient;
     expect(ramp.colors, [ShuleTokens.night.gradientStart, ShuleTokens.night.gradientEnd]);
 
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('floating blue glass dock and quick-action orb open school shortcuts', (tester) async {
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    final gateway = FakeGateway();
+    await tester.pumpWidget(
+      ShuleApp.withGateway(gateway: gateway, initialMode: AppMode.sample),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ShuleBackdrop), findsWidgets);
+    expect(find.byType(ShuleGlassDock), findsOneWidget);
+    expect(find.byKey(const Key('shule-quick-orb')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('shule-quick-orb')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Quick school actions'), findsOneWidget);
+    expect(find.text('Learner register'), findsOneWidget);
+
+    await tester.tap(find.text('School day & practice'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('The school day'), findsOneWidget);
+    await gateway.close();
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

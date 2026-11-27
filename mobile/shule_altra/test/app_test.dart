@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shule_altra_mobile/app/app.dart';
 import 'package:shule_altra_mobile/data/school_gateway.dart';
+import 'package:shule_altra_mobile/design/dock.dart';
 import 'package:shule_altra_mobile/design/tokens.dart';
 
 import 'fake_gateway.dart';
@@ -338,7 +339,7 @@ void main() {
       await tapText(tester, 'Continue');
       await tapText(tester, 'Explore the sample preview');
 
-      final context = tester.element(find.byType(NavigationBar));
+      final context = tester.element(find.byType(ShuleGlassDock));
       final tokens = ShuleTokens.of(context);
       expect(tokens.brightness, dark ? Brightness.dark : Brightness.light);
       expect(find.textContaining('A little more room'), findsOneWidget);

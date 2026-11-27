@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/learner.dart';
 import '../design/doodles.dart';
+import '../design/glass.dart';
 import '../design/motion.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
@@ -34,27 +35,46 @@ class HomeScreen extends StatelessWidget {
     final owed = rows.fold<double>(0, (sum, row) => sum + (row.balance ?? 0));
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
       children: [
-        const BrandBar(),
+        BrandBar(
+          trailing: StatusPill(
+            label: session.signedIn ? 'CONNECTED' : 'PILOT',
+            icon: session.signedIn
+                ? Icons.check_circle_outline_rounded
+                : Icons.visibility_outlined,
+            background: tokens.blueWash,
+            foreground: tokens.blueInk,
+            uppercase: true,
+          ),
+        ),
         const SizedBox(height: Space.xl),
         Rise(
           index: 0,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ASSEMBLY, THEN CLASS', style: Theme.of(context).textTheme.labelSmall),
-              const SizedBox(height: Space.sm),
-              Text('A little more room\nfor what matters.', style: Theme.of(context).textTheme.displaySmall),
+              const StatusPill(
+                label: 'ASSEMBLY, THEN CLASS',
+                icon: Icons.wb_sunny_outlined,
+                uppercase: true,
+              ),
+              const SizedBox(height: Space.md),
+              Text(
+                'A little more room\nfor what matters.',
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
             ],
           ),
         ),
-        const SizedBox(height: Space.xl),
+        const SizedBox(height: Space.lg + 2),
         Rise(
           index: 1,
           child: BrandPanel(
             eyebrow: session.signedIn ? 'YOUR REGISTER' : 'NOT SIGNED IN',
-            title: session.signedIn ? 'The register is\none tap away.' : 'Sign in to read\nyour school.',
+            title: session.signedIn
+                ? 'The register is\none tap away.'
+                : 'Sign in to read\nyour school.',
             body: session.signedIn
                 ? 'Read-only. Your school rules still decide which learners you can see.'
                 : 'Use the Google account your school already uses. Nothing is cached on the phone.',
@@ -69,19 +89,35 @@ class HomeScreen extends StatelessWidget {
         const SizedBox(height: Space.md),
         Rise(
           index: 2,
-          child: ShuleCard(
+          child: ShuleGlassCard(
+            glowCorner: true,
+            padding: const EdgeInsets.all(Space.md + 2),
             child: session.signedIn
                 ? _Metrics(rows: rows, classes: classes.length, withFees: withFees, owed: owed)
-                : Text(
-                    'Nothing has been read yet, so there is nothing to count. '
-                    'Load the register and these figures fill in from the page you loaded.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
+                : ShuleInnerTile(
+                    padding: const EdgeInsets.all(Space.lg),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const ShuleGlyph(icon: Icons.insights_outlined, size: 38),
+                        const SizedBox(width: Space.md),
+                        Expanded(
+                          child: Text(
+                            'Nothing has been read yet, so there is nothing to count. '
+                            'Load the register and these figures fill in from the page you loaded.',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(color: tokens.inkMuted),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
           ),
         ),
-        const SizedBox(height: Space.xs),
         Padding(
-          padding: const EdgeInsets.only(top: Space.sm),
+          padding: const EdgeInsets.only(top: Space.sm, left: Space.xs),
           child: Text(
             session.signedIn
                 ? 'Counts cover the ${countLabel(rows.length)} on the page you loaded, '
@@ -102,6 +138,7 @@ class HomeScreen extends StatelessWidget {
                   index: 3,
                   child: FeatureTile(
                     doodle: Doodle.book,
+                    icon: Icons.people_outline_rounded,
                     title: 'Learners',
                     caption: 'The register, page by page',
                     onTap: onOpenRegister,
@@ -114,6 +151,7 @@ class HomeScreen extends StatelessWidget {
                   index: 4,
                   child: FeatureTile(
                     doodle: Doodle.registers,
+                    icon: Icons.event_note_outlined,
                     title: 'School day',
                     caption: 'Practice attendance',
                     onTap: onOpenDay,
@@ -156,47 +194,63 @@ class _Metrics extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    final divider = Container(width: 1, color: tokens.border, height: 44);
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(child: MetricBlock(value: '${rows.length}', label: 'on this page')),
-            divider,
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: Space.md),
-                child: MetricBlock(value: '$classes', label: classes == 1 ? 'class' : 'classes'),
-              ),
-            ),
-            divider,
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(left: Space.md),
-                child: MetricBlock(
-                  value: '$withFees',
-                  label: withFees == 1 ? 'balance open' : 'balances open',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: ShuleInnerTile(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: MetricBlock(value: '${rows.length}', label: 'on this page'),
                 ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: Space.lg),
-        Container(height: 1, color: tokens.border),
-        const SizedBox(height: Space.md),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                owed == 0
-                    ? 'No open balance on this page.'
-                    : '${formatTzs(owed)} outstanding on this page.',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(color: tokens.ink),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: ShuleInnerTile(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: MetricBlock(
+                    value: '$classes',
+                    label: classes == 1 ? 'class' : 'classes',
+                  ),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: ShuleInnerTile(
+                  padding: const EdgeInsets.all(Space.md),
+                  child: MetricBlock(
+                    value: '$withFees',
+                    label: withFees == 1 ? 'balance open' : 'balances open',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.sm + 2),
+        ShuleInnerTile(
+          padding: const EdgeInsets.symmetric(horizontal: Space.md + 2, vertical: Space.md),
+          child: Row(
+            children: [
+              const ShuleGlyph(icon: Icons.account_balance_wallet_outlined, size: 34),
+              const SizedBox(width: Space.md),
+              Expanded(
+                child: Text(
+                  owed == 0
+                      ? 'No open balance on this page.'
+                      : '${formatTzs(owed)} outstanding on this page.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: tokens.ink,
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

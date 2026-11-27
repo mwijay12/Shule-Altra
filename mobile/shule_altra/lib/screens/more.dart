@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/school_config.dart';
 import '../design/doodles.dart';
+import '../design/glass.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
 
@@ -33,7 +34,7 @@ class MoreScreen extends StatelessWidget {
     const config = SchoolFirebaseConfig.fromEnvironment;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
+      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
       children: [
         const BrandBar(),
         const SizedBox(height: Space.xl),
@@ -47,34 +48,53 @@ class MoreScreen extends StatelessWidget {
         const SizedBox(height: Space.xl),
         SectionHead(title: 'Connection', trailing: session.sourceLabel),
         const SizedBox(height: Space.md),
-        ShuleCard(
+        ShuleGlassCard(
+          glowCorner: true,
+          padding: const EdgeInsets.all(Space.md + 2),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FactRow(label: 'Mode', value: isSample ? 'Sample preview (fictional data)' : 'Live school read'),
-              FactRow(
-                label: 'Account',
-                value: !session.signedIn
-                    ? 'Not signed in'
-                    : session.demoIdentity != null
-                        ? 'Demo · ${session.demoIdentity!.email}'
-                        : (isSample ? 'Sample staff session' : 'Signed in'),
+              ShuleInnerTile(
+                padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.xs),
+                child: Column(
+                  children: [
+                    FactRow(
+                      label: 'Mode',
+                      value: isSample ? 'Sample preview (fictional data)' : 'Live school read',
+                    ),
+                    const Divider(),
+                    FactRow(
+                      label: 'Account',
+                      value: !session.signedIn
+                          ? 'Not signed in'
+                          : session.demoIdentity != null
+                              ? 'Demo · ${session.demoIdentity!.email}'
+                              : (isSample ? 'Sample staff session' : 'Signed in'),
+                    ),
+                    const Divider(),
+                    FactRow(
+                      label: 'Firebase',
+                      value: config.isComplete
+                          ? (config.projectMatches
+                              ? 'Configured · ${config.projectId}'
+                              : 'Project id mismatch')
+                          : 'No values in this build',
+                    ),
+                  ],
+                ),
               ),
-              FactRow(
-                label: 'Firebase',
-                value: config.isComplete
-                    ? (config.projectMatches ? 'Configured · ${config.projectId}' : 'Project id mismatch')
-                    : 'No values in this build',
-              ),
-              const SizedBox(height: Space.sm),
-              Text(
-                isSample
-                    ? 'The sample preview reads fictional learners from this phone. It never '
-                        'contacts Firebase, and switching to the live register starts a new '
-                        'sign-in.'
-                    : 'Live reads go to the school project over the network. No learner data '
-                        'is written to the phone.',
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(height: Space.md),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+                child: Text(
+                  isSample
+                      ? 'The sample preview reads fictional learners from this phone. It never '
+                          'contacts Firebase, and switching to the live register starts a new '
+                          'sign-in.'
+                      : 'Live reads go to the school project over the network. No learner data '
+                          'is written to the phone.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ),
               if (session.signedIn) ...[
                 const SizedBox(height: Space.lg),
@@ -115,35 +135,48 @@ class MoreScreen extends StatelessWidget {
         const SizedBox(height: Space.xl),
         const SectionHead(title: 'Appearance'),
         const SizedBox(height: Space.md),
-        ShuleCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(isDark ? 'Night theme' : 'Day theme', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Both themes are complete. Motion follows the phone\'s own '
-                      '"remove animations" setting.',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+        ShuleGlassCard(
+          padding: const EdgeInsets.all(Space.md + 2),
+          child: ShuleInnerTile(
+            padding: const EdgeInsets.symmetric(horizontal: Space.md + 2, vertical: Space.md),
+            child: Row(
+              children: [
+                ShuleGlyph(
+                  icon: isDark ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
+                  size: 40,
                 ),
-              ),
-              const SizedBox(width: Space.md),
-              Switch(
-                value: isDark,
-                onChanged: (_) => onToggleTheme(),
-              ),
-            ],
+                const SizedBox(width: Space.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        isDark ? 'Night theme' : 'Day theme',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Both themes are complete. Motion follows the phone\'s own '
+                        '"remove animations" setting.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: Space.sm),
+                Switch(
+                  value: isDark,
+                  onChanged: (_) => onToggleTheme(),
+                ),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: Space.xl),
         const SectionHead(title: 'Start again'),
         const SizedBox(height: Space.md),
-        ShuleCard(
+        ShuleGlassCard(
+          padding: const EdgeInsets.all(Space.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -164,13 +197,13 @@ class MoreScreen extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: Space.xxl),
+        const SizedBox(height: Space.xl),
         ExcludeSemantics(
           child: Center(
-            child: DoodleView(doodle: Doodle.mark, size: 56, color: tokens.inkMuted),
+            child: DoodleView(doodle: Doodle.mark, size: 52, color: tokens.blueInk),
           ),
         ),
-        const SizedBox(height: Space.md),
+        const SizedBox(height: Space.sm),
         Center(
           child: Text(
             'Shule Altra · mobile pilot · read-only',

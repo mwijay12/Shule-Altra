@@ -1,8 +1,5 @@
-/// The learner register: the screen the SVGs were drawing.
-///
-/// It has to carry four states honestly — signed out, loading, failed, and a
-/// page of learners — plus search and paging. Every one of them says what is
-/// happening in words; none of them shows a stale row.
+/// The learner register: four honest states — signed out, loading, failed, and
+/// a page of learners — styled in Blue Editorial Glassmorphism.
 library;
 
 import 'package:flutter/material.dart';
@@ -10,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../app/session.dart';
 import '../data/learner.dart';
 import '../design/doodles.dart';
+import '../design/glass.dart';
 import '../design/motion.dart';
 import '../design/tokens.dart';
 import '../design/widgets.dart';
@@ -77,9 +75,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   /// Loads the first page after the frame that first needs it.
-  ///
-  /// Deferred on purpose: [AppSession.loadFirstPage] notifies listeners
-  /// synchronously, and notifying during a build would be a framework error.
   void _scheduleFirstLoad() {
     if (_requestedFirstPage) return;
     if (!widget.session.signedIn) return;
@@ -102,21 +97,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
       color: tokens.primary,
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        // Room to scroll the demo password field above the keyboard.
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xxl),
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.lg, Space.gutter, Space.xl),
         children: [
           const BrandBar(),
           const SizedBox(height: Space.xl),
           Text('Learners', style: Theme.of(context).textTheme.displaySmall),
           const SizedBox(height: Space.sm),
-          Text(
-            session.signedIn
-                ? 'Online · read-only · ${session.sourceLabel}'
-                : 'Sign in to read the register.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: Space.xl),
+          if (session.signedIn)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: StatusPill(
+                label: 'Online · read-only · ${session.sourceLabel}',
+                icon: Icons.cloud_done_outlined,
+              ),
+            )
+          else
+            Text(
+              'Sign in to read the register.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          const SizedBox(height: Space.lg + 2),
           if (!session.resolved)
             const _Busy(label: 'Checking your session…')
           else if (!session.signedIn)
@@ -167,93 +168,159 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
 
     final classes = session.rows.map((row) => row.className).toSet().toList()..sort();
-    final streams = session.rows.map((row) => row.stream).where((value) => value.isNotEmpty).toSet().toList()..sort();
-    final filtersActive = (_query.isNotEmpty ? 1 : 0) + (_classFilter == null ? 0 : 1) +
-        (_streamFilter == null ? 0 : 1) + (_attendanceFilter == 'All' ? 0 : 1);
+    final streams = session.rows
+        .map((row) => row.stream)
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+    final filtersActive = (_query.isNotEmpty ? 1 : 0) +
+        (_classFilter == null ? 0 : 1) +
+        (_streamFilter == null ? 0 : 1) +
+        (_attendanceFilter == 'All' ? 0 : 1);
     final shown = session.rows.where((row) {
       final attendance = row.attendanceStatus.toLowerCase();
       final known = ['present', 'absent', 'late'].contains(attendance);
       return row.matches(_query) &&
           (_classFilter == null || row.className == _classFilter) &&
-          (_streamFilter == null || (_streamFilter == 'missing' ? row.stream.isEmpty : 'value:${row.stream}' == _streamFilter)) &&
-          (_attendanceFilter == 'All' || (_attendanceFilter == 'Other or not set' ? !known : attendance == _attendanceFilter.toLowerCase()));
+          (_streamFilter == null ||
+              (_streamFilter == 'missing'
+                  ? row.stream.isEmpty
+                  : 'value:${row.stream}' == _streamFilter)) &&
+          (_attendanceFilter == 'All' ||
+              (_attendanceFilter == 'Other or not set'
+                  ? !known
+                  : attendance == _attendanceFilter.toLowerCase()));
     }).toList();
     final reading = session.state == LoadState.loading;
 
     return [
-      TextField(
-        controller: _search,
-        onChanged: (value) => setState(() => _query = value.trim()),
-        textInputAction: TextInputAction.search,
-        decoration: InputDecoration(
-          hintText: 'Search name, class, stream or ID',
-          helperText: 'Loaded page only',
-          prefixIcon: const Icon(Icons.search_rounded),
-          suffixIcon: _query.isEmpty
-              ? null
-              : IconButton(
-                  tooltip: 'Clear search',
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _search.clear();
-                    setState(() => _query = '');
-                  },
-                ),
-        ),
-      ),
-      const SizedBox(height: Space.sm),
-      Card(
-        child: ExpansionTile(
-          title: const Text('Refine this page'),
-          subtitle: Text(filtersActive == 0 ? 'Class, stream and stored attendance' :
-              '$filtersActive page filter${filtersActive == 1 ? '' : 's'} active'),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ShuleGlassCard(
+        padding: const EdgeInsets.all(Space.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            DropdownButtonFormField<String>(
-              key: ValueKey('class-$_filterVersion'),
-              value: _classFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Class · this page only'),
-              items: [const DropdownMenuItem(value: null, child: Text('All classes on page')),
-                ...classes.map((value) => DropdownMenuItem(value: value, child: Text(value)))],
-              onChanged: (value) => setState(() => _classFilter = value),
-            ),
-            const SizedBox(height: Space.md),
-            DropdownButtonFormField<String>(
-              key: ValueKey('stream-$_filterVersion'),
-              value: _streamFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Stream · this page only'),
-              items: [const DropdownMenuItem(value: null, child: Text('All streams on page')),
-                const DropdownMenuItem(value: 'missing', child: Text('Stream not recorded')),
-                ...streams.map((value) => DropdownMenuItem(value: 'value:$value', child: Text(value)))],
-              onChanged: (value) => setState(() => _streamFilter = value),
-            ),
-            const SizedBox(height: Space.md),
-            DropdownButtonFormField<String>(
-              key: ValueKey('attendance-$_filterVersion'),
-              value: _attendanceFilter, isExpanded: true,
-              decoration: const InputDecoration(labelText: 'Stored attendance · this page only'),
-              items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set']
-                  .map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
-              onChanged: (value) { if (value != null) setState(() => _attendanceFilter = value); },
+            TextField(
+              controller: _search,
+              onChanged: (value) => setState(() => _query = value.trim()),
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Search name, class, stream or ID',
+                helperText: 'Loaded page only',
+                prefixIcon: Icon(Icons.search_rounded, color: tokens.blueInk),
+                suffixIcon: _query.isEmpty
+                    ? null
+                    : IconButton(
+                        tooltip: 'Clear search',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _search.clear();
+                          setState(() => _query = '');
+                        },
+                      ),
+              ),
             ),
             const SizedBox(height: Space.sm),
-            const Text('Latest stored status only; it has no date and may not be from today.'),
+            ShuleInnerTile(
+              padding: EdgeInsets.zero,
+              child: Theme(
+                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                child: ExpansionTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Corners.field),
+                  ),
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(Corners.field),
+                  ),
+                  leading: const ShuleGlyph(icon: Icons.tune_rounded, size: 34),
+                  title: const Text('Refine this page'),
+                  subtitle: Text(
+                    filtersActive == 0
+                        ? 'Class, stream and stored attendance'
+                        : '$filtersActive page filter${filtersActive == 1 ? '' : 's'} active',
+                  ),
+                  childrenPadding: const EdgeInsets.fromLTRB(Space.md, 0, Space.md, Space.md),
+                  children: [
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('class-$_filterVersion'),
+                      value: _classFilter,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Class · this page only'),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All classes on page')),
+                        ...classes.map(
+                          (value) => DropdownMenuItem(value: value, child: Text(value)),
+                        ),
+                      ],
+                      onChanged: (value) => setState(() => _classFilter = value),
+                    ),
+                    const SizedBox(height: Space.md),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('stream-$_filterVersion'),
+                      value: _streamFilter,
+                      isExpanded: true,
+                      decoration: const InputDecoration(labelText: 'Stream · this page only'),
+                      items: [
+                        const DropdownMenuItem(value: null, child: Text('All streams on page')),
+                        const DropdownMenuItem(
+                          value: 'missing',
+                          child: Text('Stream not recorded'),
+                        ),
+                        ...streams.map(
+                          (value) => DropdownMenuItem(value: 'value:$value', child: Text(value)),
+                        ),
+                      ],
+                      onChanged: (value) => setState(() => _streamFilter = value),
+                    ),
+                    const SizedBox(height: Space.md),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey('attendance-$_filterVersion'),
+                      value: _attendanceFilter,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Stored attendance · this page only',
+                      ),
+                      items: const ['All', 'Present', 'Absent', 'Late', 'Other or not set']
+                          .map((value) => DropdownMenuItem(value: value, child: Text(value)))
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) setState(() => _attendanceFilter = value);
+                      },
+                    ),
+                    const SizedBox(height: Space.sm),
+                    Text(
+                      'Latest stored status only; it has no date and may not be from today.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (filtersActive > 0) ...[
+              const SizedBox(height: Space.xs),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => setState(_clearFilters),
+                  icon: const Icon(Icons.filter_alt_off_outlined),
+                  label: const Text('Clear all page filters'),
+                ),
+              ),
+            ],
           ],
         ),
       ),
-      if (filtersActive > 0)
-        Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-          onPressed: () => setState(_clearFilters),
-          icon: const Icon(Icons.filter_alt_off_outlined), label: const Text('Clear all page filters'),
-        )),
-      const SizedBox(height: Space.sm),
-      Text(
-        filtersActive == 0
-            ? '${countLabel(session.rows.length)} on this page'
-            : '${shown.length} of ${countLabel(session.rows.length)} match page filters',
-        style: Theme.of(context).textTheme.bodySmall,
+      const SizedBox(height: Space.md),
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+        child: Text(
+          filtersActive == 0
+              ? '${countLabel(session.rows.length)} on this page'
+              : '${shown.length} of ${countLabel(session.rows.length)} match page filters',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
       ),
-      const SizedBox(height: Space.lg),
+      const SizedBox(height: Space.md),
       if (shown.isEmpty)
         EmptyState(
           title: filtersActive == 0 ? 'This page is empty' : 'No learner on this page matches',
@@ -268,7 +335,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               (entry) => Rise(
                 index: entry.key,
                 child: Padding(
-                  padding: const EdgeInsets.only(bottom: Space.sm),
+                  padding: const EdgeInsets.only(bottom: Space.sm + 2),
                   child: _LearnerRow(
                     learner: entry.value,
                     onTap: () => widget.onOpenLearner(entry.value),
@@ -280,8 +347,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (reading)
         const _Busy(label: 'Reading…')
       else
-        // Both buttons flex and their labels shrink to fit, so a long label or a
-        // large text setting cannot push either one off the screen.
         Row(
           children: [
             Flexible(
@@ -304,7 +369,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       const SizedBox(height: Space.lg),
-      Notice(
+      const Notice(
         title: 'Read-only register',
         body: 'Names, classes and guardian contacts come from the page you just loaded and '
             'can change at the school while you read them. Nothing on this screen is saved '
@@ -336,38 +401,50 @@ class _SignedOut extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         StickerPop(
-          child: SizedBox(
-            height: 168,
-            width: double.infinity,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: tokens.mutedSurface,
-                borderRadius: BorderRadius.circular(Corners.hero),
-              ),
-              child: const Center(child: DoodleView(doodle: Doodle.building, size: 104)),
+          child: ShuleGlassCard(
+            glowCorner: true,
+            padding: const EdgeInsets.all(Space.xl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 112,
+                    height: 112,
+                    decoration: BoxDecoration(
+                      color: tokens.blueWash,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: DoodleView(
+                      doodle: Doodle.building,
+                      size: 74,
+                      color: tokens.blueInk,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: Space.lg),
+                Text(
+                  session.acceptsDemoCredential
+                      ? 'A sample register,\nbehind a demo sign-in.'
+                      : 'The register is behind\nyour school account.',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: Space.sm),
+                Text(
+                  session.acceptsDemoCredential
+                      ? 'Six fictional learners, stored on this phone, with a credential printed '
+                        'on the form. Nothing here is a real school and nothing is sent anywhere.'
+                      : 'Sign in with the Google account your school already uses. Your school\'s '
+                        'Firestore rules decide what you can read — the app does not widen that.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: Space.xl),
-        Text(
-          session.acceptsDemoCredential
-              ? 'A sample register,\nbehind a demo sign-in.'
-              : 'The register is behind\nyour school account.',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: Space.sm),
-        Text(
-          session.acceptsDemoCredential
-              ? 'Six fictional learners, stored on this phone, with a credential printed '
-                'on the form. Nothing here is a real school and nothing is sent anywhere.'
-              : 'Sign in with the Google account your school already uses. Your school\'s '
-                'Firestore rules decide what you can read — the app does not widen that.',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-        ),
         const SizedBox(height: Space.lg),
         if (session.acceptsDemoCredential)
-          // The sample register, opened with the demo credential that is printed
-          // on the form itself.
           DemoSignInForm(session: session)
         else ...[
           GradientButton(
@@ -405,51 +482,68 @@ class _LearnerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
+    final dark = tokens.brightness == Brightness.dark;
     final owes = (learner.balance ?? 0) > 0;
-    return Material(
-      color: tokens.surface,
-      borderRadius: BorderRadius.circular(Corners.panel),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(Corners.panel),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(Space.lg),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: tokens.mutedSurface,
-                child: Text(
-                  learner.initials,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(color: tokens.ink),
-                ),
-              ),
-              const SizedBox(width: Space.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return ShuleGlassCard(
+      padding: const EdgeInsets.all(Space.md + 2),
+      onTap: onTap,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: tokens.blueWash,
+            child: Text(
+              learner.initials,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: tokens.blueInk,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ),
+          const SizedBox(width: Space.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(learner.name, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 3),
+                Wrap(
+                  spacing: Space.xs + 2,
+                  runSpacing: Space.xs,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    Text(learner.name, style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 2),
                     Text(
-                      learner.className,
+                      learner.stream.isEmpty
+                          ? learner.className
+                          : '${learner.className} · ${learner.stream}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
+                    if (owes)
+                      StatusPill(
+                        label: 'Balance',
+                        background: tokens.warning.withValues(alpha: dark ? 0.20 : 0.12),
+                        foreground: tokens.warning,
+                      ),
                   ],
                 ),
-              ),
-              if (owes)
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.sm),
-                  child: Text(
-                    'Balance',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(color: tokens.warning),
-                  ),
-                ),
-              Icon(Icons.chevron_right_rounded, color: tokens.inkMuted),
-            ],
+              ],
+            ),
           ),
-        ),
+          const SizedBox(width: Space.sm),
+          ExcludeSemantics(
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: tokens.innerSurface,
+                shape: BoxShape.circle,
+                border: Border.all(color: tokens.border),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.chevron_right_rounded, size: 18, color: tokens.blueInk),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -463,8 +557,8 @@ class _Busy extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: Space.xxl),
+    return ShuleGlassCard(
+      padding: const EdgeInsets.symmetric(vertical: Space.xl, horizontal: Space.lg),
       child: Column(
         children: [
           SizedBox.square(

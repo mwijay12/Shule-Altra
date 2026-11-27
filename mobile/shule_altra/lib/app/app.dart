@@ -9,7 +9,10 @@ import '../data/firebase_gateway.dart';
 import '../data/learner.dart';
 import '../data/onboarding_store.dart';
 import '../data/sample_gateway.dart';
+import '../data/saved_timetable.dart';
 import '../data/school_gateway.dart';
+import '../design/dock.dart';
+import '../design/glass.dart';
 import '../design/motion.dart';
 import '../design/theme.dart';
 import '../design/tokens.dart';
@@ -19,6 +22,7 @@ import '../screens/learner_detail.dart';
 import '../screens/more.dart';
 import '../screens/onboarding.dart';
 import '../screens/register.dart';
+import '../screens/saved_timetable.dart';
 import '../screens/school_day.dart';
 import 'session.dart';
 
@@ -237,75 +241,101 @@ class _Shell extends StatelessWidget {
   final VoidCallback onToggleTheme;
   final VoidCallback onRestart;
 
+  static const _dockItems = <ShuleDockItem>[
+    ShuleDockItem(
+      label: 'Home',
+      icon: Icons.grid_view_outlined,
+      activeIcon: Icons.grid_view_rounded,
+    ),
+    ShuleDockItem(
+      label: 'Learners',
+      icon: Icons.people_outline_rounded,
+      activeIcon: Icons.people_rounded,
+    ),
+    ShuleDockItem(
+      label: 'Day',
+      icon: Icons.event_note_outlined,
+      activeIcon: Icons.event_note_rounded,
+    ),
+    ShuleDockItem(
+      label: 'More',
+      icon: Icons.tune_outlined,
+      activeIcon: Icons.tune_rounded,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final tokens = ShuleTokens.of(context);
+    final effectiveDark = Theme.of(context).brightness == Brightness.dark;
 
     void openLearner(Learner learner) {
       showLearnerDetail(context, learner: learner, isSample: isSample);
     }
 
-    return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: AnimatedBuilder(
-          animation: session,
-          builder: (context, _) => switch (tab) {
-            0 => HomeScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-                onOpenDay: () => onTab(2),
-                onOpenMore: () => onTab(3),
-              ),
-            1 => RegisterScreen(
-                session: session,
-                onSignIn: session.signIn,
-                onOpenLearner: openLearner,
-              ),
-            2 => SchoolDayScreen(
-                session: session,
-                onOpenRegister: () => onTab(1),
-              ),
-            _ => MoreScreen(
-                session: session,
-                isSample: isSample,
-                onSignOut: session.signOut,
-                onRestart: onRestart,
-                onToggleTheme: onToggleTheme,
-                isDark: isDark,
-              ),
-          },
+    void openQuickSheet() {
+      final gateway = session.gateway;
+      final openTimetable = gateway is TimetableReader
+          ? () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SavedTimetableScreen(
+                    session: session,
+                    reader: gateway,
+                  ),
+                ),
+              )
+          : null;
+      showShuleQuickSheet(
+        context,
+        sourceLabel: session.sourceLabel,
+        isDark: effectiveDark,
+        onOpenRegister: () => onTab(1),
+        onOpenDay: () => onTab(2),
+        onOpenMore: () => onTab(3),
+        onToggleTheme: onToggleTheme,
+        onOpenSavedTimetable: openTimetable,
+      );
+    }
+
+    return ShuleBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          bottom: false,
+          child: AnimatedBuilder(
+            animation: session,
+            builder: (context, _) => switch (tab) {
+              0 => HomeScreen(
+                  session: session,
+                  onOpenRegister: () => onTab(1),
+                  onOpenDay: () => onTab(2),
+                  onOpenMore: () => onTab(3),
+                ),
+              1 => RegisterScreen(
+                  session: session,
+                  onSignIn: session.signIn,
+                  onOpenLearner: openLearner,
+                ),
+              2 => SchoolDayScreen(
+                  session: session,
+                  onOpenRegister: () => onTab(1),
+                ),
+              _ => MoreScreen(
+                  session: session,
+                  isSample: isSample,
+                  onSignOut: session.signOut,
+                  onRestart: onRestart,
+                  onToggleTheme: onToggleTheme,
+                  isDark: isDark,
+                ),
+            },
+          ),
         ),
-      ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(top: BorderSide(color: tokens.border)),
-        ),
-        child: NavigationBar(
+        bottomNavigationBar: ShuleGlassDock(
+          items: _dockItems,
           selectedIndex: tab,
-          onDestinationSelected: onTab,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined),
-              selectedIcon: Icon(Icons.grid_view_rounded),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.people_outline_rounded),
-              selectedIcon: Icon(Icons.people_rounded),
-              label: 'Learners',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.event_note_outlined),
-              selectedIcon: Icon(Icons.event_note_rounded),
-              label: 'Day',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.more_horiz_rounded),
-              selectedIcon: Icon(Icons.more_horiz_rounded),
-              label: 'More',
-            ),
-          ],
+          onSelected: onTab,
+          onQuickAction: openQuickSheet,
+          quickActionTooltip: 'Quick school actions',
         ),
       ),
     );
@@ -318,24 +348,29 @@ class _Connecting extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(Space.gutter),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox.square(
-                  dimension: 28,
-                  child: CircularProgressIndicator(strokeWidth: 2.6),
+      body: ShuleBackdrop(
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(Space.gutter),
+              child: ShuleGlassCard(
+                padding: const EdgeInsets.symmetric(horizontal: Space.xl, vertical: Space.xxl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox.square(
+                      dimension: 28,
+                      child: CircularProgressIndicator(strokeWidth: 2.6),
+                    ),
+                    const SizedBox(height: Space.lg),
+                    Text(
+                      'Starting Firebase and checking the connection…',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
                 ),
-                const SizedBox(height: Space.lg),
-                Text(
-                  'Starting Firebase and checking the connection…',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -360,36 +395,42 @@ class _LiveUnavailable extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = ShuleTokens.of(context);
     return Scaffold(
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxl),
-          children: [
-            Text('Connecting to your school', style: Theme.of(context).textTheme.displaySmall),
-            const SizedBox(height: Space.lg),
-            Notice(title: 'This build is not connected', body: problem, tone: NoticeTone.danger),
-            const SizedBox(height: Space.xl),
-            Text(
-              'The live path needs Firebase values that match your school\'s project, an '
-              'Android app registered for this package name, and a Google sign-in client for '
-              'the same signing key. Until all three exist, nothing here will pretend to '
-              'reach a school.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
-            ),
-            const SizedBox(height: Space.xl),
-            GradientButton(
-              label: 'Use the sample preview instead',
-              onPressed: onSample,
-              icon: Icons.visibility_outlined,
-            ),
-            const SizedBox(height: Space.sm),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: onBack,
-                child: const Text('Back to the start'),
+      body: ShuleBackdrop(
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.xxl),
+            children: [
+              const BrandBar(),
+              const SizedBox(height: Space.xl),
+              Text('Connecting to your school', style: Theme.of(context).textTheme.displaySmall),
+              const SizedBox(height: Space.lg),
+              Notice(title: 'This build is not connected', body: problem, tone: NoticeTone.danger),
+              const SizedBox(height: Space.lg),
+              ShuleGlassCard(
+                child: Text(
+                  'The live path needs Firebase values that match your school\'s project, an '
+                  'Android app registered for this package name, and a Google sign-in client for '
+                  'the same signing key. Until all three exist, nothing here will pretend to '
+                  'reach a school.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: tokens.inkMuted),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: Space.xl),
+              GradientButton(
+                label: 'Use the sample preview instead',
+                onPressed: onSample,
+                icon: Icons.visibility_outlined,
+              ),
+              const SizedBox(height: Space.sm),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: onBack,
+                  child: const Text('Back to the start'),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
